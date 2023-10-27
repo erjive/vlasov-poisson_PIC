@@ -1,0 +1,30 @@
+0.05   ! Grid spacing dr
+317     ! Number of cells in r direction
+317     ! Number of cells in p direction
+0.7     ! Courant factor (dtfac)
+500000    ! Number of time steps
+0.0     ! Minimum radius of the grid
+35.0    ! Maximum radius of the grid
+2.0      ! Minimum radius of the support of f
+4.0      ! Maximum radius of the support of f
+-0.04     ! Minimum momentum of the support of f
+0.04      ! Maximum momentum of the support of f
+1.5      ! Angular momentum fixed
+.false.  ! Do we discard particles outside domain?
+1000     ! How often we discard particles
+10000   ! Time_output
+100      ! Spatial_output
+compact_auto_0.001_3 ! directory
+0.001      ! Amplitude of gaussian/Number of physical particles
+3.0      ! Center of initial gaussian in r
+0.0      ! Center of initial gaussian in p
+1.0      ! Width of initial gaussian in r
+0.04      ! Width of initial gaussian in p
+compact ! Initial state
+1         ! Bsplineorder
+leapfrog  ! Integrator
+two       ! Spatial order discretization
+bg        ! Forcetype
+Isochrone ! Background type
+.true.   ! Autointeraction
+
