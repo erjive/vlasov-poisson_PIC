@@ -35,7 +35,6 @@ subroutine grav_force
 ! solve the Poisson equation.
 
   if (autointeraction) then
-!  if (.true.) then
 
      if (rmin/=0.0d0) then
         print *
@@ -81,12 +80,6 @@ subroutine grav_force
 
          pot = pot + (-1.0D0/(1.0D0+sqrt(1.0D0+r**2)))
          force = force + (-r/(sqrt(1.D0+r**2)*(1.D0+sqrt(1.D0+r**2))**2))
-
-!         pot_part =  (-1.0D0/(1.0D0+sqrt(1.0D0+r_part**2)))
-!         force_part = (-r_part/(sqrt(1.D0+r_part**2)*(1.D0+sqrt(1.D0+r_part**2))**2))
-
-!         pot = (-1.0D0/(1.0D0+sqrt(1.0D0+r**2)))
-!         force = (-r/(sqrt(1.D0+r**2)*(1.D0+sqrt(1.D0+r**2))**2))
 
        else
 
@@ -151,6 +144,3 @@ subroutine grav_force
   !call save1Ddata(directory,filename,Nr,t,r,pot)
 
 end subroutine grav_force
-
-
-
