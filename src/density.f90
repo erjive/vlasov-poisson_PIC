@@ -128,7 +128,7 @@ subroutine avg_density
   implicit none
 
   integer i,j
-  real(8) :: smallpi,factor
+  real(8) :: smallpi,factor,diff,contribution
 
   smallpi = acos(-1.0d0)
 
@@ -148,17 +148,15 @@ subroutine avg_density
   avg_rho = 0.D0
 
   !!$OMP PARALLEL DO SCHEDULE(GUIDED) private (j) collapse(2)
-!$OMP PARALLEL DO SCHEDULE(GUIDED) collapse(2)
-
-  do i=1,Nr
-    do j=1,Npart
-      if (abs(r(i)-r_part(j))<=(bsplineorder+1)*drc) then
-
-
-        avg_rho(i) = avg_rho(i) + f(j)/drc*Wn(bsplineorder,(r(i)-r_part(j))/drc)
-
-
-      end if
+  !$OMP PARALLEL DO SCHEDULE(GUIDED)
+  do i = 1, Nr
+    do j = 1, Npart
+        diff = abs(r(i) - r_part(j))
+        if (diff <= (bsplineorder + 1) * drc) then
+            contribution = f(j) / drc * Wn(bsplineorder, diff / drc)
+            !$OMP ATOMIC
+            avg_rho(i) = avg_rho(i) + contribution
+        end if
     end do
   end do
   !$OMP END PARALLEL DO
