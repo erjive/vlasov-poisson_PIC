@@ -232,11 +232,20 @@
           end if
 
           !if (f((i-1)*Npc+j)<= 0.0001*sr) r_part((i-1)*Npc+j) = 10000.D0
-          if (f((i-1)*Npc+j)<= 0.00001*sr) r_part((i-1)*Npc+j) = 10000.D0
+          !if (f((i-1)*Npc+j)<= r0*sr) r_part((i-1)*Npc+j) = 10000.D0
           !print *, Qr,Jr
         end do
       end do
       !$OMP END PARALLEL DO
+      
+      f_max = maxval(f)
+      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
+      do i=1,Nrc
+        do j=1,Npc
+           if (f((i-1)*Npc+j)<= r0*f_max ) r_part((i-1)*Npc+j) = 100000.D0
+          !print *, Qr,Jr
+        end do
+      end do 
 
       call reduce_arrays
 
