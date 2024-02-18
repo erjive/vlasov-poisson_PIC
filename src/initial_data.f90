@@ -242,8 +242,12 @@
       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
       do i=1,Nrc
         do j=1,Npc
-           if (f((i-1)*Npc+j)<= r0*f_max ) r_part((i-1)*Npc+j) = 100000.D0
-          !print *, Qr,Jr
+           if ((r0-0.02)*f_max<=f((i-1)*Npc+j) .and. f((i-1)*Npc+j)<= r0*f_max ) then
+              f((i-1)*Npc+j)=0.0D0
+           else if (f((i-1)*Npc+j)<= (r0-0.02)*f_max ) then
+              r_part((i-1)*Npc+j) = 100000.D0
+           end if
+!          !print *, Qr,Jr
         end do
       end do 
 
@@ -257,7 +261,7 @@
     else if(state .eq."aa_random") then
 
       Npart = Nrc*Npc
-      f_max = sr
+      f_max = dexp(-dsin(0.5d0*0.0)**2/sp**2)*dexp(-sr**2/sr**2)*sr**2
 
       i = 1
       do while(i<= Npart)
@@ -279,7 +283,7 @@
         raux = (rmaxc-rminc)*x + rminc
         paux = (pmaxc-pminc)*y + pminc
         z = f_max*z 
-        
+
         energy = -1.0/(1.0D0+dsqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2) + 0.5D0*paux**2
         if (energy < 0.0D0) then
 
