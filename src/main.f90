@@ -60,6 +60,13 @@ program VP_PIC
 
 !  call integrate
    call energy
+
+! ************************
+! *** INITIAL ANALYSIS ***
+! ************************
+
+   call analysish
+
 !  ***************************
 !  ***  INITIAL TIME STEP  ***
 !  ***************************
@@ -259,11 +266,11 @@ program VP_PIC
 
      end if
 
-!     if (mod(l,time_output).eq.0) then
+     if (mod(l,spatial_output).eq.0) then
 
-!        call integrate
+        call analysish
 
-!     end if
+     end if
 
 !    *************************************************
 !    ***   IF POSSIBLE REDUCE SIZE OF THE ARRAYS   ***
