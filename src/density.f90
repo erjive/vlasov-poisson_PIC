@@ -60,12 +60,15 @@ subroutine density
       if (abs(r(i)-r_part(j))<=(bsplineorder+1)*drc) then
 
         rho(i) = rho(i) + f(j)*Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
-
-        avg_rho(i) = avg_rho(i) + f(j)/drc*Wn(bsplineorder,(r(i)-r_part(j))/drc)
-
         curr(i) = curr(i)+f(j)*p_part(j)*Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
+      end if
+
+      if (abs(r(i)-r_part(j))<=(bsplineorder+1)*dr) then
+
+        avg_rho(i) = avg_rho(i) + f(j)/(dr+dr**3/(12.d0*r(i)**2))*Wn(bsplineorder,(r(i)-r_part(j))/dr)
 
       end if
+
     end do
   end do
   !$OMP END PARALLEL DO
@@ -148,22 +151,41 @@ subroutine avg_density
   avg_rho = 0.D0
 
   !!$OMP PARALLEL DO SCHEDULE(GUIDED) private (j) collapse(2)
-  !$OMP PARALLEL DO SCHEDULE(GUIDED)
+!!$OMP PARALLEL DO SCHEDULE(GUIDED) collapse(2)
+
+!  do i=1,Nr
+!    do j=1,Npart
+!      if (abs(r(i)-r_part(j))<=(bsplineorder+1)*drc) then
+
+
+!        avg_rho(i) = avg_rho(i) + f(j)/drc*Wn(bsplineorder,(r(i)-r_part(j))/drc)
+
+
+!      end if
+!    end do
+!  end do
+!  !$OMP END PARALLEL DO
+
+!  !$OMP PARALLEL DO 
+!$OMP PARALLEL DO SCHEDULE(GUIDED) SHARED(avg_rho, r, r_part, f, bsplineorder, drc) PRIVATE(i, j, diff, contribution)
+
   do i = 1, Nr
     do j = 1, Npart
         diff = abs(r(i) - r_part(j))
-        if (diff <= (bsplineorder + 1) * drc) then
-            contribution = f(j) / drc * Wn(bsplineorder, diff / drc)
-            !$OMP ATOMIC
+        if (diff <= (bsplineorder + 1) * dr) then
+            contribution = f(j) / (r(i)**2*dr+dr**3/12.d0) * Wn(bsplineorder, diff / dr)
+           !$OMP ATOMIC
             avg_rho(i) = avg_rho(i) + contribution
         end if
     end do
   end do
   !$OMP END PARALLEL DO
+
+
   do i=1,ghost
       avg_rho(i-1) = avg_rho(i)
   end do
 
-  avg_rho = factor*m0*avg_rho/r**2
+  avg_rho = factor*m0*avg_rho
 
 end subroutine avg_density
