@@ -103,20 +103,6 @@ subroutine density
   call save0Ddata(directory,filename,t,average_rho)
 
 
-
-  mass = 0.D0
-
-  do i=1,Nr-1
-
-    mass = mass + 0.5D0*(rho(i)*r(i)**2 + rho(i+1)*r(i+1)**2)
-
-  end do
-
-    mass = mass * dr*4.0*smallpi
-  
-  print *, "MASS=",mass 
-
-
 end subroutine density
 
 
@@ -161,7 +147,7 @@ subroutine avg_density
 ! Include Angular Momentum
   else
 
-     factor = 0.25D0/smallpi*drc*dpc
+     factor = 2.0*smallpi*Lfix*drc*dpc!0.25D0/smallpi*drc*dpc
 
   endif  
 
