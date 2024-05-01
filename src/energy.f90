@@ -38,7 +38,7 @@ subroutine energy
 ! Include Angular Momentum
   else
 
-     factor = 8.D0*smallpi**2*Lfix
+     factor = 8.D0*smallpi**2*Lfix*drc*dpc
 
   endif  
 
