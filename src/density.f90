@@ -44,7 +44,7 @@ subroutine density
 ! Include Angular Momentum
   else
 
-     factor = 0.25D0/smallpi
+     factor = 0.25D0/smallpi*drc*dpc
 
   endif  
 
@@ -144,7 +144,7 @@ subroutine avg_density
 ! Include Angular Momentum
   else
 
-     factor = 0.25D0/smallpi
+     factor = 0.25D0/smallpi*drc*dpc
 
   endif  
 

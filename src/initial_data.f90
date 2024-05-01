@@ -72,18 +72,19 @@
       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
       do i=1,Nrc
         do j=1,Npc
-          raux = rminc+(dble(i)-0.5D0)*drc
+          raux = rminc+(dble(i)+0.5D0)*drc
           paux = pminc+dble(j)*dpc
 
           r_part((i-1)*Npc+j) = raux
           p_part((i-1)*Npc+j) = paux          
-          f((i-1)*Npc+j)      = gaussian_fixedL(a0,r0,p0,Lfix,raux,paux,sr,sp)
+          f((i-1)*Npc+j)      = gaussian_fixedL(1.0D0,r0,p0,Lfix,raux,paux,sr,sp)
         end do
       end do
       !$OMP END PARALLEL DO
 
-      
-          f = f*drc*dpc*8.D0*smallpi**2*Lfix
+      print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
+      f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
+      print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
     
     else if(state.eq."gaussian2") then
 
@@ -210,7 +211,6 @@
           s1 = 1.d0 + sqrt(1.d0+er1**2)
           s2 = 1.d0 + sqrt(1.d0+er2**2)
           s  = 1.d0 + sqrt(1.d0+raux**2)
-          !eta = dacos(sign(min(abs(2.d0/(s1-s2)*(s-(s1+s2)*0.5d0)),1.0),2.d0/(s1-s2)*(s-(s1+s2)*0.5d0)))
           argaux = (s1+s2-2.0*s)/(s2-s1)
 
           if (paux>=0.d0) then
@@ -231,9 +231,6 @@
             r_part((i-1)*Npc+j) = 10000.D0
           end if
 
-          !if (f((i-1)*Npc+j)<= 0.0001*sr) r_part((i-1)*Npc+j) = 10000.D0
-          !if (f((i-1)*Npc+j)<= r0*sr) r_part((i-1)*Npc+j) = 10000.D0
-          !print *, Qr,Jr
         end do
       end do
       !$OMP END PARALLEL DO
@@ -242,21 +239,21 @@
       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
       do i=1,Nrc
         do j=1,Npc
-           if ((r0-0.02)*f_max<=f((i-1)*Npc+j) .and. f((i-1)*Npc+j)<= r0*f_max ) then
+           if ((r0-0.00)*f_max<=f((i-1)*Npc+j) .and. f((i-1)*Npc+j)<= r0*f_max ) then
               f((i-1)*Npc+j)=0.0D0
-           else if (f((i-1)*Npc+j)<= (r0-0.02)*f_max ) then
+           else if (f((i-1)*Npc+j)<= (r0-0.00)*f_max ) then
               r_part((i-1)*Npc+j) = 100000.D0
            end if
 !          !print *, Qr,Jr
         end do
       end do 
-
+      !$OMP END PARALLEL DO
       call reduce_arrays
 
-      print *, a0/sum(f)
-      f = a0/sum(f)*f
+      print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
+      f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
       !f = f*drc*dpc*8.D0*smallpi**2
-      print *, "Initial total mass=",sum(f)
+      print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
 
     else if(state .eq."aa_random") then
 
