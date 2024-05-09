@@ -11,10 +11,10 @@
     real(8),dimension(1:Npart) :: energy,s, s1, s2, er1, er2,argaux
     complex(8),dimension (1:Npart)  :: exp_vals,conj_phik
     complex(8) :: ii                          !imaginary unit
-    complex(8),allocatable,dimension(:) :: hk           !h_k mode
-    real(8),allocatable,dimension(:) :: abs_hk       !Magnitude h_k mode
+    complex(8),dimension(0:4) :: hk           !h_k mode
+    real(8),dimension(0:4) :: abs_hk       !Magnitude h_k mode
     integer  :: i,j                           !Counters
-    integer  :: mode                          !Number of modes
+    integer  :: mode = 4                          !Number of modes
 
     real(8) :: raux,paux
 
@@ -29,10 +29,6 @@
     ! Constants
     smallpi =  acos(-1.0d0)
 
-    ! Set number of modes
-    mode = 4
-    allocate(hk(0:mode))
-    allocate(abs_hk(0:mode))
 
     energy = -1.0/(1.0D0+dsqrt(1.0D0+r_part**2)) + 0.5d0*Lfix**2/(r_part**2) + 0.5D0*p_part**2
     er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
@@ -64,7 +60,11 @@
         conj_phik(j) = conjg(phik(Jr(j), i, sp, sr))
       end do
 
-      hk(i) = drc*dpc*sum(f*exp_vals**i*conj_phik)
+      if (i==0) then
+        hk(i) = drc*dpc*sum(f*conj_phik)
+      else 
+        hk(i) = drc*dpc*sum(f*exp_vals**i*conj_phik)
+      end if
 
     end do
     !!$OMP END PARALLEL DO
