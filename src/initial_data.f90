@@ -196,7 +196,7 @@
 
     else if(state .eq."aa") then
 
-      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
+      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux) SHARED(r_part,p_part,f)
       do i=1,Nrc
         do j=1,Npc
           raux = rminc+(dble(i)-0.5D0)*drc
@@ -320,10 +320,11 @@
 
 !      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
 !      !$OMP END PARALLEL DO
-      print *, a0/sum(f)
-      f = a0/sum(f)*f
+      print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
+      f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
       !f = f*drc*dpc*8.D0*smallpi**2
-      print *, "Initial total mass=",sum(f)
+      print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
+
 
 
     else if(state.eq."checkpoint") then !NO IMPLEMENTED

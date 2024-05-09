@@ -8,15 +8,13 @@
     implicit none
 
     real(8),dimension(1:Npart) :: Qr,Jr      !Action angle arrays
-    real(8),dimension(1:Npart) :: energy,s, s1, s2, er1, er2,argaux
+    real(8) :: energy,s, s1, s2, er1, er2,argaux
     complex(8),dimension (1:Npart)  :: exp_vals,conj_phik
     complex(8) :: ii                          !imaginary unit
     complex(8),dimension(0:4) :: hk           !h_k mode
     real(8),dimension(0:4) :: abs_hk       !Magnitude h_k mode
     integer  :: i,j                           !Counters
     integer  :: mode = 4                          !Number of modes
-
-    real(8) :: raux,paux
 
     real(8) :: eta
     real(8) :: smallpi
@@ -30,27 +28,32 @@
     smallpi =  acos(-1.0d0)
 
 
-    energy = -1.0/(1.0D0+dsqrt(1.0D0+r_part**2)) + 0.5d0*Lfix**2/(r_part**2) + 0.5D0*p_part**2
-    er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-    er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-    s1 = 1.d0 + sqrt(1.d0+er1**2)
-    s2 = 1.d0 + sqrt(1.d0+er2**2)
-    s  = 1.d0 + sqrt(1.d0+r_part**2)
-    argaux = (s1+s2-2.0*s)/(s2-s1)
-    Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,energy,s, s1, s2, er1, er2,argaux) SHARED(Qr,Jr)
+    do i = 1,Npart
+      energy = -1.0/(1.0D0+dsqrt(1.0D0+r_part(i)**2)) + 0.5d0*Lfix**2/(r_part(i)**2) + 0.5D0*p_part(i)**2
+      er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+      er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+      s1 = 1.d0 + dsqrt(1.d0+er1**2)
+      s2 = 1.d0 + dsqrt(1.d0+er2**2)
+      s  = 1.d0 + dsqrt(1.d0+r_part(i)**2)
+      argaux = (s1+s2-2.0*s)/(s2-s1)
+      Jr(i) = 1.d0/dsqrt(-2.d0*energy)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
 
-    do i=1,Npart
+  !  do i=1,Npart
 
           if (p_part(i)>=0.d0) then
-            eta = dacos(sign(min(abs(argaux(i)),1.0),argaux(i)))
+            eta = dacos(sign(min(abs(argaux),1.0),argaux))
 
           else
-            eta = dacos(-sign(min(abs(argaux(i)),1.0),argaux(i)))+smallpi
+            eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
           end if
 
-          Qr(i) = eta - sqrt((-2.d0*energy(i))**3)*sqrt(-Lfix**2-2.d0*energy(i)-2.d0-0.5D0/energy(i))/(-2.d0*energy(i))*sin(eta)
+          Qr(i) = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
+      
     end do
-    ii = (0.d0,1.d0)
+    !$OMP END PARALLEL DO
+   
+ ii = (0.d0,1.d0)
     exp_vals = exp(-ii*Qr)
     !!$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,j,conj_phik,exp_vals)
 
