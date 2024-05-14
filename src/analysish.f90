@@ -42,19 +42,19 @@
   !  do i=1,Npart
 
           if (p_part(i)>=0.d0) then
-            eta = dacos(sign(min(abs(argaux),1.0),argaux))
+            eta = dacos(sign(min(abs(argaux),1.0D0),argaux))
 
           else
-            eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
+            eta = dacos(-sign(min(abs(argaux),1.0D0),argaux))+smallpi
           end if
 
-          Qr(i) = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
+          Qr(i) = eta - dsqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*dsin(eta)
       
     end do
     !$OMP END PARALLEL DO
    
  ii = (0.d0,1.d0)
-    exp_vals = exp(-ii*Qr)
+    !exp_vals = exp(-ii*Qr)
     !!$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,j,conj_phik,exp_vals)
 
     do i = 0,mode
@@ -63,10 +63,12 @@
         conj_phik(j) = conjg(phik(Jr(j), i, sp, sr))
       end do
 
+
       if (i==0) then
         hk(i) = drc*dpc*sum(f*conj_phik)
       else 
-        hk(i) = drc*dpc*sum(f*exp_vals**i*conj_phik)
+        exp_vals = exp(-ii*Qr*i)
+        hk(i) = drc*dpc*sum(f*exp_vals*conj_phik)
       end if
 
     end do
@@ -137,26 +139,27 @@
     b = smallpi
     
     ! Number of intervals (must be even)
-    n = 20
+    n = 1024
     
     ! Calculate the step size
-    h = (b - a) / real(n)
+    h = dble((b - a) / real(n))
     
     ! Perform the integration
     auxsum = phi(J,a,l,sp,sr) + phi(J,b,l,sp,sr)
 
     do i = 1, n-1, 2
-        auxsum = auxsum + 4.0d0 * phi(J,a + real(i) * h,l,sp,sr)
+        auxsum = auxsum + 4.0d0 * phi(J,a + dble(i) * h,l,sp,sr)
     end do
     do i = 2, n-2, 2
-        auxsum = auxsum + 2.0d0 * phi(J,a + real(i) * h,l,sp,sr)
+        auxsum = auxsum + 2.0d0 * phi(J,a + dble(i) * h,l,sp,sr)
     end do
     
     ! Calculate the result
 
-    phik = h / 3.0d0* (real(auxsum)*2.0d0)
+    phik = dble(h / 3.0d0* (real(auxsum)*2.0d0))
 
     phik = 0.5d0/smallpi*phik
+
     contains
     
     ! Define the function to be integrated
