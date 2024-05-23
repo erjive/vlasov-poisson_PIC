@@ -11,8 +11,8 @@
     real(8) :: energy,s, s1, s2, er1, er2,argaux
     complex(8),dimension (1:Npart)  :: exp_vals,conj_phik
     complex(8) :: ii                          !imaginary unit
-    complex(8),dimension(0:4) :: hk           !h_k mode
-    real(8),dimension(0:4) :: abs_hk       !Magnitude h_k mode
+    complex(8),dimension(0:4) :: hk1,hk2           !h_k mode
+    real(8),dimension(0:4) :: abs_hk1,abs_hk2       !Magnitude h_k mode
     integer  :: i,j                           !Counters
     integer  :: mode = 4                          !Number of modes
 
@@ -57,23 +57,42 @@
     !exp_vals = exp(-ii*Qr)
     !!$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,j,conj_phik,exp_vals)
 
+! 
     do i = 0,mode
 
       do j=1,Npart
-        conj_phik(j) = conjg(phik(Jr(j), i, sp, sr))
+        conj_phik(j) = conjg(phik(Jr(j), i, j1,sq1, sj1))
       end do
 
 
       if (i==0) then
-        hk(i) = drc*dpc*sum(f*conj_phik)
+        hk1(i) = drc*dpc*sum(f*conj_phik)
       else 
         exp_vals = exp(-ii*Qr*i)
-        hk(i) = drc*dpc*sum(f*exp_vals*conj_phik)
+        hk1(i) = drc*dpc*sum(f*exp_vals*conj_phik)
       end if
 
     end do
     !!$OMP END PARALLEL DO
-    abs_hk = abs(hk)
+    abs_hk1 = abs(hk1)
+
+    do i = 0,mode
+
+      do j=1,Npart
+        conj_phik(j) = conjg(phik(Jr(j), i, j2,sq2, sj2))
+      end do
+
+
+      if (i==0) then
+        hk2(i) = drc*dpc*sum(f*conj_phik)
+      else 
+        exp_vals = exp(-ii*Qr*i)
+        hk2(i) = drc*dpc*sum(f*exp_vals*conj_phik)
+      end if
+
+    end do
+    !!$OMP END PARALLEL DO
+    abs_hk2 = abs(hk2)
 
 
 ! *****************
@@ -95,9 +114,11 @@
 ! Open file.
 
   if (filestatus=='replace') then
-     open(101,file=trim(directory)//'/'//trim("hk")//'.tl',form='formatted',status=filestatus)
+     open(101,file=trim(directory)//'/'//trim("hk1")//'.tl',form='formatted',status=filestatus)
+     open(102,file=trim(directory)//'/'//trim("hk2")//'.tl',form='formatted',status=filestatus)
   else
-     open(101,file=trim(directory)//'/'//trim("hk")//'.tl',form='formatted',status=filestatus,position='append')
+     open(101,file=trim(directory)//'/'//trim("hk1")//'.tl',form='formatted',status=filestatus,position='append')
+     open(102,file=trim(directory)//'/'//trim("hk2")//'.tl',form='formatted',status=filestatus,position='append')
   end if
 
 
@@ -105,7 +126,8 @@
 ! ***   SAVE DATA   ***
 ! *********************
 
-  write(101,"(7ES16.8)") t,abs_hk(:)
+  write(101,"(7ES16.8)") t,abs_hk1(:)
+  write(102,"(7ES16.8)") t,abs_hk2(:)
 
 
 ! ***************************
@@ -113,11 +135,12 @@
 ! ***************************
 
   close(101)
+  close(102)
 
 
   end subroutine analysish
 
-  function phik(J, l, sp, sr)
+  function phik(J, l, J0,sq, sj)
 
 
     implicit none
@@ -126,7 +149,7 @@
     integer :: i
     integer :: l
     complex(8) :: phik
-    real(8) :: J,sp,sr
+    real(8) :: J,J0,sq,sj
     real(8) :: a, b, h,auxsum
     real(8) :: smallpi
 
@@ -139,19 +162,19 @@
     b = smallpi
     
     ! Number of intervals (must be even)
-    n = 1024
+    n = 512
     
     ! Calculate the step size
     h = dble((b - a) / real(n))
     
     ! Perform the integration
-    auxsum = phi(J,a,l,sp,sr) + phi(J,b,l,sp,sr)
+    auxsum = phi(J,a,l,J0,sq,sj) + phi(J,b,l,J0,sq,sj)
 
     do i = 1, n-1, 2
-        auxsum = auxsum + 4.0d0 * phi(J,a + dble(i) * h,l,sp,sr)
+        auxsum = auxsum + 4.0d0 * phi(J,a + dble(i) * h,l,J0,sq,sj)
     end do
     do i = 2, n-2, 2
-        auxsum = auxsum + 2.0d0 * phi(J,a + dble(i) * h,l,sp,sr)
+        auxsum = auxsum + 2.0d0 * phi(J,a + dble(i) * h,l,J0,sq,sj)
     end do
     
     ! Calculate the result
@@ -163,15 +186,15 @@
     contains
     
     ! Define the function to be integrated
-    function phi(J, Q, l, sp, sr)
+    function phi(J, Q, l, J0, sq, sj)
         integer l
-        real(8) :: J,Q,sp,sr
+        real(8) :: J,Q,J0,sq,sj
         complex(8) :: phi
         complex(8) :: ii
 
         ii = (0.d0,1.0d0)
 
-        phi = (exp(-sin(0.5d0*Q)**2/sp**2)*exp(-J**2/sr**2)*J**2*exp(-ii*l*Q))
+        phi = (exp(-sin(0.5d0*Q)**2/sq**2)*exp(-(J-J0)**2/sj**2)*J**2*exp(-ii*l*Q))
 
        
     end function phi

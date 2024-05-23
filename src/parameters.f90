@@ -88,4 +88,13 @@ module parameters
    real(8)        :: r1 = 2.0D0
    real(8)        :: r2 = 3.0D0
 
+   !hk modes
+
+   real(8)        :: j1 = 0.D0        !< Center of the gaussian for the first test function
+   real(8)        :: j2 = 0.D0        !< Center of the gaussian for the second test function
+   real(8)        :: sj1= 0.D0        !< Width of the gaussian in J for the first test function
+   real(8)        :: sj2= 0.D0        !< width of the gaussian in J for the second test function
+   real(8)        :: sq1= 0.D0        !< Width of the gaussian in Q for the first test function
+   real(8)        :: sq2= 0.D0        !< Width of the gaussian in Q for the second test function
+
 end module parameters
