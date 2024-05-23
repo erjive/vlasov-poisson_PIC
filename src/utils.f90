@@ -37,6 +37,12 @@ module utils
     read(*,*) sr
     read(*,*) sp
     read(*,*) state
+    read(*,*) j1
+    read(*,*) j2
+    read(*,*) sj1
+    read(*,*) sj2
+    read(*,*) sq1
+    read(*,*) sq2
     read(*,*) bsplineorder
     read(*,*) integrator
     read(*,*) spatialorder
