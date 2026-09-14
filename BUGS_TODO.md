@@ -112,6 +112,40 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   cell-list. — commit `perf(density,poisson_rk): replace
   O(Nr*Npart) brute-force deposit/interpolation with a cell list`
 
+## Mejoras de rendimiento adicionales (esta sesión, más allá del port)
+
+- [x] **`analysish.f90`: el loop de `phik` no estaba paralelizado
+  (`!!$OMP` comentado), y recalculaba la parte del integrando que no
+  depende del modo 5 veces por partícula (una por cada modo 0-4) ×2
+  (una por cada función de prueba $\Phi_1,\Phi_2$).** El `!$OMP` que
+  sí estaba activo (`Qr`/`Jr`) paraleliza sobre `Npart`; el que
+  faltaba paralelizaba (comentado) sobre el loop *externo* de modos
+  (`do i=0,mode`, solo 5 iteraciones) — mal ajuste para 8 hilos.
+  Reescrito completo: loop externo ahora es sobre partículas
+  (paraleliza con `Npart`, no con 5), calculando una sola vez por
+  partícula la parte del integrando independiente del modo
+  ($g(Q)=e^{-\sin^2(Q/2)/\sigma_Q^2}e^{-(J-J_0)^2/\sigma_J^2}J^2$,
+  igual que la optimización ya hecha en `VlasovPoisson_PIC_sp`) y
+  reusándola para los 5 modos, para ambas $\Phi_1,\Phi_2$ a la vez.
+  Misma precisión de cuadratura que antes (512 subintervalos, sin
+  reducir). De paso, mismo hallazgo que en el otro repo: el resultado
+  de `phik` siempre fue real (`real(auxsum)*2.0`, la parte imaginaria
+  se descartaba en silencio) — reemplazado `exp(-ilQ)` por
+  `cos(lQ)` directo, sin cambiar el resultado (la reducción por
+  simetría a $[0,\pi]$ ya usada es válida — verificado analíticamente
+  que $\mathrm{Re}[\phi]$ es par y $\mathrm{Im}[\phi]$ impar respecto
+  a $Q=\pi$).
+  Validado: `hk1.tl`/`hk2.tl` para `state="aa"` coinciden con la
+  versión anterior a la precisión de máquina esperada al reordenar
+  una suma en coma flotante (7-8 cifras significativas, no bit a bit
+  — la suma pasa de secuencial a reducción paralela). Benchmark
+  (~10072 partículas tras el corte, 2000 pasos, `spatial_output=100`,
+  8 hilos): **73.2s → 4.3s, ~17× más rápido** — la versión anterior
+  corría 100% serial (73s de usuario ≈ 73s real), confirmando que el
+  `!!$OMP` deshabilitado nunca se ejecutaba. — commit
+  `perf(analysish): parallelize over particles and reuse the
+  mode-independent quadrature weight`
+
 ## No aplica / ya está bien en este repo
 
 - **Paralelización de `initial_data`**: en `VlasovPoisson_PIC_sp` el

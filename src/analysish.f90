@@ -9,17 +9,22 @@
 
     real(8),dimension(1:Npart) :: Qr,Jr      !Action angle arrays
     real(8) :: energy,s, s1, s2, er1, er2,argaux
-    complex(8),dimension (1:Npart)  :: exp_vals,conj_phik
     complex(8) :: ii                          !imaginary unit
+    complex(8) :: expv                        !exp(-ii*Qr(j)) for the current particle
     complex(8),dimension(0:4) :: hk1,hk2           !h_k mode
     real(8),dimension(0:4) :: abs_hk1,abs_hk2       !Magnitude h_k mode
-    integer  :: i,j                           !Counters
+    integer  :: i,j,k                         !Counters
     integer  :: mode = 4                          !Number of modes
 
     real(8) :: eta
     real(8) :: smallpi
 
-    complex(8) :: phik
+    integer, parameter :: nquad = 512         !Simpson intervals for the phik integral (must be even)
+                                               !kept identical to the original per-call phik() precision
+    real(8) :: quadQ(0:nquad),quadW(0:nquad)  !Quadrature nodes/weights on [0,pi], built once
+    real(8) :: hstep,quadnorm
+    real(8) :: gval1(0:nquad),gval2(0:nquad)  !mode-independent integrand for Phi_1/Phi_2, per node
+    real(8) :: contrib1(0:4),contrib2(0:4)    !phik(.,mode) for mode=0..4, current particle, Phi_1/Phi_2
 
     character(20) filestatus
 
@@ -49,31 +54,94 @@
           end if
 
           Qr(i) = eta - dsqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*dsin(eta)
-      
+
     end do
     !$OMP END PARALLEL DO
-   
- ii = (0.d0,1.d0)
-    !exp_vals = exp(-ii*Qr)
-    !!$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,j,conj_phik,exp_vals)
 
-! 
-    do i = 0,mode
+    ii = (0.d0,1.d0)
 
-      do j=1,Npart
-        conj_phik(j) = conjg(phik(Jr(j), i, j1,sq1, sj1))
+! Quadrature nodes/weights for Simpson's rule on [0,pi] with nquad
+! (even) sub-intervals -- the same grid for every particle and every
+! mode, so build it once instead of inside phik() on every one of the
+! (mode+1)*Npart*2 calls it used to get (this loop's own cost is
+! negligible, O(nquad), done once per analysish() call).
+
+    hstep = smallpi/dble(nquad)
+    do k=0,nquad
+      quadQ(k) = dble(k)*hstep
+    end do
+    quadW(0)     = 1.d0
+    quadW(nquad) = 1.d0
+    do k=1,nquad-1,2
+      quadW(k) = 4.d0
+    end do
+    do k=2,nquad-2,2
+      quadW(k) = 2.d0
+    end do
+    quadnorm = hstep/(3.d0*smallpi)
+
+    hk1 = (0.d0,0.d0)
+    hk2 = (0.d0,0.d0)
+
+! phik(J,l,J0,sq,sj) = (1/pi) * Simpson[ g(J,J0,sq,sj,Q)*cos(l*Q) dQ, Q=0..pi ],
+! with g(...,Q) = exp(-sin(Q/2)^2/sq^2)*exp(-(J-J0)^2/sj^2)*J^2 the part
+! of the original phi(J,Q,l,J0,sq,sj) integrand that does NOT depend on
+! l (the mode). The previous implementation called phik() once per
+! (particle, mode, test function) -- (mode+1)*2 = 10 times per particle
+! -- and each call recomputed g(Q) at all 513 quadrature points from
+! scratch, i.e. 10x more exp() evaluations than necessary, since g only
+! depends on the particle (through Jr(j)) and on which test function
+! (Phi_1 or Phi_2) is being evaluated, not on which of the 5 modes is
+! being accumulated. Computing gval1/gval2 once per particle and
+! reusing them for all 5 modes removes that redundancy. It also
+! replaces the original complex phi(Q) = g(Q)*exp(-i*l*Q) with
+! g(Q)*cos(l*Q) directly: phik's own result was always real anyway (the
+! previous code built it from "real(auxsum)*2", silently discarding the
+! imaginary part of the Simpson sum every time -- see the symmetry
+! argument in BUGS_TODO.md), so the sin(l*Q) part it implicitly threw
+! away is simply never computed now.
+!
+! Each particle's contribution to hk1(0:4)/hk2(0:4) is independent and
+! only summed, so this parallelizes over particles with a plain
+! reduction on the two (tiny, 5-element) accumulators -- no atomics
+! needed. This also replaces the disabled "!!$OMP" that used to
+! parallelize the outer do-i-over-modes loop (only 5 iterations, a poor
+! match for 8 threads): parallelizing over particles instead scales
+! with Npart, which is what actually matters at N_c ~ 10^3-10^5.
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,k,i,gval1,gval2,contrib1,contrib2,expv) REDUCTION(+:hk1,hk2)
+    do j=1,Npart
+
+      do k=0,nquad
+        gval1(k) = exp(-sin(0.5d0*quadQ(k))**2/sq1**2)*exp(-(Jr(j)-j1)**2/sj1**2)*Jr(j)**2
+        gval2(k) = exp(-sin(0.5d0*quadQ(k))**2/sq2**2)*exp(-(Jr(j)-j2)**2/sj2**2)*Jr(j)**2
       end do
 
+      do i=0,mode
+        contrib1(i) = 0.d0
+        contrib2(i) = 0.d0
+        do k=0,nquad
+          contrib1(i) = contrib1(i) + quadW(k)*gval1(k)*cos(dble(i)*quadQ(k))
+          contrib2(i) = contrib2(i) + quadW(k)*gval2(k)*cos(dble(i)*quadQ(k))
+        end do
+        contrib1(i) = quadnorm*contrib1(i)
+        contrib2(i) = quadnorm*contrib2(i)
+      end do
 
-      if (i==0) then
-        hk1(i) = drc*dpc*sum(f*conj_phik)
-      else 
-        exp_vals = exp(-ii*Qr*i)
-        hk1(i) = drc*dpc*sum(f*exp_vals*conj_phik)
-      end if
+      hk1(0) = hk1(0) + f(j)*contrib1(0)
+      hk2(0) = hk2(0) + f(j)*contrib2(0)
+
+      expv = exp(-ii*Qr(j))
+      do i=1,mode
+        hk1(i) = hk1(i) + f(j)*contrib1(i)*expv**i
+        hk2(i) = hk2(i) + f(j)*contrib2(i)*expv**i
+      end do
 
     end do
-    !!$OMP END PARALLEL DO
+    !$OMP END PARALLEL DO
+
+    hk1 = drc*dpc*hk1
+    hk2 = drc*dpc*hk2
 
 ! Ec. 44 del paper, reducida via F(r,pr,L) = F0(r,pr)*delta(L-L0), trae un
 ! factor global 8*pi^2*L0 que el bucle de arriba no incluye (solo calcula
@@ -84,27 +152,8 @@
 ! SS9-10): con el factor aplicado, h_0 coincide al 0.01% con el valor
 ! "Analytical" publicado.
     hk1 = 8.0d0*smallpi**2*Lfix*hk1
-    abs_hk1 = abs(hk1)
-
-    do i = 0,mode
-
-      do j=1,Npart
-        conj_phik(j) = conjg(phik(Jr(j), i, j2,sq2, sj2))
-      end do
-
-
-      if (i==0) then
-        hk2(i) = drc*dpc*sum(f*conj_phik)
-      else 
-        exp_vals = exp(-ii*Qr*i)
-        hk2(i) = drc*dpc*sum(f*exp_vals*conj_phik)
-      end if
-
-    end do
-    !!$OMP END PARALLEL DO
-
-! Same 8*pi^2*L0 factor as hk1 above, same reason.
     hk2 = 8.0d0*smallpi**2*Lfix*hk2
+    abs_hk1 = abs(hk1)
     abs_hk2 = abs(hk2)
 
 
@@ -152,65 +201,3 @@
 
 
   end subroutine analysish
-
-  function phik(J, l, J0,sq, sj)
-
-
-    implicit none
-    
-    integer :: n
-    integer :: i
-    integer :: l
-    complex(8) :: phik
-    real(8) :: J,J0,sq,sj
-    real(8) :: a, b, h,auxsum
-    real(8) :: smallpi
-
-    ! Constants
-
-    smallpi = acos(-1.0d0)
-
-    ! Define the integration limits
-    a = 0.0
-    b = smallpi
-    
-    ! Number of intervals (must be even)
-    n = 512
-    
-    ! Calculate the step size
-    h = dble((b - a) / real(n))
-    
-    ! Perform the integration
-    auxsum = phi(J,a,l,J0,sq,sj) + phi(J,b,l,J0,sq,sj)
-
-    do i = 1, n-1, 2
-        auxsum = auxsum + 4.0d0 * phi(J,a + dble(i) * h,l,J0,sq,sj)
-    end do
-    do i = 2, n-2, 2
-        auxsum = auxsum + 2.0d0 * phi(J,a + dble(i) * h,l,J0,sq,sj)
-    end do
-    
-    ! Calculate the result
-
-    phik = dble(h / 3.0d0* (real(auxsum)*2.0d0))
-
-    phik = 0.5d0/smallpi*phik
-
-    contains
-    
-    ! Define the function to be integrated
-    function phi(J, Q, l, J0, sq, sj)
-        integer l
-        real(8) :: J,Q,J0,sq,sj
-        complex(8) :: phi
-        complex(8) :: ii
-
-        ii = (0.d0,1.0d0)
-
-        phi = (exp(-sin(0.5d0*Q)**2/sq**2)*exp(-(J-J0)**2/sj**2)*J**2*exp(-ii*l*Q))
-
-       
-    end function phi
-    
-
-  end function phik
