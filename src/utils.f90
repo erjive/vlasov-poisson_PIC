@@ -51,10 +51,10 @@ module utils
     read(*,*) autointeraction
     read(*,*) output_format
 
-    if (output_format/="ascii" .and. output_format/="hdf5") then
+    if (output_format/="ascii" .and. output_format/="hdf5" .and. output_format/="raw") then
        print *
        print *, 'Unknown output_format: ',trim(output_format)
-       print *, 'Valid values are "ascii" or "hdf5".'
+       print *, 'Valid values are "ascii", "hdf5" or "raw".'
        print *, 'Aborting ...'
        print *
        stop

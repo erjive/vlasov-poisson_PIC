@@ -10,6 +10,7 @@ program VP_PIC
   use arrays
   use utils
   use hdf5_io
+  use raw_io
 
 
 ! Declare variables.
@@ -41,6 +42,7 @@ program VP_PIC
   call system('cp input_parameters '//trim(directory))
 
   if (output_format=="hdf5") call open_hdf5_file()
+  if (output_format=="raw")  call open_raw_file()
 
 ! Initialize time.
 
@@ -95,6 +97,8 @@ program VP_PIC
 ! *********************************
    if (output_format=="hdf5") then
       call save_data_hdf5(0)
+   else if (output_format=="raw") then
+      call save_data_raw(0)
    else
       call save_data()
    end if
@@ -271,6 +275,8 @@ program VP_PIC
 
        if (output_format=="hdf5") then
           call save_data_hdf5(l)
+       else if (output_format=="raw") then
+          call save_data_raw(l)
        else
           call save_data()
        end if
@@ -314,6 +320,7 @@ program VP_PIC
   print *, 'Maximum radii of particles = ', maxval(r_part)
 
   if (output_format=="hdf5") call close_hdf5_file()
+  if (output_format=="raw")  call close_raw_file()
 
   call deallocate_mem()
 

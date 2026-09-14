@@ -1,0 +1,142 @@
+! ===========================================================================
+! raw_io.f90
+! ===========================================================================
+!> Raw binary output for VP_PIC. Third alternative to the ASCII output in
+!! utils.f90 and the HDF5 output in hdf5_io.f90, selected via
+!! output_format="raw".
+!!
+!! Motivated by measuring hdf5_io.f90's own overhead directly: writing the
+!! same data volume via plain Fortran stream I/O instead of through HDF5's
+!! group/dataset/attribute API was ~20x faster (0.18s vs 3.7-4.0s for 2000
+!! steps, ~10072 particles) -- HDF5's per-object metadata bookkeeping
+!! dominates over the actual bytes written, not compression (gzip barely
+!! helps here either: 98% of the data volume is r_part/p_part/f, which is
+!! high-entropy particle data that doesn't compress).
+!!
+!! Trade-off: this format has none of HDF5's self-description. A reader
+!! needs the exact layout below (or the matching Python reader in
+!! paper_runs/scripts/rawgraph.py) to make sense of the bytes -- there is
+!! no h5dump/h5py equivalent for free.
+!!
+!! On-disk layout: one file per run, "<directory>/vlasov_output.raw",
+!! opened with access="stream" (plain byte stream, no Fortran record
+!! markers) so the byte layout below is exact and matches what a
+!! numpy.fromfile-based reader expects. All integers are 8-byte, all
+!! reals are 8-byte (native endianness of the machine that wrote the
+!! file -- x86_64 is little-endian).
+!!
+!!   HEADER (written once, at the very start of the file):
+!!     int64             Nr
+!!     int64             autointeraction flag (0 or 1)
+!!     float64(Nr)       r          -- radial grid, fixed for the whole run
+!!
+!!   RECORD (one per saved snapshot, back to back, in save order):
+!!     int64             l          -- time step index
+!!     float64           time
+!!     float64           kinetic_energy
+!!     float64           potential_energy
+!!     float64           total_energy
+!!     int64             Npart      -- particle count *for this record*
+!!                                     (only varies if reduceparticles=.true.
+!!                                     shrank the arrays since the last save)
+!!     float64(Nr)       rho        -- r**2 * rho
+!!     float64(Nr)       avg_rho    -- r**2 * avg_rho
+!!     float64(Nr)       curr       -- r**2 * curr
+!!     float64(Nr)       force      -- only present if autointeraction
+!!     float64(Nr)       potential  -- only present if autointeraction
+!!     float64(Npart)    r_part
+!!     float64(Npart)    p_part
+!!     float64(Npart)    f
+!!
+!!   Records are NOT fixed-size (Npart can change), so a reader must parse
+!!   sequentially (or index once by walking the file, reading Npart at each
+!!   record to know how far to skip) rather than seek by a fixed stride.
+
+module raw_io
+
+  use parameters
+  use arrays
+
+  implicit none
+
+  integer, private :: raw_unit
+  logical, private :: header_written = .false.
+
+contains
+
+  !> Create the raw output file for this run. Call once, before the first
+  !! call to save_data_raw.
+  subroutine open_raw_file
+
+    integer :: ios
+
+    open(newunit=raw_unit, file=trim(directory)//'/vlasov_output.raw', &
+         form='unformatted', access='stream', status='replace', iostat=ios)
+
+    if (ios/=0) then
+       print *
+       print *, 'ERROR: could not create raw output file in directory ',trim(directory)
+       print *, 'Aborting ...'
+       print *
+       stop
+    end if
+
+    header_written = .false.
+
+  end subroutine open_raw_file
+
+
+  !> Close the raw output file. Call once, at the end of the run.
+  subroutine close_raw_file
+
+    close(raw_unit)
+
+  end subroutine close_raw_file
+
+
+  !> Save one snapshot as one record (see the layout comment at the top of
+  !! this file). Mirrors save_data in utils.f90 / save_data_hdf5 in
+  !! hdf5_io.f90.
+  subroutine save_data_raw(l)
+
+    implicit none
+
+    integer, intent(in) :: l
+
+    integer(8) :: l8, npart8, autoint8
+
+    if (.not. header_written) then
+       write(raw_unit) int(Nr,8)
+       autoint8 = 0_8
+       if (autointeraction) autoint8 = 1_8
+       write(raw_unit) autoint8
+       write(raw_unit) r(1:Nr)
+       header_written = .true.
+    end if
+
+    l8     = int(l,8)
+    npart8 = int(Npart,8)
+
+    write(raw_unit) l8
+    write(raw_unit) t
+    write(raw_unit) kinetic
+    write(raw_unit) potential
+    write(raw_unit) total_energy
+    write(raw_unit) npart8
+
+    write(raw_unit) r(1:Nr)**2*rho(1:Nr)
+    write(raw_unit) r(1:Nr)**2*avg_rho(1:Nr)
+    write(raw_unit) r(1:Nr)**2*curr(1:Nr)
+
+    if (autointeraction) then
+       write(raw_unit) force(1:Nr)
+       write(raw_unit) pot(1:Nr)
+    end if
+
+    write(raw_unit) r_part
+    write(raw_unit) p_part
+    write(raw_unit) f
+
+  end subroutine save_data_raw
+
+end module raw_io

@@ -290,6 +290,50 @@ tipo (4 núcleos físicos); en una máquina con más núcleos reales el
 override es directo. — commit `build: add "make run" defaulting to
 OMP_NUM_THREADS=4, document the 8-thread regression`
 
+## `output_format="raw"`: binario crudo, alternativa a HDF5
+
+- [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
+  motivado por medir directamente el overhead propio de HDF5: escribir
+  el mismo volumen de datos vía Fortran `stream`/`unformatted` plano
+  en vez de a través de la API de grupos/datasets/atributos de HDF5
+  fue **~20× más rápido** en una prueba aislada (2000 registros
+  seguidos, sin cómputo de por medio: 0.18s crudo vs 3.7-4.0s HDF5) —
+  el overhead de metadatos por objeto de HDF5 domina, no la
+  compresión (gzip apenas ayuda acá: el 98% del volumen es
+  `r_part`/`p_part`/`f`, ruido de partículas de alta entropía que no
+  comprime; solo el 2% que vive en la malla sí comprime bien).
+
+  **Corrección importante, medida después de implementarlo**: esa
+  cifra de ~20× es para el caso sintético de guardar *cada paso*. En
+  uso real, con `spatial_output=100` (1 de cada 100 pasos), el
+  cómputo (`grav_force`+leapfrog+`analysish` periódico) domina sobre
+  el I/O casi siempre, y la diferencia total de la corrida completa
+  es mucho más chica: **~6% más rápido** que HDF5+gzip con
+  `spatial_output=100` (3.74s vs 3.98s, N~10072, 2000 pasos), **~13%**
+  con `spatial_output=10` (32.8s vs 37.6s). El archivo crudo además
+  sale *más grande* que HDF5+gzip (sin comprimir: 5.1-5.2 MB vs 4.3
+  MB en el mismo benchmark) — gzip sí gana en tamaño, aunque no en
+  velocidad.
+
+  **Trade-off real**: `raw` no es autodescriptivo — el layout exacto
+  de bytes está documentado a mano en el comentario de cabecera de
+  `raw_io.f90` (y debe mantenerse sincronizado ahí si cambia), y
+  necesita el lector a medida `paper_runs/scripts/rawgraph_io.py` en
+  vez de `h5py`/`h5dump` gratis. Vale la pena para corridas con
+  `spatial_output` muy chico (guardado muy frecuente) donde el I/O sí
+  llega a dominar; para el uso típico (`spatial_output=100`) la
+  diferencia con HDF5 es marginal y probablemente no justifica perder
+  las herramientas de HDF5.
+
+  Validado: `rawgraph_io.RawRun` leyendo un `.raw` coincide bit a bit
+  (`np.allclose`) contra `h5py` leyendo el `.h5` de la *misma* corrida
+  (grid, `rho`, `avg_rho`, `r_part`, `p_part`, `f`, tiempo, energía,
+  en el primer/décimo/último snapshot). `hygraph.py` extendido para
+  detectar el formato por extensión (`.h5` vs `.raw`) y usar el mismo
+  visor para ambos. — commit `feat(io): add output_format="raw",
+  ~20x faster than HDF5 in isolation but only ~6-13% in realistic
+  runs`
+
 ## No aplica / ya está bien en este repo
 
 - **Paralelización de `initial_data`**: en `VlasovPoisson_PIC_sp` el
