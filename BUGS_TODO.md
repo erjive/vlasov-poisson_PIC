@@ -71,8 +71,8 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   grid arrays`
 - [x] **`utils.f90` `reduce_arrays`: operadores de comparación
   inconsistentes** (`r_part(i)<=rmax` en el conteo vs
-  `r_aux(i)<rmax` en la copia). — commit `fix(reduce_arrays): use
-  consistent <=rmax in count and copy loops`
+  `r_aux(i)<rmax` en la copia). — commit `fix(reduce_arrays,grid):
+  consistent <=rmax comparison; allocate r(0:Nr) for rmin>0`
 - [x] **`functions.f90` `Sn`/`Wn`: no rechazan `n<1`** (`else if
   (n>4)`/`else if (n>3)`, sin `else` genérico) — mismo bug. — commit
   `fix(functions): Sn/Wn now reject any invalid order, not just
@@ -82,7 +82,9 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   `rmin>0` (donde `ghost=0`, o sea el rango allocateado es `(1:Nr)`)
   — mismo out-of-bounds write a `r(0)`. Probado con `rmin=1.0`:
   corre limpio, termina con "Memory deallocated". — commit
-  `fix(grid): allocate r(0:Nr) for rmin>0, not r(1:Nr)`
+  `fix(reduce_arrays,grid): consistent <=rmax comparison; allocate
+  r(0:Nr) for rmin>0` (bundleado con el ítem de `reduce_arrays` de
+  arriba, ambos tocan `utils.f90` y se probaron juntos)
 
 ## Mejoras de rendimiento a portar
 
