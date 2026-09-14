@@ -22,11 +22,13 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   `-Jobjs`, se perdía `-fopenmp`). — commit `fix(build): activate
   gfortran FLAGS in Makefile`
 
+- [x] **`density.f90`: ghost zones mal reflejadas** en `density` y
+  `avg_density` (`rho(i-1)=rho(i)`/`avg_rho(i-1)=avg_rho(i)` en vez de
+  `rho(1-i)=rho(i)`), mismo bug exacto que en el otro repo. — commit
+  `fix(density): correct ghost-zone mirroring in density/avg_density`
+
 ## Pendientes de portar (confirmados presentes en este repo)
 
-- [ ] **`density.f90`: ghost zones mal reflejadas** en `density` y
-  `avg_density` (`rho(i-1)=rho(i)`/`avg_rho(i-1)=avg_rho(i)` en vez de
-  `rho(1-i)=rho(i)`), mismo bug exacto que en el otro repo.
 - [ ] **`density.f90`/`poisson_rk.f90`: `collapse(2)` sin protección
   (condición de carrera OpenMP).** Confirmado en el loop combinado
   `rho`/`curr`/`avg_rho` de `density()` y en el loop de interpolación
