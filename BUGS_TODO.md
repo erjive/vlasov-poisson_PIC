@@ -129,6 +129,67 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   introdujo más tarde, durante el refactor a `l_part`, no está
   presente en esta base histórica.
 
+## Bugs nuevos encontrados en este repo (no relacionados con el port, sin corregir)
+
+Encontrados al intentar correr el código para validar los fixes de
+arriba. Ninguno existe en `VlasovPoisson_PIC_sp` (arquitectura y/o
+formato de parámetros distintos), así que no hay nada que "portar" —
+son bugs propios de este repo.
+
+- [ ] **`input_parameters`: desincronizado con `read_initial_param`
+  (`utils.f90`), le faltan 6 campos.** `read_initial_param` lee, en
+  orden, ... `state`, `j1`, `j2`, `sj1`, `sj2`, `sq1`, `sq2`,
+  `bsplineorder`, ... (líneas 39-46) — `j1`/`j2` son los centros en
+  $J$ de las dos funciones de prueba $\Phi_1$/$\Phi_2$ que usa
+  `analysish.f90` (`phik(Jr(j), i, j1, sq1, sj1)` y análogo con
+  `j2,sq2,sj2`), y `sj1`/`sj2`/`sq1`/`sq2` sus anchos en $J$/$Q$. El
+  `input_parameters` versionado en el repo **no tiene esas 6
+  líneas**: pasa directo de `state` (línea 23, `aa`) a
+  `bsplineorder` (línea 24, `1`). Al leerlo con `read(*,*)`, Fortran
+  simplemente seguía consumiendo lo que encontraba en las líneas
+  siguientes como si fueran `j1..sq2` — `j1` terminaba leyendo el
+  valor de `bsplineorder` (`1`, que sí parsea como real), pero `j2`
+  intentaba leer la palabra `leapfrog` (línea 25, pensada para
+  `integrator`) como número real, y el programa abortaba con
+  `Fortran runtime error: Bad real number in item 1 of list input`
+  en la línea 41 de `utils.f90`. Es decir: **el `input_parameters`
+  de este repo, tal como está commiteado, no corre — ninguna corrida
+  documentada pudo haberse hecho con él sin antes agregarle esas 6
+  líneas.** Reproducido en esta sesión al intentar un smoke test con
+  él directamente. Corregido *solo localmente* (no commiteado, fuera
+  del alcance del port) agregando 6 líneas con valores por defecto
+  razonables (`0.0`/`0.15`/`0.1`/`0.05`/`0.1`/`0.2`, tomados de los
+  dos casos de prueba $\Phi_1$/$\Phi_2$ descritos en
+  `VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/main.md`) solo
+  para poder ejecutar los smoke tests de esta sesión.
+- [ ] **`initial_data.f90`, estado `"aa"`: el filtro de corte
+  reutiliza `r0` (pensado como "centro de la gaussiana en r" para
+  `gaussian1`/`gaussian2`/`compact`/`compact2`) como si fuera la
+  fracción de corte del máximo de `f`.** El bloque (líneas ~239-250)
+  hace, en esencia, `if (f(...)<=r0*f_max) then r_part(...)=100000
+  end if` (la rama previa, `(r0-0.00)*f_max<=f<=r0*f_max`, es código
+  muerto: intervalo de medida cero, nunca dispara en la práctica) —
+  esto es *matemáticamente correcto* como criterio de corte (`f <=
+  fracción·f_max` → descartar) **siempre que `r0` sea una fracción
+  pequeña en $[0,1)$**, y de hecho coincide exactamente con el
+  parámetro `cutoff` que existe como campo propio, correctamente
+  nombrado, en `VlasovPoisson_PIC_sp` (`if (f(indx)<=
+  cutoff*f_max)`). El problema es que en este repo no hay un campo
+  `cutoff` separado — se reutiliza `r0`, sin renombrar ni
+  documentar el cambio de significado para el estado `"aa"` — y el
+  `input_parameters` commiteado tiene `r0=3.0` (razonable como
+  centro de gaussiana para otros estados, pero no como fracción de
+  corte). Con `r0=3.0`, como `f<=f_max` siempre, la condición
+  `f<=3·f_max` es **siempre verdadera** — el filtro marca el 100% de
+  las partículas para descarte, y `reduce_arrays` las elimina a
+  todas: `state="aa"` con el `input_parameters` del repo produce una
+  distribución inicial vacía en silencio (sin ningún error o aviso).
+  Reproducido en esta sesión. No corregido — evitado para las
+  corridas de comparación con el artículo usando explícitamente
+  `r0` = el valor real de `cutoff` del artículo (0.01), no el `r0`
+  (centro de gaussiana) del archivo de parámetros del artículo (que
+  vale 0.0 y no aplica al estado `"aa"` de todos modos).
+
 ## Fuera de alcance de este port (decisión pendiente, no arquitectura-independiente o ambigua)
 
 - **`eps` fijo/no fijo**: en este repo `eps = Lfix/(10*pmax)` está
