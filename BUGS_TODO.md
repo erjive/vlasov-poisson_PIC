@@ -35,14 +35,19 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   `pot_part`/`force_part` de `poisson_rk()`. Nota: `avg_density()` (la
   subrutina separada) ya tiene un parche con `!$OMP ATOMIC` — correcto
   pero subóptimo; se reemplaza junto con el cell-list de abajo.
-- [ ] **`utils.f90` `deallocate_mem`: código muerto y roto.** Mismos
+- [x] **`utils.f90` `deallocate_mem`: código muerto y roto.** Mismos
   bugs que en el otro repo: `deallocate(p_part_hp)` — typo por
   `p_part_h` (`p_part_hp` nunca se allocatea); `deallocate(res)` bajo
   `conv_test=="on"` pero `res` nunca se allocatea en
   `alloc_mem_set0`; `force`/`pot`/`dev_pot` desallocateados sin
   comprobar `autointeraction` y luego otra vez si
-  `autointeraction=.true.` (doble free). No se llama desde ningún
-  lado.
+  `autointeraction=.true.` (doble free). No se llamaba desde ningún
+  lado. Arreglado para reflejar exactamente `alloc_mem_set0`, y se
+  agregó la llamada real al final de `main.f90`. Probado con
+  `gaussian1` (2500 partículas) en ambas configuraciones
+  (`autointeraction` `.true.`/`.false.`): terminan limpio con "Memory
+  deallocated". — commit `fix(memory): repair deallocate_mem and
+  actually call it`
 - [ ] **`utils.f90` `set_timestep`: `dt = dtr` anulaba
   `min(dtr,dtp)`.** Misma línea suelta después del `if/else` que
   pisaba el resultado incondicionalmente.

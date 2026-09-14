@@ -301,6 +301,9 @@ program VP_PIC
 ! ***   END   ***
 ! ***************
   print *, 'Maximum radii of particles = ', maxval(r_part)
+
+  call deallocate_mem()
+
   print *
   print *, 'PROGRAM HAS FINISHED'
   print *
