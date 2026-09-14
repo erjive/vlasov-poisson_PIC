@@ -241,6 +241,55 @@ revertida después de medir (no es un cambio permanente).
   cualquier lugar que indexe partículas por su posición original) —
   no evaluado en esta sesión.
 
+## Rendimiento con `OMP_NUM_THREADS`: 8 hilos no es óptimo en esta laptop
+
+Máquina de referencia: Intel i7-4710HQ, **4 núcleos físicos, 8 hilos
+lógicos por hyperthreading** (confirmado con
+`lscpu -p=CORE,CPU`: cores 0-3, cada uno con dos CPUs lógicas). Medido
+con `OMP_PLACES=cores`/`OMP_PROC_BIND=close` (para que a 2/4 hilos cada
+uno caiga en un núcleo físico distinto, no en el par de hyperthreads
+de un mismo núcleo) en dos benchmarks:
+
+**A — `analysish()`, sin autogravedad** (`state="aa"`, ~10072
+partículas, 2000 pasos, `spatial_output=100`):
+
+| Hilos | Tiempo | Speedup | Eficiencia |
+|---|---|---|---|
+| 1 | 12.94s | 1.00× | 100% |
+| 2 | 7.15s | 1.81× | 90.5% |
+| 4 | 5.32s | 2.43× | 60.8% |
+| 8 | 4.14s | 3.13× | 39.1% |
+
+**B — autogravedad** (`avg_density`+interpolación en `poisson_rk`,
+llamado una vez por paso; mismo N, 3000 pasos,
+`spatial_output` grande para aislar este camino):
+
+| Hilos | Tiempo | Speedup | Eficiencia |
+|---|---|---|---|
+| 1 | 7.14s | 1.00× | 100% |
+| 2 | 6.26s | 1.14× | 57.0% |
+| 4 | 4.37s | 1.63× | 40.8% |
+| 8 | **8.93s** | **0.80×** | **10.0%** |
+
+**En el caso autogravitante, 8 hilos es directamente más lento que 1
+solo hilo** (no solo "subóptimo") — `poisson_rk()` se llama una vez
+por paso, cada llamada abre 2 regiones paralelas
+(`avg_density`+interpolación), y con hyperthreading la contención
+entre hilos que comparten núcleo físico termina costando más que lo
+que aportan los 4 "hilos" extra falsos. El caso sin autogravedad
+(`analysish`, llamado solo cada `spatial_output` pasos, con mucho más
+trabajo por llamada) sí sigue mejorando hasta 8, pero con rendimientos
+muy decrecientes.
+
+**Acción tomada**: agregado el target `make run` al `Makefile`, que
+corre `exe/VP_PIC` con `OMP_NUM_THREADS=4` y
+`OMP_PLACES=cores`/`OMP_PROC_BIND=close` por default (override con
+`make run OMP_THREADS=N`), en vez de dejar que OpenMP use las 8 CPUs
+lógicas por defecto. 4 es un default razonable para máquinas de este
+tipo (4 núcleos físicos); en una máquina con más núcleos reales el
+override es directo. — commit `build: add "make run" defaulting to
+OMP_NUM_THREADS=4, document the 8-thread regression`
+
 ## No aplica / ya está bien en este repo
 
 - **Paralelización de `initial_data`**: en `VlasovPoisson_PIC_sp` el

@@ -105,6 +105,23 @@ endif
 FF := $(FC)
 
 
+# Default OMP_NUM_THREADS for "make run" below.  Measured directly on
+# a 4-physical-core/8-logical-thread (hyperthreaded) laptop: the
+# self-gravitating path (avg_density + poisson_rk's particle
+# interpolation, called every step) actually got *slower* at 8
+# threads than at 1 (7.14s -> 8.93s, i.e. 0.80x -- hyperthreading
+# contention from many short-lived parallel regions outweighs any
+# benefit), while the non-self-gravitating path (analysish(), called
+# only every spatial_output) kept improving up to 8 but with sharply
+# diminishing returns past 4 (61% parallel efficiency at 4 threads vs
+# 39% at 8). See BUGS_TODO.md for the full benchmark. 4 is the safer
+# default on machines like this; override with "make run
+# OMP_THREADS=N" (or just set OMP_NUM_THREADS yourself and run the
+# binary directly) if you have more physical cores available.
+
+OMP_THREADS ?= 4
+
+
 # HDF5 (Fortran bindings, serial build).  Paths as reported by
 # "h5fc -show" on Ubuntu/Debian with libhdf5-dev + libhdf5-fortran
 # installed.  HDF5_INC is needed at compile time (module file
@@ -208,6 +225,18 @@ VP_PIC : $(OBJS)
 	@ echo
 	@ touch .timeend
 
+# Run the compiled executable from "exe" using its own local
+# input_parameters (needed since VP_PIC itself "cp"s that exact file
+# into the run's output directory -- it must be present in the
+# working directory VP_PIC is launched from). OMP_PLACES=cores and
+# OMP_PROC_BIND=close make sure each thread lands on its own physical
+# core instead of two threads sharing one core's hyperthreads,
+# matching how OMP_THREADS above was benchmarked. Override the thread
+# count with "make run OMP_THREADS=N".
+
+run :
+	@ cd exe; OMP_NUM_THREADS=$(OMP_THREADS) OMP_PLACES=cores OMP_PROC_BIND=close ./VP_PIC < input_parameters
+
 # Create object files.  Here we create all object files in one go
 # using the rule defined above.  Notice that no prerequisites are
 # needed apart from the default ones *.f90 defined by the compilation
@@ -259,6 +288,8 @@ veryclean :
 help:
 	@ echo " "
 	@ echo "make            - Compiles code and copies par files to subdirectory 'exe'"
+	@ echo "make run        - Runs exe/VP_PIC on exe/input_parameters with OMP_NUM_THREADS=$(OMP_THREADS)"
+	@ echo "                  (override: make run OMP_THREADS=N)"
 	@ echo "make clean      - Deletes object files, executable, and all automatically generated Fortran files"
 	@ echo "make cleanobj   - Deletes object files"
 	@ echo "make veryclean  - Same as 'make clean', but also deletes subdirectory 'exe' with all its contents, BEWARE!"
