@@ -193,6 +193,54 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   chicos), igual que en el otro repo. — commit `feat(io): add optional
   HDF5 output, selected via output_format parameter`
 
+## Autogravedad: dónde se va el tiempo realmente (investigado, no una mejora en sí)
+
+Instrumentado temporalmente `poisson_rk.f90` con `cpu_time()` alrededor
+de `avg_density()`, el shooting RK2, y la interpolación de
+`pot_part`/`force_part`, en una corrida autogravitante (~10072
+partículas, 3000 pasos, 8 hilos). Resultado (CPU-segundos acumulados,
+suma entre los 8 hilos):
+
+| Parte | CPU-s | % |
+|---|---|---|
+| `avg_density()` (depósito) | 35.4s | 56% |
+| interpolación a partículas | 27.2s | 43% |
+| **shooting RK2 de Poisson** | **0.41s** | **<1%** |
+
+**El propio solver de Poisson no es el cuello de botella** — en
+simetría esférica se reduce a una EDO 1D, $O(N_r)$, ya
+algorítmicamente óptimo (un método tipo árbol/FMM, pensado para 3D sin
+simetría, sería un paso *atrás* acá, no una mejora). El costo real
+está en el depósito/interpolación partícula↔malla — que ya tenían el
+cell-list y la paralelización de esta sesión. Instrumentación
+revertida después de medir (no es un cambio permanente).
+
+- [x] **`poisson_rk.f90`/`density.f90`: `Wn`/`Sn` evaluados dos veces
+  por par (partícula, punto de malla) con los mismos argumentos** —
+  una vez para `pot_part`/`rho`, otra para `force_part`/`curr`.
+  Corregido calculando el valor una sola vez y reusándolo. Validado
+  bit a bit idéntico contra la versión anterior. **Medido sin
+  ganancia real** (10.60s → 10.69s en el mismo benchmark autogravitante,
+  dentro del ruido) — casi seguro `gfortran -O3` ya eliminaba la
+  llamada redundante por sí solo (common subexpression elimination,
+  dado que `Wn`/`Sn` son funciones simples y sin efectos secundarios).
+  Se deja el cambio de todos modos: es correcto, más claro, y no
+  depende de que el compilador siga optimizándolo así con otros
+  flags. — commit `perf(poisson_rk,density): deduplicate repeated
+  Wn/Sn evaluations`
+
+- [ ] **Idea más grande, no implementada: ordenar las partículas por
+  posición/celda periódicamente**, para mejorar la localidad de
+  caché tanto en el depósito (`avg_density`) como en la interpolación
+  (`poisson_rk`) — hoy el depósito ya recorre partículas agrupadas
+  por celda (vía `build_cell_list`), pero la interpolación sigue
+  iterando en el orden original del arreglo `r_part`, sin esa
+  localidad. Reordenar físicamente los arreglos de partículas (no
+  solo un índice auxiliar) podría mejorar el uso de caché en ambos
+  loops a la vez, pero es un cambio de mayor riesgo/alcance (toca
+  cualquier lugar que indexe partículas por su posición original) —
+  no evaluado en esta sesión.
+
 ## No aplica / ya está bien en este repo
 
 - **Paralelización de `initial_data`**: en `VlasovPoisson_PIC_sp` el

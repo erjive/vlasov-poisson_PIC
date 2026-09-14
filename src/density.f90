@@ -31,7 +31,7 @@ subroutine density
 
   integer i,j
   real(8) :: smallpi,factor,average_rho,mass
-  real(8) :: cutoff_rho,cutoff_avg
+  real(8) :: cutoff_rho,cutoff_avg,sval
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
 
@@ -78,7 +78,11 @@ subroutine density
 ! data race.  Keeping the parallel loop over i alone means each i is
 ! owned by exactly one thread for the whole inner j loop, which is
 ! race-free without needing atomics.
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j)
+! Sn(bsplineorder,(r(i)-r_part(j))/drc,drc) does not depend on p_part,
+! so it was evaluated twice per (i,j) pair -- once for rho, once for
+! curr, with identical arguments. Computed once into "sval" and reused.
+
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval)
 
   do i=1,Nr
 
@@ -91,8 +95,9 @@ subroutine density
 
         if (abs(r(i)-r_part(j))<=cutoff_rho) then
 
-          rho(i) = rho(i) + f(j)*Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
-          curr(i) = curr(i)+f(j)*p_part(j)*Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
+          sval = Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
+          rho(i) = rho(i) + f(j)*sval
+          curr(i) = curr(i)+f(j)*p_part(j)*sval
         end if
 
         if (abs(r(i)-r_part(j))<=cutoff_avg) then
