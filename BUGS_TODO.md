@@ -94,9 +94,23 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
 
 ## Mejoras de rendimiento a portar
 
-- [ ] **`density()`/`avg_density()`/`poisson_rk()`: búsqueda de
-  vecinos por fuerza bruta `O(Nr×Npart)`.** Portar el cell-list de
-  `utils.f90` (`build_cell_list`, `O(Nr+Npart)`).
+- [x] **`density()`/`avg_density()`/`poisson_rk()`: búsqueda de
+  vecinos por fuerza bruta `O(Nr×Npart)`.** Portado el cell-list de
+  `utils.f90` (`build_cell_list`, `O(Nr+Npart)`), reemplazando
+  también el parche `!$OMP ATOMIC` de `avg_density()` por el mismo
+  patrón "paralelizar solo en el índice externo" que ya usa
+  `density()`. Validado bit a bit contra la versión sin optimizar
+  (autogravitante, `spatial_output=5`, 50 pasos): `density`,
+  `avg_density`, `force`, `potential` y `energy` idénticos. También
+  determinismo 1 vs 8 hilos verificado de nuevo sobre esta versión.
+  Benchmark autogravitante (90000 partículas, 200 pasos,
+  `gaussian1`): 3m46s → 2m57s (**~1.28× más rápido**, 1 hilo) — mucho
+  menos que el 2.9× visto en el otro repo, esperable: esta corrida
+  gasta buena parte del tiempo en la cuadratura de `phik` en
+  `analysish.f90` (Simpson de 512 puntos sin optimizar, ver más
+  abajo — fuera de alcance de este port), que diluye la ganancia del
+  cell-list. — commit `perf(density,poisson_rk): replace
+  O(Nr*Npart) brute-force deposit/interpolation with a cell list`
 
 ## No aplica / ya está bien en este repo
 
