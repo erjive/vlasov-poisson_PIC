@@ -145,6 +145,28 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   `!!$OMP` deshabilitado nunca se ejecutaba. — commit
   `perf(analysish): parallelize over particles and reuse the
   mode-independent quadrature weight`
+- [x] **Intentado y revertido: paralelizar `grav_force.f90` (rama
+  `Isochrone` + término centrífugo) con `!$OMP PARALLEL DO`.**
+  Convertida la sintaxis de arreglos completos a loops explícitos con
+  `!$OMP`, mismo patrón que ya usa la rama `sphere` en el mismo
+  archivo. **Empeoró el rendimiento en vez de mejorarlo**: medido en
+  aislamiento (`autointeraction=.false.`, `Isochrone`, 50000 pasos,
+  ~10072 partículas, `spatial_output` grande para que
+  `density`/`analysish`/`save_data` casi no se llamen), 8.5s → 26.2s
+  (**~3× más lento**), con el tiempo de usuario saltando de ~9s a
+  2m39s. Causa: `grav_force()` se llama 2 veces por paso de leapfrog
+  (kick-drift-kick) — 100000 llamadas en 50000 pasos, cada una con
+  al menos 2 regiones paralelas nuevas (rama `Isochrone` + término
+  centrífugo) — y el trabajo real por partícula es mínimo (un puñado
+  de `sqrt`/divisiones). El overhead de crear y sincronizar equipos
+  de hilos de OpenMP decenas de miles de veces domina por completo
+  sobre el trabajo que se paraleliza. Revertido por completo
+  (`git checkout -- src/grav_force.f90`); no vale la pena perseguir
+  esta variante de la idea — a diferencia de `analysish()` (que se
+  llama solo cada `spatial_output` pasos, con mucho trabajo por
+  llamada), `grav_force()` se ejecuta demasiado seguido con
+  demasiado poco trabajo por llamada para que valga la pena
+  paralelizarlo así.
 
 ## No aplica / ya está bien en este repo
 
