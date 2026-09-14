@@ -136,23 +136,30 @@ arriba. Ninguno existe en `VlasovPoisson_PIC_sp` (arquitectura y/o
 formato de parámetros distintos), así que no hay nada que "portar" —
 son bugs propios de este repo.
 
-- [ ] **`analysish.f90` `hk1`/`hk2`: falta el factor $8\pi^2 L_0$
+- [x] **`analysish.f90` `hk1`/`hk2`: falta el factor $8\pi^2 L_0$
   de la Ec. 44 del paper.** Confirmado con datos reales (no ya
   hipótesis): en el respaldo externo
   (`.../paper/l=2.0/m=0.0001_c=0.01/Untitled.ipynb`) el propio autor
   grafica `8.0*np.pi**2*2*hk[0]` directo desde `hk1.tl` — es decir,
   aplicaba el factor $8\pi^2 L_0$ ($L_0=2$) a mano en post-proceso
-  porque el Fortran no lo hace. `VlasovPoisson_PIC_sp` ya tiene este
-  fix integrado en su `analysish.f90` (generalizado con `l_part`);
-  acá falta portarlo a la versión `Lfix` escalar. Ver
+  porque el Fortran no lo hace. Verificado además que la reducción de
+  la Ec. 44 vía $\mathcal F=\mathcal F_0(r,p_r)\delta(L-L_0)$ da
+  exactamente $8\pi^2L_0\int\mathcal F_0\hat\Phi_k^*e^{-ikQ^3}\,dr\,dp_r$,
+  y que el resto del bucle (`Qr`/`Jr` a $L_0$ fijo, `phik`, el peso
+  `drc·dpc`) ya calculaba correctamente esa integral doble — solo
+  faltaba el prefactor. Agregado `hk1 = 8π²·Lfix·hk1` (e igual para
+  `hk2`) al final de cada bucle en `analysish.f90`. Probado: con
+  `state="aa"`, $L_0=2$, el $h_0(t=0)$ resultante
+  ($1.5076\times10^{-8}$) es exactamente el valor crudo anterior
+  ($9.547\times10^{-11}$) × $8\pi^2\times2$. `VlasovPoisson_PIC_sp`
+  ya tenía este fix (generalizado con `l_part`); acá se portó a la
+  versión `Lfix` escalar. Ver
   `VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/h0_normalization_check.md`
-  §§9-10 para la derivación y la confirmación numérica completa
+  §§9-10 para la derivación completa y la confirmación numérica
   (acuerdo al 0.01% con el valor "Analytical" de la Tabla 1 una vez
   aplicado el factor, más un factor de masa efectiva ×100 — ver
-  ítem separado más abajo). Dejado pendiente a pedido del usuario;
-  la prioridad actual es resolver primero el problema de mezcla
-  incompleta en $h_k$ ($k>0$, ítem de abajo) antes de tocar la
-  normalización.
+  ítem separado más abajo, todavía sin resolver). — commit
+  `fix(analysish): add the missing 8*pi^2*L0 factor to hk1/hk2`
 - [ ] **$h_k$ ($k>0$) no decae como en la Tabla 2 del paper — ni en
   mis corridas de reconstrucción ni en los datos originales
   archivados.** Usando los datos reales de

@@ -74,6 +74,16 @@
 
     end do
     !!$OMP END PARALLEL DO
+
+! Ec. 44 del paper, reducida via F(r,pr,L) = F0(r,pr)*delta(L-L0), trae un
+! factor global 8*pi^2*L0 que el bucle de arriba no incluye (solo calcula
+! la integral doble en (r,pr) a L0 fijo). Sin este factor, hk1/hk2 son
+! proporcionales al h_k fisico real, no iguales -- confirmado comparando
+! contra los datos originales del articulo (ver
+! VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/h0_normalization_check.md
+! SS9-10): con el factor aplicado, h_0 coincide al 0.01% con el valor
+! "Analytical" publicado.
+    hk1 = 8.0d0*smallpi**2*Lfix*hk1
     abs_hk1 = abs(hk1)
 
     do i = 0,mode
@@ -92,6 +102,9 @@
 
     end do
     !!$OMP END PARALLEL DO
+
+! Same 8*pi^2*L0 factor as hk1 above, same reason.
+    hk2 = 8.0d0*smallpi**2*Lfix*hk2
     abs_hk2 = abs(hk2)
 
 
