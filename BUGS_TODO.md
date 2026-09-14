@@ -136,6 +136,52 @@ arriba. Ninguno existe en `VlasovPoisson_PIC_sp` (arquitectura y/o
 formato de parámetros distintos), así que no hay nada que "portar" —
 son bugs propios de este repo.
 
+- [ ] **`analysish.f90` `hk1`/`hk2`: falta el factor $8\pi^2 L_0$
+  de la Ec. 44 del paper.** Confirmado con datos reales (no ya
+  hipótesis): en el respaldo externo
+  (`.../paper/l=2.0/m=0.0001_c=0.01/Untitled.ipynb`) el propio autor
+  grafica `8.0*np.pi**2*2*hk[0]` directo desde `hk1.tl` — es decir,
+  aplicaba el factor $8\pi^2 L_0$ ($L_0=2$) a mano en post-proceso
+  porque el Fortran no lo hace. `VlasovPoisson_PIC_sp` ya tiene este
+  fix integrado en su `analysish.f90` (generalizado con `l_part`);
+  acá falta portarlo a la versión `Lfix` escalar. Ver
+  `VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/h0_normalization_check.md`
+  §§9-10 para la derivación y la confirmación numérica completa
+  (acuerdo al 0.01% con el valor "Analytical" de la Tabla 1 una vez
+  aplicado el factor, más un factor de masa efectiva ×100 — ver
+  ítem separado más abajo). Dejado pendiente a pedido del usuario;
+  la prioridad actual es resolver primero el problema de mezcla
+  incompleta en $h_k$ ($k>0$, ítem de abajo) antes de tocar la
+  normalización.
+- [ ] **$h_k$ ($k>0$) no decae como en la Tabla 2 del paper — ni en
+  mis corridas de reconstrucción ni en los datos originales
+  archivados.** Usando los datos reales de
+  `.../paper/l=2.0/m=0.0001_c=0.01/vlasov_fdist.2D` (1601 snapshots,
+  20112 partículas, la corrida que muy probablemente produjo la
+  Fig. 4 del paper), los modos $h_k$ con $k>0$ en $t\in[8000,10000]$
+  quedan en $\log_{10}h_k\approx-9.2$ a $-9.8$, contra $-11.3$ a
+  $-11.6$ publicado en la Tabla 2 para $N_c\sim10^4$ — 2 órdenes de
+  magnitud menos mezclados de lo esperado, y esto es en los datos
+  *originales*, no en una reconstrucción con parámetros adivinados.
+  Candidato más probable: el artefacto de "recurrencia" por colocar
+  cada partícula computacional exactamente en el centro de su celda
+  $(r,p)$ — un reticulado casi regular en $J_3$ hace que la mezcla en
+  $Q_3$ se revierta coherentemente antes de alcanzar el piso de ruido
+  esperado. `VlasovPoisson_PIC_sp` tiene un experimento en curso
+  (jitter sub-celda tipo Weyl/Kronecker en `initial_data.f90`, sin
+  commitear/validar todavía) apuntado a este mismo problema. **Foco
+  actual de trabajo**: investigar/resolver esto para el caso
+  $L$ fijo específicamente (este repo), antes de decidir la cuestión
+  de normalización/masa de arriba.
+- [ ] **Valor de masa efectiva de la Tabla 1/Fig. 4: 0.01, no 0.0001
+  como dice el texto.** Confirmado con los datos reales archivados
+  (ver nota §10 arriba): con $a_0=0.0001$ (el valor del texto) y el
+  factor $8\pi^2 L_0$ aplicado, $h_0$ da $1.5068\times10^{-8}$; con
+  $a_0=0.01$ da $1.5068\times10^{-6}$, que coincide al 0.01% con el
+  valor "Analytical" publicado ($1.507\times10^{-6}$). Decisión
+  editorial pendiente (no técnica): corregir el texto del artículo o
+  re-correr las Tablas 1-2 con $a_0=0.0001$ real.
+
 - [ ] **`input_parameters`: desincronizado con `read_initial_param`
   (`utils.f90`), le faltan 6 campos.** `read_initial_param` lee, en
   orden, ... `state`, `j1`, `j2`, `sj1`, `sj2`, `sq1`, `sq2`,
