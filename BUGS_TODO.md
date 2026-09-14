@@ -48,9 +48,18 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   (`autointeraction` `.true.`/`.false.`): terminan limpio con "Memory
   deallocated". — commit `fix(memory): repair deallocate_mem and
   actually call it`
-- [ ] **`utils.f90` `set_timestep`: `dt = dtr` anulaba
+- [x] **`utils.f90` `set_timestep`: `dt = dtr` anulaba
   `min(dtr,dtp)`.** Misma línea suelta después del `if/else` que
-  pisaba el resultado incondicionalmente.
+  pisaba el resultado incondicionalmente. Portado junto con el mismo
+  paquete de mejoras del otro repo: criterio de aceleración
+  `dtp=courant*sqrt(2*drc/Fmax)` (menos restrictivo que
+  `courant*dpc/Fmax`), guarda contra `Fmax=0`, y la condición de
+  entrada `BGtype/="null" .or. autointeraction` (antes solo
+  `BGtype/="null"`, por lo que con fondo nulo y autogravedad `Fmax`
+  nunca se recalculaba). Probado con `gaussian1`, ambas
+  configuraciones de `autointeraction`. — commit `fix(timestep):
+  restore force-based dt bound with a less restrictive, physically
+  motivated criterion`
 - [ ] **`utils.f90` `save_data`: `save1Ddata` recibe arreglos con
   ghost cells directo** (`r`, `rho`, `avg_rho`, `curr`, `force`,
   `pot`, todos `(1-ghost:Nr)`) en vez de recortarlos a `(1:Nr)` antes
