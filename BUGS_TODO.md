@@ -167,6 +167,31 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   llamada), `grav_force()` se ejecuta demasiado seguido con
   demasiado poco trabajo por llamada para que valga la pena
   paralelizarlo así.
+- [x] **Output en ASCII de texto plano, pesado y lento de escribir**
+  (`vlasov_fdist.2D` — el hallazgo que motivó esta ronda de mejoras:
+  una corrida N≈10⁴ con `spatial_output=100` llegó a 110 MB con solo
+  5.5% de progreso, 100% CPU en formateo `ES16.8`, ~5h proyectadas).
+  Portado el módulo `hdf5_io.f90` de `VlasovPoisson_PIC_sp`
+  (adaptado: sin `l_part`, el dataset de partículas es `f` directo en
+  vez de `l_part*f`), agregado el parámetro `output_format`
+  (`ascii`/`hdf5`, nuevo campo al final de `input_parameters` —
+  extiende la lista ya incompleta, ver el bug de campos faltantes de
+  arriba) y el linking de HDF5 al `Makefile` (mismos flags/paths que
+  el otro repo, ya verificados en esta máquina:
+  `h5fc`/`libhdf5-dev` disponibles). Un archivo `.h5` por corrida, un
+  grupo por snapshot, comprimido con gzip.
+  Validado: estructura del `.h5` correcta (`h5dump -H`, grupo
+  `/grid/r`, grupos `/step_<l>` con los atributos/datasets
+  esperados, `force`/`potential` solo si `autointeraction`), y
+  valores numéricos verificados idénticos a la salida ASCII
+  (`avg_rho` en varios puntos de la malla, comparado con `h5dump -d`
+  contra `vlasov_avg_density.rl` de la misma corrida). Benchmark
+  (~10072 partículas, 2000 pasos, `spatial_output=100`): **7.0s →
+  4.1s (~42% más rápido), 11 MB → 4.3 MB (~61% más chico)** —
+  consistente con el 34%/62% visto en `VlasovPoisson_PIC_sp`. `hk1.tl`,
+  `hk2.tl` y `vlasov_rhomix.tl` se quedan en ASCII (fuera de alcance,
+  chicos), igual que en el otro repo. — commit `feat(io): add optional
+  HDF5 output, selected via output_format parameter`
 
 ## No aplica / ya está bien en este repo
 
