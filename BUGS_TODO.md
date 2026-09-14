@@ -69,15 +69,20 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   después arranca en `r=dr/2` (primer punto físico), como debe ser.
   — commit `fix(io): correct index shift when saving ghost-augmented
   grid arrays`
-- [ ] **`utils.f90` `reduce_arrays`: operadores de comparación
+- [x] **`utils.f90` `reduce_arrays`: operadores de comparación
   inconsistentes** (`r_part(i)<=rmax` en el conteo vs
-  `r_aux(i)<rmax` en la copia).
-- [ ] **`functions.f90` `Sn`/`Wn`: no rechazan `n<1`** (`else if
-  (n>4)`/`else if (n>3)`, sin `else` genérico) — mismo bug.
-- [ ] **`utils.f90` `alloc_mem_set0`: `r` siempre se allocatea como
+  `r_aux(i)<rmax` en la copia). — commit `fix(reduce_arrays): use
+  consistent <=rmax in count and copy loops`
+- [x] **`functions.f90` `Sn`/`Wn`: no rechazan `n<1`** (`else if
+  (n>4)`/`else if (n>3)`, sin `else` genérico) — mismo bug. — commit
+  `fix(functions): Sn/Wn now reject any invalid order, not just
+  n>4/n>3`
+- [x] **`utils.f90` `alloc_mem_set0`: `r` siempre se allocatea como
   `(1-ghost:Nr)`,** pero `construct_grid` llena `r(0)` cuando
   `rmin>0` (donde `ghost=0`, o sea el rango allocateado es `(1:Nr)`)
-  — mismo out-of-bounds write a `r(0)`.
+  — mismo out-of-bounds write a `r(0)`. Probado con `rmin=1.0`:
+  corre limpio, termina con "Memory deallocated". — commit
+  `fix(grid): allocate r(0:Nr) for rmin>0, not r(1:Nr)`
 
 ## Mejoras de rendimiento a portar
 
