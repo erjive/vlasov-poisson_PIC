@@ -60,11 +60,15 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
   configuraciones de `autointeraction`. — commit `fix(timestep):
   restore force-based dt bound with a less restrictive, physically
   motivated criterion`
-- [ ] **`utils.f90` `save_data`: `save1Ddata` recibe arreglos con
+- [x] **`utils.f90` `save_data`: `save1Ddata` recibe arreglos con
   ghost cells directo** (`r`, `rho`, `avg_rho`, `curr`, `force`,
   `pot`, todos `(1-ghost:Nr)`) en vez de recortarlos a `(1:Nr)` antes
   de pasarlos al dummy explícito `(1:Nr)` — mismo corrimiento de
-  índice por asociación de secuencia.
+  índice por asociación de secuencia. Verificado el `.rl` de salida
+  antes/después: antes arrancaba en `r` negativo (punto fantasma);
+  después arranca en `r=dr/2` (primer punto físico), como debe ser.
+  — commit `fix(io): correct index shift when saving ghost-augmented
+  grid arrays`
 - [ ] **`utils.f90` `reduce_arrays`: operadores de comparación
   inconsistentes** (`r_part(i)<=rmax` en el conteo vs
   `r_aux(i)<rmax` en la copia).
