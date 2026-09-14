@@ -29,12 +29,18 @@ repo antes de portar cada fix (no asumido por analogía). Un commit por
 
 ## Pendientes de portar (confirmados presentes en este repo)
 
-- [ ] **`density.f90`/`poisson_rk.f90`: `collapse(2)` sin protección
+- [x] **`density.f90`/`poisson_rk.f90`: `collapse(2)` sin protección
   (condición de carrera OpenMP).** Confirmado en el loop combinado
   `rho`/`curr`/`avg_rho` de `density()` y en el loop de interpolación
-  `pot_part`/`force_part` de `poisson_rk()`. Nota: `avg_density()` (la
-  subrutina separada) ya tiene un parche con `!$OMP ATOMIC` — correcto
-  pero subóptimo; se reemplaza junto con el cell-list de abajo.
+  `pot_part`/`force_part` de `poisson_rk()`. Arreglado paralelizando
+  solo en el índice externo (mismo patrón que ya usa correctamente
+  `avg_density()`, que además ya tenía un parche con `!$OMP ATOMIC`
+  para el mismo problema — correcto pero subóptimo, sigue como está
+  por ahora; se puede alinear al mismo patrón junto con el cell-list
+  de abajo). Verificado: `density`/`avg_density`/`force`/`potential`/
+  `energy` dan salida idéntica byte a byte entre 1 y 8 hilos
+  (autogravitante, `spatial_output=5`). — commit `fix(openmp): remove
+  collapse(2) data race in density() and poisson_rk()`
 - [x] **`utils.f90` `deallocate_mem`: código muerto y roto.** Mismos
   bugs que en el otro repo: `deallocate(p_part_hp)` — typo por
   `p_part_h` (`p_part_hp` nunca se allocatea); `deallocate(res)` bajo
