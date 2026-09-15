@@ -731,6 +731,51 @@ independiente de la corrida real.
   omega(J) spectrum directly, explaining the smooth h_k(t) via a beat
   timescale T2 >> simulated t`
 
+## Piso de $h_k$ con `aa_quad`: NO es el muestreo, NO es el integrador -- mecanismo aun sin identificar
+
+`aa_quad` (rejilla de cuadratura limpia en $(Q_3,J_3)$, $N_Q{=}40\times N_J{=}800$)
+reproduce $h_0..h_4$ exactos **a 8 cifras** en $t=0$ y baja el piso tardio a
+$\sim5\times10^{-12}$, **30x** por debajo de Monte Carlo puro ($1.5\times10^{-10}$).
+Pero no alcanza el $\sim5.6\times10^{-16}$ que la *misma* rejilla logra offline
+con streaming exacto $Q(t)=Q_0+\omega(J)t$. Tres mediciones acotan el culpable:
+
+- **No es el muestreo ni el layout.** El baseline `aa` (rejilla en $(r,p_r)$,
+  distribucion de particulas completamente distinta) cae en el **mismo** piso:
+  4.992e-12 vs 5.008e-12, 0.3% de diferencia, y plano en el tiempo.
+- **No es la cuadratura de la colocacion.** Esa misma rejilla, evaluada offline
+  con streaming analitico, da 5.6e-16.
+- **No es el integrador temporal.** Corriendo con `courant` 0.5 vs 0.125
+  ($\Delta t/4$), el piso es identico a 4-5 cifras:
+
+  | $t$ | courant=0.5 | courant=0.125 | razon |
+  |---|---|---|---|
+  | 1500 | 9.6884e-12 | 9.6884e-12 | 1.00 |
+  | 2000 | 4.1095e-12 | 4.1104e-12 | 1.00 |
+  | 3000 | 4.8827e-12 | 4.8836e-12 | 1.00 |
+
+  Error de fase del leapfrog seria $O(\Delta t^2)$: habria bajado ~16x. No se movio.
+
+Por descarte, el piso se origina en la evaluacion por snapshot dentro de
+`analysish.f90` (la reconstruccion de $(Q,J)$ desde $(r,p)$, o la cuadratura
+de Simpson de $\hat\Phi_k$). **El mecanismo concreto no esta identificado.**
+Dos hipotesis revisadas y descartadas por analisis estatico:
+
+- *Cancelacion catastrofica en* `argaux = (s1+s2-2s)/(s2-s1)`: para una
+  particula tipica ($E\approx-0.078$, $L_0=2$) sale $s_1\approx5.5$,
+  $s_2\approx9.3$, $s_2-s_1\approx3.8$ -- bien condicionado. Solo degenera
+  para particulas a $\lesssim10^{-8}$ de sus puntos de retorno, fraccion
+  despreciable.
+- *Error de la cuadratura de Simpson de* $\hat\Phi_k$ (nquad=512): su error
+  relativo es una **constante** independiente de $J$ (la dependencia en $J$
+  es un prefactor exacto), asi que solo reescala $h_k$ -- decae con la senal,
+  no produce piso.
+
+**Siguiente paso propuesto (sin correr simulaciones):** tomar el snapshot
+$(r_p,p_p)$ ya guardado en HDF5 y recomputar $h_1$ offline por dos rutas --
+la cadena de formulas de `analysish` en doble precision vs. una ruta de mayor
+precision (mpmath) o el angulo analitico $Q_0+\omega t$ conocido de la rejilla
+inicial. La diferencia aisla el mecanismo en minutos.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
