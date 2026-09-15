@@ -901,6 +901,45 @@ para los modos altos; para $k{=}4$ conviene $N_J\approx1600$. Y al reves:
 con $N=10^3$ ($N_J{=}40$) el esquema de cuadratura solo sirve hasta
 $t\sim1500$ para $k{=}1$ -- no por ruido, sino por aliasing.
 
+## Corrida de produccion a $t=10^4$ con `eps=0`: que limita cada modo
+
+`aa_quad` ($N_Q{=}40\times N_J{=}800$, $\epsilon=0$, courant=0.25) hasta
+$t=10^4$, contra el exacto:
+
+| $t$ | $h_1$ exacto | $h_1$ PIC | err.rel | antes ($\epsilon{=}0.1$) |
+|---|---|---|---|---|
+| 2000 | 2.138e-12 | 2.138e-12 | **6.3e-05** | 9.2e-01 |
+| 4000 | 5.725e-14 | 5.701e-14 | **4.2e-03** | 8.7e+01 |
+| 6000 | 7.340e-15 | 7.529e-15 | **2.6e-02** | 6.8e+02 |
+| 10000 | 5.631e-16 | 4.613e-16 | **1.8e-01** | 8.9e+03 |
+
+(el 18% a $t=10^4$ calza con los ~23% predichos desde el test de Courant).
+
+**Por modo a $t=10^4$** -- y aca hay que corregir una atribucion previa:
+
+| modo | exacto | PIC | err.rel | $n_{osc}$ vs $N_J/2$ |
+|---|---|---|---|---|
+| $k$=1 | 5.631e-16 | 4.613e-16 | 1.8e-01 | 55 vs 400 |
+| $k$=2 | 1.648e-17 | 1.866e-17 | 1.3e-01 | 110 vs 400 |
+| $k$=3 | 1.971e-18 | 1.969e-16 | 99x | 165 vs 400 |
+| $k$=4 | 4.303e-19 | 2.782e-16 | 650x | 220 vs 400 |
+
+En la seccion anterior se atribuyo el problema de los modos altos a
+Nyquist ("$N_J{=}800$ esta al limite para $k{=}4$"). **Eso era
+incorrecto**: $k{=}3,4$ cumplen Nyquist con holgura (165 y 220 contra
+$N_J/2=400$) y aun asi fallan. Discriminado con los datos de Courant ya
+existentes a $t=3000$, mismo $N_J$: el error absoluto de los modos altos
+escala como $\Delta t^2$ (razones 16.1x, 16.1x, 13.2x, 11.2x para
+$k=1..4$), o sea **es el leapfrog, no aliasing**.
+
+Cuadro correcto: el error de fase del leapfrog impone un **piso
+absoluto** que crece con $t$ y varia algo por modo; a $t=10^4$ con
+courant=0.25 vale $\sim2$-$3\times10^{-16}$. Como $h_3^{exacto}=2\times10^{-18}$
+y $h_4^{exacto}=4\times10^{-19}$ estan por debajo de ese piso, esos modos
+son irresolubles en esa corrida -- no por falta de particulas sino por
+$\Delta t$. Para resolverlos haria falta courant mas chico (el piso baja
+como $\Delta t^2$) o un integrador de orden mayor.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
