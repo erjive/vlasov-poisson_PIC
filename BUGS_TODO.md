@@ -860,6 +860,47 @@ la cadena de formulas de `analysish` en doble precision vs. una ruta de mayor
 precision (mpmath) o el angulo analitico $Q_0+\omega t$ conocido de la rejilla
 inicial. La diferencia aisla el mecanismo en minutos.
 
+## Con `eps=0`, el limite pasa a ser el leapfrog: $O(\Delta t^2)$ confirmado
+
+Antes del fix de `eps`, el test de Courant era decisivamente negativo
+(piso identico a $\Delta t/4$), justamente porque $\epsilon$ dominaba y es
+independiente de $\Delta t$. Repetido con $\epsilon=0$ (`aa_quad`,
+$N_J{=}800$), el resultado se invierte: error **absoluto** contra el exacto,
+
+| $t$ | c=0.5 | c=0.125 | razon |
+|---|---|---|---|
+| 1500 | 4.21e-16 | 2.51e-17 | 16.8x |
+| 2000 | 5.36e-16 | 3.33e-17 | 16.1x |
+| 2500 | 9.57e-16 | 5.99e-17 | 16.0x |
+| 3000 | 4.82e-16 | 3.00e-17 | 16.1x |
+
+$\Delta t/4 \Rightarrow$ error$/16$: exactamente $O(\Delta t^2)$, en cuatro
+tiempos independientes. Esto **descarta** la hipotesis alternativa de que
+ya estuvieramos midiendo el piso de la propia curva de referencia -- la
+referencia es buena al menos hasta 3e-17. El limite ahora es el error de
+fase del leapfrog.
+
+**Consecuencia practica para las producciones**: a $t=10^4$ el valor
+exacto de $h_1$ es $5.6\times10^{-16}$, asi que
+
+| Courant | err. absoluto | err. relativo a $t=10^4$ | costo |
+|---|---|---|---|
+| 0.5 | ~5e-16 | ~100% (no resuelve) | 1x |
+| 0.25 | ~1.3e-16 | ~23% | 2x |
+| 0.125 | ~3e-17 | ~5% | 4x |
+
+Con el courant=0.5 usado en toda la sesion **no se puede llegar a
+$t=10^4$**: el error igualaria la senal. Las re-corridas usan 0.25 como
+compromiso.
+
+**Nota sobre $N_J$ y Nyquist**: $n_{osc}(t)=k\,\Delta\omega\,t/2\pi
+\approx k\cdot5.5\times10^{-3}t$, y hace falta $N_J\gtrsim2n_{osc}$. A
+$t=10^4$: $k{=}1$ necesita $N_J\gtrsim110$ (holgado con 800), pero
+$k{=}4$ necesita $N_J\gtrsim440$ -- o sea $N_J{=}800$ esta **al limite**
+para los modos altos; para $k{=}4$ conviene $N_J\approx1600$. Y al reves:
+con $N=10^3$ ($N_J{=}40$) el esquema de cuadratura solo sirve hasta
+$t\sim1500$ para $k{=}1$ -- no por ruido, sino por aliasing.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
