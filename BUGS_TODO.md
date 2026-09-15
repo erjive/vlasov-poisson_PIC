@@ -290,6 +290,51 @@ tipo (4 núcleos físicos); en una máquina con más núcleos reales el
 override es directo. — commit `build: add "make run" defaulting to
 OMP_NUM_THREADS=4, document the 8-thread regression`
 
+## Decaimiento de $h_k$: primer intento (jitter Weyl/Kronecker) — no funcionó
+
+Herramienta nueva: `paper_runs/notebooks/hk_exact.ipynb`, calcula
+$h_k(t)$ exacto (semi-analítico, sin partículas) para el test de la
+Tabla 1 y lo compara contra corridas PIC reales. Con eso medimos por
+primera vez, con números y no solo intuición, qué tan lejos está la
+simulación del decaimiento verdadero:
+
+- [x] **Convergencia con $N_c$ (sin jitter)**: corridas reales
+  $N_c\sim10^3$ y $N_c\sim10^4$ (mismos parámetros de la Tabla 1)
+  contra la curva exacta. $h_0$ ya converge sin depender de $N_c$.
+  Para $h_k$ ($k>0$) el patrón es "sigue a la curva exacta un tramo,
+  se estabiliza en un piso, y **vuelve a subir** ('repunte')" — y ese
+  repunte se corre más tarde con más partículas ($N_c\sim10^3$:
+  repunta ~t=2500-3000; $N_c\sim10^4$: ~t=5000-7000), la firma
+  clásica de recurrencia por rejilla (Birdsall & Langdon), ahora
+  vista directamente en vez de solo sospechada. Ver
+  `hk_convergence.png`.
+
+- [ ] **Intentado y no mejora: jitter sub-celda (Weyl/Kronecker,
+  razón áurea/$\sqrt2-1$) en el estado `"aa"`.** Implementado en
+  `vlasov-poisson_PIC/src/initial_data.f90` (mismo offset que el
+  experimento uncommitted equivalente en `VlasovPoisson_PIC_sp`) y
+  medido con el mismo par de corridas $N_c\sim10^3/10^4$. **Resultado
+  mixto y, para $N_c\sim10^4$, claramente peor**: durante un tramo
+  largo ($t\sim1500$-$5000$) $h_1$-$h_4$ con jitter quedan casi un
+  orden de magnitud *por arriba* de la versión sin jitter, con un
+  patrón de "muescas" periódicas — el offset determinístico de Weyl
+  parece introducir su propia estructura correlacionada con la
+  rejilla $(i,j)$ en vez de romperla limpiamente. Para $N_c\sim10^3$
+  el resultado es más parejo (mejor en $h_1$/$h_2$, peor en $h_3$),
+  tampoco una mejora clara. Revertido
+  (`git checkout -- src/initial_data.f90`, nunca comiteado). Ver
+  `hk_jitter_N~1e3.png`, `hk_jitter_N~1e4.png` y la Sec. 7 del
+  notebook para el detalle completo.
+
+  **Candidatos para probar después** (no evaluados todavía): una
+  secuencia de baja discrepancia genuinamente 2D (Halton/Sobol en
+  lugar de dos secuencias de Weyl 1D independientes en $r$ y $p$, que
+  quedan acopladas a través del mismo índice `indx`), o jitter con
+  amplitud distinta a "una celda completa", o perturbar directamente
+  en $(Q_3,J_3)$ en vez de en $(r,p_r)$ (la regularidad problemática
+  es la de $J_3$, no la de $r$ — perturbar $r,p_r$ solo la rompe de
+  forma indirecta, a través del mapeo no lineal).
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
