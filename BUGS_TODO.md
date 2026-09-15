@@ -1003,6 +1003,46 @@ exactos, y a $t=10$ `yoshida4` y `analytic` coinciden **a las 9 cifras
 impresas** -- como debe ser cuando el error de Yoshida es despreciable.
 Benchmarks de convergencia y costo, pendientes.
 
+## Benchmark de `yoshida4`: domina al leapfrog en los dos ejes
+
+Barrido con `aa_quad` ($N_Q{=}40\times N_J{=}800$, $\epsilon=0$, $t=3000$),
+mismo $\Delta t$ para ambos integradores. Error absoluto en $h_1$ contra
+el exacto ($2.506924\times10^{-13}$):
+
+| Integrador | courant | $\Delta t$ | error abs | razon al duplicar $\Delta t$ |
+|---|---|---|---|---|
+| leapfrog | 1.0 | 0.050 | 1.946e-15 | -- |
+| leapfrog | 2.0 | 0.100 | 8.033e-15 | 4.13x |
+| leapfrog | 4.0 | 0.200 | 3.568e-14 | 4.44x |
+| yoshida4 | 1.0 | 0.050 | **1.150e-19** | -- |
+| yoshida4 | 2.0 | 0.100 | 1.436e-18 | 12.5x |
+| yoshida4 | 4.0 | 0.200 | 2.255e-17 | 15.7x |
+
+**Orden efectivo medido**: leapfrog $p=2.05$ y $2.15$; yoshida4 $p=3.64$
+y $3.97$. Segundo y cuarto orden confirmados.
+
+Al **mismo** $\Delta t$, yoshida4 es ~17000x mas preciso. Y la comparacion
+practica, con tiempos re-medidos **limpios** (sin nada mas corriendo):
+
+| | $\Delta t$ | tiempo | error abs |
+|---|---|---|---|
+| leapfrog | 0.05 | 333.2 s | 1.946e-15 |
+| yoshida4 | 0.20 | **106.2 s** | **2.255e-17** |
+
+**3.1x mas rapido y 86x mas preciso** -- dominacion estricta, sin
+compromiso. La razon: el multiplicador de 3x evaluaciones de fuerza de
+Yoshida cae sobre una fraccion chica del costo total, porque **`analysish`
+domina** (se llama cada `spatial_output` pasos y cada llamada cuesta
+$O(N_{part}\times n_{quad}\times n_{modos})$). Al mismo $\Delta t$ yoshida4
+solo costo 1.1-1.24x mas que leapfrog, no 3x.
+
+**Recomendacion**: usar `yoshida4` por defecto para este tipo de corrida.
+Nota: con `autointeraction=.true.` el balance cambia -- ahi las 3
+evaluaciones son 3 resolvedores de Poisson por paso, y ese camino si
+domina; habria que re-medir en ese regimen antes de generalizar.
+
+Grafica: `paper_runs/notebooks/bench_yoshida.png`.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
