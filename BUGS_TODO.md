@@ -690,6 +690,47 @@ independiente de la corrida real.
   aa_random to t=20000, show the measured floor does not rise toward
   the theoretical prediction`
 
+- [x] **Medido el espectro $\{\omega(J_p)\}$ directamente — explica
+  por completo por qué la curva sigue lisa.** En vez de seguir
+  estirando el tiempo a ciegas, se usaron las $N=10^4$ partículas
+  *reales* de `articleN1e4_rand2x` (posiciones en $t=0$, del snapshot
+  HDF5 que guardó `field_output`) para calcular $\omega(J_p)$ de cada
+  una y medir dos escalas de tiempo distintas:
+  - $T_1\sim2\pi/\sigma_\omega$ (dispersión global de
+    $\{\omega(J_p)\}$): la escala en que decae la señal física
+    coherente. Medido: $T_1\approx1.8\times10^3$ — coincide con que la
+    señal ya decae bien antes de $t=10^4$, consistente con todo lo
+    visto hasta ahora.
+  - $T_2\sim2\pi/\langle\Delta\omega_{vecino}\rangle$ (espaciamiento
+    típico entre frecuencias de partículas *vecinas*, ordenadas): la
+    escala en la que el carácter discreto de tener "solo" $N$
+    frecuencias distintas (no un continuo) debería empezar a notarse
+    como grano/ruido. Medido: $T_2\approx3$-$7\times10^6$ — **más de
+    150 veces mayor que los $t=2\times10^4$ ya simulados**
+    ($t_{simulado}/T_2\approx0.007$).
+
+  Esto responde la pregunta abierta de la sección anterior: la curva
+  sigue lisa simplemente porque **ni de cerca** se llegó a la escala
+  de tiempo donde el grano de tener $10^4$ frecuencias distintas
+  debería manifestarse — no es que el supuesto de fondo esté mal, es
+  que $T_2$ es astronómicamente más grande que cualquier tiempo de
+  simulación práctico para este $N$. Además $T_2$ escala
+  aproximadamente con $N$ (una estimación simple
+  $T_2\sim2\pi N/\sigma_\omega\approx1.8\times10^7$ da el mismo orden
+  que el valor medido directamente) — confirma por qué subir $N_c$
+  nunca mostró señales de "grano" en las secciones anteriores: va en
+  la dirección que hace $T_2$ **más grande todavía**, nunca menor.
+
+  Llegar a $t\sim T_2$ por fuerza bruta (~100-300× más tiempo de
+  simulación) no es práctico. Si se quisiera verificar esta predicción
+  directamente, tendría más sentido *bajar* $N$ deliberadamente (para
+  bajar $T_2$ a un rango simulable) y ver si ahí sí aparece el
+  comportamiento "ruidoso" esperado — no probado en esta sesión.
+  Detalle completo, con histogramas del espectro y del espaciamiento,
+  en la Sec. 12 de `hk_exact.ipynb`. — commit `docs: measure the
+  omega(J) spectrum directly, explaining the smooth h_k(t) via a beat
+  timescale T2 >> simulated t`
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
