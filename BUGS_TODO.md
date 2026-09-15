@@ -649,6 +649,47 @@ independiente de la corrida real.
   commit `docs: derive and cross-validate the aa_random noise-floor
   prediction, document the unexplained gap against measured data`
 
+- [x] **Prueba directa: ¿sube el piso al doblar el tiempo de la
+  corrida? No.** Se corrió `aa_random` a $N_c\sim10^4$ hasta
+  $t=20000$ (el doble de antes), usando el nuevo `field_output` para
+  guardar el volumen pesado (`r_part`/`p_part`/`f`) 100x más espaciado
+  (18MB en vez de ~1.3GB) sin perder resolución en `hk1.tl` (sigue
+  cada 100 pasos). Resultado: la media por ventana de 2000 unidades de
+  tiempo de $h_1$ ronda 1.2e-10 a 1.8e-10 en las 6 ventanas cubiertas
+  — **sin tendencia sistemática**, ni rastro de acercarse al piso
+  teórico (~2.2e-8, casi dos órdenes de magnitud arriba). La curva
+  sigue igual de lisa que antes (~0.5% de cambio entre muestras
+  consecutivas en toda la ventana $t\in[8000,20000]$, prácticamente
+  igual al 0.67% medido con la mitad del tiempo) — ninguna señal de
+  volverse "ruido blanco erizado" al acercarse al régimen que asume la
+  fórmula de la Sec. 10.
+
+  **Lectura**: duplicar el tiempo no acercó nada la curva medida a la
+  predicción estadística. Dado que tampoco cambió cualitativamente
+  (sigue lisa, sigue en la misma banda de amplitud), la lectura más
+  probable ya no es "todavía no llegó, hay que esperar más" sino que
+  el supuesto de fondo — que con tiempo suficiente las fases de
+  partículas con $J$ en un rango angosto $\Delta J\sim\sigma_J$
+  terminan pareciendo completamente al azar — **simplemente no aplica
+  bien acá**: con $N_c\sim10^4$ partículas concentradas en un rango
+  angosto de $J$, el conjunto discreto de frecuencias $\{\omega(J_p)\}$
+  nunca se ve "suficientemente denso y genérico" para que la suma se
+  comporte como ruido blanco genuino — en cambio oscila de forma lisa
+  y acotada, más parecido a un batido (*beat pattern*) de pocas
+  frecuencias dominantes que a ruido estadístico de muchos grados de
+  libertad independientes.
+
+  Punto a favor, de todos modos: el piso no crece con el tiempo — la
+  simulación es estable, no acumula ruido, se queda oscilando en la
+  misma banda ($\sim10^{-10}$) tanto a $t=10000$ como a $t=20000$.
+  Sigue pendiente, si se quiere cerrar la pregunta del todo, correr a
+  un $t$ sustancialmente mayor o medir directamente el espectro de
+  $\{\omega(J_p)\}$ de una corrida real para estimar la escala de
+  batido esperada — detalle completo, con la tabla por ventanas y el
+  gráfico, en la Sec. 11 de `hk_exact.ipynb`. — commit `docs: run
+  aa_random to t=20000, show the measured floor does not rise toward
+  the theoretical prediction`
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
