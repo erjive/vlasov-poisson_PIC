@@ -940,6 +940,69 @@ son irresolubles en esa corrida -- no por falta de particulas sino por
 $\Delta t$. Para resolverlos haria falta courant mas chico (el piso baja
 como $\Delta t^2$) o un integrador de orden mayor.
 
+## Resumen: los tres limites de $h_k$, separados y medidos
+
+Con $\epsilon=0$ y courant=0.25, a $t=10^4$, cada esquema queda limitado
+por un mecanismo **distinto** -- y cada uno se midio por separado:
+
+| Esquema | piso a $t=10^4$ | lo limita |
+|---|---|---|
+| `aa_random` (MC puro) | $\sim10^{-10}$ | ruido de muestreo $1/\sqrt{N}$ |
+| baseline `aa` (rejilla en $r,p$) | $\sim2.2\times10^{-13}$ | el *layout*: espaciado irregular en $J$ |
+| `aa_quad` (cuadratura en $Q,J$) | $\sim4.6\times10^{-16}$ | fase del leapfrog, $O(\Delta t^2)$ |
+
+Baseline `aa` con $\epsilon=0$ contra el exacto:
+
+| $t$ | $h_1$ exacto | `aa` $\epsilon{=}0$ | err.rel | `aa_quad` | err.rel |
+|---|---|---|---|---|---|
+| 2000 | 2.138e-12 | 2.039e-12 | 4.6e-02 | 2.138e-12 | 6.3e-05 |
+| 6000 | 7.340e-15 | 2.188e-13 | 2.9e+01 | 7.529e-15 | 2.6e-02 |
+| 10000 | 5.631e-16 | 2.475e-13 | 4.4e+02 | 4.613e-16 | 1.8e-01 |
+
+El fix de $\epsilon$ mejoro el baseline 20x (piso 5e-12 -> 2.2e-13), pero
+sigue 480x por encima de la cuadratura. O sea: **los dos hallazgos
+cuentan**, el bug de $\epsilon$ y el layout. Mientras $\epsilon$ estuvo
+presente, su piso de 5e-12 tapaba por completo la diferencia entre
+esquemas -- por eso durante toda la sesion todos parecian chocar contra
+el mismo muro.
+
+## Integradores nuevos: `yoshida4` (simplectico de orden 4) y `analytic` (exacto)
+
+Con el leapfrog convertido en el limite dominante de `aa_quad`, se
+agregaron dos integradores (`main.f90`):
+
+- **`yoshida4`**: composicion de Yoshida (1990) de tres pasos leapfrog
+  con coeficientes $w_1,w_0,w_1$, $w_1=1/(2-2^{1/3})$,
+  $w_0=-2^{1/3}/(2-2^{1/3})$. El sub-paso central va **hacia atras** en
+  el tiempo ($w_0<0$), que es lo que cancela el termino $O(\Delta t^2)$.
+  Error de fase $O(\Delta t^2)\to O(\Delta t^4)$ al costo de 3
+  evaluaciones de fuerza por paso (3 resolvedores de Poisson por paso si
+  `autointeraction=.true.`, donde ese camino ya domina). Sigue siendo
+  simplectico: no reintroduce deriva secular.
+
+- **`analytic`**: avance exacto en forma cerrada. Sin autointeraccion y a
+  $L$ fijo el movimiento radial es integrable, $J_3$ se conserva exacto y
+  $Q_3(t)=Q_3(0)+\omega(J_3)t$, asi que se avanza al tiempo **absoluto**
+  $t$ (no incrementalmente) y **no hay error de integracion de ningun
+  tipo**. Pensado como camino de validacion: aisla todo lo que viene
+  despues (cuadratura, `analysish`, normalizaciones) de cualquier error
+  del integrador. Su costo no depende de $\Delta t$.
+  Requiere setup integrable (`autointeraction=.false.`, `forcetype="bg"`,
+  `BGtype="Isochrone"`, `Lfix/=0`, `eps=0`) y es incompatible con
+  `reduceparticles=.true.` -- ambas cosas se verifican y abortan con
+  mensaje claro. La inversion $(Q_3,J_3)\to(r,p_r)$ se factorizo en
+  `utils.f90:invert_QJ_to_rp`, compartida con el estado `aa_quad`.
+
+**`rk4` sigue deliberadamente sin implementar**: RK4 no es simplectico,
+reintroduciria la deriva secular en energia y $J_3$ que justamente
+acabamos de eliminar. El mensaje de aborto ahora lo explica y remite a
+`yoshida4`.
+
+Verificado (smoke test, 400 pasos): ambos reproducen los $h_k(t{=}0)$
+exactos, y a $t=10$ `yoshida4` y `analytic` coinciden **a las 9 cifras
+impresas** -- como debe ser cuando el error de Yoshida es despreciable.
+Benchmarks de convergencia y costo, pendientes.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),

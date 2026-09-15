@@ -272,6 +272,13 @@ module utils
   !! never allocated is a runtime error, not a no-op.
   subroutine deallocate_mem
 
+! q0_part/j0_part are only allocated for integrator="analytic"
+! (init_action_angle), so guard the deallocation the same way.
+  if (integrator == 'analytic') then
+    deallocate(q0_part)
+    deallocate(j0_part)
+  end if
+
   deallocate(r_part)
   deallocate(r_part_p)
   deallocate(p_part)
@@ -370,6 +377,126 @@ end subroutine construct_grid
   !! the physical range are clamped into the boundary cell: harmless,
   !! since the caller still applies the exact distance cutoff and
   !! will simply reject them.
+  !> Invert one (Q3,J3) pair back to (r,p_r) at fixed L=Lfix.
+  !!
+  !! Same Kepler-like inversion used by initial_data's "aa_quad" state:
+  !! J3 fixes the energy, the energy fixes the turning points, and the
+  !! angle Q3 is mapped to the eccentric-anomaly-like variable eta by
+  !! Newton-Raphson on Q3 = eta - ecc*sin(eta). Factored out here so the
+  !! analytic integrator and the initial data share one implementation.
+  subroutine invert_QJ_to_rp(Qv,Jv,rv,pv)
+
+    implicit none
+
+    real(8), intent(in)  :: Qv,Jv
+    real(8), intent(out) :: rv,pv
+
+    real(8) :: Eg,er1,er2,s1,s2,ecc,etaNR,gNR,gpNR,argaux,sg,pv2,smallpi
+    integer :: it
+
+    smallpi = acos(-1.0d0)
+
+    Eg = -1.d0/(2.d0*(Jv+0.5d0*(Lfix+sqrt(Lfix**2+4.d0)))**2)
+
+    er1 = dsqrt((1.d0+Eg*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2)))/(2.d0*Eg**2))
+    er2 = dsqrt((1.d0+Eg*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2)))/(2.d0*Eg**2))
+    s1 = 1.d0 + sqrt(1.d0+er1**2)
+    s2 = 1.d0 + sqrt(1.d0+er2**2)
+
+    ecc = sqrt((-2.d0*Eg)**3)*sqrt(-Lfix**2-2.d0*Eg-2.d0-0.5D0/Eg)/(-2.d0*Eg)
+
+    etaNR = modulo(Qv,2.0d0*smallpi)
+    do it=1,50
+      gNR  = etaNR - ecc*sin(etaNR) - modulo(Qv,2.0d0*smallpi)
+      gpNR = 1.d0 - ecc*cos(etaNR)
+      etaNR = etaNR - gNR/gpNR
+      if (abs(gNR) < 1.0d-14) exit
+    end do
+
+    argaux = cos(etaNR)
+    sg = (s1+s2-argaux*(s2-s1))/2.0d0
+    rv = sqrt(max((sg-1.d0)**2-1.d0,0.0d0))
+
+    pv2 = 2.d0*(Eg + 1.d0/(1.d0+dsqrt(1.d0+rv**2)) - 0.5d0*Lfix**2/max(rv**2,1.0d-12))
+    pv2 = sqrt(max(pv2,0.0d0))
+    if (modulo(etaNR,2.0d0*smallpi) > smallpi) then
+      pv = -pv2
+    else
+      pv =  pv2
+    end if
+
+  end subroutine invert_QJ_to_rp
+
+
+  !> Store each particle's initial (Q3,J3), for integrator="analytic".
+  !!
+  !! Uses the same forward map as analysish.f90, so it works from any
+  !! initial state, not just the ones built in (Q3,J3) to begin with.
+  subroutine init_action_angle
+
+    implicit none
+
+    integer :: i
+    real(8) :: en,er1,er2,s1,s2,ss,argaux,eta,smallpi
+
+    smallpi = acos(-1.0d0)
+
+    allocate(q0_part(1:Npart))
+    allocate(j0_part(1:Npart))
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(en,er1,er2,s1,s2,ss,argaux,eta)
+    do i=1,Npart
+      en = -1.0/(1.0D0+dsqrt(1.0D0+r_part(i)**2)) + 0.5d0*Lfix**2/(r_part(i)**2) + 0.5D0*p_part(i)**2
+      er1 = dsqrt((1.d0+en*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2)))/(2.d0*en**2))
+      er2 = dsqrt((1.d0+en*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2)))/(2.d0*en**2))
+      s1 = 1.d0 + dsqrt(1.d0+er1**2)
+      s2 = 1.d0 + dsqrt(1.d0+er2**2)
+      ss = 1.d0 + dsqrt(1.d0+r_part(i)**2)
+      argaux = (s1+s2-2.0d0*ss)/(s2-s1)
+      if (p_part(i)>=0.d0) then
+        eta = dacos(sign(min(abs(argaux),1.0D0),argaux))
+      else
+        eta = dacos(-sign(min(abs(argaux),1.0D0),argaux))+smallpi
+      end if
+      q0_part(i) = eta - dsqrt((-2.d0*en)**3)*sqrt(-Lfix**2-2.d0*en-2.d0-0.5D0/en)/(-2.d0*en)*dsin(eta)
+      j0_part(i) = 1.d0/dsqrt(-2.d0*en)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
+    end do
+    !$OMP END PARALLEL DO
+
+  end subroutine init_action_angle
+
+
+  !> Advance every particle ANALYTICALLY to absolute time "tnow".
+  !!
+  !! Without self-interaction the radial motion at fixed L is integrable:
+  !! J3 is exactly conserved and Q3(t) = Q3(0) + omega(J3)*t. So the exact
+  !! solution is available in closed form and there is NO integration
+  !! phase error at all -- unlike leapfrog, whose O(dt^2) phase error is
+  !! what currently floors h_k (see BUGS_TODO.md). Intended as a
+  !! validation path: it isolates everything downstream (the quadrature,
+  !! analysish, the normalisations) from any integrator error.
+  !!
+  !! Note this is NOT an approximation that gets better with smaller dt --
+  !! it is exact at any t, and its cost does not depend on dt at all.
+  subroutine advance_analytic(tnow)
+
+    implicit none
+
+    real(8), intent(in) :: tnow
+    integer :: i
+    real(8) :: om,Qt
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(om,Qt)
+    do i=1,Npart
+      om = 1.0d0/(j0_part(i)+0.5d0*(Lfix+sqrt(Lfix**2+4.d0)))**3
+      Qt = q0_part(i) + om*tnow
+      call invert_QJ_to_rp(Qt,j0_part(i),r_part(i),p_part(i))
+    end do
+    !$OMP END PARALLEL DO
+
+  end subroutine advance_analytic
+
+
   subroutine build_cell_list(cell_start,particle_order)
 
     use omp_lib

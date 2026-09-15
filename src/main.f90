@@ -18,6 +18,14 @@ program VP_PIC
   implicit none
 
   integer i,j,k,l       ! Counters
+  integer :: isub       ! Sub-step counter for the Yoshida composition
+  real(8) :: dsub       ! Sub-step size for the Yoshida composition
+! Yoshida (1990) 4th-order symplectic composition coefficients:
+! one step = LF(w1*dt) o LF(w0*dt) o LF(w1*dt), with w1 = 1/(2-2^(1/3))
+! and w0 = -2^(1/3)/(2-2^(1/3)). Note w0 < 0: the middle sub-step goes
+! BACKWARDS in time, which is what cancels the O(dt^2) error term.
+  real(8), parameter :: w1y =  1.0d0/(2.0d0-2.0d0**(1.0d0/3.0d0))
+  real(8), parameter :: w0y = -2.0d0**(1.0d0/3.0d0)/(2.0d0-2.0d0**(1.0d0/3.0d0))
 
 
   call read_initial_param()
@@ -31,6 +39,46 @@ program VP_PIC
   call construct_grid()
 
   call initial_data()
+
+! ****************************************************
+! ***   ACTION-ANGLE SETUP FOR THE EXACT ADVANCE   ***
+! ****************************************************
+
+! integrator="analytic" advances each particle with the closed-form
+! solution Q3(t)=Q3(0)+omega(J3)*t, which only exists while J3 is exactly
+! conserved: static background, fixed L /= 0, no self-interaction, and no
+! centrifugal softening (eps must be 0, or the dynamics would not match
+! the unsoftened action-angle map -- the very inconsistency documented in
+! BUGS_TODO.md).
+
+  if (integrator == 'analytic') then
+
+     if (autointeraction .or. forcetype /= "bg" .or. BGtype /= "Isochrone" &
+         .or. Lfix == 0.0d0 .or. eps /= 0.0d0) then
+        print *
+        print *, 'integrator="analytic" requires an integrable setup:'
+        print *, '  autointeraction = .false.,  forcetype = "bg",'
+        print *, '  BGtype = "Isochrone",  Lfix /= 0,  eps = 0.'
+        print *, 'Aborting ...'
+        print *
+        stop
+     end if
+
+!    reduce_arrays reallocates r_part/p_part/f with a smaller Npart but
+!    knows nothing about q0_part/j0_part, so the per-particle arrays would
+!    silently get out of step with each other.
+     if (reduceparticles) then
+        print *
+        print *, 'integrator="analytic" is incompatible with reduceparticles=.true.'
+        print *, '(reduce_arrays would resize r_part/p_part but not q0_part/j0_part).'
+        print *, 'Aborting ...'
+        print *
+        stop
+     end if
+
+     call init_action_angle()
+
+  end if
 
 ! ***************************
 ! ***   OUTPUT DIRECTORY  ***
@@ -142,12 +190,56 @@ program VP_PIC
 
       p_part   = p_part_h + force_part*dt*0.5D0
 
+!   Fourth order symplectic (Yoshida composition of three leapfrog steps)
+
+    else if (integrator == 'yoshida4') then
+
+!     Three kick-drift-kick sub-steps with sizes w1*dt, w0*dt, w1*dt.
+!     Phase error drops from O(dt^2) to O(dt^4) at the cost of 3 force
+!     evaluations per step (3 Poisson solves per step when
+!     autointeraction=.true., where that path already dominates).
+!     Symplectic, unlike the rk4 branch below, so there is still no
+!     secular drift in the energy or in J3.
+
+      do isub = 1,3
+
+        if (isub == 2) then
+          dsub = w0y*dt
+        else
+          dsub = w1y*dt
+        end if
+
+        p_part_h = p_part   + force_part*dsub*0.5D0
+        r_part   = r_part   + p_part_h  *dsub
+
+        call grav_force()
+
+        p_part   = p_part_h + force_part*dsub*0.5D0
+
+      end do
+
+!   Exact analytic advance (no self-interaction only)
+
+    else if (integrator == 'analytic') then
+
+!     At fixed L the radial motion in a static background is integrable:
+!     J3 is exactly conserved and Q3(t) = Q3(0) + omega(J3)*t. Advance to
+!     the ABSOLUTE time t (not incrementally), so there is no accumulated
+!     phase error of any kind. Validation path: isolates the quadrature,
+!     analysish and the normalisations from all integrator error.
+
+      call advance_analytic(t)
+      call grav_force()
+
 !    Fourth order Runge-Kutta.
 
      else if (integrator=='rk4') then
 
         print *
-        print *, 'Fourth order Runge-Kutta not yet implemented.'
+        print *, 'Fourth order Runge-Kutta is deliberately NOT implemented:'
+        print *, 'RK4 is not symplectic, so it reintroduces the secular drift'
+        print *, 'in energy and J3 that floors h_k. Use integrator="yoshida4"'
+        print *, '(4th order, symplectic) instead.'
         print *, 'Aborting ...'
         print *
         stop

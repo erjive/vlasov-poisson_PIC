@@ -16,6 +16,9 @@
 
 ! Position, momentum, phase space density, potential and force at the particles
 
+  real(8), allocatable, dimension(:) :: q0_part    ! Initial action-angle Q3 of each particle
+                                                   ! (only allocated for integrator="analytic").
+  real(8), allocatable, dimension(:) :: j0_part    ! Conserved action J3 of each particle (idem).
   real(8), allocatable, dimension(:) :: r_part     ! Position of the particles.
   real(8), allocatable, dimension(:) :: r_part_p   ! Old position of the particles.
   real(8), allocatable, dimension(:) :: p_part     ! Momentum of the particles.
