@@ -25,6 +25,11 @@
 !   Auxiliary variables for a distribution function
 !   that depends on action-angle varialbes
     real(8) :: Jr, Qr, s, s1, s2, er1, er2, eta,argaux
+!   Auxiliary variables for the (Q3,J3) quadrature grid + Newton-Raphson
+!   inversion back to (r,p_r) -- see state "aa_quad" below.
+    real(8) :: Jgrid, Qgrid, Egrid, ecc, etaNR, gNR, gpNR, sgrid, rgrid, paux2
+    real(8) :: Jminc, Jmaxc, dJc, dQc
+    integer :: iterNR
 
     smallpi = acos(-1.0d0)
 
@@ -313,6 +318,119 @@
       end do
       !$OMP END PARALLEL DO
       call reduce_arrays
+
+      print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
+      f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
+      print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
+
+    else if(state .eq."aa_quad") then
+!     Clean tensor-product QUADRATURE rule directly in (Q3,J3): a regular
+!     midpoint grid in both variables, NO jitter and NO randomization,
+!     inverted back to (r,p_r) by Newton-Raphson on the Kepler-like
+!     equation Qr = eta - ecc*sin(eta).
+!
+!     Why this (and why it is NOT the same as the reverted "aa_qj"):
+!     without self-interaction J3 is exactly conserved and the phase is
+!     exactly Q(t)=Q(0)+omega(J)t, so h_k(t) is not a statistical
+!     sampling problem at all -- it is a QUADRATURE of a smooth but
+!     increasingly oscillatory integral, with
+!        n_osc(t) = k*Delta_omega*t/(2*pi)
+!     oscillations across the support in J. For a smooth integrand a
+!     designed quadrature beats Monte Carlo by orders of magnitude: the
+!     error collapses as soon as the J resolution crosses Nyquist,
+!        Nrc  >~ 4*k*Delta_omega*t_max/(2*pi),
+!     and then degrades catastrophically (aliasing = the Birdsall &
+!     Langdon recurrence, seen from the other side) beyond that. So
+!     pick Nrc for the t you intend to run and do not trust results
+!     past t ~ T_rec/2. In Q the rule is the periodic trapezoid, which
+!     converges spectrally -- Npc ~ 40 is already enough, so nearly all
+!     particles should go into resolving J, not Q.
+!
+!     "aa_qj" (reverted) failed for unrelated reasons: a NaN-propagation
+!     bug that froze the J range at its +-1e30 sentinels, and then, once
+!     that was fixed, Weyl jitter on J plus random Q -- which is exactly
+!     what destroys the quadrature property this state relies on. The
+!     earlier claim that a uniform Q grid "must" cancel the Fourier sum
+!     was wrong: that argument applies to an UNWEIGHTED sum of roots of
+!     unity, whereas here the sum is weighted by F(Q), which converges
+!     spectrally to the true Fourier coefficient.
+!
+!     Normalization: all quadrature weights dQc*dJc are EQUAL here, so
+!     the constant is absorbed by the mass normalization below and f can
+!     simply hold the raw DF value, exactly as in "aa". Note this must
+!     use drc*dpc (not dJc*dQc): every consumer of f() -- density.f90,
+!     energy.f90, analysish.f90 -- multiplies by drc*dpc unconditionally,
+!     so using the same factor here makes it cancel. ("aa_qj" normalized
+!     with dJc*dQc instead, which left a spurious drc*dpc/(dJc*dQc)
+!     factor in h_k -- that is exactly the unexplained 2.87x bias in its
+!     h_0, see BUGS_TODO.md.)
+
+      Jminc = 1.0d-4*sr
+      Jmaxc = 6.0d0*sr
+      dJc = (Jmaxc-Jminc)/dble(Nrc)
+      dQc = 2.0d0*smallpi/dble(Npc)
+
+      !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) &
+      !$OMP PRIVATE(j,Jgrid,Qgrid,Egrid,ecc,etaNR,gNR,gpNR,iterNR,sgrid,rgrid,paux2,raux,paux,er1,er2,s1,s2,argaux,Jr,Qr) &
+      !$OMP SHARED(r_part,p_part,f)
+      do i=1,Nrc          ! index over J3 (resolves the oscillation)
+        do j=1,Npc        ! index over Q3 (periodic trapezoid)
+
+          Jgrid = Jminc + (dble(i)-0.5D0)*dJc
+          Qgrid = (dble(j)-0.5D0)*dQc
+
+!         Invert Jr(E) for E at fixed L=Lfix:
+          Egrid = -1.d0/(2.d0*(Jgrid+0.5d0*(Lfix+sqrt(Lfix**2+4.d0)))**2)
+
+          er1 = dsqrt((1.d0+Egrid*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2)))/(2.d0*Egrid**2))
+          er2 = dsqrt((1.d0+Egrid*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2)))/(2.d0*Egrid**2))
+          s1 = 1.d0 + sqrt(1.d0+er1**2)
+          s2 = 1.d0 + sqrt(1.d0+er2**2)
+
+          ecc = sqrt((-2.d0*Egrid)**3)*sqrt(-Lfix**2-2.d0*Egrid-2.d0-0.5D0/Egrid)/(-2.d0*Egrid)
+
+!         Newton-Raphson solve of Qgrid = etaNR - ecc*sin(etaNR).
+          etaNR = Qgrid
+          do iterNR=1,50
+            gNR  = etaNR - ecc*sin(etaNR) - Qgrid
+            gpNR = 1.d0 - ecc*cos(etaNR)
+            etaNR = etaNR - gNR/gpNR
+            if (abs(gNR) < 1.0d-13) exit
+          end do
+
+          argaux = cos(etaNR)
+          sgrid = (s1+s2-argaux*(s2-s1))/2.0d0
+          rgrid = sqrt(max((sgrid-1.d0)**2-1.d0,0.0d0))
+
+          paux2 = 2.d0*(Egrid + 1.d0/(1.d0+dsqrt(1.d0+rgrid**2)) - 0.5d0*Lfix**2/max(rgrid**2,1.0d-12))
+          paux2 = sqrt(max(paux2,0.0d0))
+          if (mod(etaNR,2.0d0*smallpi) > smallpi) then
+            paux = -paux2
+          else
+            paux = paux2
+          end if
+          raux = rgrid
+
+          r_part((i-1)*Npc+j) = raux
+          p_part((i-1)*Npc+j) = paux
+
+          Jr = Jgrid
+          Qr = Qgrid
+          f((i-1)*Npc+j) = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+
+          if ((f((i-1)*Npc+j) /= f((i-1)*Npc+j)) .or. (raux /= raux)) then
+            f((i-1)*Npc+j) = 0.D0
+            r_part((i-1)*Npc+j) = 10000.D0
+          end if
+
+        end do
+      end do
+      !$OMP END PARALLEL DO
+
+!     NOTE: deliberately NO r0 cutoff and NO reduce_arrays here. Dropping
+!     the low-f nodes would truncate the quadrature rule, and at late t
+!     the integral survives only through near-total cancellation, so even
+!     a 1%-level truncation of the tails can dominate the answer.
 
       print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
