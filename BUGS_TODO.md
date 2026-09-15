@@ -446,6 +446,82 @@ qué el piso de $N_c\sim10^4$ del baseline ya es tan bajo en h1/h2
 específicamente — posible artefacto de esa corrida particular más que
 una propiedad general).
 
+## Decaimiento de $h_k$: tercer intento — Monte Carlo puro (`aa_random`), sin rejilla en absoluto
+
+Idea de fondo distinta a las dos secciones anteriores: en vez de
+perturbar una rejilla (Weyl, Halton) o reubicarla en otras variables
+($Q_3,J_3$), eliminar la rejilla por completo. Motivación (Birdsall &
+Langdon): toda variante basada en rejilla, por más baja discrepancia
+que sea la perturbación, conserva *alguna* correlación entre vecinos
+en frecuencia $\omega(J)$ — eso es lo que produce el refasamiento
+coherente. El muestreo Monte Carlo puro la elimina: el precio es un
+piso de ruido estadístico más alto ($\sim1/\sqrt{N}$), pero sin
+repunte coherente ni comportamiento errático por modo.
+
+El estado `aa_random` (aceptación-rechazo directo sobre $F(r,p_r)$) ya
+existía en el código, sin usar ni verificar. Tenía **dos bugs
+acoplados**, encontrados al verificarlo contra el valor exacto de
+$h_0$ (que por teoría de mezcla debe ser constante en el tiempo,
+$\approx1.4998\times10^{-8}$ — ver Sec. 1-5 de `hk_exact.ipynb`):
+
+1. **Doble conteo**: pesaba cada partícula aceptada por
+   `f(i)=w=F(Qr,Jr)` otra vez — pero el muestreo por rechazo ya
+   distribuye la densidad de partículas proporcional a $F$, así que
+   pesarlas también por $F$ sesga la forma reconstruida hacia las
+   regiones ya densas (efectivamente $\sim F^2$, renormalizado) en vez
+   de representar $F$. Fix: peso uniforme `f(i)=1.0d0` (partículas de
+   igual masa, la representación MC correcta).
+2. **Casi elimino `drc*dpc` sin necesidad**: mi primer intento de
+   arreglo también quitó el factor `drc*dpc` de la normalización final,
+   razonando que partículas ya-aleatorias no necesitan un peso de
+   tamaño de celda. Esto dio $h_0(t=0)\sim1.56\times10^{-10}$ — cien
+   veces menor que el valor exacto. La razón: `density.f90`,
+   `energy.f90` y `analysish.f90` tratan `f()` como "valor de $F$ en
+   ese punto" y multiplican por `drc*dpc` de forma **incondicional**,
+   sin importar cómo se colocó la partícula — así que `drc*dpc` sí
+   debe seguir apareciendo en la normalización de `aa_random`
+   (compensándolo), no eliminarse. Con esto restaurado,
+   $h_k(t=0)$ calza con la curva exacta al ~1-2% en los 5 modos — la
+   mejor concordancia inicial de las cuatro variantes probadas en
+   esta sesión (jitter, halton, $(Q_3,J_3)$, random).
+
+**Resultado final** (media/σ en $t\in[8000,10000]$), mismo par
+$N_c\sim10^3/10^4$ (`Nrc=Npc=32` → 1024 partículas, `Nrc=Npc=100` →
+10000 partículas — `aa_random` no tiene el paso de corte `r0`, así
+que `Npart=Nrc*Npc` directamente, sin recalibrar):
+
+| | $N_c\sim10^3$ h1 | h2 | h3 | h4 | $N_c\sim10^4$ h1 | h2 | h3 | h4 |
+|---|---|---|---|---|---|---|---|---|
+| baseline | 1.46e-9 | 6.99e-10 | 7.28e-10 | 8.19e-10 | 5.07e-12 | 4.74e-12 | 3.50e-10 | 4.26e-10 |
+| MC puro | 2.96e-10 | 3.86e-10 | 3.98e-10 | 2.53e-10 | 2.17e-10 | 1.37e-10 | 1.40e-10 | 1.23e-10 |
+
+A $N_c\sim10^3$: **mejora en los 4 modos** (1.8-5× más bajo),
+comparable o mejor que Halton en el mismo régimen. A $N_c\sim10^4$:
+mismo patrón mixto que Halton — peor en h1/h2 (el baseline ya tenía
+ahí un piso inusualmente bajo, ~5e-12, sin recurrir todavía), mejor en
+h3/h4 (2.5-3.5× más bajo, el baseline ya había empezado a recurrir).
+
+**Lo distinto de MC puro, y la razón para preferirlo pese a no ganar
+en todos los modos**: el piso que da es **plano y predecible** —
+todos los modos h1-h4 caen en la misma banda estrecha,
+$\sim1.2$-$2.2\times10^{-10}$, en ambos $N_c$. El piso del baseline
+(y de Halton) es **errático por modo**, abarcando casi dos órdenes de
+magnitud (5e-12 a 4.5e-10) porque la recurrencia por rejilla golpea a
+cada modo en un momento distinto — cuando un modo "no ha recurrido
+todavía" en una corrida particular, eso es suerte de esa corrida, no
+una propiedad confiable del método. El piso de MC, en cambio, es una
+consecuencia directa y predecible de $N_c$ (ruido estadístico
+$\sim1/\sqrt{N_c}$), sin la lotería de qué modo recurre cuándo.
+
+**Conclusión**: bug corregido y commiteado (afecta a cualquier uso
+futuro de `aa_random`, no solo a este experimento). Como alternativa
+a la recurrencia, MC puro no elimina el piso de ruido pero sí elimina
+el repunte coherente y su dependencia errática del modo — es la
+opción más alineada con la teoría clásica de PIC (Birdsall & Langdon)
+para este problema específico. No reemplaza `aa` por defecto (el
+piso de ruido sigue siendo real, solo que predecible), queda como
+estado adicional disponible.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),

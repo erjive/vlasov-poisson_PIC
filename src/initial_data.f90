@@ -367,25 +367,47 @@
            w = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
 
           if (z <= w ) then
-        
+
             r_part(i) = raux
             p_part(i) = paux
-            f(i)      = w
+!           BUG FIX: this used to set f(i)=w, double-counting F -- the
+!           accepted particles from rejection sampling are ALREADY
+!           distributed with density proportional to F(Qr,Jr) (that is
+!           what rejection sampling means), so weighting them by F again
+!           on top of that biases the reconstructed distribution towards
+!           already-dense regions (effectively ~F^2, renormalized) instead
+!           of representing F itself. Equal-weight macroparticles is the
+!           correct MC representation; the density *shape* comes entirely
+!           from where particles land, not from their individual weight.
+            f(i)      = 1.0d0
             !accepted = .true.
             i = i+1
           end if
         end if
         !end do
       end do
-      
+
 
 
 
 !      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
 !      !$OMP END PARALLEL DO
+!     drc*dpc IS needed here even though these particles are not on a
+!     regular grid: every consumer of f() (density.f90, energy.f90,
+!     analysish.f90) treats it as "F evaluated at that point" and
+!     multiplies by the drc*dpc quadrature weight itself, unconditionally,
+!     regardless of how the particle was placed -- so f() must be
+!     pre-divided by drc*dpc here for that multiplication to reconstruct
+!     the correct MC mass estimate downstream. (An earlier version of
+!     this fix dropped drc*dpc, reasoning these are already-random
+!     samples that need no cell-size weight on their own -- true in
+!     isolation, but wrong given analysish.f90 always multiplies by it;
+!     verified via h_0, which per phase-mixing theory must be constant
+!     in time and equal to the exact value ~1.4998e-8 from
+!     paper_runs/notebooks/hk_exact.ipynb -- dropping drc*dpc gave
+!     ~1.56e-10 (off by ~drc*dpc), restoring it gives the right order.)
       print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
-      !f = f*drc*dpc*8.D0*smallpi**2
       print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
 
 
