@@ -335,6 +335,117 @@ simulación del decaimiento verdadero:
   es la de $J_3$, no la de $r$ — perturbar $r,p_r$ solo la rompe de
   forma indirecta, a través del mapeo no lineal).
 
+## Decaimiento de $h_k$: segundo intento — Halton 2D (mejora modesta, mixta) y rejilla directa en $(Q_3,J_3)$ (peor, revertido)
+
+Los dos candidatos de la sección anterior, probados por separado, cada
+uno con el mismo par $N_c\sim10^3/10^4$ (recalibrando `Nrc,Npc` para
+que el número de partículas *después* del corte coincida con el
+baseline: 988-1009 y 10072-10470 según la variante, contra 1001/10072
+del baseline — si no, la comparación queda contaminada por tener más
+partículas). Herramienta: `paper_runs/notebooks/hk_exact.ipynb`
+Sec. 8.
+
+### Halton 2D (`aa_halton`, mantenido en el código)
+
+Mismo lugar que el jitter anterior — perturbar $(r,p_r)$ — pero con
+una secuencia de Halton genuinamente 2D (bases 2 y 3, inversa radical)
+en vez de dos Weyl 1D acopladas por el mismo índice `indx`.
+
+Media/σ en $t\in[8000,10000]$, baseline vs. halton:
+
+| | $N_c\sim10^3$ h1 | h2 | h3 | h4 | $N_c\sim10^4$ h1 | h2 | h3 | h4 |
+|---|---|---|---|---|---|---|---|---|
+| baseline | 1.46e-9 | 6.99e-10 | 7.28e-10 | 8.19e-10 | 5.07e-12 | 4.74e-12 | 3.50e-10 | 4.26e-10 |
+| halton | 3.37e-10 | 3.45e-10 | 5.56e-10 | 6.09e-10 | 3.47e-11 | 7.28e-11 | 1.33e-10 | 1.21e-10 |
+
+A $N_c\sim10^3$: **mejora consistente en los 4 modos** (piso 2-4×
+más bajo que el baseline). A $N_c\sim10^4$: **mixto** — peor en h1/h2
+(el baseline ya había alcanzado un piso muy bajo, ~5e-12, que el
+jitter de Halton eleva a ~3-7e-11), pero mejor en h3/h4 (2.6-3.5× más
+bajo). $h_0$ no cambia (1.510e-8 en ambos, como se espera — el modo
+$k=0$ ya convergía sin depender del método de muestreo).
+
+**Conclusión**: mejora real pero no uniforme, y notablemente mejor
+que el intento anterior (Weyl/Kronecker 1D), que a $N_c\sim10^4$ era
+peor en *todos* los modos por casi un orden de magnitud. No resuelve
+la recurrencia (sigue habiendo un piso de ruido, no decae a cero),
+pero la reduce en la mayoría de los casos. Mantenido en el código
+(estado `aa_halton`, no reemplaza `aa`) por ser una mejora neta, útil
+como opción, aunque no concluyente. No commiteado como reemplazo del
+estado por defecto.
+
+### Rejilla directa en $(Q_3,J_3)$ con $Q_3$ aleatorio (`aa_qj`, revertido)
+
+Implementado y depurado (tres bugs encontrados y corregidos en el
+camino, ver commit para el detalle completo):
+
+1. **Bug de normalización**: copiaba la línea de normalización de
+   `aa` usando `drc*dpc` (paso de rejilla en $(r,p)$) como peso de
+   cuadratura, cuando las partículas viven en una rejilla uniforme en
+   $(J,Q)$ con paso propio `(dJc,dQc)` — corregido a `dJc*dQc`.
+2. **Bug de rango de $J$ (el que de verdad rompía todo)**: el rango
+   de $J_3$ para la rejilla se determinaba evaluando $J_r$ en las 4
+   esquinas de la caja $(r_{minc}..r_{maxc},p_{minc}..p_{maxc})$ — pero
+   esas esquinas son órbitas *no ligadas* para esta combinación
+   $L_0=2$/$r_{minc}=1$ (energía positiva: $r$ chico con $L$ grande
+   está por encima de la barrera centrífuga), así que $J_r$ salía NaN
+   en las 4, y como las comparaciones con NaN son siempre falsas,
+   `Jminc`/`Jmaxc` quedaban congelados en sus centinelas
+   $\pm10^{30}$ — cascada a `Jgrid~1e30`, $r\sim10^{60}$,
+   $p\sim10^{-30}$, y $h_k(t=0)\sim10^{-48}$ en vez de $\sim10^{-8}$
+   (exactamente el síntoma reportado: "difiere por muchos órdenes de
+   magnitud", idéntico entre la versión con rejilla determinista en
+   $Q$ y la primera versión con $Q$ aleatorio, porque en ambas el
+   rango de $J$ era la misma basura).
+3. **Defecto de diseño, encontrado al corregir el (2)**: barrer la
+   caja *completa* para el rango de $J$ tampoco sirve — la caja
+   contiene puntos arbitrariamente cerca del borde $E=0$ (escape),
+   donde $J_r=1/\sqrt{-2E}-\ldots$ diverge (se midió
+   $J_{maxc}\sim10^2$ a partir de una sola celda casi marginal, contra
+   un ancho real del soporte de $\sigma_r\sim0.1$ — >99.9% de una
+   rejilla uniforme en ese rango cae donde $F$ es
+   astronómicamente pequeña). Solución: usar el soporte conocido de
+   la propia $F$ ($J_r\in[10^{-4}\sigma_r,\,6\sigma_r]$) en vez de
+   barrer la caja.
+
+Con los tres bugs corregidos, $h_k(t=0)$ da el orden de magnitud
+correcto ($\sim4\times10^{-8}$ vs. $1.5\times10^{-8}$ de referencia).
+Pero el resultado final (media/σ en $t\in[8000,10000]$) es **peor que
+el baseline en casi todos los modos, en ambos $N_c$**:
+
+| | $N_c\sim10^3$ h1 | h2 | h3 | h4 | $N_c\sim10^4$ h1 | h2 | h3 | h4 |
+|---|---|---|---|---|---|---|---|---|
+| baseline | 1.46e-9 | 6.99e-10 | 7.28e-10 | 8.19e-10 | 5.07e-12 | 4.74e-12 | 3.50e-10 | 4.26e-10 |
+| $(Q_3,J_3)$ | 3.15e-9 | 2.02e-9 | 2.04e-9 | 1.65e-9 | 5.33e-10 | 3.59e-10 | 6.37e-10 | 4.28e-10 |
+
+Además $h_0$ sale sistemáticamente ~2.87× por arriba del valor de
+referencia (4.32-4.34e-8 vs. 1.510e-8) en ambos $N_c$ — un sesgo de
+cuadratura consistente, no ruido, de origen no identificado (posible
+candidato: el recorte `Jgrid<=0 → 1e-6` cerca del borde $J=0$, donde
+$F\propto J^2$ se anula pero la rejilla uniforme en $J$ no capta bien
+la caída parabólica). No investigado más a fondo dado que el
+resultado ya no es prometedor.
+
+**Conclusión**: la hipótesis original ("la regularidad problemática
+es la de $J_3$, perturbar $r,p_r$ solo la rompe indirectamente") no
+se confirma en la práctica — mover la regularidad a $J_3$
+directamente, incluso con $Q_3$ aleatorio (sin el problema de
+cancelación tipo DFT del intento con rejilla uniforme en $Q$), da un
+piso de recurrencia *más alto*, no más bajo, que el baseline.
+Revertido (`git diff`/eliminado el bloque `aa_qj` de
+`src/initial_data.f90`, nunca quedó en `main` ni en ninguna corrida
+"oficial" — los tres bugs y la implementación completa quedan en el
+historial de commits de esta rama para referencia).
+
+**Estado de los candidatos de la sección anterior**: Halton 2D →
+mejora modesta y no uniforme, mantenida (`aa_halton`). Rejilla directa
+$(Q_3,J_3)$ → peor, revertida. Ninguna de las dos resuelve la
+recurrencia de fondo; sigue pendiente si se quiere profundizar más
+(p. ej. combinar Halton con un $N_c$ bastante mayor, o investigar por
+qué el piso de $N_c\sim10^4$ del baseline ya es tan bajo en h1/h2
+específicamente — posible artefacto de esa corrida particular más que
+una propiedad general).
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),

@@ -13,15 +13,16 @@
     implicit none
 
     logical :: accepted
-    integer :: i,j
+    integer :: i,j,indx
     real(8) :: smallpi,f_max
     real(8) :: raux,paux
     real(8) :: rand3(3)
     real(8) :: gaussian_fixedL
+    real(8) :: halton
     real(8) :: w,x,y,z
-    real(8) :: energy 
+    real(8) :: energy
 
-!   Auxiliary variables for a distribution function 
+!   Auxiliary variables for a distribution function
 !   that depends on action-angle varialbes
     real(8) :: Jr, Qr, s, s1, s2, er1, er2, eta,argaux
 
@@ -255,6 +256,68 @@
       !f = f*drc*dpc*8.D0*smallpi**2
       print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
 
+    else if(state .eq."aa_halton") then
+!     Same as "aa" but the regular (r,p) grid is jittered with a genuine
+!     2D low-discrepancy (Halton, bases 2 and 3) sequence instead of the
+!     original regular grid, to break the near-regular J3 lattice that
+!     causes the PIC recurrence artifact in h_k(t). See BUGS_TODO.md.
+
+      !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) PRIVATE(j,indx,raux,paux) SHARED(r_part,p_part,f)
+      do i=1,Nrc
+        do j=1,Npc
+          indx = (i-1)*Npc+j
+          raux = rminc+(dble(i)-0.5D0)*drc + (halton(indx,2)-0.5d0)*drc
+          paux = pminc+dble(j)*dpc         + (halton(indx,3)-0.5d0)*dpc
+
+          r_part((i-1)*Npc+j) = raux
+          p_part((i-1)*Npc+j) = paux
+
+          energy = -1.0/(1.0D0+dsqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2) + 0.5D0*paux**2
+          er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+          er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+          s1 = 1.d0 + sqrt(1.d0+er1**2)
+          s2 = 1.d0 + sqrt(1.d0+er2**2)
+          s  = 1.d0 + sqrt(1.d0+raux**2)
+          argaux = (s1+s2-2.0*s)/(s2-s1)
+
+          if (paux>=0.d0) then
+            eta = dacos(sign(min(abs(argaux),1.0),argaux))
+          else
+            eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
+          end if
+
+          Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
+          Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
+
+          f((i-1)*Npc+j) = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+
+          if ((f((i-1)*Npc+j) /= f((i-1)*Npc+j) )) then
+            f((i-1)*Npc+j) = 0.D0
+            r_part((i-1)*Npc+j) = 10000.D0
+          end if
+
+        end do
+      end do
+      !$OMP END PARALLEL DO
+
+      f_max = maxval(f)
+      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
+      do i=1,Nrc
+        do j=1,Npc
+           if ((r0-0.00)*f_max<=f((i-1)*Npc+j) .and. f((i-1)*Npc+j)<= r0*f_max ) then
+              f((i-1)*Npc+j)=0.0D0
+           else if (f((i-1)*Npc+j)<= (r0-0.00)*f_max ) then
+              r_part((i-1)*Npc+j) = 100000.D0
+           end if
+        end do
+      end do
+      !$OMP END PARALLEL DO
+      call reduce_arrays
+
+      print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
+      f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
+      print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
+
     else if(state .eq."aa_random") then
 
       Npart = Nrc*Npc
@@ -367,5 +430,28 @@
   end if
 
   end function gaussian_fixedL
+
+  function halton(idx,base) result(h)
+!   Radical-inverse Halton sequence value for index idx>=1 in the given
+!   base (use coprime bases, e.g. 2 and 3, for a genuine 2D low-discrepancy
+!   sequence). Result in [0,1).
+
+  implicit none
+
+  integer :: idx,base
+  real(8) :: h
+  real(8) :: f
+  integer :: n
+
+  h = 0.0d0
+  f = 1.0d0/dble(base)
+  n = idx
+  do while (n > 0)
+    h = h + f*dble(mod(n,base))
+    n = n/base
+    f = f/dble(base)
+  end do
+
+  end function halton
 
 

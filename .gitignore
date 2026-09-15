@@ -36,3 +36,7 @@ objs/
 .config
 .timestart
 .timeend
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+__pycache__/
