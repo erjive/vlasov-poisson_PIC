@@ -23,8 +23,9 @@
                                                !kept identical to the original per-call phik() precision
     real(8) :: quadQ(0:nquad),quadW(0:nquad)  !Quadrature nodes/weights on [0,pi], built once
     real(8) :: hstep,quadnorm
-    real(8) :: gval1(0:nquad),gval2(0:nquad)  !mode-independent integrand for Phi_1/Phi_2, per node
-    real(8) :: contrib1(0:4),contrib2(0:4)    !phik(.,mode) for mode=0..4, current particle, Phi_1/Phi_2
+    real(8) :: aq1(0:nquad),aq2(0:nquad)      !Q-only factor of the integrand, per quadrature node
+    real(8) :: cq1(0:4),cq2(0:4)              !particle-INDEPENDENT quadrature constant, per mode
+    real(8) :: bj1,bj2                        !J-only factor, for the current particle
 
     character(20) filestatus
 
@@ -80,6 +81,46 @@
     end do
     quadnorm = hstep/(3.d0*smallpi)
 
+! The integrand of phik factorises exactly:
+!
+!   g(Q,J) = exp(-sin(Q/2)^2/sq^2) * exp(-(J-J0)^2/sj^2) * J^2
+!          =        A(Q)           *            B(J)
+!
+! so the whole Q-quadrature separates from the particle:
+!
+!   phik(J,i) = quadnorm * sum_k w_k A(Q_k) B(J) cos(i Q_k)
+!             = B(J) * [ quadnorm * sum_k w_k A(Q_k) cos(i Q_k) ]
+!             = B(J) * C(i)
+!
+! and C(i) does not depend on the particle at all -- it is a constant of
+! the whole run. It used to be recomputed inside the particle loop, so
+! every particle paid a full (nquad+1)*(mode+1) quadrature: 2*513 exp,
+! 2*513 sin and 2*5*513 cos/multiply-add EACH, ~500x more arithmetic
+! than needed. Hoisted out here, each particle now costs 2 exp and 2*5
+! multiplies. (Same class of redundancy as the Wn/Sn duplication noted
+! in BUGS_TODO.md, but that one measured ~1x and this one ~500x.)
+!
+! Note this changes the summation order, so results are no longer
+! bit-identical to the previous version -- they agree to roundoff
+! (~1e-16 relative, verified), far below the integrator and quadrature
+! errors that actually limit h_k.
+
+    do k=0,nquad
+      aq1(k) = exp(-sin(0.5d0*quadQ(k))**2/sq1**2)
+      aq2(k) = exp(-sin(0.5d0*quadQ(k))**2/sq2**2)
+    end do
+
+    do i=0,mode
+      cq1(i) = 0.d0
+      cq2(i) = 0.d0
+      do k=0,nquad
+        cq1(i) = cq1(i) + quadW(k)*aq1(k)*cos(dble(i)*quadQ(k))
+        cq2(i) = cq2(i) + quadW(k)*aq2(k)*cos(dble(i)*quadQ(k))
+      end do
+      cq1(i) = quadnorm*cq1(i)
+      cq2(i) = quadnorm*cq2(i)
+    end do
+
     hk1 = (0.d0,0.d0)
     hk2 = (0.d0,0.d0)
 
@@ -109,32 +150,21 @@
 ! match for 8 threads): parallelizing over particles instead scales
 ! with Npart, which is what actually matters at N_c ~ 10^3-10^5.
 
-    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,k,i,gval1,gval2,contrib1,contrib2,expv) REDUCTION(+:hk1,hk2)
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,i,bj1,bj2,expv) REDUCTION(+:hk1,hk2)
     do j=1,Npart
 
-      do k=0,nquad
-        gval1(k) = exp(-sin(0.5d0*quadQ(k))**2/sq1**2)*exp(-(Jr(j)-j1)**2/sj1**2)*Jr(j)**2
-        gval2(k) = exp(-sin(0.5d0*quadQ(k))**2/sq2**2)*exp(-(Jr(j)-j2)**2/sj2**2)*Jr(j)**2
-      end do
+!     Only the J-dependent factor is per-particle now; the Q-quadrature
+!     lives in cq1/cq2, computed once above.
+      bj1 = exp(-(Jr(j)-j1)**2/sj1**2)*Jr(j)**2
+      bj2 = exp(-(Jr(j)-j2)**2/sj2**2)*Jr(j)**2
 
-      do i=0,mode
-        contrib1(i) = 0.d0
-        contrib2(i) = 0.d0
-        do k=0,nquad
-          contrib1(i) = contrib1(i) + quadW(k)*gval1(k)*cos(dble(i)*quadQ(k))
-          contrib2(i) = contrib2(i) + quadW(k)*gval2(k)*cos(dble(i)*quadQ(k))
-        end do
-        contrib1(i) = quadnorm*contrib1(i)
-        contrib2(i) = quadnorm*contrib2(i)
-      end do
-
-      hk1(0) = hk1(0) + f(j)*contrib1(0)
-      hk2(0) = hk2(0) + f(j)*contrib2(0)
+      hk1(0) = hk1(0) + f(j)*bj1*cq1(0)
+      hk2(0) = hk2(0) + f(j)*bj2*cq2(0)
 
       expv = exp(-ii*Qr(j))
       do i=1,mode
-        hk1(i) = hk1(i) + f(j)*contrib1(i)*expv**i
-        hk2(i) = hk2(i) + f(j)*contrib2(i)*expv**i
+        hk1(i) = hk1(i) + f(j)*bj1*cq1(i)*expv**i
+        hk2(i) = hk2(i) + f(j)*bj2*cq2(i)*expv**i
       end do
 
     end do

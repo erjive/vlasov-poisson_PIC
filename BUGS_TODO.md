@@ -1061,6 +1061,58 @@ por un factor 23 mientras yoshida4 acierta a 7 cifras. Es decir: **los
 modos altos, que con leapfrog eran irresolubles, con yoshida4 si se
 resuelven** -- y sin pagar mas tiempo de computo.
 
+## `analysish` factorizado: la simulacion completa 10.4x mas rapida
+
+El integrando de `phik` **se factoriza exactamente**:
+
+$$g(Q,J)=\underbrace{e^{-\sin^2(Q/2)/\sigma_q^2}}_{A(Q)}\cdot\underbrace{e^{-(J-J_0)^2/\sigma_j^2}J^2}_{B(J)}$$
+
+asi que la cuadratura entera en $Q$ se separa de la particula:
+
+$$\phi_k(J,i)=B(J)\cdot\underbrace{\Big[\texttt{quadnorm}\sum_k w_k A(Q_k)\cos(iQ_k)\Big]}_{C(i),\ \textbf{constante de toda la corrida}}$$
+
+$C(i)$ **no depende de la particula**, pero se recalculaba dentro del
+bucle de particulas: cada una pagaba una cuadratura completa de
+$(n_{quad}+1)\times(\text{modos}+1)$ -- $2\times513$ `exp`, $2\times513$
+`sin` y $2\times5\times513$ `cos`/mult **cada una**. Sacado fuera, cada
+particula cuesta ahora 2 `exp` y $2\times5$ multiplicaciones.
+
+**Medido** (mismo benchmark, `aa_quad` $N_c=3.2\times10^4$, $N_t=60000$,
+4 hilos, cronometrado limpio):
+
+| | tiempo |
+|---|---|
+| antes | 333.2 s |
+| despues | **32.0 s** |
+
+**10.4x mas rapida la corrida completa** -- o sea que `analysish`
+representaba ~90% del costo total. Es la misma clase de redundancia que
+la duplicacion de `Wn`/`Sn` documentada arriba, pero aquella midio ~1x y
+esta 10x sobre el total.
+
+**Fisica identica**: $h_0$ y $h_1$ salen bit a bit iguales; $h_2$-$h_4$
+difieren a lo sumo $10^{-22}$ en valor **absoluto**, que es el ultimo
+digito del formato `ES16.8` con que se escribe el archivo. Las
+diferencias *relativas* de hasta 7e-9 caen todas en minimos locales de
+las curvas (p. ej. $h_3$ en $t=2585$ vale 1.42e-15 con vecinos de
+3.08e-15), donde el ultimo digito se amplifica.
+
+**Consecuencia para el benchmark de Yoshida**: aquella medicion ("solo
+1.1-1.24x mas caro que leapfrog") se hizo cuando `analysish` dominaba el
+costo y el empuje de particulas era despreciable. Ahora que `analysish`
+es 10x mas barato, el empuje pesa mucho mas, asi que el 3x de
+evaluaciones de fuerza de Yoshida **va a notarse mas**. Estimacion
+gruesa: su costo relativo subiria de ~1.24x a ~1.9x. Sigue valiendo
+ampliamente la pena (17000x de precision al mismo $\Delta t$), pero la
+frase "practicamente gratis" ya no aplica y habria que re-medirlo.
+
+**Y sobre calcular $h_k$ en post-proceso**: con esto la pregunta queda
+casi sin objeto. El post-proceso nunca podia ser mas rapido en total
+(la aritmetica es la misma, mas escribir y releer ~4 GB por corrida);
+ahora ademas el costo en linea es marginal. La recomendacion es $h_k$ en
+linea + snapshots ralos vía `field_output` para diagnosticos posteriores
+-- que es justo lo que permitio encontrar el bug de `eps`.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
