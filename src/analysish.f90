@@ -178,9 +178,13 @@
   if (filestatus=='replace') then
      open(101,file=trim(directory)//'/'//trim("hk1")//'.tl',form='formatted',status=filestatus)
      open(102,file=trim(directory)//'/'//trim("hk2")//'.tl',form='formatted',status=filestatus)
+     open(103,file=trim(directory)//'/'//trim("hk1_complex")//'.tl',form='formatted',status=filestatus)
+     open(104,file=trim(directory)//'/'//trim("hk2_complex")//'.tl',form='formatted',status=filestatus)
   else
      open(101,file=trim(directory)//'/'//trim("hk1")//'.tl',form='formatted',status=filestatus,position='append')
      open(102,file=trim(directory)//'/'//trim("hk2")//'.tl',form='formatted',status=filestatus,position='append')
+     open(103,file=trim(directory)//'/'//trim("hk1_complex")//'.tl',form='formatted',status=filestatus,position='append')
+     open(104,file=trim(directory)//'/'//trim("hk2_complex")//'.tl',form='formatted',status=filestatus,position='append')
   end if
 
 
@@ -191,6 +195,22 @@
   write(101,"(7ES16.8)") t,abs_hk1(:)
   write(102,"(7ES16.8)") t,abs_hk2(:)
 
+! hk1/hk2 above only ever save the magnitude |h_k|, which is fine for
+! looking at a single run but useless for telling real decay-to-zero
+! apart from a discreteness-noise floor that never shrinks: the noise
+! has a random phase from run to run (different seed), so averaging
+! |h_k| over several independent runs does NOT cancel it (same effect
+! as Rayleigh-distributed magnitude noise never averaging below its
+! own scale) -- only averaging the COMPLEX h_k first, then taking the
+! magnitude of THAT average, lets random-phase noise cancel while a
+! real physical (phase-coherent) signal survives. Saving Re/Im here
+! (columns: t, Re(h_0),Im(h_0), Re(h_1),Im(h_1), ..., Re(h_4),Im(h_4))
+! makes that kind of ensemble averaging possible in post-processing.
+! See BUGS_TODO.md.
+
+  write(103,"(11ES16.8)") t,(real(hk1(k)),aimag(hk1(k)),k=0,mode)
+  write(104,"(11ES16.8)") t,(real(hk2(k)),aimag(hk2(k)),k=0,mode)
+
 
 ! ***************************
 ! ***   CLOSE DATA FILE   ***
@@ -198,6 +218,8 @@
 
   close(101)
   close(102)
+  close(103)
+  close(104)
 
 
   end subroutine analysish
