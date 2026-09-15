@@ -580,6 +580,75 @@ para este problema específico. No reemplaza `aa` por defecto (el
 piso de ruido sigue siendo real, solo que predecible), queda como
 estado adicional disponible.
 
+## $h_k$: guardar la fase (complejo, no solo magnitud) + intento de predecir el piso de ruido teórico
+
+Dos tareas relacionadas con "cómo saber si $h_k$ realmente tiende a
+cero pese al piso de ruido": (a) `analysish.f90` solo guardaba
+$|h_k|$, lo cual hace inútil promediar sobre corridas independientes
+para cancelar ruido; (b) intentar predecir el piso de ruido esperado
+desde primeros principios, sin correr nada, para tener una referencia
+independiente de la corrida real.
+
+- [x] **`analysish.f90` ahora también guarda $h_k$ complejo**
+  (`hk1_complex.tl`/`hk2_complex.tl`, columnas `t, Re(h_0),Im(h_0),
+  ..., Re(h_4),Im(h_4)`), sin tocar `hk1.tl`/`hk2.tl` (se siguen
+  guardando igual, compatibilidad con todo el análisis anterior). La
+  razón: el ruido de discretización tiene fase aleatoria entre
+  corridas con distinta semilla, pero una señal física real tiene fase
+  consistente — promediar $|h_k|$ (lo único que había) sobre varias
+  corridas **no cancela el ruido** (es como promediar una magnitud
+  Rayleigh: nunca baja de su propia escala, sin importar cuántas
+  corridas se promedien). Promediar el $h_k$ **complejo** primero, y
+  recién ahí tomar magnitud, sí cancela el ruido de fase aleatoria y
+  deja sobrevivir una señal física real. Verificado: a $t=0$,
+  $\mathrm{Re}(h_k)\approx|h_k|$ guardado en `hk1.tl` (con
+  $\mathrm{Im}(h_k)\sim10^{-17}$, ruido de redondeo), consistente. —
+  commit `feat(analysish): save complex h_k (Re/Im), not just
+  magnitude`
+
+- [ ] **Intento de predecir el piso de ruido de `aa_random` desde
+  primeros principios — validado el método, pero con una discrepancia
+  real de ~150-230x contra lo medido, sin explicar del todo.**
+  Para partículas de igual peso $m_p=a_0/N$ distribuidas
+  $\propto F(Q,J)$, la varianza de un estimador MC estándar da
+  $$\mathrm{Var}[h_k] \approx (8\pi^2L_0)^2\frac{a_0^2}{N}\,
+  \mathbb E_{q_J}[|\hat\Phi_k(J)|^2],\quad
+  q_J(J)=\hat F_0(J)\big/\!\int\hat F_0\,dJ'$$
+  con media de Rayleigh $\mathbb E[|h_k|]\approx\sqrt{\pi/4}\sqrt{\mathrm{Var}[h_k]}$.
+
+  Un primer intento de esta fórmula tenía un error de normalización
+  (a $q_J(J)$ le faltaba exactamente el factor $8\pi^2L_0$ que sí
+  aparece en la propia definición de $h_k$ — la masa total es
+  $a_0=8\pi^2L_0\int\!\!\int F\,dQ\,dJ$, no $\int\!\!\int F$ a secas).
+  Detectado y corregido comparando contra una simulación Monte Carlo
+  idealizada en Python (sorteo por rechazo de $(Q_0,J)\sim F$, streaming
+  libre exacto $Q(t)=Q_0+\omega(J)t$, evaluado en la misma ventana
+  $t\in[8000,10000]$ medida en la corrida real) — dos construcciones
+  MC independientes (fase uniforme al azar; streaming exacto en la
+  ventana real) concuerdan entre sí y con la fórmula ya corregida
+  (dentro de ~10%), confirmando que el método está bien planteado
+  **para lo que modela**.
+
+  Pero comparado contra el piso medido en la corrida PIC real
+  (`aa_random`, sección anterior), la predicción sale
+  **~150-230x más alta** que lo medido, en los 4 modos y ambos $N_c$.
+  Pista encontrada al investigar: la serie temporal real en
+  $t\in[8000,10000]$ es **suave y lentamente decreciente** (cambia
+  ~0.7% entre muestras consecutivas, $\Delta t=2.5$), no el salto
+  brusco muestra-a-muestra que se esperaría de un ensamble ya
+  completamente aleatorizado en fase (que es lo que asume la fórmula
+  de ruido). Lectura más probable: a $t\sim10^4$ el ensamble de
+  `aa_random` **todavía no llegó** al régimen "completamente mezclado
+  en fase" — sigue en una relajación más lenta y específica de cómo
+  se dispersan las frecuencias $\omega(J)$ entre partículas cercanas
+  en $J$, no capturada por una teoría de ruido genérica tipo
+  shot-noise. No investigado más a fondo (p. ej. medir explícitamente
+  la escala de tiempo de esa relajación, o repetir la comparación a
+  $t$ mucho mayor) — detalle completo, con las cuentas y las tres
+  comparaciones lado a lado, en la Sec. 10 de `hk_exact.ipynb`. —
+  commit `docs: derive and cross-validate the aa_random noise-floor
+  prediction, document the unexplained gap against measured data`
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),
