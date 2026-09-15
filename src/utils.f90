@@ -327,26 +327,82 @@ end subroutine construct_grid
   !! will simply reject them.
   subroutine build_cell_list(cell_start,particle_order)
 
+    use omp_lib
+
     implicit none
 
     integer, allocatable, intent(out) :: cell_start(:)
     integer, allocatable, intent(out) :: particle_order(:)
 
-    integer :: j,c
-    integer, allocatable :: cell_count(:),cursor(:),ic(:)
+    integer :: j,c,th,nth
+    integer, allocatable :: cell_count(:),ic(:)
+    integer, allocatable :: local_count(:,:),local_offset(:,:)
 
     allocate(cell_start(1:Nr+1))
     allocate(particle_order(1:Npart))
     allocate(cell_count(1:Nr))
-    allocate(cursor(1:Nr))
     allocate(ic(1:Npart))
 
-    cell_count = 0
+! Parallel counting sort (two-pass, per-thread local histograms),
+! replacing the previous fully serial version -- profiled at ~15% of
+! avg_density()'s wall time (the only serial piece left in the
+! self-gravitating step; see BUGS_TODO.md), so worth the extra
+! complexity here specifically.
+!
+! Pass 1 (embarrassingly parallel): compute each particle's cell index
+! "ic(j)" and, in the same pass, each thread accumulates its OWN
+! per-cell count into local_count(th,:) -- since only thread th ever
+! touches row th, this is race-free with no atomics.
+!
+! Between passes (serial, O(Nr*nth) and O(Nr), cheap): reduce
+! local_count across threads into the global cell_count/cell_start
+! (unchanged from before), then compute each thread's own starting
+! write-offset per cell: local_offset(th,c) = cell_start(c) + the
+! count of particles thread 0..th-1 put in cell c. This partitions
+! each cell's slot range into disjoint per-thread sub-ranges.
+!
+! Pass 2 (embarrassingly parallel, SAME iteration schedule as pass 1
+! so each particle is handled by the same thread both times, matching
+! it to the local_count it was already tallied into): each thread
+! places its own particles using its own local_offset(th,ic(j)), then
+! advances that private counter -- again race-free, since only thread
+! th ever reads/writes row th.
+!
+! Correctness of "same schedule" relies on OpenMP's guarantee that
+! STATIC scheduling with no explicit chunk size is deterministic for a
+! given loop bound and team size (same chunks every time), which both
+! DO loops below satisfy (same Npart, same thread count).
 
+! local_count/local_offset are indexed (c,th), not (th,c): Fortran
+! arrays are column-major, so with (c,th) each thread's own nth-th
+! "column" is one contiguous block of Nr elements, entirely disjoint
+! from every other thread's block. With (th,c) instead, one row per
+! thread, different threads' entries for the SAME c sit only nth
+! elements apart -- close enough to land in the same cache line, so
+! even though each thread only ever writes its own logical row, two
+! threads hitting nearby cells around the same time cause false
+! sharing (cache-line ping-pong with no actual data race). Swapping
+! the layout was measured to matter a lot: it took build_cell_list
+! from a 1.6x speedup at 4 threads (the (th,c) layout) to 3.1x (this
+! (c,th) layout) -- see BUGS_TODO.md.
+    nth = omp_get_max_threads()
+    allocate(local_count(1:Nr,0:nth-1))
+    allocate(local_offset(1:Nr,0:nth-1))
+    local_count = 0
+
+    !$OMP PARALLEL PRIVATE(j,th) SHARED(ic,local_count)
+    th = omp_get_thread_num()
+    !$OMP DO SCHEDULE(STATIC)
     do j=1,Npart
       ic(j) = nint((r_part(j)-r(1))/dr) + 1
       ic(j) = max(1,min(Nr,ic(j)))
-      cell_count(ic(j)) = cell_count(ic(j)) + 1
+      local_count(ic(j),th) = local_count(ic(j),th) + 1
+    end do
+    !$OMP END DO
+    !$OMP END PARALLEL
+
+    do c=1,Nr
+      cell_count(c) = sum(local_count(c,:))
     end do
 
     cell_start(1) = 1
@@ -354,15 +410,25 @@ end subroutine construct_grid
       cell_start(c+1) = cell_start(c) + cell_count(c)
     end do
 
-    cursor(1:Nr) = cell_start(1:Nr)
-
-    do j=1,Npart
-      c = ic(j)
-      particle_order(cursor(c)) = j
-      cursor(c) = cursor(c) + 1
+    do c=1,Nr
+      local_offset(c,0) = cell_start(c)
+      do th=1,nth-1
+        local_offset(c,th) = local_offset(c,th-1) + local_count(c,th-1)
+      end do
     end do
 
-    deallocate(cell_count,cursor,ic)
+    !$OMP PARALLEL PRIVATE(j,th,c) SHARED(ic,local_offset,particle_order)
+    th = omp_get_thread_num()
+    !$OMP DO SCHEDULE(STATIC)
+    do j=1,Npart
+      c = ic(j)
+      particle_order(local_offset(c,th)) = j
+      local_offset(c,th) = local_offset(c,th) + 1
+    end do
+    !$OMP END DO
+    !$OMP END PARALLEL
+
+    deallocate(cell_count,ic,local_count,local_offset)
 
   end subroutine build_cell_list
 

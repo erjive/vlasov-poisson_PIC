@@ -241,6 +241,64 @@ revertida después de medir (no es un cambio permanente).
   cualquier lugar que indexe partículas por su posición original) —
   no evaluado en esta sesión.
 
+- [x] **`build_cell_list` (`utils.f90`), la única pieza serial que
+  quedaba en el paso autogravitante, paralelizada** (era ~15% del
+  tiempo de `avg_density()`, medido antes de tocar nada). Es un
+  counting sort (cuenta partículas por celda, prefix-sum, reordena) —
+  no es un `!$OMP PARALLEL DO` trivial porque el paso de reordenamiento
+  final tiene una dependencia de escritura por celda
+  (`cursor(c) = cursor(c) + 1`). Implementado como counting sort
+  paralelo en dos pasadas (técnica estándar, la misma familia que los
+  radix sorts paralelos):
+  1. Cada partícula obtiene su índice de celda; cada hilo acumula su
+     **propio** histograma por celda (`local_count`) — sin atómicos,
+     cada hilo solo toca su propia fila.
+  2. Reducción de los histogramas por hilo a `cell_count`/`cell_start`
+     (igual que antes) más el prefix-sum *entre hilos* para el offset
+     de escritura propio de cada hilo en cada celda
+     (`local_offset(c,th)`), partiendo el rango de cada celda en
+     sub-rangos disjuntos por hilo.
+  3. Segunda pasada (mismo *schedule* que la primera, para que cada
+     partícula la procese el mismo hilo que la contó): cada hilo
+     coloca sus propias partículas en su propio sub-rango — de nuevo
+     sin atómicos, sin choques de escritura entre hilos por
+     construcción.
+
+  **El orden del arreglo `local_count`/`local_offset` importó
+  muchísimo**: la primera versión, indexada `(hilo,celda)`, dio solo
+  ~1.6× de aceleración con 4 hilos — Fortran es *column-major*, así
+  que con ese orden las entradas de hilos distintos para la *misma*
+  celda quedan a solo `nth` elementos de distancia en memoria, lo
+  bastante cerca para caer en la misma línea de caché (false sharing:
+  cada hilo solo escribe su propia fila, pero la línea de caché salta
+  entre núcleos igual, sin que haya una carrera de datos real).
+  Invertido a `(celda,hilo)` — cada hilo pasa a tener un bloque
+  contiguo de `Nr` elementos, completamente separado del de los
+  demás — la aceleración subió a **3.08×** con 4 hilos.
+
+  Medido con el mismo benchmark de la sección anterior (~10072
+  partículas, autogravedad, 4 hilos, 2000 pasos):
+
+  | | antes (serial) | después (paralelo, layout `(celda,hilo)`) |
+  |---|---|---|
+  | `build_cell_list` (2000 llamadas, wall) | 0.184s | **0.0598s** (3.08×) |
+  | `avg_density()` total (2000 llamadas, wall) | 1.263s | 1.126s (10.9%) |
+  | corrida completa (wall) | 2.364s | 2.281s (~3.5%) |
+
+  Consistente con el ~15% de `avg_density()` medido al principio: ya
+  no queda margen grande ahí, la parte de depósito/interpolación
+  (ya paralela) domina el costo restante.
+
+  **Verificado, no solo medido**: comparado contra la versión serial
+  original en una corrida autogravitante completa (mismo estado `aa`,
+  11 snapshots HDF5) — `avg_rho`, `force`, `potential`, `rho`,
+  `r_part`, `p_part`, `f` salen **bit a bit idénticos** (diferencia
+  relativa exactamente 0.0 en los 11 snapshots), energía total a nivel
+  de redondeo de punto flotante (~1e-15, ruido de orden de suma
+  distinto entre hilos, no un error). Repetido dos veces (una por cada
+  versión del layout) con el mismo resultado. — commit `perf(utils):
+  parallelize build_cell_list (2-pass counting sort), 3.08x`
+
 ## Rendimiento con `OMP_NUM_THREADS`: 8 hilos no es óptimo en esta laptop
 
 Máquina de referencia: Intel i7-4710HQ, **4 núcleos físicos, 8 hilos
