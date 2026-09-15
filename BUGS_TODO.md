@@ -789,9 +789,31 @@ vez de derivarlo del default de CFL. Impacto esperado: el piso deberia
 caer de $5\times10^{-12}$ hacia $\sim5.6\times10^{-16}$ (~4 ordenes) y
 **mejora todos los estados por igual**, no solo `aa_quad`.
 
+**FIX APLICADO Y VERIFICADO.** `eps` ya no se deriva de `pmax`: se lee del
+archivo de entrada (nuevo campo, 0.0 en todos los `paper_runs/input_*`),
+con un warning en tiempo de ejecucion si alguien pone `eps/=0` con
+`Lfix/=0`. El suavizado sigue disponible para el caso $L_0\to0$, donde no
+hay barrera centrifuga y si hace falta.
+
+Resultado con `aa_quad` ($N_Q{=}40\times N_J{=}800$), $\epsilon=0$ vs el
+$\epsilon=0.1$ anterior, contra el exacto:
+
+| $t$ | exacto | $\epsilon=0$ | err.rel | $\epsilon=0.1$ | err.rel |
+|---|---|---|---|---|---|
+| 1000 | 4.301e-10 | 4.301e-10 | **1.3e-06** | 4.402e-10 | 2.4e-02 |
+| 2000 | 2.138e-12 | 2.138e-12 | **2.5e-04** | 4.110e-12 | 9.2e-01 |
+| 3000 | 2.507e-13 | 2.512e-13 | **1.9e-03** | 4.896e-12 | 1.9e+01 |
+| 5000 | 1.844e-14 | 1.873e-14 | **1.6e-02** | 5.000e-12 | 2.7e+02 |
+
+El PIC ahora **sigue la curva exacta hasta $\sim10^{-14}$**; a $t=5000$ el
+error relativo pasa de 270x a 1.6%. Grafica: `hk_epsfix.png`.
+
 **Advertencia**: cambia el modelo de fuerza, asi que invalida
 cuantitativamente todas las corridas previas de esta rama (todas usaron
-$\epsilon=0.1$). Decision pendiente del usuario.
+$\epsilon=0.1$) -- incluidas las tablas de $h_k$ de las secciones
+anteriores. Las conclusiones *cualitativas* sobre muestreo (recurrencia
+de rejilla, batido de MC) siguen valiendo, pero los pisos numericos
+reportados ahi estaban dominados por este bug, no por el muestreo.
 
 ## Piso de $h_k$ con `aa_quad`: NO es el muestreo, NO es el integrador (diagnostico que llevo a la causa raiz)
 

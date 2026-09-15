@@ -51,6 +51,7 @@ module utils
     read(*,*) autointeraction
     read(*,*) output_format
     read(*,*) field_output
+    read(*,*) eps
 
     if (output_format/="ascii" .and. output_format/="hdf5" .and. output_format/="raw") then
        print *
@@ -68,6 +69,23 @@ module utils
 ! snapshot could be written with a stale rho/energy from an earlier
 ! step instead of the one matching its own time -- silently wrong, not
 ! a crash, so worth catching here instead.
+! eps/=0 softens the centrifugal term in the DYNAMICS, but analysish.f90
+! reconstructs E, J3 and Q3 with the unsoftened formulas -- the particles
+! then evolve under one Hamiltonian and are analysed under another, J3
+! drifts, and h_k cannot decay below a floor set by eps (see BUGS_TODO.md).
+! For L0 /= 0 the centrifugal barrier already keeps r away from 0, so the
+! softening buys nothing there. Warn rather than abort: it stays available
+! for the L0 -> 0 case where it is actually needed.
+    if (eps /= 0.0d0 .and. Lfix /= 0.0d0) then
+       print *
+       print *, 'WARNING: eps /= 0 with Lfix /= 0.'
+       print *, 'The dynamics will use a softened centrifugal term while'
+       print *, 'analysish reconstructs (E,J3,Q3) unsoftened -- J3 will drift'
+       print *, 'and h_k will floor out. Set eps = 0 unless you know why.'
+       print *, 'eps =',eps
+       print *
+    end if
+
     if (mod(field_output,spatial_output)/=0) then
        print *
        print *, 'field_output must be a multiple of spatial_output'
@@ -137,8 +155,17 @@ module utils
     print *, 'Number of points in r direction ',Nr
     !print *, 'Number of points in p direction ',Np
 
-    ! Minimum radius when the angular momentum is fix.
-    eps = Lfix/(10.0D0*pmax)
+!   eps (softening of the centrifugal term) used to be set HERE as
+!   eps = Lfix/(10*pmax). That was a bug with real consequences: "pmax"
+!   is a hardcoded default (parameters.f90, pmax=2.0) that is never read
+!   from the input file -- the input reads pmaxc, a different variable --
+!   so eps silently became Lfix/20, i.e. 0.1 for L0=2, the same scale as
+!   the distribution's own widths. Meanwhile analysish.f90 reconstructs
+!   E, J3 and Q3 with the UNSOFTENED formulas, so particles evolved under
+!   one Hamiltonian and were analysed under another: J3 drifted by
+!   ~6.6e-4 and h_k floored at ~5e-12 instead of ~5.6e-16, independently
+!   of dt and of how the particles were laid out. See BUGS_TODO.md.
+!   eps is now read from the input file instead (normally 0).
 
   end subroutine set_grid_size
 

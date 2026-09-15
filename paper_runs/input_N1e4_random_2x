@@ -35,3 +35,4 @@ Isochrone ! Background type
 .false. ! Autointeraction
 hdf5    ! Output format (ascii,hdf5)
 10000  ! field_output (100x sparser than spatial_output, saves disk on the long run)
+0.0    ! eps (suavizado del termino centrifugo; 0 = consistente con analysish)
