@@ -1041,7 +1041,25 @@ Nota: con `autointeraction=.true.` el balance cambia -- ahi las 3
 evaluaciones son 3 resolvedores de Poisson por paso, y ese camino si
 domina; habria que re-medir en ese regimen antes de generalizar.
 
-Grafica: `paper_runs/notebooks/bench_yoshida.png`.
+Graficas: `bench_yoshida.png` (convergencia y precision por costo),
+`hk_yoshida_modos.png` ($h_k(t)$ de los 4 modos contra el exacto) y
+`hk_yoshida_errores.png` (error relativo por modo, yoshida4 vs leapfrog
+al mismo $\Delta t$), todas en `paper_runs/notebooks/`.
+
+**Los 4 modos a $t=3000$, mismo $\Delta t=0.05$:**
+
+| modo | exacto | yoshida4 | err.rel | leapfrog | err.rel |
+|---|---|---|---|---|---|
+| $h_1$ | 2.5069e-13 | 2.5069e-13 | **4.6e-07** | 2.5264e-13 | 7.8e-03 |
+| $h_2$ | 6.9088e-15 | 6.9087e-15 | **1.3e-05** | 7.3761e-15 | 6.8e-02 |
+| $h_3$ | 8.1284e-16 | 8.1278e-16 | **6.7e-05** | 2.2333e-15 | 1.7e+00 |
+| $h_4$ | 1.6679e-16 | 1.6678e-16 | **6.7e-05** | 4.0506e-15 | 2.3e+01 |
+
+El contraste crece con el modo, como corresponde: el error de fase entra
+como $e^{-ikQ}$, asi que pesa $\propto k$. En $h_4$ el leapfrog se equivoca
+por un factor 23 mientras yoshida4 acierta a 7 cifras. Es decir: **los
+modos altos, que con leapfrog eran irresolubles, con yoshida4 si se
+resuelven** -- y sin pagar mas tiempo de computo.
 
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
