@@ -731,7 +731,69 @@ independiente de la corrida real.
   omega(J) spectrum directly, explaining the smooth h_k(t) via a beat
   timescale T2 >> simulated t`
 
-## Piso de $h_k$ con `aa_quad`: NO es el muestreo, NO es el integrador -- mecanismo aun sin identificar
+## RESUELTO: el piso de $h_k$ era el suavizado `eps` del termino centrifugo (inconsistencia dinamica/analisis)
+
+**Causa raiz encontrada.** `grav_force.f90:131-132` integra el termino
+centrifugo **suavizado**:
+$0.5L_0^2/(r^2+\epsilon^2)$, fuerza $L_0^2 r/(r^2+\epsilon^2)^2$;
+pero `analysish.f90:38` reconstruye $E$, $J_3$ y $Q_3$ con las formulas
+**sin suavizar** ($0.5L_0^2/r^2$). Las particulas se mueven en un
+Hamiltoniano y se analizan con otro.
+
+Y $\epsilon$ **no es chico**: `utils.f90:141` lo define como
+`eps = Lfix/(10*pmax)` donde `pmax` es un **default hardcodeado**
+(`parameters.f90:24`, `pmax=2.0`) que **nunca se lee del archivo de
+entrada** -- lo que se lee es `pmaxc`, otra variable. Con $L_0=2$ queda
+$\epsilon=0.1$, del mismo orden que los anchos de la propia DF
+($\sigma_J=\sigma_Q=0.1$). `pmax` existe legitimamente para la condicion
+CFL (`dtr = courant*dr/pmax`); el bug es haber derivado de ahi una
+longitud de suavizado con significado fisico.
+
+**Evidencia** (diagnostico offline sobre snapshots ya guardados de
+`articleN1e4_quad`, sin correr simulaciones nuevas):
+
+| cantidad | deriva relativa $t=0 \to 10^4$ |
+|---|---|
+| $E$ **con** suavizado (la que integra el codigo) | rms **1.78e-07** |
+| $E$ **sin** suavizado (la que usa `analysish`) | rms **4.67e-04** |
+| $\delta J$ reconstruido | **6.590e-04** |
+
+y el diagnostico de cuatro rutas sobre el mismo snapshot:
+
+| ruta | $|h_1|$ en $t=10^4$ |
+|---|---|
+| A reconstruido $(Q_{rec},J_{rec})$ | 5.0078e-12 (reproduce `hk1.tl`) |
+| B analitico $(Q_0+\omega t, J_{grid})$ | **5.6315e-16** (= valor exacto) |
+| A' $Q_{rec}+J_{grid}$ | 9.6177e-12 |
+| A'' $Q_{anal}+J_{rec}$ | 5.0915e-12 |
+
+Con los **mismos pesos** $f_p$, la ruta analitica da el valor exacto:
+la colocacion y los pesos siempre estuvieron bien. En $t=0$ la inversion
+Newton-Raphson de `aa_quad` es exacta a precision de maquina
+($\delta J$ rms $=2.6\times10^{-16}$, $\delta Q$ rms $=8.8\times10^{-15}$),
+asi que el error se acumula en la evolucion -- pero de forma
+independiente de $\Delta t$ (test `courant` 0.5 vs 0.125: piso identico
+a 4-5 cifras), consistente con una inconsistencia de **modelo**, no de
+truncamiento. La contribucion del leapfrog se estima en $\sim6\times10^{-5}$
+rad, 3600x menor que los 0.227 rad de $\delta Q$ medidos.
+
+**Esto explica de golpe por que TODOS los esquemas de muestreo chocaban
+con el mismo piso** ($\sim5\times10^{-12}$, identico entre `aa` y `aa_quad`
+al 0.3%, plano en el tiempo): nunca fue un problema de muestreo.
+
+**Fix propuesto (sin aplicar todavia)**: poner $\epsilon=0$ cuando
+$L_0\neq0$ -- el bloque ya esta guardado por `if(Lfix /= 0.0d0)`, y con
+$L_0\neq0$ la barrera centrifuga impide $r\to0$, asi que el suavizado no
+protege de nada ahi; y ademas exponer `eps` como parametro de entrada en
+vez de derivarlo del default de CFL. Impacto esperado: el piso deberia
+caer de $5\times10^{-12}$ hacia $\sim5.6\times10^{-16}$ (~4 ordenes) y
+**mejora todos los estados por igual**, no solo `aa_quad`.
+
+**Advertencia**: cambia el modelo de fuerza, asi que invalida
+cuantitativamente todas las corridas previas de esta rama (todas usaron
+$\epsilon=0.1$). Decision pendiente del usuario.
+
+## Piso de $h_k$ con `aa_quad`: NO es el muestreo, NO es el integrador (diagnostico que llevo a la causa raiz)
 
 `aa_quad` (rejilla de cuadratura limpia en $(Q_3,J_3)$, $N_Q{=}40\times N_J{=}800$)
 reproduce $h_0..h_4$ exactos **a 8 cifras** en $t=0$ y baja el piso tardio a
