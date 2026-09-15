@@ -50,11 +50,29 @@ module utils
     read(*,*) BGtype
     read(*,*) autointeraction
     read(*,*) output_format
+    read(*,*) field_output
 
     if (output_format/="ascii" .and. output_format/="hdf5" .and. output_format/="raw") then
        print *
        print *, 'Unknown output_format: ',trim(output_format)
        print *, 'Valid values are "ascii", "hdf5" or "raw".'
+       print *, 'Aborting ...'
+       print *
+       stop
+    end if
+
+! field_output gates the r_part/p_part/f snapshot (save_data_hdf5/raw/
+! save_data), which also writes rho/avg_rho/kinetic_energy -- populated
+! by density()/energy(), themselves only called when mod(l,spatial_output)
+! ==0. If field_output isn't a multiple of spatial_output, a field
+! snapshot could be written with a stale rho/energy from an earlier
+! step instead of the one matching its own time -- silently wrong, not
+! a crash, so worth catching here instead.
+    if (mod(field_output,spatial_output)/=0) then
+       print *
+       print *, 'field_output must be a multiple of spatial_output'
+       print *, '(density()/energy() -- which the field snapshot depends on for'
+       print *, 'rho/avg_rho/kinetic_energy -- only run every spatial_output steps).'
        print *, 'Aborting ...'
        print *
        stop

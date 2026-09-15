@@ -1,8 +1,8 @@
 0.1     ! Grid spacing dr
-32      ! Number of cells in r direction
-32      ! Number of cells in p direction
+100     ! Number of cells in r direction
+100     ! Number of cells in p direction
 0.5     ! Courant factor (dtfac)
-400000  ! Number of time steps
+800000  ! Number of time steps
 0.0     ! Minimum radius of the grid
 20.0    ! Maximum radius of the grid
 1.0     ! Minimum radius of the support of f
@@ -14,7 +14,7 @@
 1000    ! How often we discard particles
 20000   ! Time_output
 100     ! Spatial_output
-articleN1e3_random ! directory
+articleN1e4_rand2x ! directory
 0.0001  ! a0 (gas mass fraction of M_iso)
 0.01    ! r0 -- REUSED as cutoff fraction for state="aa" (see BUGS_TODO.md); paper's cutoff=0.01
 0.0     ! p0 (unused by state="aa")
@@ -34,4 +34,4 @@ bg      ! Forcetype
 Isochrone ! Background type
 .false. ! Autointeraction
 hdf5    ! Output format (ascii,hdf5)
-100    ! field_output (r_part/p_part/f snapshot cadence; must be a multiple of spatial_output)
+10000  ! field_output (100x sparser than spatial_output, saves disk on the long run)

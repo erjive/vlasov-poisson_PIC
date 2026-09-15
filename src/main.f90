@@ -271,7 +271,11 @@ program VP_PIC
 !    ***   SAVE DATA TO FILE   ***
 !    *****************************
 
-     if (mod(l,spatial_output).eq.0) then
+! field_output (independent of spatial_output) gates the expensive
+! r_part/p_part/f snapshot -- the bulk of the disk footprint -- so
+! hk1.tl/hk1_complex.tl (via analysish below) can be sampled finely in
+! time without paying for an equally frequent field dump.
+     if (mod(l,field_output).eq.0) then
 
        if (output_format=="hdf5") then
           call save_data_hdf5(l)

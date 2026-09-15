@@ -34,3 +34,4 @@ bg      ! Forcetype
 Isochrone ! Background type
 .true.  ! Autointeraction
 hdf5    ! Output format (ascii,hdf5)
+100    ! field_output (r_part/p_part/f snapshot cadence; must be a multiple of spatial_output)

@@ -66,7 +66,11 @@ module parameters
    character(20)  :: output_format = "ascii" !< Output format (ascii,hdf5)
    logical        :: reduceparticles = .false. !< Do we discard particles outside the domain? 
    integer        :: Nreduce = 100000       !< How often do we do discard particles outside domain?
-   integer        :: spatial_output = 10000 !< Spatial output
+   integer        :: spatial_output = 10000 !< Spatial output (also controls analysish()/hk1.tl cadence)
+   integer        :: field_output = 10000   !< How often (in raw timesteps) to save the r_part/p_part/f
+                                             !< snapshot (HDF5/raw/ascii field data) -- independent of
+                                             !< spatial_output, so hk1.tl can be sampled finely without
+                                             !< paying the disk cost of an equally frequent field dump.
    integer        :: time_output = 10000    !< Time output
    integer        :: time_reduce_arr = 10000!< Reduce array size every
    character(20)  :: conv_test = "off"      !< Convergence test switch (on,off)
