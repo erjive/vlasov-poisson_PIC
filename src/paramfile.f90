@@ -29,18 +29,19 @@ module paramfile
 !> Every name the parser accepts. Used to reject unknown names and to
 !! suggest the intended one when a name is misspelled, so it must list
 !! exactly the names handled by assign_param below.
-  integer, parameter :: NPARAM = 42
-  character(16), parameter :: pname(NPARAM) = [ character(16) :: &
+  character(16), parameter :: pname(*) = [ character(16) :: &
       'dr', 'Nrc', 'Npc', 'courant', 'Nt',                       &
       'rmin', 'rmax', 'rminc', 'rmaxc', 'pminc', 'pmaxc', 'pmax',&
       'Lfix', 'eps', 'reduceparticles', 'Nreduce',               &
       'time_output', 'spatial_output', 'field_output',           &
       'directory', 'output_format',                              &
-      'a0', 'r0', 'p0', 'sr', 'sp', 'state', 'dftype',           &
+      'a0', 'r0', 'p0', 'sr', 'sp', 'state', 'dftype', 'seed',   &
       'j1', 'j2', 'sj1', 'sj2', 'sq1', 'sq2',                    &
       'r1', 'r2',                                                &
       'bsplineorder', 'integrator', 'spatialorder',              &
       'forcetype', 'BGtype', 'autointeraction' ]
+
+  integer, parameter :: NPARAM = size(pname)   ! deduced, never kept in step by hand
 
  contains
 
@@ -204,6 +205,7 @@ module paramfile
     case ('sp')              ; call get_real(value,sp,name,origin)
     case ('state')           ; call get_str (value,state,name,origin)
     case ('dftype')          ; call get_str (value,dftype,name,origin)
+    case ('seed')            ; call get_int (value,seed,name,origin)
 
 !   Test functions for the h_k modes.
     case ('j1')              ; call get_real(value,j1,name,origin)
@@ -256,7 +258,8 @@ module paramfile
     print *
     print *, trim(origin),': unknown parameter "',trim(name),'".'
 
-!   A small edit distance means a typo rather than a different name.
+!   Up to three edits is a plausible typo; further than that the two names
+!   are simply different and a suggestion would mislead.
     if (dbest <= 3) print *, '   Did you mean "',trim(pname(ibest)),'"?'
 
     print *, '   Run with --help for the full list.'
@@ -363,7 +366,7 @@ module paramfile
 
     call check_option(output_format,'output_format','ascii hdf5 raw')
     call check_option(state,'state','gaussian aa aa_halton aa_quad aa_random checkpoint')
-    call check_option(dftype,'dftype','gauss bimodal spiral')
+    call check_option(dftype,'dftype','gauss bimodal spiral king')
     call check_option(integrator,'integrator','euler leapfrog yoshida4 yoshida6 analytic rk4')
     call check_option(spatialorder,'spatialorder','two four')
     call check_option(forcetype,'forcetype','bg self')
@@ -559,6 +562,7 @@ module paramfile
     call put_r(u,'sr',sr)
     call put_r(u,'sp',sp)
     call put_s(u,'state',state)
+    call put_i(u,'seed',seed)
 
     write(u,'(a)') ''
     write(u,'(a)') '# Test functions for the h_k modes'
@@ -669,6 +673,8 @@ module paramfile
        write(fmt,'(a,i0,a)') '(f0.',p,')'
        write(try,fmt) x
        read(try,*,iostat=ios) back
+!      Past ten characters the plain form stops being easier to read than the
+!      exponent form; either round trips, so this only picks the tidier one.
        if (ios == 0 .and. back == x .and. len_trim(try) <= 10) then
           s = adjustl(try)
 !         f0.d drops the zero before the point; put it back.
@@ -714,6 +720,7 @@ module paramfile
        print *
        print *, 'Anything not listed in the file keeps the default in parameters.f90.'
        print *
+!      Asking for the help is not a failure: exit quietly with success.
        stop
     end if
 
@@ -722,7 +729,7 @@ module paramfile
     if (len_trim(arg) > 0) print *, 'Unrecognised option: ',trim(arg)
     print *, 'Run with --help for the list of parameter names.'
     print *
-    stop
+    stop 1
 
   end subroutine usage_and_stop
 
@@ -733,7 +740,7 @@ module paramfile
 
     print *, 'Aborting ...'
     print *
-    stop
+    stop 1
 
   end subroutine stop_run
 

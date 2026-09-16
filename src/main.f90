@@ -75,7 +75,7 @@ program VP_PIC
         print *, '  BGtype = "Isochrone",  Lfix /= 0,  eps = 0.'
         print *, 'Aborting ...'
         print *
-        stop
+        stop 1
      end if
 
 !    The analytic advance needs the initial (Q3,J3) of every particle, and
@@ -86,7 +86,7 @@ program VP_PIC
         print *, '(reduce_arrays would resize r_part/p_part but not q0_part/j0_part).'
         print *, 'Aborting ...'
         print *
-        stop
+        stop 1
      end if
 
      call init_action_angle()
@@ -287,7 +287,7 @@ program VP_PIC
         print *, '(4th order, symplectic) instead.'
         print *, 'Aborting ...'
         print *
-        stop
+        stop 1
 
 !    Unknown integration method.
 
@@ -296,7 +296,7 @@ program VP_PIC
         print *, 'Unknown integration method.'
         print *, 'Aborting ...'
         print *
-        stop
+        stop 1
 
      end if
 

@@ -74,7 +74,7 @@ contains
        print *, 'ERROR: could not create raw output file in directory ',trim(directory)
        print *, 'Aborting ...'
        print *
-       stop
+       stop 1
     end if
 
     header_written = .false.

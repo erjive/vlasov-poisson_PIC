@@ -33,6 +33,9 @@
 
     smallpi = acos(-1.0d0)
 
+    call df0_report
+    call init_rng
+
 ! At fixed L, particles are drawn from an arbitrary distribution function
 ! f(r,p_r,L) by acceptance-rejection: with fmax the maximum of f, draw
 ! (x,y,z) uniformly in (rmin,rmax) x (pmin,pmax) x (0,fmax), evaluate
@@ -355,8 +358,7 @@
 !     normalization uses drc*dpc because density, energy and analysish
 !     all multiply f by drc*dpc, so the factor cancels.
 
-      Jminc = 1.0d-4*sr
-      Jmaxc = 6.0d0*sr
+      call df0_Jrange(Jminc,Jmaxc)
       dJc = (Jmaxc-Jminc)/dble(Nrc)
       dQc = 2.0d0*smallpi/dble(Npc)
 

@@ -21,7 +21,7 @@ module utils
      print *, 'rmin must be greater than or equal to zero'
      print *, 'Aborting ...'
      print *
-     stop
+     stop 1
   end if
 
   if (rmax<=rmin) then
@@ -29,7 +29,7 @@ module utils
      print *, 'rmin must be smaller than rmax'
      print *, 'Aborting ...'
      print *
-     stop
+     stop 1
   end if
 
 !  if (pmax<=0.d0) then
@@ -70,6 +70,39 @@ module utils
     !print *, 'Number of points in p direction ',Np
 
   end subroutine set_grid_size
+
+  !> Seed the random number generator.
+  !!
+  !! gfortran seeds random_number from the operating system, so two identical
+  !! Monte Carlo runs differ and neither can be repeated. Fixing the seed here
+  !! makes the sampling reproducible; when the input leaves seed=0 one is taken
+  !! from the clock and written back into "seed", so the value that was actually
+  !! used is the one recorded in the dump of the configuration.
+
+  subroutine init_rng
+
+    implicit none
+
+    integer :: n,k,cnt
+    integer, allocatable :: s(:)
+
+    if (seed == 0) then
+       call system_clock(cnt)
+       seed = abs(cnt)
+       if (seed == 0) seed = 1
+    end if
+
+!   random_seed wants a whole array of integers. Spreading the single value
+!   over it with an odd stride avoids handing the generator a state of mostly
+!   equal words; the stride itself carries no meaning.
+    call random_seed(size=n)
+    allocate(s(1:n))
+    s = seed + 37*[(k,k=0,n-1)]
+    call random_seed(put=s)
+    deallocate(s)
+
+  end subroutine init_rng
+
 
   !> Allocate all memory
   subroutine alloc_mem_set0
@@ -598,7 +631,10 @@ end subroutine construct_grid
 
   real(8) t,var
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! **************************
@@ -661,7 +697,10 @@ end subroutine construct_grid
 
   real(8), dimension(1:Nr) :: r,var
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! **************************
@@ -743,7 +782,10 @@ end subroutine construct_grid
 
   real(8), dimension(1:Npart) :: var
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! ***************************
@@ -811,7 +853,10 @@ end subroutine construct_grid
 
   real(8) t,kinetic,potential,energy
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! **************************
@@ -875,7 +920,10 @@ end subroutine construct_grid
 
   real(8), dimension(0:Nr) :: r,density,current,error
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! **************************
@@ -949,7 +997,10 @@ end subroutine construct_grid
 
   real(8), dimension(0:Nr) :: r,force,pot
 
-  character(20) directory,filename,filestatus
+! Assumed length, so a long output path is not silently truncated to the
+! length the dummy argument happens to declare.
+  character(*) :: directory,filename
+  character(20) :: filestatus
 
 
 ! **************************

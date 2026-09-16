@@ -57,6 +57,8 @@ module parameters
    real(8)   :: m0 = 1.0D0                !< Mass of the particles
    character(10) :: state = "gaussian"    !< How the particles are laid out (grid, Halton, quadrature, Monte Carlo)
    character(20) :: dftype = "gauss"      !< Which initial distribution F0(Q,J) is sampled; see distribution.f90
+   integer   :: seed = 0                  !< Seed of the random sampling. 0 draws one from the clock and
+                                          !< records it, so a Monte Carlo run can always be repeated.
 
    !Gaussian distribution
 
@@ -70,7 +72,7 @@ module parameters
    character(100) :: CheckPointfile = "input_file.2D"  !< Initial state file
 
    !Output
-   character(20)  :: directory = "test"     !< Output directory
+   character(100) :: directory = "test"     !< Output directory (may include subdirectories)
    character(20)  :: output_format = "ascii" !< Output format (ascii,hdf5)
    logical        :: reduceparticles = .false. !< Do we discard particles outside the domain? 
    integer        :: Nreduce = 100000       !< How often do we do discard particles outside domain?

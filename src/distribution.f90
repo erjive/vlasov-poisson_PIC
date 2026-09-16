@@ -26,10 +26,10 @@ module distribution
 
   real(8), parameter :: bim_b1 = 0.8d0    ! amplitude of cos(Q)
   real(8), parameter :: bim_b2 = 0.3d0    ! amplitude of cos(2Q)
-  real(8), parameter :: bim_Ja = 0.08d0   ! first group: centre in J
-  real(8), parameter :: bim_sa = 0.03d0   !              width in J
-  real(8), parameter :: bim_Jb = 0.22d0   ! second group: centre in J
-  real(8), parameter :: bim_sb = 0.04d0   !               width in J
+  real(8), parameter :: bim_Ja = 0.10d0   ! first group: centre in J
+  real(8), parameter :: bim_sa = 0.025d0  !              width in J
+  real(8), parameter :: bim_Jb = 0.24d0   ! second group: centre in J
+  real(8), parameter :: bim_sb = 0.035d0  !               width in J
   real(8), parameter :: bim_wb = 0.7d0    ! weight of the second group
 
 ! --- "spiral": not separable, wound up already at t=0 ---
@@ -47,7 +47,54 @@ module distribution
   real(8), parameter :: spi_beta = 50.0d0  ! winding of the initial spiral
   real(8), parameter :: spi_sq   = 0.5d0   ! width in Q
 
+! --- "king": equilibrium in J with a single-harmonic perturbation ---
+!
+!   F0 = f_eq(J) * [1 + eps cos Q],
+!   f_eq(J) = exp(-E(J)/sE2) - exp(-E(Jt)/sE2)   for J < Jt,  0 beyond,
+!
+! with E(J) = -1/(2(J+c)^2) the energy of the radial orbit. This is the
+! lowered isothermal (King) profile written in action space, perturbed by one
+! angular harmonic: the textbook setting for phase mixing of a linear
+! perturbation. Unlike the other two it is not smooth, it ends in a corner at
+! J = Jt, which is what makes its quadrature converge algebraically instead of
+! faster than any power.
+
+  real(8), parameter :: kin_Jt  = 0.35d0   ! action where the profile is cut
+  real(8), parameter :: kin_sE2 = 0.01d0   ! energy scale (sigma_E^2)
+  real(8), parameter :: kin_eps = 0.5d0    ! amplitude of the cos(Q) perturbation
+
  contains
+
+!> Energy of the radial orbit of action J in the isochrone, at fixed L.
+
+  function energy_of_J(J) result(E)
+
+    implicit none
+
+    real(8), intent(in) :: J
+    real(8) :: E
+
+    E = -1.0d0/(2.0d0*(J + 0.5d0*(Lfix+sqrt(Lfix**2+4.0d0)))**2)
+
+  end function energy_of_J
+
+
+!> Lowered isothermal profile in action space, zero beyond the cut.
+
+  function king_feq(J) result(feq)
+
+    implicit none
+
+    real(8), intent(in) :: J
+    real(8) :: feq
+
+    if (J >= kin_Jt) then
+       feq = 0.0d0
+    else
+       feq = exp(-energy_of_J(J)/kin_sE2) - exp(-energy_of_J(kin_Jt)/kin_sE2)
+    end if
+
+  end function king_feq
 
 !> F0 at one point of the action-angle plane.
 
@@ -70,6 +117,9 @@ module distribution
     case ('spiral')
        F = exp(-(J-spi_J0)**2/spi_s0**2) &
            *exp(-sin(0.5d0*(Q-spi_beta*J))**2/spi_sq**2)
+
+    case ('king')
+       F = king_feq(J)*(1.0d0 + kin_eps*cos(Q))
 
     case default
        F = 0.0d0
@@ -97,13 +147,20 @@ module distribution
        Fmax0 = exp(-1.0d0)*sr**2
 
     case ('bimodal')
-!      Each factor bounded separately: the angular part at Q=0, and the two
-!      gaussians in J by their peaks.
-       Fmax0 = (1.0d0 + bim_b1 + bim_b2)*(1.0d0 + bim_wb)
+!      Each factor bounded separately: the angular part by the sum of the
+!      magnitudes of its harmonics, and the two gaussians in J by their peaks.
+!      The absolute values matter: with a negative amplitude, 1+b1+b2 would be
+!      smaller than the true maximum and the rejection sampling would be biased.
+       Fmax0 = (1.0d0 + abs(bim_b1) + abs(bim_b2))*(1.0d0 + abs(bim_wb))
 
     case ('spiral')
 !      Both factors are exponentials of a non-positive number.
        Fmax0 = 1.0d0
+
+    case ('king')
+!      E(J) grows with J, so f_eq decreases and peaks at J=0; the angular
+!      factor is bounded by 1+|eps|.
+       Fmax0 = king_feq(0.0d0)*(1.0d0 + abs(kin_eps))
 
     case default
        Fmax0 = 0.0d0
@@ -122,9 +179,53 @@ module distribution
     print *, 'Unknown dftype: ',trim(dftype)
     print *, 'Aborting ...'
     print *
-    stop
+    stop 1
 
   end subroutine df0_unknown
+
+
+!> Window in J that contains the whole distribution, for the quadrature grid.
+!! Each profile declares its own, so the quadrature no longer borrows the width
+!! of one particular distribution.
+
+  subroutine df0_Jrange(Jlo,Jhi)
+
+    implicit none
+
+    real(8), intent(out) :: Jlo,Jhi
+
+!   Six widths past the last feature leaves exp(-36) of the peak outside, which
+!   is below rounding. The lower end is J=0 itself: the quadrature grid uses
+!   midpoints, so the first node sits at dJ/2 and the degenerate circular orbit
+!   at J=0 is never evaluated.
+
+    select case (dftype)
+
+    case ('gauss')
+       Jlo = 0.0d0
+       Jhi = 6.0d0*sr
+
+    case ('bimodal')
+       Jlo = 0.0d0
+       Jhi = bim_Jb + 6.0d0*bim_sb
+
+    case ('spiral')
+       Jlo = 0.0d0
+       Jhi = spi_J0 + 6.0d0*spi_s0
+
+    case ('king')
+!      The profile is exactly zero from the cut on, so the cut is the window.
+       Jlo = 0.0d0
+       Jhi = kin_Jt
+
+    case default
+       Jlo = 0.0d0
+       Jhi = 0.0d0
+       call df0_unknown
+
+    end select
+
+  end subroutine df0_Jrange
 
 
 !> Print which distribution is in use, with its constants, so that the run log
@@ -148,6 +249,9 @@ module distribution
     case ('spiral')
        print '(a,f6.3,a,f6.3)', '   J0 = ',spi_J0,'   s0 = ',spi_s0
        print '(a,f7.2,a,f5.2)', '   beta = ',spi_beta,'   sigma_Q = ',spi_sq
+    case ('king')
+       print '(a,f6.3,a,es10.3)', '   Jt = ',kin_Jt,'   sigma_E^2 = ',kin_sE2
+       print '(a,f5.2)',          '   eps = ',kin_eps
     end select
 
     print *
