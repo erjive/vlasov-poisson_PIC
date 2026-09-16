@@ -758,9 +758,64 @@ def fig_accion():
     guardar(fig, 'accion')
 
 
+# ===========================================================================
+# Capturas de la evolución de las tres distribuciones de prueba (PIC real).
+TIEMPOS_DF = dict(bimodal=[0, 200, 800, 2000], spiral=[0, 360, 720, 2000],
+                  king=[0, 200, 800, 2000])
+
+
+def fig_capturas():
+    import h5py
+    from matplotlib.colors import LinearSegmentedColormap
+    cmap = LinearSegmentedColormap.from_list('peso', ['#dce9f7', AZUL, '#0b2e5c'])
+    for dft in DFS:
+        print(f'[capturas] {dft}')
+        f = h5py.File(os.path.join(EXE, 'dfsnap', dft, 'vlasov_output.h5'))
+        pasos = sorted([k for k in f if k.startswith('step_')],
+                       key=lambda k: int(k.split('_')[1]))
+        tiempos = np.array([f[k].attrs['time'] for k in pasos])
+        w = f[pasos[0]]['f'][:]
+        vis = w > 2e-3*w.max()             # los nodos de peso despreciable no se ven
+        orden = np.argsort(w[vis])
+        c = (w[vis]/w.max())[orden]
+        datos = []
+        for t in TIEMPOS_DF[dft]:
+            k = pasos[int(np.argmin(np.abs(tiempos - t)))]
+            r = f[k]['r_part'][:][vis][orden]
+            p = f[k]['p_part'][:][vis][orden]
+            Q, J = rp_to_QJ(r, p)
+            datos.append((float(f[k].attrs['time']), r, p, Q, J))
+            print(f'   t={datos[-1][0]:7.1f}: {vis.sum()} nodos visibles de {len(w)}')
+        rr = np.concatenate([d[1] for d in datos])
+        pp = np.concatenate([d[2] for d in datos])
+        JJ = np.concatenate([d[4] for d in datos])
+        fig, ax = plt.subplots(2, 4, figsize=(ANCHO, 3.35))
+        kw = dict(c=c, cmap=cmap, vmin=0, vmax=1, s=0.25, lw=0, rasterized=True)
+        for j, (t, r, p, Q, J) in enumerate(datos):
+            ax[0, j].scatter(Q, J, **kw)
+            ax[0, j].set_xlim(0, 2*np.pi)
+            ax[0, j].set_ylim(0, JJ.max()*1.04)
+            QTICKS(ax[0, j])
+            ax[0, j].set_title(f'$t={t:.0f}$', loc='left')
+            ax[0, j].set_xlabel('$Q$', labelpad=1)
+            ax[1, j].scatter(r, p, **kw)
+            ax[1, j].set_xlim(rr.min() - 0.2, rr.max() + 0.2)
+            ax[1, j].set_ylim(pp.min()*1.08, pp.max()*1.08)
+            ax[1, j].set_xlabel('$r$', labelpad=1)
+            for x in ax[:, j]:
+                x.grid(False)
+                if j > 0:
+                    x.set_yticklabels([])
+        ax[0, 0].set_ylabel('$J$')
+        ax[1, 0].set_ylabel('$p_r$')
+        fig.tight_layout(h_pad=0.5, w_pad=0.3)
+        guardar(fig, f'capturas_{dft}')
+
+
 TODAS = [fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
          fig_hk_exacto, fig_convergencia, fig_agnosticas, fig_salud,
-         fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion]
+         fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion,
+         fig_capturas]
 
 if __name__ == '__main__':
     filtro = sys.argv[1:]

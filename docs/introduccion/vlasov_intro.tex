@@ -8,6 +8,7 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{placeins}
 \usepackage{microtype}
 \usepackage[margin=2.7cm]{geometry}
 \usepackage{xcolor}
@@ -566,7 +567,8 @@ acción, evolucionada \emph{exactamente} con~\eqref{eq:solucion}.
   \centering
   \includegraphics[width=\textwidth]{enrollamiento}
   \caption{Evolución exacta de la distribución gaussiana
-  $F_0\propto\exp[-\sin^2(\Qr/2)/\sigma_Q^2]\,\exp(-\Jr^2/\sigma_J^2)\,\Jr^2$,
+  $F_0\propto\exp[-\sin^2(\Qr/2)/\sigma_Q^2]\,\exp(-\Jr^2/\sigma_J^2)\,\Jr^2$
+  (ecuación~\eqref{eq:gauss}),
   con $\sigma_Q=\sigma_J=0.1$, sin autogravedad. \textbf{Arriba}: en variables
   ángulo--acción cada fila horizontal se desplaza a su propia velocidad $\omega(\Jr)$
   y la mancha se inclina, porque las acciones pequeñas giran más rápido. A $t=2000$
@@ -984,8 +986,28 @@ Un peligro real al validar un código es que el acuerdo con la teoría refleje n
 que el método es correcto, sino que el código se fue ajustando a un problema
 concreto. La forma de descartarlo es cambiar el problema.
 
-Se probaron tres distribuciones iniciales nuevas, cada una elegida para hacer una
-\emph{predicción falsable} distinta (figura~\ref{fig:agnosticas}). Todas usan la
+La distribución de referencia, con la que se desarrolló el código y la que se usa en
+la sección~\ref{sec:autogravedad}, es la \textbf{gaussiana}:
+\begin{equation}
+  F_0^{\rm gauss}(\Qr,\Jr) =
+  \exp\!\Big[-\frac{\sin^2(\Qr/2)}{\sigma_Q^2}\Big]\,
+  \exp\!\Big[-\frac{\Jr^2}{\sigma_J^2}\Big]\,\Jr^2 ,
+  \label{eq:gauss}
+\end{equation}
+con $\sigma_Q=\sigma_J=0.1$. Es separable. En acción, el factor
+$\Jr^2\ee^{-\Jr^2/\sigma_J^2}$ se anula en la órbita circular y tiene su máximo en
+$\Jr=\sigma_J$. En ángulo, como $\sin^2(\Qr/2)=(1-\cos\Qr)/2$, el perfil es
+$\ee^{-\kappa}\,\ee^{\kappa\cos\Qr}$ con $\kappa=1/(2\sigma_Q^2)=50$: una distribución de
+von Mises centrada en el pericentro. Sus coeficientes de Fourier son
+$c_k/c_0=I_k(\kappa)/I_0(\kappa)\simeq\ee^{-k^2\sigma_Q^2/2}$, con $I_k$ la función de
+Bessel modificada: $0.990$, $0.960$ y $0.851$ para $k=1,2,4$. Contiene todos los
+armónicos casi con el mismo peso, así que no permite ninguna predicción que la
+distinga de un error en un modo concreto. Por eso hacían falta otras.
+
+Se probaron entonces tres distribuciones iniciales nuevas, cada una elegida para hacer una
+\emph{predicción falsable} distinta (figura~\ref{fig:agnosticas}). Las
+figuras~\ref{fig:capbim}, \ref{fig:capesp} y~\ref{fig:capking} muestran cómo evoluciona
+cada una en la simulación. Todas usan la
 misma convención para los anchos, $\exp(-x^2/s^2)$, y se evalúan en
 $\Qr\in[0,2\pi)$, $\Jr\ge0$.
 
@@ -1004,6 +1026,17 @@ $c_0\propto1$, $c_{\pm1}\propto b_1/2$, $c_{\pm2}\propto b_2/2$ y cero para
 $|k|\ge3$. Por~\eqref{eq:hkexacto}, \textbf{$h_3$ y $h_4$ deben ser cero
 exactamente} en todo tiempo. Medidos: $2\times10^{-11}$ y $8\times10^{-12}$ de
 $h_0$, al nivel del error de redondeo acumulado.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{capturas_bimodal}
+  \caption{Evolución de la distribución bimodal~\eqref{eq:bimodal}. Simulación con cuadratura, $N=50\,000$ (25 nodos en $\Qr$ por 2000 en $\Jr$), sin autogravedad. Cada punto es un nodo de cuadratura coloreado por su peso $f_j$: con este esquema la distribución está en los pesos, no en la densidad de puntos, y en $t=0$ se ven las 25 columnas de la rejilla. Arriba, variables ángulo--acción; abajo, las mismas partículas en $(r,\rp)$. Los dos grupos, en
+  $\Jr\simeq0.10$ y $0.24$, se inclinan a ritmos distintos porque $|\omega'|$ vale
+  $0.075$ y $0.061$ en cada uno; en $t=2000$ las franjas del grupo interno están más
+  juntas ($\Delta\Jr=0.042$ frente a $0.052$). En $(r,\rp)$ los dos grupos forman
+  dos anillos concéntricos que se enrollan por separado.}
+  \label{fig:capbim}
+\end{figure}
 
 \paragraph{Espiral.} No separable, enrollada ya en $t=0$:
 \begin{equation}
@@ -1025,6 +1058,18 @@ Como $\omega'<0$, $t^\ast>0$: \textbf{la distribución se desenrolla} y $|h_k|$ 
 por un máximo antes de decaer definitivamente. Con~\eqref{eq:omega},
 $\omega'(0.15)=-0.0694$ y $t^\ast=720.6$. Medido: $722$, con la cadencia de salida
 de 2 unidades.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{capturas_spiral}
+  \caption{Evolución de la distribución espiral~\eqref{eq:espiral}. Simulación con cuadratura, $N=50\,000$ (25 nodos en $\Qr$ por 2000 en $\Jr$), sin autogravedad. Cada punto es un nodo de cuadratura coloreado por su peso $f_j$: con este esquema la distribución está en los pesos, no en la densidad de puntos, y en $t=0$ se ven las 25 columnas de la rejilla. Arriba, variables ángulo--acción; abajo, las mismas partículas en $(r,\rp)$. En $t=0$ el máximo
+  angular de cada fila está en $\Qr=\beta\Jr$ y se desplaza al subir en $\Jr$. En
+  $t=720\simeq t^\ast$ la espiral se desenrolla: todas las acciones tienen su máximo
+  en $\Qr\simeq0$, una franja vertical, y en $(r,\rp)$ la masa se concentra en el
+  arco del pericentro. En $t=2000$ está enrollada en sentido contrario y ya no
+  vuelve a alinearse.}
+  \label{fig:capesp}
+\end{figure}
 
 \paragraph{King.} Un equilibrio en acción con una perturbación de un solo armónico:
 \begin{equation}
@@ -1050,6 +1095,17 @@ Medido: factores 133 y 95 al multiplicar por diez los nodos en $\Jr$, frente a l
 
 \begin{figure}[t]
   \centering
+  \includegraphics[width=\textwidth]{capturas_king}
+  \caption{Evolución de la distribución de King~\eqref{eq:king}. Simulación con cuadratura, $N=50\,000$ (25 nodos en $\Qr$ por 2000 en $\Jr$), sin autogravedad. Cada punto es un nodo de cuadratura coloreado por su peso $f_j$: con este esquema la distribución está en los pesos, no en la densidad de puntos, y en $t=0$ se ven las 25 columnas de la rejilla. Arriba, variables ángulo--acción; abajo, las mismas partículas en $(r,\rp)$. El peso decrece con
+  $\Jr$ y se corta en $\Jr_t=0.35$, el borde superior nítido. En $(r,\rp)$ las
+  columnas de la rejilla convergen en la órbita circular, $(r_c,\rp)=(5.74,0)$, que
+  es $\Jr=0$. La perturbación $1+0.5\cos\Qr$ se enrolla en una espiral cada vez más
+  apretada alrededor de esa órbita, donde $|\omega'|$ es máximo.}
+  \label{fig:capking}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
   \includegraphics[width=\textwidth]{agnosticas}
   \caption{Las tres predicciones falsables, con cuadratura. \textbf{(a)} Bimodal,
   $N=50\,000$: los modos $k=3$ y $4$, prohibidos por la forma de $F_0$, quedan en
@@ -1065,6 +1121,7 @@ Que un modo prohibido por la forma de $F_0$ salga al nivel del error numérico, 
 un pico de recoherencia aparezca en el instante calculado de antemano, son dos
 pruebas que un código ajustado al problema anterior no pasaría por casualidad.
 
+\FloatBarrier
 \section{Caso de estudio: qué pasa al activar la autogravedad}
 \label{sec:autogravedad}
 
