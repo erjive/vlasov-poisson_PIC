@@ -178,6 +178,82 @@ def fig_potencial():
 
 
 # ===========================================================================
+def area_poligono(x, y):
+    """Fórmula del cordón de zapato (shoelace) para un polígono cerrado."""
+    return 0.5*abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+
+def fig_liouville():
+    print('[liouville] una mancha de condiciones iniciales: el área se conserva')
+    n = 20000
+    s = np.linspace(0, 4, n, endpoint=False)
+    def borde(x0, x1, y0, y1):          # contorno de un rectángulo, antihorario
+        u = np.mod(s, 1)
+        lado = s.astype(int)
+        x = np.select([lado == 0, lado == 1, lado == 2, lado == 3],
+                      [x0 + u*(x1-x0), np.full(n, x1), x1 - u*(x1-x0), np.full(n, x0)])
+        y = np.select([lado == 0, lado == 1, lado == 2, lado == 3],
+                      [np.full(n, y0), y0 + u*(y1-y0), np.full(n, y1), y1 - u*(y1-y0)])
+        return x, y
+
+    def yoshida(q, p, fuerza, dt, pasos):
+        w1 = 1/(2 - 2**(1/3))
+        w0 = -2**(1/3)*w1
+        for _ in range(pasos):
+            for w in (w1, w0, w1):
+                p = p + 0.5*w*dt*fuerza(q)
+                q = q + w*dt*p
+                p = p + 0.5*w*dt*fuerza(q)
+        return q, p
+
+    fig, ax = plt.subplots(1, 2, figsize=(ANCHO, 2.6))
+    cols = [AZUL, NARANJA, AQUA]
+    # (a) oscilador armónico, omega=1: rotación rígida.
+    q, p = borde(0.6, 1.2, -0.3, 0.3)
+    A0 = area_poligono(q, p)
+    ts = [0.0, np.pi/2, 3*np.pi/4]
+    tprev = 0.0
+    for t, col, lab in zip(ts, cols, ['$t=0$', r'$t=\pi/2$', r'$t=3\pi/4$']):
+        q, p = yoshida(q, p, lambda x: -x, 0.001, int(round((t - tprev)/0.001)))
+        tprev = t
+        ax[0].fill(q, p, color=col, alpha=0.25, lw=0)
+        ax[0].plot(np.r_[q, q[0]], np.r_[p, p[0]], color=col, lw=0.9,
+                   label=lab)
+        print(f'   armonico t={t:.3f}: area/area0 - 1 = {area_poligono(q, p)/A0-1:+.1e}')
+    th = np.linspace(0, 2*np.pi, 400)
+    for R in (0.6, 1.2*np.sqrt(1.0625)):
+        ax[0].plot(R*np.cos(th), R*np.sin(th), color=GRIS_CLARO, lw=0.6, ls=':')
+    ax[0].set_aspect('equal')
+    ax[0].set_xlim(-1.45, 1.45)
+    ax[0].set_ylim(-1.45, 1.45)
+    ax[0].set_xlabel('$q$')
+    ax[0].set_ylabel('$p$')
+    ax[0].legend(loc='upper left', fontsize=6.5)
+    ax[0].set_title('(a) oscilador armónico', loc='left')
+
+    # (b) potencial efectivo del isócrono: se cizalla.
+    F = lambda r: -r/(np.sqrt(1+r**2)*(1+np.sqrt(1+r**2))**2) + L0**2/r**3
+    r, p = borde(6.3, 7.3, -0.025, 0.025)
+    A0 = area_poligono(r, p)
+    ts = [0, 150, 600]
+    tprev = 0
+    for t, col in zip(ts, cols):
+        r, p = yoshida(r, p, F, 0.05, int(round((t - tprev)/0.05)))
+        tprev = t
+        ax[1].fill(r, p, color=col, alpha=0.25, lw=0)
+        ax[1].plot(np.r_[r, r[0]], np.r_[p, p[0]], color=col, lw=0.8,
+                   label=f'$t={t}$')
+        print(f'   isocrono t={t}: area/area0 - 1 = {area_poligono(r, p)/A0-1:+.1e}')
+    ax[1].plot(radio_circular(), 0, 'o', ms=3, color=TINTA)
+    ax[1].set_xlabel('$r$')
+    ax[1].set_ylabel('$p_r$')
+    ax[1].legend(loc='lower right', fontsize=6.5)
+    ax[1].set_title(r'(b) potencial efectivo del isócrono', loc='left')
+    fig.tight_layout(w_pad=1.5)
+    guardar(fig, 'liouville')
+
+
+# ===========================================================================
 def fig_frecuencias():
     print('[frecuencias] E(J), omega(J), omega\'(J) y validación por cuadratura')
     J = np.linspace(0, 1.0, 400)
@@ -812,7 +888,7 @@ def fig_capturas():
         guardar(fig, f'capturas_{dft}')
 
 
-TODAS = [fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
+TODAS = [fig_liouville, fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
          fig_hk_exacto, fig_convergencia, fig_agnosticas, fig_salud,
          fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion,
          fig_capturas]

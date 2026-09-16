@@ -117,113 +117,368 @@ físico.
 \section{Lo indispensable de mecánica hamiltoniana}
 \label{sec:hamilton}
 
-Todo lo que sigue descansa en tres ideas de la mecánica hamiltoniana: el espacio de
-fases, la conservación del área bajo el flujo, y la libertad de cambiar de
-coordenadas sin perder la forma de las ecuaciones. Las presentamos para un grado de
-libertad, que es el caso que nos interesa; las referencias clásicas son
-Goldstein~\cite[caps.~8--10]{goldstein2002}, Landau y
+Todo lo que sigue descansa en cuatro ideas de la mecánica hamiltoniana: el espacio de
+fases, la conservación del área bajo el flujo, la libertad de cambiar de coordenadas
+sin perder la forma de las ecuaciones, y la existencia de coordenadas en las que el
+movimiento es trivial. Las desarrollamos con detalle para un grado de libertad, que
+es el caso que nos interesa, e indicamos cómo se generalizan. Las referencias
+clásicas son Goldstein~\cite[caps.~8--10]{goldstein2002}, Landau y
 Lifshitz~\cite[\S\S40--52]{landau1976} y, con más rigor geométrico,
 Arnold~\cite[caps.~8--10]{arnold1989}.
 
-\subsection{Espacio de fases y ecuaciones de Hamilton}
+\subsection{De Newton a Hamilton}
 
-El estado de un sistema con un grado de libertad es un punto $(q,p)$ del
-\emph{espacio de fases}: una coordenada y su momento conjugado. Dada una función
-$H(q,p)$, el hamiltoniano, la evolución es
+Consideremos una partícula de masa unitaria que se mueve en una dimensión bajo un
+potencial $V(q)$. La segunda ley de Newton, $\ddot q=-V'(q)$, es una ecuación de
+segundo orden. La formulación lagrangiana parte de $\mathcal{L}(q,\dot q)=T-V=
+\tfrac12\dot q^2-V(q)$ y obtiene la misma ecuación de las ecuaciones de
+Euler--Lagrange, $\frac{\dd}{\dd t}\partial_{\dot q}\mathcal{L}=\partial_q\mathcal{L}$.
+
+La formulación hamiltoniana cambia de variables: en lugar de la velocidad usa el
+\emph{momento conjugado}
+\begin{equation}
+  p \equiv \frac{\partial\mathcal{L}}{\partial\dot q} = \dot q ,
+\end{equation}
+y en lugar del lagrangiano, su transformada de Legendre,
+\begin{equation}
+  H(q,p) \equiv p\,\dot q - \mathcal{L}
+  = p^2 - \Big(\tfrac12 p^2 - V(q)\Big)
+  = \frac{p^2}{2} + V(q) ,
+  \label{eq:legendre}
+\end{equation}
+que en este caso es la energía total. Las ecuaciones de movimiento pasan a ser dos
+ecuaciones de \emph{primer} orden,
 \begin{equation}
   \dot q = \frac{\partial H}{\partial p}, \qquad
   \dot p = -\frac{\partial H}{\partial q} .
   \label{eq:hamilton}
 \end{equation}
-El lado derecho define un campo de velocidades $\mathbf{X}_H=(\partial_p H,\,
--\partial_q H)$ en el plano $(q,p)$, y las trayectorias son sus líneas de flujo.
+Para~\eqref{eq:legendre} dan $\dot q=p$ y $\dot p=-V'(q)$; derivando la primera y
+sustituyendo la segunda se recupera $\ddot q=-V'(q)$. No hay física nueva: lo que
+cambia es que $q$ y $p$ se tratan como variables independientes, en pie de igualdad.
+Con $n$ grados de libertad hay $n$ pares $(q_i,p_i)$ y $2n$ ecuaciones de la
+forma~\eqref{eq:hamilton}.
 
-Si $H$ no depende explícitamente del tiempo, se conserva:
+\subsection{Espacio de fases y retrato de fases}
+
+El estado del sistema en un instante es un punto $(q,p)$ del \emph{espacio de
+fases}. Como~\eqref{eq:hamilton} es de primer orden, ese punto determina toda la
+evolución futura y pasada: por cada punto pasa una única trayectoria, y las
+trayectorias no se cruzan. El lado derecho de~\eqref{eq:hamilton} define un campo de
+velocidades en el plano,
+\begin{equation}
+  \mathbf{X}_H(q,p) = \Big(\frac{\partial H}{\partial p},\;
+                         -\frac{\partial H}{\partial q}\Big),
+\end{equation}
+y las trayectorias son sus líneas de flujo. Llamaremos $\varphi_t$ al \emph{flujo}:
+la función que lleva cada condición inicial $(q_0,p_0)$ a su posición
+$(q(t),p(t))$ al tiempo $t$.
+
+Si $H$ no depende explícitamente del tiempo, se conserva. Por la regla de la cadena
+y~\eqref{eq:hamilton},
 \begin{equation}
   \frac{\dd H}{\dd t}
   = \frac{\partial H}{\partial q}\,\dot q + \frac{\partial H}{\partial p}\,\dot p
   = \frac{\partial H}{\partial q}\frac{\partial H}{\partial p}
    -\frac{\partial H}{\partial p}\frac{\partial H}{\partial q} = 0 .
 \end{equation}
-Con un grado de libertad esto tiene una consecuencia muy fuerte: \textbf{las
-trayectorias son las curvas de nivel $H(q,p)=E$}. El retrato de fases completo se
-dibuja sin resolver ninguna ecuación diferencial, solo trazando curvas de nivel. Si
-el potencial tiene un mínimo, las curvas cercanas son cerradas y el movimiento es
-periódico. La figura~\ref{fig:potencial}(b) muestra tres de ellas para el problema
-que estudiaremos.
+Geométricamente, $\mathbf{X}_H$ es perpendicular a $\nabla H=(\partial_q H,\partial_p
+H)$: el flujo es tangente a las curvas de nivel. Con un grado de libertad esto tiene
+una consecuencia muy fuerte: \textbf{las trayectorias son las curvas de nivel
+$H(q,p)=E$}. El retrato de fases completo se dibuja sin resolver ninguna ecuación
+diferencial.
 
-\subsection{Corchetes de Poisson y teorema de Liouville}
+Para $H=\tfrac12p^2+V(q)$, la curva de nivel de energía $E$ es
+$p=\pm\sqrt{2(E-V(q))}$. Existe solo donde $V(q)\le E$, y en los puntos donde $V=E$
+el momento se anula: son los \emph{puntos de retorno}. Si $V$ tiene un mínimo y $E$
+está ligeramente por encima, la curva es cerrada, rodea el mínimo, y el movimiento
+es \emph{periódico}. Su periodo se obtiene sumando el tiempo que se tarda en recorrer
+cada tramo, $\dd t=\dd q/\dot q=\dd q/p$:
+\begin{equation}
+  T(E) = \oint \frac{\dd q}{p}
+       = 2\int_{q_-}^{q_+}\frac{\dd q}{\sqrt{2\big(E-V(q)\big)}} ,
+  \label{eq:periodo}
+\end{equation}
+donde $q_\pm$ son los puntos de retorno. Los integrandos divergen en $q_\pm$, pero
+como $1/\sqrt{x}$, que es integrable. Esta fórmula reaparecerá al construir las
+variables ángulo--acción.
+
+\begin{idea}
+\textbf{Ejemplo: el oscilador armónico.} Con $V=\tfrac12\omega_0^2q^2$, las curvas de
+nivel son elipses $\tfrac12p^2+\tfrac12\omega_0^2q^2=E$, de semiejes
+$\sqrt{2E}/\omega_0$ en $q$ y $\sqrt{2E}$ en $p$. La solución es
+$q=\sqrt{2E}/\omega_0\,\sin(\omega_0t+\phi)$, $p=\sqrt{2E}\cos(\omega_0t+\phi)$, y
+por~\eqref{eq:periodo}, $T=2\pi/\omega_0$ \emph{independiente de $E$}. Con
+$\omega_0=1$ las elipses son círculos y el flujo es una rotación rígida en sentido
+horario (figura~\ref{fig:liouville}a).
+\end{idea}
+
+\subsection{Corchetes de Poisson}
 
 Para dos funciones $A(q,p)$ y $B(q,p)$ se define el \emph{corchete de Poisson}
 \begin{equation}
   \{A,B\} = \frac{\partial A}{\partial q}\frac{\partial B}{\partial p}
-           -\frac{\partial A}{\partial p}\frac{\partial B}{\partial q} .
+           -\frac{\partial A}{\partial p}\frac{\partial B}{\partial q} ,
+  \label{eq:corchete}
 \end{equation}
-Con él, la derivada temporal de cualquier cantidad a lo largo del flujo se escribe
-de forma compacta, $\dd A/\dd t = \partial A/\partial t + \{A,H\}$, y las
-ecuaciones~\eqref{eq:hamilton} son simplemente $\dot q=\{q,H\}$, $\dot p=\{p,H\}$.
-Observe que $\{q,p\}=1$.
+y con $n$ grados de libertad, la suma de esa expresión sobre los $n$ pares
+$(q_i,p_i)$. Sus propiedades se comprueban directamente de la definición:
+\begin{itemize}
+  \item antisimetría: $\{A,B\}=-\{B,A\}$, y en particular $\{A,A\}=0$;
+  \item linealidad en cada argumento;
+  \item regla de Leibniz: $\{AB,C\}=A\{B,C\}+\{A,C\}B$;
+  \item regla de la cadena: $\{g(A),B\}=g'(A)\,\{A,B\}$;
+  \item corchetes fundamentales: $\{q,q\}=\{p,p\}=0$ y $\{q,p\}=1$.
+\end{itemize}
 
-El resultado central es el \textbf{teorema de Liouville}: el flujo hamiltoniano no
-tiene divergencia,
+Su utilidad es que expresa la evolución de \emph{cualquier} cantidad. Si $A(q,p,t)$
+se evalúa a lo largo de una trayectoria,
 \begin{equation}
-  \nabla\cdot\mathbf{X}_H
-  = \frac{\partial}{\partial q}\frac{\partial H}{\partial p}
-   -\frac{\partial}{\partial p}\frac{\partial H}{\partial q} = 0 ,
+  \frac{\dd A}{\dd t}
+  = \frac{\partial A}{\partial t}
+  + \frac{\partial A}{\partial q}\dot q + \frac{\partial A}{\partial p}\dot p
+  = \frac{\partial A}{\partial t}
+  + \frac{\partial A}{\partial q}\frac{\partial H}{\partial p}
+  - \frac{\partial A}{\partial p}\frac{\partial H}{\partial q}
+  = \frac{\partial A}{\partial t} + \{A,H\} .
+  \label{eq:evolucion}
 \end{equation}
-y por lo tanto \emph{conserva el área} en el espacio de fases (el volumen, en más
-dimensiones). Una mancha de condiciones iniciales puede deformarse todo lo que
-quiera, estirarse y enrollarse, pero su área no cambia.
+Tres casos particulares: con $A=q$ y $A=p$ se recuperan las
+ecuaciones~\eqref{eq:hamilton}, $\dot q=\{q,H\}$ y $\dot p=\{p,H\}$; con $A=H$ se
+recupera la conservación de la energía, porque $\{H,H\}=0$; y en general
+\textbf{una cantidad sin dependencia explícita en $t$ se conserva si y solo si su
+corchete con $H$ se anula}. Esta última forma es la que usaremos para reconocer
+cantidades conservadas sin resolver nada.
 
-\begin{idea}
-\textbf{De Liouville a Vlasov.} Sea $f(q,p,t)$ la densidad de un fluido de
-partículas que no interactúan entre sí y se mueven según~\eqref{eq:hamilton}. La
-conservación de la masa es la ecuación de continuidad
-$\partial_t f + \nabla\cdot(f\,\mathbf{X}_H)=0$. Como $\nabla\cdot\mathbf{X}_H=0$,
-queda
+\subsection{Teorema de Liouville}
+
+Tomemos un conjunto de condiciones iniciales que ocupa una región $D_0$ del plano, y
+dejémoslo evolucionar: al tiempo $t$ ocupa $D_t=\varphi_t(D_0)$. El \textbf{teorema
+de Liouville} afirma que el área de $D_t$ no cambia.
+
+La demostración es corta. El área de $D_t$ es
+$\int_{D_0}\det M\,\dd q_0\,\dd p_0$, donde
+\begin{equation}
+  M(t) = \frac{\partial(q(t),p(t))}{\partial(q_0,p_0)}
+\end{equation}
+es la matriz jacobiana del flujo. Derivando~\eqref{eq:hamilton} respecto de las
+condiciones iniciales se obtiene la \emph{ecuación variacional}
+$\dot M = A(t)\,M$, con
+\begin{equation}
+  A = \begin{pmatrix}
+        \partial_q\partial_p H & \partial_p\partial_p H\\[2pt]
+       -\partial_q\partial_q H & -\partial_p\partial_q H
+      \end{pmatrix} .
+\end{equation}
+Para cualquier sistema $\dot M=AM$ se cumple la fórmula de Liouville para
+determinantes, $\frac{\dd}{\dd t}\det M=(\operatorname{tr}A)\det M$. Pero
+\begin{equation}
+  \operatorname{tr}A
+  = \frac{\partial^2 H}{\partial q\,\partial p}-\frac{\partial^2 H}{\partial p\,\partial q}
+  = \nabla\cdot\mathbf{X}_H = 0 ,
+\end{equation}
+así que $\det M$ es constante, y como $M(0)$ es la identidad, $\det M(t)=1$ para
+todo $t$. \textbf{El flujo hamiltoniano preserva el área} en el espacio de fases; con
+$n$ grados de libertad, el volumen de dimensión $2n$.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{liouville}
+  \caption{Teorema de Liouville, medido. Se integraron numéricamente 20\,000 puntos del
+  contorno de un rectángulo de condiciones iniciales y se calculó el área encerrada.
+  \textbf{(a)} Oscilador armónico con $\omega_0=1$: todas las órbitas tienen el mismo
+  periodo y la mancha rota rígidamente; el área cambia en $6\times10^{-13}$.
+  \textbf{(b)} Potencial efectivo del isócrono con $L_0=2$: las órbitas externas
+  (acción mayor) tardan más, y la mancha se cizalla y se enrolla alrededor de la
+  órbita circular (punto negro). Su forma cambia por completo, pero su área cambia
+  menos de $10^{-7}$ en $t=600$.}
+  \label{fig:liouville}
+\end{figure}
+
+La figura~\ref{fig:liouville} lo comprueba numéricamente y muestra el matiz
+importante: el teorema restringe el área, no la forma. En el oscilador armónico la
+mancha rota intacta. En un potencial anarmónico se estira en un filamento cada vez
+más largo y delgado, con el área exacta del principio. Ese filamento es el
+\emph{phase mixing} de la sección~\ref{sec:mixing}, en su versión más elemental.
+
+\subsection{De Liouville a Vlasov}
+
+Sea ahora $f(q,p,t)$ la densidad de un fluido de partículas que no interactúan entre
+sí y se mueven según~\eqref{eq:hamilton}: $f\,\dd q\,\dd p$ es la masa en un
+elemento del espacio de fases. La masa se conserva, lo que en forma local es la
+ecuación de continuidad
+\begin{equation}
+  \frac{\partial f}{\partial t} + \nabla\cdot\big(f\,\mathbf{X}_H\big)
+  = \frac{\partial f}{\partial t} + \mathbf{X}_H\cdot\nabla f
+    + f\,\nabla\cdot\mathbf{X}_H = 0 .
+\end{equation}
+El último término es cero por Liouville, y el penúltimo es
+$\partial_qf\,\partial_pH-\partial_pf\,\partial_qH=\{f,H\}$. Queda
 \begin{equation}
   \frac{\partial f}{\partial t} + \{f,H\} = 0
   \qquad\Longleftrightarrow\qquad
-  \frac{\dd f}{\dd t}\Big|_{\text{trayectoria}} = 0 .
+  \frac{\dd f}{\dd t}\Big|_{\text{trayectoria}} = 0 ,
   \label{eq:liouville}
 \end{equation}
-\textbf{La densidad es constante a lo largo de cada trayectoria.} Esta es la
-ecuación de Vlasov; en la sección~\ref{sec:sistema} aparecerá con el hamiltoniano
-de una partícula en un campo gravitatorio. Una consecuencia inmediata: cualquier
-$f$ que dependa solo de cantidades conservadas es estacionaria, porque su corchete
-con $H$ se anula. Es el \emph{teorema de Jeans} de la dinámica
-estelar~\cite[\S4.2]{binney2008}.
+donde la equivalencia es~\eqref{eq:evolucion} con $A=f$. \textbf{La densidad es
+constante a lo largo de cada trayectoria}: cada elemento de fluido conserva su masa
+(por continuidad) y su área (por Liouville), luego conserva su densidad.
+
+En tres dimensiones, con coordenadas cartesianas $\mathbf{x}$, momentos
+$\mathbf{v}$ (masa unitaria) y $H=\tfrac12|\mathbf{v}|^2+\Phi(\mathbf{x},t)$, el
+corchete vale
+\begin{equation}
+  \{f,H\}
+  = \sum_{i=1}^{3}\Big(\frac{\partial f}{\partial x_i}\frac{\partial H}{\partial v_i}
+                      -\frac{\partial f}{\partial v_i}\frac{\partial H}{\partial x_i}\Big)
+  = \mathbf{v}\cdot\frac{\partial f}{\partial\mathbf{x}}
+   -\nabla\Phi\cdot\frac{\partial f}{\partial\mathbf{v}} ,
+\end{equation}
+y~\eqref{eq:liouville} se convierte en la ecuación de Vlasov de la
+sección~\ref{sec:sistema}.
+
+\begin{idea}
+\textbf{Equilibrios: el teorema de Jeans.} Si $I(q,p)$ es una cantidad conservada,
+$\{I,H\}=0$, entonces cualquier función $f=g(I)$ cumple, por la regla de la cadena,
+$\{g(I),H\}=g'(I)\{I,H\}=0$, y por~\eqref{eq:liouville} es estacionaria. En
+particular, cualquier $f(E)$ es un equilibrio. Recíprocamente, una distribución
+estacionaria solo puede depender de las cantidades conservadas. Es el \emph{teorema
+de Jeans} de la dinámica estelar~\cite[\S4.2]{binney2008}, y explica por qué el
+phase mixing lleva hacia un estado que solo depende de la acción.
 \end{idea}
 
 \subsection{Transformaciones canónicas}
 
-Nada obliga a describir el movimiento con $(q,p)$. Un cambio de variables
-$(q,p)\to(Q,P)$ se llama \emph{canónico} si preserva la forma de las ecuaciones de
-Hamilton, con el mismo hamiltoniano escrito en las nuevas variables. Con un grado
-de libertad hay un criterio sencillo: la transformación es canónica si y solo si
+Nada obliga a describir el movimiento con $(q,p)$. Consideremos un cambio de
+variables $Q=Q(q,p)$, $P=P(q,p)$, invertible e independiente del tiempo, y escribamos
+el mismo hamiltoniano en las nuevas variables, $H(q,p)=K(Q,P)$. ¿Cumplen $Q$ y $P$
+ecuaciones de Hamilton con $K$? Calculémoslo. Por la regla de la cadena,
 \begin{equation}
-  \{Q,P\}_{q,p}
+  \dot Q = \frac{\partial Q}{\partial q}\dot q + \frac{\partial Q}{\partial p}\dot p
+         = \frac{\partial Q}{\partial q}\frac{\partial H}{\partial p}
+          -\frac{\partial Q}{\partial p}\frac{\partial H}{\partial q}
+         = \{Q,H\} .
+\end{equation}
+Ahora expresamos las derivadas de $H$ a través de $K$:
+$\partial_qH=\partial_QK\,\partial_qQ+\partial_PK\,\partial_qP$ y
+$\partial_pH=\partial_QK\,\partial_pQ+\partial_PK\,\partial_pP$. Sustituyendo, los
+términos con $\partial_QK$ se cancelan y queda
+\begin{equation}
+  \dot Q = \{Q,P\}\,\frac{\partial K}{\partial P},
+  \qquad\text{y del mismo modo}\qquad
+  \dot P = -\{Q,P\}\,\frac{\partial K}{\partial Q} .
+\end{equation}
+Las nuevas variables cumplen ecuaciones de Hamilton \textbf{si y solo si
+$\{Q,P\}=1$}. Esa es la definición de transformación \emph{canónica}. Como
+\begin{equation}
+  \{Q,P\}
   = \frac{\partial Q}{\partial q}\frac{\partial P}{\partial p}
    -\frac{\partial Q}{\partial p}\frac{\partial P}{\partial q}
-  = \det\frac{\partial(Q,P)}{\partial(q,p)} = 1 ,
+  = \det\frac{\partial(Q,P)}{\partial(q,p)} ,
 \end{equation}
-es decir, si \textbf{preserva el área}: $\dd q\,\dd p=\dd Q\,\dd P$.
+la condición equivale a que el jacobiano valga uno: \textbf{una transformación es
+canónica si y solo si preserva el área}, $\dd q\,\dd p=\dd Q\,\dd P$. (Con más grados
+de libertad la condición es más fuerte que preservar el volumen: deben cumplirse
+todos los corchetes fundamentales, $\{Q_i,P_j\}=\delta_{ij}$ y
+$\{Q_i,Q_j\}=\{P_i,P_j\}=0$.)
 
-Una forma práctica de construirlas es con una \emph{función generatriz}
-$S(q,P)$~\cite[\S9.1]{goldstein2002}: las relaciones
+\paragraph{Un ejemplo que no es canónico.} $Q=2q$, $P=p$. Aquí $\{Q,P\}=2$, y las
+ecuaciones resultan $\dot Q=2\,\partial K/\partial P$: la forma de Hamilton se pierde
+por un factor. En cambio, $Q=\lambda q$, $P=p/\lambda$ sí es canónica para cualquier
+$\lambda\neq0$: estirar una dirección obliga a comprimir la otra.
+
+\paragraph{Un ejemplo que sí lo es.} Para el oscilador armónico, proponemos
 \begin{equation}
-  p = \frac{\partial S}{\partial q}, \qquad Q = \frac{\partial S}{\partial P}
+  q=\sqrt{\frac{2P}{\omega_0}}\,\sin Q, \qquad p=\sqrt{2P\omega_0}\,\cos Q .
+  \label{eq:osc_aa}
+\end{equation}
+Calculando el corchete en las variables $(Q,P)$,
+\begin{equation}
+  \{q,p\}_{Q,P}
+  = \sqrt{\tfrac{2P}{\omega_0}}\cos Q\cdot\sqrt{\tfrac{\omega_0}{2P}}\cos Q
+   -\tfrac{1}{\sqrt{2P\omega_0}}\sin Q\cdot\big(-\sqrt{2P\omega_0}\sin Q\big)
+  = \cos^2Q+\sin^2Q = 1 ,
+\end{equation}
+luego es canónica. Y el hamiltoniano se vuelve
+$K=\tfrac12p^2+\tfrac12\omega_0^2q^2=\omega_0P\cos^2Q+\omega_0P\sin^2Q=\omega_0P$:
+\textbf{no depende de $Q$}. Las ecuaciones de Hamilton en las nuevas variables son
+$\dot P=-\partial K/\partial Q=0$ y $\dot Q=\partial K/\partial P=\omega_0$. El
+movimiento del oscilador, en estas coordenadas, es una rotación uniforme a radio
+constante. Este es el primer ejemplo de variables ángulo--acción.
+
+\paragraph{Funciones generatrices.} Adivinar transformaciones como~\eqref{eq:osc_aa}
+no es un método. El método sistemático es partir de una \emph{función generatriz}
+$S(q,P)$~\cite[\S9.1]{goldstein2002} y definir la transformación implícitamente por
+\begin{equation}
+  p = \frac{\partial S}{\partial q}, \qquad Q = \frac{\partial S}{\partial P} .
   \label{eq:generatriz}
 \end{equation}
-definen implícitamente una transformación que es automáticamente canónica.
+Toda transformación así construida es canónica. Para verlo, diferenciamos ambas
+relaciones: $\dd p=S_{qq}\,\dd q+S_{qP}\,\dd P$ y $\dd Q=S_{Pq}\,\dd q+S_{PP}\,\dd P$,
+con subíndices para las derivadas parciales. De la primera,
+$\partial P/\partial q=-S_{qq}/S_{qP}$ y $\partial P/\partial p=1/S_{qP}$;
+sustituyendo en la segunda, $\partial Q/\partial q=S_{Pq}-S_{PP}S_{qq}/S_{qP}$ y
+$\partial Q/\partial p=S_{PP}/S_{qP}$. Entonces
+\begin{equation}
+  \{Q,P\}
+  = \Big(S_{Pq}-\frac{S_{PP}S_{qq}}{S_{qP}}\Big)\frac{1}{S_{qP}}
+   +\frac{S_{PP}}{S_{qP}}\,\frac{S_{qq}}{S_{qP}}
+  = 1 ,
+\end{equation}
+usando $S_{qP}=S_{Pq}$. La única condición es $S_{qP}\neq0$, para poder despejar.
+
+\subsection{Integrabilidad y la ecuación de Hamilton--Jacobi}
+\label{sec:hj}
+
+El ejemplo del oscilador sugiere una estrategia general: buscar una transformación
+canónica tras la cual $K$ dependa solo del nuevo momento. Entonces $\dot P=0$,
+$\dot Q=\partial K/\partial P$ es constante, y el problema está resuelto.
+
+Con una función generatriz $S(q,P)$ independiente del tiempo, $K(Q,P)=H(q,p)$. Pedir
+que $K$ dependa solo de $P$ es pedir que
+\begin{equation}
+  H\!\Big(q,\frac{\partial S}{\partial q}\Big) = E(P) ,
+  \label{eq:hj}
+\end{equation}
+la \emph{ecuación de Hamilton--Jacobi} independiente del tiempo. Con un grado de
+libertad y $H=\tfrac12p^2+V(q)$, se resuelve directamente: despejando,
+$\partial S/\partial q=\sqrt{2(E-V(q))}$, y por lo tanto
+\begin{equation}
+  S(q,P) = \int^{q}\sqrt{2\big(E(P)-V(q')\big)}\;\dd q' .
+\end{equation}
+Queda libre la elección de la función $E(P)$, es decir, de qué cantidad conservada
+usar como nuevo momento. La sección~\ref{sec:construccion} muestra que exigir que
+$Q$ sea un ángulo fija esa elección y da la acción.
 
 \begin{aviso}
-\textsc{por qué importa numéricamente.} Como $\dd q\,\dd p=\dd Q\,\dd P$, cualquier
-integral sobre el espacio de fases (una masa, un promedio, el diagnóstico $h_k$ de
-la sección~\ref{sec:mixing}) puede calcularse en las variables que resulten más
-cómodas \emph{sin jacobiano}. Eso es lo que permite, en la
-sección~\ref{sec:muestreo}, colocar los nodos de cuadratura directamente sobre una
-rejilla en ángulo y acción con pesos iguales al valor de la distribución.
+\textsc{integrabilidad.} Con un grado de libertad, la conservación de $H$ basta para
+resolver~\eqref{eq:hj}: todo sistema autónomo de un grado de libertad es
+\emph{integrable}. Con $n$ grados de libertad hacen falta $n$ cantidades conservadas
+independientes y \emph{en involución} (con corchetes de Poisson mutuos nulos). El
+teorema de Liouville--Arnold~\cite[\S49]{arnold1989} asegura entonces que las órbitas
+acotadas viven en toros de dimensión $n$ y que existen variables ángulo--acción. Con
+un grado de libertad, el ``toro'' es simplemente la curva cerrada de la
+figura~\ref{fig:potencial}(b). La mayoría de los sistemas con $n\ge2$ no son
+integrables, y es precisamente por eso que la reducción a un grado de libertad de la
+sección~\ref{sec:sistema} es tan valiosa.
+\end{aviso}
+
+\begin{aviso}
+\textsc{por qué importa numéricamente.} Dos consecuencias prácticas de lo anterior.
+Primera: como una transformación canónica cumple $\dd q\,\dd p=\dd Q\,\dd P$,
+cualquier integral sobre el espacio de fases (una masa, un promedio, el diagnóstico
+$h_k$ de la sección~\ref{sec:mixing}) puede calcularse en las variables que resulten
+más cómodas \emph{sin jacobiano}. Eso permite, en la sección~\ref{sec:muestreo},
+colocar los nodos de cuadratura directamente sobre una rejilla en ángulo y acción con
+pesos iguales al valor de la distribución.
+
+Segunda: los integradores simplécticos de la sección~\ref{sec:metodo} están hechos
+de pasos elementales que son, cada uno, transformaciones canónicas. Un ``golpe''
+$(q,p)\mapsto(q,\,p+h\,F(q))$ tiene jacobiano
+$\left(\begin{smallmatrix}1&0\\hF'(q)&1\end{smallmatrix}\right)$, y un ``arrastre''
+$(q,p)\mapsto(q+h\,p,\,p)$ tiene
+$\left(\begin{smallmatrix}1&h\\0&1\end{smallmatrix}\right)$; ambos con determinante
+uno. Por eso el integrador preserva el área exactamente, como el flujo verdadero.
 \end{aviso}
 
 \section{El sistema}
@@ -234,8 +489,8 @@ rejilla en ángulo y acción con pesos iguales al valor de la distribución.
 Sea $f(\mathbf{x},\mathbf{v},t)$ la densidad en el espacio de fases de seis
 dimensiones: $f\,\dd^3x\,\dd^3v$ es la masa contenida en un elemento de volumen. Si
 no hay colisiones, cada estrella se mueve en el potencial $\Phi$ con hamiltoniano
-$H=\tfrac12|\mathbf{v}|^2+\Phi(\mathbf{x},t)$, y la ecuación~\eqref{eq:liouville}
-toma la forma
+$H=\tfrac12|\mathbf{v}|^2+\Phi(\mathbf{x},t)$, y como se vio en la
+sección~\ref{sec:hamilton}, la ecuación~\eqref{eq:liouville} toma la forma
 \begin{equation}
   \frac{\partial f}{\partial t}
   + \mathbf{v}\cdot\frac{\partial f}{\partial \mathbf{x}}
@@ -256,24 +511,62 @@ lo que la vuelve no lineal e integro-diferencial.
 
 \subsection{Reducción a un grado de libertad}
 
-Trabajaremos en simetría esférica. Entonces el momento angular $L=|\mathbf{x}
-\times\mathbf{v}|$ de cada partícula se conserva, y el movimiento radial se separa.
-Tomamos además una distribución con un \emph{único} valor del momento angular,
+Trabajaremos en simetría esférica, $\Phi=\Phi(r)$. En coordenadas esféricas
+$(r,\theta,\phi)$ el lagrangiano de una partícula es
+$\mathcal{L}=\tfrac12\big(\dot r^2+r^2\dot\theta^2+r^2\sin^2\theta\,\dot\phi^2\big)
+-\Phi(r)$, los momentos conjugados son
 \begin{equation}
-  f(\mathbf{x},\mathbf{v},t) \;\propto\; F(r,\rp,t)\,\delta(L-L_0),
-  \label{eq:deltaL}
+  p_r=\dot r, \qquad p_\theta=r^2\dot\theta, \qquad p_\phi=r^2\sin^2\theta\,\dot\phi,
 \end{equation}
-lo que reduce el problema a un grado de libertad con hamiltoniano
+y la transformada de Legendre da
+\begin{equation}
+  H = \frac{p_r^2}{2}
+    + \frac{1}{2r^2}\Big(p_\theta^2+\frac{p_\phi^2}{\sin^2\theta}\Big)
+    + \Phi(r)
+  = \frac{p_r^2}{2} + \frac{L^2}{2r^2} + \Phi(r) ,
+  \qquad
+  L^2 \equiv p_\theta^2+\frac{p_\phi^2}{\sin^2\theta} .
+  \label{eq:hesferico}
+\end{equation}
+La cantidad $L^2$ es el cuadrado del momento angular. Se conserva: no contiene ni $r$
+ni $p_r$, así que su corchete con los términos $\tfrac12p_r^2$ y $\Phi(r)$ es nulo, y
+su corchete con $L^2/2r^2$ es $\tfrac{1}{2r^2}\{L^2,L^2\}=0$. Con $L$ fijo, el
+movimiento radial queda desacoplado de los ángulos y obedece el hamiltoniano de un
+grado de libertad
 \begin{equation}
   H(r,\rp) = \frac{\rp^2}{2} + \Phi_{\rm ef}(r),
   \qquad
-  \Phi_{\rm ef}(r) = \Phi(r) + \frac{L_0^2}{2r^2}.
+  \Phi_{\rm ef}(r) = \Phi(r) + \frac{L^2}{2r^2},
   \label{eq:hamiltoniano}
 \end{equation}
-El término $L_0^2/2r^2$ es la barrera centrífuga: impide que las partículas lleguen
-al centro. El resultado es un pozo de potencial con un único mínimo
-(figura~\ref{fig:potencial}a), y todas las órbitas ligadas oscilan radialmente
-entre un pericentro $r_-$ y un apocentro $r_+$.
+con ecuaciones de Hamilton $\dot r=\rp$ y $\dot p_r=-\Phi'(r)+L^2/r^3$. El término
+$L^2/2r^2$ es la barrera centrífuga: impide que las partículas lleguen al centro. El
+resultado es un pozo de potencial con un único mínimo (figura~\ref{fig:potencial}a), y
+todas las órbitas ligadas oscilan radialmente entre un pericentro $r_-$ y un
+apocentro $r_+$.
+
+Tomamos además una distribución con un \emph{único} valor del momento angular,
+\begin{equation}
+  f(\mathbf{x},\mathbf{v},t) \;\propto\; F(r,\rp,t)\,\delta(L-L_0).
+  \label{eq:deltaL}
+\end{equation}
+Todas las partículas obedecen entonces~\eqref{eq:hamiltoniano} con el mismo
+$L=L_0$, y el problema es de un grado de libertad.
+
+\begin{aviso}
+\textsc{de dónde sale el factor $8\pi^2L_0$.} Para integrar~\eqref{eq:deltaL} sobre
+el espacio de fases hay que escribir $\dd^3x\,\dd^3v$ en términos de $r$, $\rp$ y $L$.
+Integrando sobre las direcciones, $\dd^3x=4\pi r^2\,\dd r$. La velocidad se separa en
+una componente radial $\rp$ y una tangencial de módulo $v_t$, que puede apuntar en
+cualquier dirección del plano perpendicular al radio: $\dd^3v=\dd\rp\,2\pi
+v_t\,\dd v_t$. Como $L=r\,v_t$, se tiene $v_t\,\dd v_t=L\,\dd L/r^2$, y
+\begin{equation}
+  \dd^3x\,\dd^3v = 4\pi r^2\,\dd r\;\dd\rp\;\frac{2\pi L\,\dd L}{r^2}
+  = 8\pi^2\,L\,\dd L\,\dd r\,\dd\rp .
+\end{equation}
+Integrando la delta en $L$ queda $8\pi^2L_0\,\dd r\,\dd\rp$: ese es el prefactor que
+aparece en la masa y en el diagnóstico $h_k$ de la sección~\ref{sec:mixing}.
+\end{aviso}
 
 \begin{figure}[t]
   \centering
@@ -335,8 +628,9 @@ mixing, escrito en una línea.
 La construcción es un ejercicio instructivo, porque de ella salen de golpe el
 significado de $\Jr$, el de $\Qr$ y la relación entre $\omega$ y el periodo.
 
-Fijada la energía $E$, sobre la órbita el momento es una función conocida de la
-posición, $\rp(r;E)=\pm\sqrt{2\,(E-\Phi_{\rm ef}(r))}$. Supongamos que $E$ es
+Aplicamos la estrategia de la sección~\ref{sec:hj} al
+hamiltoniano~\eqref{eq:hamiltoniano}. Fijada la energía $E$, sobre la órbita el momento
+es una función conocida de la posición, $\rp(r;E)=\pm\sqrt{2\,(E-\Phi_{\rm ef}(r))}$. Supongamos que $E$ es
 función de la nueva variable $\Jr$, todavía por determinar, y tomemos como función
 generatriz~\eqref{eq:generatriz}
 \begin{equation}
@@ -375,7 +669,7 @@ dividida por $2\pi$.} Mide el ``tamaño'' de la oscilación radial: vale cero pa
   \omega(\Jr) = \frac{\dd E}{\dd\Jr} = \frac{2\pi}{T_r} ,
   \label{eq:omegaT}
 \end{equation}
-donde $T_r$ es el periodo radial. \textbf{La frecuencia angular es la del
+donde $T_r$ es el periodo radial, calculado como en~\eqref{eq:periodo}. \textbf{La frecuencia angular es la del
 movimiento radial}, y es la pendiente de la curva $E(\Jr)$.
 
 \paragraph{Qué es $\Qr$.} Por~\eqref{eq:angulo}, $\Qr=2\pi\,t/T_r$: es el tiempo
@@ -385,26 +679,54 @@ $\pi$ en el apocentro, y avanza uniformemente aunque $r(t)$ no lo haga. En la me
 de $\pi$ a $2\pi$.
 
 \begin{idea}
-\textbf{Ejemplo: el oscilador armónico.} Con $H=\tfrac12 p^2+\tfrac12\omega_0^2q^2$
-las órbitas son elipses de semiejes $\sqrt{2E}/\omega_0$ y $\sqrt{2E}$, cuya área es
-$2\pi E/\omega_0$. Luego $\Jr=E/\omega_0$, $E(\Jr)=\omega_0\Jr$ y
-$\omega=\dd E/\dd\Jr=\omega_0$, \emph{la misma para todas las órbitas}. El cambio de
-variables es $q=\sqrt{2\Jr/\omega_0}\,\sin\Qr$, $p=\sqrt{2\Jr\omega_0}\,\cos\Qr$.
+\textbf{De vuelta al oscilador armónico.} Las elipses del oscilador tienen semiejes
+$\sqrt{2E}/\omega_0$ y $\sqrt{2E}$, y por lo tanto área $\pi\cdot2E/\omega_0$.
+Por~\eqref{eq:accion}, $\Jr=E/\omega_0$, así que $E(\Jr)=\omega_0\Jr$ y
+$\omega=\dd E/\dd\Jr=\omega_0$. Es exactamente la transformación~\eqref{eq:osc_aa}
+que se verificó a mano en la sección~\ref{sec:hamilton}, con $P=\Jr$: la
+construcción general la reproduce sin tener que adivinarla.
 
 Como $\omega'(\Jr)=0$, en el oscilador armónico \textbf{no hay phase mixing}: todas
 las órbitas completan su periodo al mismo tiempo y cualquier estructura inicial
-reaparece intacta cada $2\pi/\omega_0$. El phase mixing es consecuencia de la
-\emph{anarmonicidad}: de que la frecuencia dependa de la amplitud.
+reaparece intacta cada $2\pi/\omega_0$ (figura~\ref{fig:liouville}a). El phase mixing
+es consecuencia de la \emph{anarmonicidad}: de que la frecuencia dependa de la
+amplitud (figura~\ref{fig:liouville}b).
 \end{idea}
 
 \subsection{Invariancia adiabática}
 \label{sec:adiabatica}
 
-Hay una razón más profunda para preferir $\Jr$ sobre $E$. Si el potencial cambia
-lentamente comparado con el periodo orbital, la energía de cada partícula cambia,
-pero la acción se conserva con muy buena aproximación: $\Jr$ es un \emph{invariante
-adiabático}~\cite[\S49]{landau1976}. Es el mismo principio por el que un péndulo
-cuya cuerda se acorta despacio aumenta su energía pero conserva $E/\omega$.
+Hay una razón más profunda para preferir $\Jr$ sobre $E$. Supongamos que el
+hamiltoniano depende de un parámetro que cambia con el tiempo, $H(q,p;\lambda(t))$, y
+que el cambio es lento: $\lambda$ varía poco durante un periodo orbital. La energía
+de cada partícula ya no se conserva, porque por~\eqref{eq:evolucion}
+\begin{equation}
+  \frac{\dd E}{\dd t} = \frac{\partial H}{\partial t}
+  = \frac{\partial H}{\partial\lambda}\,\dot\lambda .
+\end{equation}
+Veamos qué le pasa a la acción $\Jr(E,\lambda)$, calculada con~\eqref{eq:accion} en el
+potencial instantáneo. Su derivada es
+\begin{equation}
+  \frac{\dd\Jr}{\dd t}
+  = \frac{\partial\Jr}{\partial E}\,\dot E + \frac{\partial\Jr}{\partial\lambda}\,\dot\lambda .
+\end{equation}
+Promediamos sobre un periodo, tratando $\dot\lambda$ como constante. El primer
+término, con $\partial\Jr/\partial E=T/2\pi$ por~\eqref{eq:omegaT}, da
+$\frac{T}{2\pi}\,\dot\lambda\,\frac{1}{T}\oint\frac{\partial H}{\partial\lambda}\,\dd t$.
+Para el segundo, derivamos $2\pi\Jr=\oint p\,\dd q$ a $E$ fija; como
+$H(q,p;\lambda)=E$, se tiene $\partial p/\partial\lambda=-(\partial H/\partial\lambda)
+/(\partial H/\partial p)=-(\partial H/\partial\lambda)/\dot q$, y
+\begin{equation}
+  \frac{\partial\Jr}{\partial\lambda}
+  = \frac{1}{2\pi}\oint\frac{\partial p}{\partial\lambda}\,\dd q
+  = -\frac{1}{2\pi}\oint\frac{\partial H}{\partial\lambda}\,\frac{\dd q}{\dot q}
+  = -\frac{1}{2\pi}\oint\frac{\partial H}{\partial\lambda}\,\dd t .
+\end{equation}
+Los dos términos son iguales y de signo opuesto: $\langle\dd\Jr/\dd t\rangle=0$ a
+primer orden en $\dot\lambda$. \textbf{La acción es un invariante
+adiabático}~\cite[\S49]{landau1976}: la energía cambia al ritmo de $\dot\lambda$, pero
+la acción solo cambia en órdenes superiores. Es el mismo principio por el que un
+péndulo cuya cuerda se acorta despacio aumenta su energía pero conserva $E/\omega$.
 
 Hay que subrayar el matiz: el invariante es la acción \emph{calculada en el
 potencial instantáneo}. Si el potencial cambia y seguimos calculando $\Jr$ con la
@@ -604,8 +926,8 @@ quedarse con los armónicos de Fourier en el ángulo:
              \ee^{-\ii k \Qr}\,\dd \Qr\,\dd \Jr .
   \label{eq:hk}
 \end{equation}
-El prefactor $8\pi^2L_0$ es la medida de los grados de libertad angulares que la
-delta de~\eqref{eq:deltaL} elimina; con él, $h_0$ es literalmente la masa cuando
+El prefactor $8\pi^2L_0$ es el elemento de volumen deducido en la
+sección~\ref{sec:sistema} tras integrar la delta de~\eqref{eq:deltaL}; con él, $h_0$ es literalmente la masa cuando
 $\Phi_{\rm p}=1$. Como la transformación es canónica, la integral puede hacerse en
 $(\Qr,\Jr)$ sin jacobiano.
 
