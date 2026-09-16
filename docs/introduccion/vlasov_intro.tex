@@ -2,13 +2,16 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[spanish,es-noquoting]{babel}
+% es-nodecimaldot: conserva el punto decimal en modo matemático.
+% es-tabla: «Tabla» en lugar de «Cuadro».
+\usepackage[spanish,es-noquoting,es-nodecimaldot,es-tabla]{babel}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{microtype}
 \usepackage[margin=2.7cm]{geometry}
 \usepackage{xcolor}
+\usepackage[font=small,labelfont=bf,margin=0.3cm]{caption}
 \usepackage[colorlinks=true,linkcolor=azulosc,citecolor=azulosc,urlcolor=azulosc]{hyperref}
 
 \definecolor{azulosc}{HTML}{1F4E79}
@@ -31,6 +34,7 @@
 \newcommand{\rp}{p_r}
 \newcommand{\Jr}{J}
 \newcommand{\Qr}{Q}
+\graphicspath{{figuras/}}
 
 \theoremstyle{definition}
 \newtheorem{ejercicio}{Ejercicio}
@@ -45,20 +49,22 @@
 
 \begin{abstract}
 \noindent
-Estas notas explican, desde cero y con detalle, cómo se simula numéricamente un
-sistema estelar no colisional y cómo se distinguen dos mecanismos que hacen
-desaparecer una perturbación sin que haya disipación alguna: el \emph{phase
-mixing}, que es puramente cinemático, y el \emph{amortiguamiento de Landau}, que
-es colectivo. Se presenta el sistema de Vlasov--Poisson en simetría esférica con
-momento angular fijo, las variables ángulo--acción del potencial isócrono, el
-método \emph{particle-in-cell} con integradores simplécticos, y un diagnóstico
-espectral $h_k(t)$ que permite medir el mezclado. Todo se ilustra con resultados
-de un código real, incluidos los errores cometidos durante su desarrollo, porque
-la forma en que se descartan las explicaciones falsas es parte del método. El
-hilo conductor es un caso de estudio: una meseta inesperada en $h_1(t)$ al
-encender la autogravedad, que tras cuatro barridos de control resulta no ser ni
-ruido numérico ni un modo colectivo, sino la huella de estar usando las
-coordenadas equivocadas.
+Estas notas explican desde cero y con detalle cómo se simula numéricamente un
+sistema estelar no colisional, y cómo se distinguen dos mecanismos que hacen
+desaparecer una perturbación sin que haya disipación: el \emph{phase mixing}
+(mezcla de fases), que es puramente cinemático, y el \emph{amortiguamiento de
+Landau}, que es colectivo. Se repasa la mecánica hamiltoniana indispensable, se
+presenta el sistema de Vlasov--Poisson en simetría esférica con momento angular
+fijo, se construyen las variables ángulo--acción del potencial isócrono y se
+estudia el comportamiento de la acción $J$, el ángulo $Q$ y la frecuencia
+$\omega(J)$. Después se describe el método \emph{particle-in-cell} con
+integradores simplécticos y un diagnóstico espectral $h_k(t)$ que permite medir
+la mezcla. Todo se ilustra con resultados de un código real, incluidos los errores
+cometidos durante su desarrollo, porque la forma en que se descartan las
+explicaciones falsas es parte del método. El hilo conductor es un caso de estudio:
+una meseta inesperada en $h_1(t)$ al activar la autogravedad, que tras varios
+barridos de control resulta no ser ni ruido numérico ni un modo colectivo, sino la
+huella de estar usando las coordenadas equivocadas.
 \end{abstract}
 
 \tableofcontents
@@ -67,16 +73,16 @@ coordenadas equivocadas.
 \section{Por qué este problema es interesante}
 
 Un cúmulo estelar, una galaxia o un halo de materia oscura son sistemas donde las
-colisiones entre partículas son tan raras que pueden ignorarse durante la vida del
+colisiones entre partículas son tan raras que pueden ignorarse durante la edad del
 universo. La dinámica está dominada por el campo gravitatorio \emph{colectivo} que
 todas las partículas generan juntas. El objeto matemático que describe esto es la
 ecuación de Vlasov acoplada a la de Poisson.
 
-Lo que hace al sistema fascinante, y lo que estas notas persiguen, es que
+Lo que hace fascinante al sistema, y lo que estas notas persiguen, es que
 \textbf{una perturbación puede desaparecer sin que se pierda información}. No hay
-viscosidad, no hay colisiones, la entropía de grano fino se conserva exactamente.
-Y sin embargo, si uno mide casi cualquier cantidad macroscópica, la ve decaer.
-Hay dos mecanismos distintos detrás de esto y conviene no confundirlos:
+viscosidad, no hay colisiones y la entropía de grano fino se conserva exactamente.
+Sin embargo, si se mide casi cualquier cantidad macroscópica, se la ve decaer. Hay
+dos mecanismos distintos detrás de esto y es importante no confundirlos:
 
 \begin{idea}
 \textbf{Phase mixing.} Órbitas vecinas tienen frecuencias ligeramente distintas.
@@ -96,23 +102,139 @@ Distinguirlos experimentalmente es el objetivo central de estas notas, y se pued
 hacer de forma tajante: como se demuestra en la sección~\ref{sec:envolvente}, el
 phase mixing produce una envolvente \emph{gaussiana} en el tiempo y el
 amortiguamiento de Landau una \emph{exponencial}. Basta ajustar el logaritmo de la
-amplitud contra $t^2$ y contra $t$ y ver cuál gana.
+amplitud contra $t^2$ y contra $t$ y ver cuál describe mejor los datos.
 
 \subsection*{A quién van dirigidas}
 
-Se supone familiaridad con mecánica hamiltoniana, análisis de Fourier y métodos
-numéricos básicos. No se supone nada de dinámica estelar ni de métodos de
-partículas. Los apartados marcados como \textsc{detalle numérico} pueden saltarse
-en una primera lectura sin perder el hilo físico.
+Se supone familiaridad con cálculo, ecuaciones diferenciales, análisis de Fourier y
+métodos numéricos básicos. La mecánica hamiltoniana necesaria se repasa en la
+sección~\ref{sec:hamilton}; quien ya la domine puede saltarla. No se supone nada de
+dinámica estelar ni de métodos de partículas. Los apartados marcados como
+\textsc{detalle numérico} pueden omitirse en una primera lectura sin perder el hilo
+físico.
+
+\section{Lo indispensable de mecánica hamiltoniana}
+\label{sec:hamilton}
+
+Todo lo que sigue descansa en tres ideas de la mecánica hamiltoniana: el espacio de
+fases, la conservación del área bajo el flujo, y la libertad de cambiar de
+coordenadas sin perder la forma de las ecuaciones. Las presentamos para un grado de
+libertad, que es el caso que nos interesa; las referencias clásicas son
+Goldstein~\cite[caps.~8--10]{goldstein2002}, Landau y
+Lifshitz~\cite[\S\S40--52]{landau1976} y, con más rigor geométrico,
+Arnold~\cite[caps.~8--10]{arnold1989}.
+
+\subsection{Espacio de fases y ecuaciones de Hamilton}
+
+El estado de un sistema con un grado de libertad es un punto $(q,p)$ del
+\emph{espacio de fases}: una coordenada y su momento conjugado. Dada una función
+$H(q,p)$, el hamiltoniano, la evolución es
+\begin{equation}
+  \dot q = \frac{\partial H}{\partial p}, \qquad
+  \dot p = -\frac{\partial H}{\partial q} .
+  \label{eq:hamilton}
+\end{equation}
+El lado derecho define un campo de velocidades $\mathbf{X}_H=(\partial_p H,\,
+-\partial_q H)$ en el plano $(q,p)$, y las trayectorias son sus líneas de flujo.
+
+Si $H$ no depende explícitamente del tiempo, se conserva:
+\begin{equation}
+  \frac{\dd H}{\dd t}
+  = \frac{\partial H}{\partial q}\,\dot q + \frac{\partial H}{\partial p}\,\dot p
+  = \frac{\partial H}{\partial q}\frac{\partial H}{\partial p}
+   -\frac{\partial H}{\partial p}\frac{\partial H}{\partial q} = 0 .
+\end{equation}
+Con un grado de libertad esto tiene una consecuencia muy fuerte: \textbf{las
+trayectorias son las curvas de nivel $H(q,p)=E$}. El retrato de fases completo se
+dibuja sin resolver ninguna ecuación diferencial, solo trazando curvas de nivel. Si
+el potencial tiene un mínimo, las curvas cercanas son cerradas y el movimiento es
+periódico. La figura~\ref{fig:potencial}(b) muestra tres de ellas para el problema
+que estudiaremos.
+
+\subsection{Corchetes de Poisson y teorema de Liouville}
+
+Para dos funciones $A(q,p)$ y $B(q,p)$ se define el \emph{corchete de Poisson}
+\begin{equation}
+  \{A,B\} = \frac{\partial A}{\partial q}\frac{\partial B}{\partial p}
+           -\frac{\partial A}{\partial p}\frac{\partial B}{\partial q} .
+\end{equation}
+Con él, la derivada temporal de cualquier cantidad a lo largo del flujo se escribe
+de forma compacta, $\dd A/\dd t = \partial A/\partial t + \{A,H\}$, y las
+ecuaciones~\eqref{eq:hamilton} son simplemente $\dot q=\{q,H\}$, $\dot p=\{p,H\}$.
+Observe que $\{q,p\}=1$.
+
+El resultado central es el \textbf{teorema de Liouville}: el flujo hamiltoniano no
+tiene divergencia,
+\begin{equation}
+  \nabla\cdot\mathbf{X}_H
+  = \frac{\partial}{\partial q}\frac{\partial H}{\partial p}
+   -\frac{\partial}{\partial p}\frac{\partial H}{\partial q} = 0 ,
+\end{equation}
+y por lo tanto \emph{conserva el área} en el espacio de fases (el volumen, en más
+dimensiones). Una mancha de condiciones iniciales puede deformarse todo lo que
+quiera, estirarse y enrollarse, pero su área no cambia.
+
+\begin{idea}
+\textbf{De Liouville a Vlasov.} Sea $f(q,p,t)$ la densidad de un fluido de
+partículas que no interactúan entre sí y se mueven según~\eqref{eq:hamilton}. La
+conservación de la masa es la ecuación de continuidad
+$\partial_t f + \nabla\cdot(f\,\mathbf{X}_H)=0$. Como $\nabla\cdot\mathbf{X}_H=0$,
+queda
+\begin{equation}
+  \frac{\partial f}{\partial t} + \{f,H\} = 0
+  \qquad\Longleftrightarrow\qquad
+  \frac{\dd f}{\dd t}\Big|_{\text{trayectoria}} = 0 .
+  \label{eq:liouville}
+\end{equation}
+\textbf{La densidad es constante a lo largo de cada trayectoria.} Esta es la
+ecuación de Vlasov; en la sección~\ref{sec:sistema} aparecerá con el hamiltoniano
+de una partícula en un campo gravitatorio. Una consecuencia inmediata: cualquier
+$f$ que dependa solo de cantidades conservadas es estacionaria, porque su corchete
+con $H$ se anula. Es el \emph{teorema de Jeans} de la dinámica
+estelar~\cite[\S4.2]{binney2008}.
+\end{idea}
+
+\subsection{Transformaciones canónicas}
+
+Nada obliga a describir el movimiento con $(q,p)$. Un cambio de variables
+$(q,p)\to(Q,P)$ se llama \emph{canónico} si preserva la forma de las ecuaciones de
+Hamilton, con el mismo hamiltoniano escrito en las nuevas variables. Con un grado
+de libertad hay un criterio sencillo: la transformación es canónica si y solo si
+\begin{equation}
+  \{Q,P\}_{q,p}
+  = \frac{\partial Q}{\partial q}\frac{\partial P}{\partial p}
+   -\frac{\partial Q}{\partial p}\frac{\partial P}{\partial q}
+  = \det\frac{\partial(Q,P)}{\partial(q,p)} = 1 ,
+\end{equation}
+es decir, si \textbf{preserva el área}: $\dd q\,\dd p=\dd Q\,\dd P$.
+
+Una forma práctica de construirlas es con una \emph{función generatriz}
+$S(q,P)$~\cite[\S9.1]{goldstein2002}: las relaciones
+\begin{equation}
+  p = \frac{\partial S}{\partial q}, \qquad Q = \frac{\partial S}{\partial P}
+  \label{eq:generatriz}
+\end{equation}
+definen implícitamente una transformación que es automáticamente canónica.
+
+\begin{aviso}
+\textsc{por qué importa numéricamente.} Como $\dd q\,\dd p=\dd Q\,\dd P$, cualquier
+integral sobre el espacio de fases (una masa, un promedio, el diagnóstico $h_k$ de
+la sección~\ref{sec:mixing}) puede calcularse en las variables que resulten más
+cómodas \emph{sin jacobiano}. Eso es lo que permite, en la
+sección~\ref{sec:muestreo}, colocar los nodos de cuadratura directamente sobre una
+rejilla en ángulo y acción con pesos iguales al valor de la distribución.
+\end{aviso}
 
 \section{El sistema}
+\label{sec:sistema}
 
 \subsection{Vlasov--Poisson}
 
-Sea $f(\mathbf{x},\mathbf{v},t)$ la densidad en el espacio de fases: $f\,\dd^3x\,
-\dd^3v$ es la masa contenida en un elemento de volumen. Si no hay colisiones, $f$
-se conserva a lo largo de las trayectorias, lo que es la ecuación de Vlasov (o de
-Boltzmann sin colisiones):
+Sea $f(\mathbf{x},\mathbf{v},t)$ la densidad en el espacio de fases de seis
+dimensiones: $f\,\dd^3x\,\dd^3v$ es la masa contenida en un elemento de volumen. Si
+no hay colisiones, cada estrella se mueve en el potencial $\Phi$ con hamiltoniano
+$H=\tfrac12|\mathbf{v}|^2+\Phi(\mathbf{x},t)$, y la ecuación~\eqref{eq:liouville}
+toma la forma
 \begin{equation}
   \frac{\partial f}{\partial t}
   + \mathbf{v}\cdot\frac{\partial f}{\partial \mathbf{x}}
@@ -126,10 +248,10 @@ acoplada al potencial que la propia masa genera,
   \label{eq:poisson}
 \end{equation}
 
-La ecuación~\eqref{eq:vlasov} dice simplemente que $f$ es constante siguiendo el
-flujo hamiltoniano. Es una ecuación de transporte, no difusiva: \emph{nada} en
-ella destruye información. Toda la riqueza está en que el campo $\Phi$ depende de
-$f$, lo que la vuelve no lineal e integro-diferencial.
+La ecuación~\eqref{eq:vlasov} dice que $f$ es constante siguiendo el flujo
+hamiltoniano. Es una ecuación de transporte, no difusiva: \emph{nada} en ella
+destruye información. Toda la riqueza está en que el campo $\Phi$ depende de $f$,
+lo que la vuelve no lineal e integro-diferencial.
 
 \subsection{Reducción a un grado de libertad}
 
@@ -147,26 +269,44 @@ lo que reduce el problema a un grado de libertad con hamiltoniano
   \Phi_{\rm ef}(r) = \Phi(r) + \frac{L_0^2}{2r^2}.
   \label{eq:hamiltoniano}
 \end{equation}
+El término $L_0^2/2r^2$ es la barrera centrífuga: impide que las partículas lleguen
+al centro. El resultado es un pozo de potencial con un único mínimo
+(figura~\ref{fig:potencial}a), y todas las órbitas ligadas oscilan radialmente
+entre un pericentro $r_-$ y un apocentro $r_+$.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{potencial}
+  \caption{\textbf{(a)} Potencial efectivo~\eqref{eq:hamiltoniano} del isócrono con
+  $L_0=2$ (negro) y potencial isócrono sin barrera centrífuga (gris). Cada
+  segmento horizontal es una órbita de energía fija; sus extremos son los puntos de
+  retorno $r_\pm$. El mínimo, en $r_c=5.742$, corresponde a la órbita circular.
+  \textbf{(b)} Las mismas tres órbitas en el espacio de fases: curvas de nivel de
+  $H$, recorridas en sentido horario. El área encerrada, dividida por $2\pi$, es la
+  acción $J$ (sección~\ref{sec:aa}); la cuadratura numérica del área reproduce el
+  valor nominal de $J$ con 12 cifras.}
+  \label{fig:potencial}
+\end{figure}
 
 Esta elección no es una limitación caprichosa: un sistema con un grado de libertad
-y potencial acotado es \emph{siempre integrable}, luego admite variables
-ángulo--acción exactas. Eso nos da una solución de referencia contra la que medir,
+y energía conservada es \emph{siempre integrable}, y por lo tanto admite variables
+ángulo--acción exactas. Eso nos da una solución de referencia contra la cual medir,
 que es exactamente lo que hace falta para validar un código.
 
 \begin{aviso}
 \textbf{Unidades.} Tomamos $G=1$ y la masa y el radio de escala del potencial de
-fondo iguales a uno. Con ello el tiempo orbital característico resulta del orden
-de $10^2$, y las masas de la componente que perturba se expresarán como fracción
-de la del fondo. En todas las corridas de estas notas $L_0=2$.
+fondo iguales a uno. Con ello el periodo orbital característico resulta del orden
+de $10^2$, y las masas de la componente que perturba se expresan como fracción de
+la del fondo. En todas las corridas de estas notas $L_0=2$.
 \end{aviso}
 
 \section{Variables ángulo--acción}
 \label{sec:aa}
 
-\subsection{Qué son y por qué se usan}
+\subsection{Qué se busca}
 
 Para un sistema integrable existe una transformación canónica $(r,\rp)\to(\Qr,\Jr)$
-tal que el hamiltoniano depende \emph{solo} de la acción:
+tal que el hamiltoniano depende \emph{solo} de la nueva variable de momento:
 \begin{equation}
   H = H(\Jr) \quad\Longrightarrow\quad
   \dot{\Jr} = -\frac{\partial H}{\partial \Qr} = 0,
@@ -174,17 +314,13 @@ tal que el hamiltoniano depende \emph{solo} de la acción:
   \dot{\Qr} = \frac{\partial H}{\partial \Jr} \equiv \omega(\Jr).
   \label{eq:ecmov}
 \end{equation}
-La acción se define como el área encerrada en el espacio de fases,
-\begin{equation}
-  \Jr = \frac{1}{2\pi}\oint \rp\,\dd r
-      = \frac{1}{\pi}\int_{r_-}^{r_+}\sqrt{2\big(E-\Phi_{\rm ef}(r)\big)}\;\dd r,
-  \label{eq:accion}
-\end{equation}
-donde $r_\pm$ son los puntos de retorno, raíces de $E=\Phi_{\rm ef}(r)$, y el
-ángulo $\Qr\in[0,2\pi)$ avanza uniformemente con el tiempo.
+La acción $\Jr$ es constante y el ángulo $\Qr$ avanza a velocidad constante,
+$\Qr(t)=\Qr_0+\omega(\Jr)\,t$. Todo el movimiento, por complicado que sea en $r$,
+se vuelve una rotación uniforme.
 
-La consecuencia es que \textbf{la dinámica se vuelve trivial}: la solución exacta
-de~\eqref{eq:vlasov} sin autogravedad es
+La consecuencia para la ecuación de Vlasov es inmediata. Como $f$ es constante a lo
+largo de las trayectorias, y las trayectorias en las nuevas variables son triviales,
+la solución exacta de~\eqref{eq:vlasov} sin autogravedad es
 \begin{equation}
   \boxed{\;F(\Qr,\Jr,t) = F_0\big(\Qr - \omega(\Jr)\,t,\;\Jr\big)\;}
   \label{eq:solucion}
@@ -192,16 +328,100 @@ de~\eqref{eq:vlasov} sin autogravedad es
 Cada valor de la acción gira a su propia velocidad angular. Eso es todo el phase
 mixing, escrito en una línea.
 
+\subsection{Construcción con un grado de libertad}
+\label{sec:construccion}
+
+La construcción es un ejercicio instructivo, porque de ella salen de golpe el
+significado de $\Jr$, el de $\Qr$ y la relación entre $\omega$ y el periodo.
+
+Fijada la energía $E$, sobre la órbita el momento es una función conocida de la
+posición, $\rp(r;E)=\pm\sqrt{2\,(E-\Phi_{\rm ef}(r))}$. Supongamos que $E$ es
+función de la nueva variable $\Jr$, todavía por determinar, y tomemos como función
+generatriz~\eqref{eq:generatriz}
+\begin{equation}
+  S(r,\Jr) = \int_{r_-}^{r} \rp\big(r';E(\Jr)\big)\,\dd r' .
+\end{equation}
+La primera relación, $\rp=\partial S/\partial r$, se cumple por construcción. La
+segunda da el ángulo:
+\begin{equation}
+  \Qr = \frac{\partial S}{\partial \Jr}
+      = \frac{\dd E}{\dd \Jr}\int_{r_-}^{r}\frac{\dd r'}{\rp(r')}
+      = \omega(\Jr)\;t(r),
+  \label{eq:angulo}
+\end{equation}
+donde hemos usado $\partial\rp/\partial E = 1/\rp$ y reconocido que, como
+$\dot r=\rp$, la integral $\int \dd r/\rp$ es el \emph{tiempo transcurrido desde el
+pericentro}, $t(r)$.
+
+\paragraph{Qué es $\Jr$.} Falta fijar $E(\Jr)$. La condición es que $\Qr$ sea un
+ángulo, es decir, que aumente exactamente $2\pi$ en cada órbita completa. En una
+vuelta $S$ aumenta en $\oint\rp\,\dd r$, así que
+$\Delta\Qr = \frac{\partial}{\partial\Jr}\oint\rp\,\dd r = 2\pi$. Integrando, y
+eligiendo que la órbita circular (de área nula) tenga acción cero,
+\begin{equation}
+  \Jr = \frac{1}{2\pi}\oint \rp\,\dd r
+      = \frac{1}{\pi}\int_{r_-}^{r_+}\sqrt{2\big(E-\Phi_{\rm ef}(r)\big)}\;\dd r .
+  \label{eq:accion}
+\end{equation}
+\textbf{La acción es el área encerrada por la órbita en el espacio de fases,
+dividida por $2\pi$.} Mide el ``tamaño'' de la oscilación radial: vale cero para la
+órbita circular y crece con la excentricidad.
+
+\paragraph{Qué es $\omega$.} Derivando~\eqref{eq:accion} respecto de $E$,
+\begin{equation}
+  \frac{\dd\Jr}{\dd E} = \frac{1}{2\pi}\oint\frac{\dd r}{\rp} = \frac{T_r}{2\pi}
+  \qquad\Longrightarrow\qquad
+  \omega(\Jr) = \frac{\dd E}{\dd\Jr} = \frac{2\pi}{T_r} ,
+  \label{eq:omegaT}
+\end{equation}
+donde $T_r$ es el periodo radial. \textbf{La frecuencia angular es la del
+movimiento radial}, y es la pendiente de la curva $E(\Jr)$.
+
+\paragraph{Qué es $\Qr$.} Por~\eqref{eq:angulo}, $\Qr=2\pi\,t/T_r$: es el tiempo
+desde el último pericentro medido en unidades de periodo. Vale $0$ en el pericentro,
+$\pi$ en el apocentro, y avanza uniformemente aunque $r(t)$ no lo haga. En la media
+órbita de regreso ($\rp<0$) la integral se toma con el otro signo y $\Qr$ continúa
+de $\pi$ a $2\pi$.
+
+\begin{idea}
+\textbf{Ejemplo: el oscilador armónico.} Con $H=\tfrac12 p^2+\tfrac12\omega_0^2q^2$
+las órbitas son elipses de semiejes $\sqrt{2E}/\omega_0$ y $\sqrt{2E}$, cuya área es
+$2\pi E/\omega_0$. Luego $\Jr=E/\omega_0$, $E(\Jr)=\omega_0\Jr$ y
+$\omega=\dd E/\dd\Jr=\omega_0$, \emph{la misma para todas las órbitas}. El cambio de
+variables es $q=\sqrt{2\Jr/\omega_0}\,\sin\Qr$, $p=\sqrt{2\Jr\omega_0}\,\cos\Qr$.
+
+Como $\omega'(\Jr)=0$, en el oscilador armónico \textbf{no hay phase mixing}: todas
+las órbitas completan su periodo al mismo tiempo y cualquier estructura inicial
+reaparece intacta cada $2\pi/\omega_0$. El phase mixing es consecuencia de la
+\emph{anarmonicidad}: de que la frecuencia dependa de la amplitud.
+\end{idea}
+
+\subsection{Invariancia adiabática}
+\label{sec:adiabatica}
+
+Hay una razón más profunda para preferir $\Jr$ sobre $E$. Si el potencial cambia
+lentamente comparado con el periodo orbital, la energía de cada partícula cambia,
+pero la acción se conserva con muy buena aproximación: $\Jr$ es un \emph{invariante
+adiabático}~\cite[\S49]{landau1976}. Es el mismo principio por el que un péndulo
+cuya cuerda se acorta despacio aumenta su energía pero conserva $E/\omega$.
+
+Hay que subrayar el matiz: el invariante es la acción \emph{calculada en el
+potencial instantáneo}. Si el potencial cambia y seguimos calculando $\Jr$ con la
+fórmula del potencial viejo, lo que obtenemos ya no es un invariante. Este detalle,
+que parece académico, resultará ser la clave del caso de estudio de la
+sección~\ref{sec:autogravedad}.
+
 \subsection{El potencial isócrono}
 
-El potencial isócrono, introducido por Hénon~\cite{henon1959}, es especial: es el
-\emph{único} potencial esférico, además del armónico y el kepleriano, para el que
-las acciones se obtienen en forma cerrada. En nuestras unidades,
+El potencial isócrono, introducido por Hénon~\cite{henon1959}, es especial: junto
+con el armónico y el kepleriano, pertenece a la familia de potenciales esféricos
+para los que las variables ángulo--acción se escriben con funciones
+elementales~\cite[\S3.5.2]{binney2008}. En nuestras unidades,
 \begin{equation}
   \Phi_{\rm iso}(r) = -\frac{1}{1+\sqrt{1+r^2}} .
   \label{eq:isocrono}
 \end{equation}
-Interpola entre un núcleo armónico ($\Phi\simeq -\tfrac12 + \tfrac14 r^2$ para
+Interpola entre un núcleo armónico ($\Phi\simeq -\tfrac12 + \tfrac18 r^2$ para
 $r\ll1$) y un exterior kepleriano ($\Phi\simeq -1/r$ para $r\gg1$), lo que lo hace
 un modelo de galaxia razonable y a la vez manejable.
 
@@ -214,26 +434,94 @@ e invirtiendo, con $c\equiv\tfrac12\big(L+\sqrt{L^2+4}\big)$,
 \begin{equation}
   E(\Jr) = -\frac{1}{2(\Jr+c)^2},
   \qquad
-  \omega(\Jr) = \frac{\partial E}{\partial \Jr} = \frac{1}{(\Jr+c)^3},
+  \omega(\Jr) = \frac{\dd E}{\dd \Jr} = \frac{1}{(\Jr+c)^3},
   \qquad
   \omega'(\Jr) = -\frac{3}{(\Jr+c)^4}.
   \label{eq:omega}
 \end{equation}
 
-Las dos últimas expresiones son el corazón de todo lo que sigue. La
-\textbf{dispersión de frecuencias} $\omega'$ es la que produce el enrollamiento:
-si $\omega'$ fuese cero, todas las órbitas girarían al unísono y no habría phase
-mixing en absoluto.
+Las dos últimas expresiones son el corazón de todo lo que sigue. Conviene detenerse
+en el comportamiento de cada una, que la figura~\ref{fig:frecuencias} resume.
 
-Para $L_0=2$ resulta $c=1+\sqrt{2}\simeq2.4142$, y sobre el soporte típico de
-nuestras distribuciones ($\Jr\in[0,\,0.35]$) las frecuencias recorren la banda
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{frecuencias}
+  \caption{Las tres funciones del isócrono con $L_0=2$. Líneas: fórmulas
+  cerradas~\eqref{eq:omega}. Círculos: cuadratura numérica de~\eqref{eq:accion}
+  y~\eqref{eq:omegaT} con 64 nodos de Gauss--Legendre y la sustitución de la
+  sección~\ref{sec:sustitucion}; el error máximo es $1.3\times10^{-15}$ en $\Jr$ y
+  $3.2\times10^{-12}$ en $\omega$. La franja sombreada es el soporte de las
+  distribuciones de estas notas. En (b), la línea discontinua es la frecuencia
+  epicíclica $\kappa$ de la órbita circular, que coincide con $\omega(0)$.}
+  \label{fig:frecuencias}
+\end{figure}
+
+\paragraph{La energía $E(\Jr)$} es creciente (pendiente $\omega>0$) y cóncava
+(curvatura $\omega'<0$). Su mínimo, en $\Jr=0$, es la energía de la órbita
+circular: $E(0)=-1/(2c^2)=-0.085786$ para $L_0=2$, que coincide con el mínimo del
+potencial efectivo de la figura~\ref{fig:potencial}. Cuando $\Jr\to\infty$,
+$E\to0^-$: las órbitas se vuelven marginalmente ligadas.
+
+\paragraph{La frecuencia $\omega(\Jr)$} es máxima para la órbita circular y decrece
+monótonamente. Su valor en $\Jr=0$ tiene un significado preciso: para oscilaciones
+pequeñas alrededor del mínimo, el potencial efectivo es una parábola y la órbita es
+un \emph{epiciclo} de frecuencia $\kappa=\sqrt{\Phi_{\rm ef}''(r_c)}$. Numéricamente,
+$\kappa=0.071068=\omega(0)$. Para acciones grandes, $\omega\sim\Jr^{-3}$ y el periodo
+diverge: una órbita que apenas está ligada tarda muchísimo en volver.
+
+Hay además una propiedad que da nombre al potencial. Combinando las dos primeras
+ecuaciones de~\eqref{eq:omega},
+\begin{equation}
+  \omega = (-2E)^{3/2},
+\end{equation}
+\emph{independiente de $L$}. El periodo radial depende solo de la energía, igual
+que en el problema de Kepler, donde depende solo del semieje mayor. De ahí
+``isócrono''.
+
+\paragraph{La derivada $\omega'(\Jr)$} es siempre negativa: \textbf{las órbitas más
+excéntricas giran más despacio}. Esta \emph{dispersión de frecuencias} es la que
+produce el enrollamiento; si $\omega'$ fuese cero, estaríamos en el caso del
+oscilador armónico y no habría phase mixing. Su módulo decrece con $\Jr$, así que
+la mezcla es más rápida para órbitas casi circulares. El cociente
+$\omega'/\omega=-3/(\Jr+c)\simeq-1.2$ indica que, en términos relativos, la
+frecuencia cambia alrededor de un $12\%$ por cada $0.1$ de acción.
+
+Para $L_0=2$ resulta $c=1+\sqrt{2}\simeq2.4142$, y sobre el soporte de nuestras
+distribuciones ($\Jr\in[0,\,0.35]$) las frecuencias recorren la banda
 \begin{equation}
   \omega \in [0.0473,\;0.0711],
-  \qquad\text{periodo orbital}\;\; T=2\pi/\omega \simeq 100.
+  \qquad\text{periodo orbital}\;\; T_r=2\pi/\omega \simeq 90\text{--}130.
   \label{eq:banda}
 \end{equation}
 Esa banda reaparecerá en la sección~\ref{sec:autogravedad} como el criterio que
-decide si un modo colectivo es resonante o no.
+decide si una oscilación es orbital o no.
+
+\subsection{\texorpdfstring{$\Qr$ y $\Jr$}{Q y J} a lo largo de una órbita}
+
+La figura~\ref{fig:orbita} hace visible lo que dicen las ecuaciones. Se integró
+numéricamente una órbita con $\Jr=0.3$ en las variables originales $(r,\rp)$ y,
+en cada paso, se calcularon $\Qr$ y $\Jr$ con el mapa de la
+sección~\ref{sec:mapa}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{orbita}
+  \caption{Dos periodos de una órbita con $\Jr=0.3$ en el isócrono, integrada con
+  Yoshida de cuarto orden y $\Delta t=0.01$. \textbf{(a)} El radio oscila entre
+  $r_-$ y $r_+$ de forma no uniforme: pasa rápido por el pericentro y lento por el
+  apocentro. \textbf{(b)} El ángulo calculado desde $(r,\rp)$ coincide con
+  $\omega(\Jr)\,t$ con un error máximo de $1.7\times10^{-11}$. \textbf{(c)} La acción
+  se conserva a $10^{-13}$; las pequeñas variaciones son error de redondeo del
+  integrador.}
+  \label{fig:orbita}
+\end{figure}
+
+El radio $r(t)$ no es una sinusoide: la partícula pasa rápido cerca del pericentro,
+donde la velocidad radial es grande, y se demora cerca del apocentro. El ángulo, en
+cambio, es una recta perfecta; los saltos son solo el paso de $2\pi$ a $0$. Y la
+acción es constante hasta el error de redondeo. Toda la no uniformidad del
+movimiento quedó absorbida en la \emph{forma} del cambio de variables, no en la
+dinámica.
 
 \subsection{El mapa explícito, y una ecuación tipo Kepler}
 \label{sec:mapa}
@@ -253,7 +541,8 @@ $s\equiv 1+\sqrt{1+r^2}$ y $s_\pm$ sus valores en los puntos de retorno,
   \label{eq:kepler}
 \end{equation}
 con una excentricidad efectiva $e$ que depende de $E$ y $L$. El signo de $\rp$
-decide en qué media órbita estamos.
+decide en qué media órbita estamos: $\eta\in[0,\pi]$ si $\rp\ge0$ y
+$\eta\in[\pi,2\pi]$ si $\rp<0$.
 
 \begin{aviso}
 \textsc{detalle numérico.} El mapa \emph{directo} $(r,\rp)\to(\Qr,\Jr)$ es
@@ -262,8 +551,46 @@ que resolver $\Qr = \eta - e\sin\eta$ para $\eta$. Es la ecuación de Kepler, y 
 resuelve con Newton--Raphson en unas cinco iteraciones. En el código esto aparece
 al construir rejillas de cuadratura directamente en $(\Qr,\Jr)$.
 \end{aviso}
+
 \section{Phase mixing: la teoría}
 \label{sec:mixing}
+
+\subsection{Lo que se ve en el espacio de fases}
+
+Antes de definir ningún observable, vale la pena ver la solución~\eqref{eq:solucion}.
+La figura~\ref{fig:enrollamiento} muestra una distribución inicial concentrada en
+un intervalo angular estrecho alrededor de $\Qr=0$ (el pericentro) y extendida en
+acción, evolucionada \emph{exactamente} con~\eqref{eq:solucion}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{enrollamiento}
+  \caption{Evolución exacta de la distribución gaussiana
+  $F_0\propto\exp[-\sin^2(\Qr/2)/\sigma_Q^2]\,\exp(-\Jr^2/\sigma_J^2)\,\Jr^2$,
+  con $\sigma_Q=\sigma_J=0.1$, sin autogravedad. \textbf{Arriba}: en variables
+  ángulo--acción cada fila horizontal se desplaza a su propia velocidad $\omega(\Jr)$
+  y la mancha se inclina, porque las acciones pequeñas giran más rápido. A $t=2000$
+  se ven franjas separadas por $\Delta\Jr\simeq0.04$, como
+  predice~\eqref{eq:franja}. \textbf{Abajo}: la misma distribución en $(r,\rp)$. La
+  inclinación se convierte en una espiral que se enrolla alrededor de la órbita
+  circular. Ambas filas son la misma función vista en dos sistemas de coordenadas
+  relacionados por una transformación canónica: el área de cada franja es la
+  misma.}
+  \label{fig:enrollamiento}
+\end{figure}
+
+En variables ángulo--acción (fila superior) el mecanismo es transparente: cada fila
+horizontal $\Jr=\text{const}$ se traslada rígidamente con velocidad $\omega(\Jr)$, y
+como $\omega'<0$, las filas de abajo avanzan más que las de arriba. Una línea
+inicialmente vertical se inclina con pendiente $\dd\Jr/\dd\Qr=1/(\omega' t)$, que
+tiende a cero: \textbf{las franjas se vuelven cada vez más horizontales y más
+juntas}. En $(r,\rp)$ (fila inferior) lo mismo aparece como una espiral: la parte
+interna de la mancha, de acción pequeña, da la vuelta antes que la externa.
+
+Nada se ha perdido: $F$ toma exactamente los mismos valores que al principio, solo
+redistribuidos. Pero cualquier promedio sobre una región fija del espacio de fases,
+más ancha que la separación entre franjas, verá una distribución cada vez más
+uniforme en $\Qr$.
 
 \subsection{El observable}
 
@@ -276,8 +603,9 @@ quedarse con los armónicos de Fourier en el ángulo:
   \label{eq:hk}
 \end{equation}
 El prefactor $8\pi^2L_0$ es la medida de los grados de libertad angulares que la
-delta de~\eqref{eq:deltaL} colapsa; con él, $h_0$ es literalmente la masa cuando
-$\Phi_{\rm p}=1$.
+delta de~\eqref{eq:deltaL} elimina; con él, $h_0$ es literalmente la masa cuando
+$\Phi_{\rm p}=1$. Como la transformación es canónica, la integral puede hacerse en
+$(\Qr,\Jr)$ sin jacobiano.
 
 Tomamos una función de prueba separable, $\Phi_{\rm p}=A(\Qr)\,B(\Jr)$, con
 \begin{equation}
@@ -288,13 +616,13 @@ Tomamos una función de prueba separable, $\Phi_{\rm p}=A(\Qr)\,B(\Jr)$, con
 \end{equation}
 El perfil en $\Qr$ es periódico y par (una gaussiana «envuelta», emparentada con la
 distribución de von Mises), de modo que sus coeficientes de Fourier $a_k$ son
-reales.
+reales. En todas las corridas, $\Jr_0=0.1$, $\sigma_J=0.1$ y $\sigma_Q=0.4$.
 
 \begin{idea}
 \textbf{Por qué $h_k$ y no otra cosa.} Porque su evolución bajo phase
-mixing se calcula \emph{exactamente}, y por tanto sirve de patrón contra el que
+mixing se calcula \emph{exactamente}, y por lo tanto sirve de patrón contra el cual
 medir un código. Cualquier otra cantidad macroscópica se comportaría
-cualitativamente igual, pero sin una respuesta cerrada con la que compararla.
+cualitativamente igual, pero sin una respuesta cerrada con la cual compararla.
 \end{idea}
 
 \subsection{La solución cerrada}
@@ -316,10 +644,10 @@ donde $a_0$ es la masa total. Esta fórmula vale para \emph{cualquier} $F_0$,
 separable o no; si no es separable, $c_k$ simplemente depende de $\Jr$ y es
 compleja.
 
-Nótese que $h_0$ no contiene el factor oscilante: \textbf{$h_0$ es constante en el
+Observe que $h_0$ no contiene el factor oscilante: \textbf{$h_0$ es constante en el
 tiempo}. El phase mixing no destruye masa, solo la enrolla. Eso da una
 comprobación gratuita en toda simulación, y en la sección~\ref{sec:autogravedad}
-se convertirá en el diagnóstico más informativo de todos.
+se convertirá en un diagnóstico muy informativo.
 
 \subsection{Por qué la envolvente es gaussiana}
 \label{sec:envolvente}
@@ -344,11 +672,31 @@ con $a=k\,\omega'\,t$. Resulta
 Esto es \textbf{una gaussiana en el tiempo}, no una exponencial. En escala
 logarítmica, $\log|h_k|$ es una \emph{parábola} en $t$, o equivalentemente una
 \emph{recta} frente a $t^2$. Es la firma inconfundible del phase mixing, y la
-usaremos como test en la sección~\ref{sec:autogravedad}.
+usaremos como prueba en la sección~\ref{sec:autogravedad}.
 
-Obsérvese además la dependencia en $k$: los armónicos altos decaen como
-$\exp(-k^2\cdot\text{const}\cdot t^2)$, muchísimo más deprisa. La estructura fina
-angular se borra antes que la gruesa.
+Observe además la dependencia en $k$: la pendiente frente a $t^2$ es proporcional a
+$k^2$. Los armónicos altos decaen mucho más rápido: la estructura fina angular se
+borra antes que la gruesa.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{hk_exacto}
+  \caption{Solución exacta~\eqref{eq:hkexacto} para la distribución de la
+  figura~\ref{fig:enrollamiento}. \textbf{(a)} $|h_k|$ en escala logarítmica.
+  \textbf{(b)} El logaritmo frente a $t^2$ en el tramo inicial: rectas, como
+  predice~\eqref{eq:gaussiana}. Las pendientes ajustadas en $t\le150$ guardan
+  razones $4.02$ y $9.14$ con la de $k=1$, frente a $k^2=4$ y $9$. La desviación
+  mide cuánto se apartan el integrando de una gaussiana y $\omega(\Jr)$ de una
+  recta.}
+  \label{fig:hkexacto}
+\end{figure}
+
+La figura~\ref{fig:hkexacto} comprueba ambas predicciones sobre la solución exacta,
+sin ninguna aproximación. Las rectas frente a $t^2$ confirman la envolvente
+gaussiana, y las razones entre pendientes, $4.02$ y $9.14$, reproducen el
+escalamiento $k^2$ con la precisión que cabe esperar de una derivación que supuso
+integrando gaussiano y frecuencia lineal. A tiempos largos, panel (a), la forma
+exacta de $F_0$ empieza a importar y aparecen cambios de pendiente.
 
 \subsection{El ancho de franja, y su consecuencia numérica}
 
@@ -360,6 +708,8 @@ consecutivas del armónico $k$ es
   \Delta \Jr = \frac{2\pi}{k\,|\omega'|\,t} .
   \label{eq:franja}
 \end{equation}
+Para $\Jr=0.1$, $|\omega'|=0.075$, lo que da $\Delta\Jr=0.21$ a $t=400$ y $0.042$ a
+$t=2000$: justo las separaciones que se ven en la figura~\ref{fig:enrollamiento}.
 
 \begin{idea}
 \textbf{La consecuencia práctica más importante de estas notas.} La estructura se
@@ -371,8 +721,8 @@ llegar a $t$ hace falta una resolución en acción
 \]
 donde $\Delta\omega$ es el rango de frecuencias que abarca la distribución. El
 requisito \textbf{crece linealmente con el tiempo final}, y por debajo de él el
-resultado no es mediocre: es basura, por aliasing. Es el mismo fenómeno que la
-\emph{recurrencia} conocida en simulaciones de plasmas~\cite{birdsall2004}.
+resultado no es mediocre: es basura, por \emph{aliasing}. Es el mismo fenómeno que
+la \emph{recurrencia} conocida en simulaciones de plasmas~\cite{birdsall2004}.
 \end{idea}
 
 \section{Amortiguamiento de Landau: en qué se diferencia}
@@ -385,8 +735,8 @@ alrededor de un equilibrio $F_0(\Jr)$ se obtiene una relación de dispersión cu
 soluciones $\omega = \omega_r + \ii\gamma$ son los modos del sistema.
 
 Landau~\cite{landau1946} demostró, en el contexto del plasma, que la respuesta
-contiene una contribución de las partículas \emph{resonantes} —aquellas cuya
-frecuencia orbital coincide con la del modo, $\omega(\Jr_{\rm res}) = \omega_r/k$—
+contiene una contribución de las partículas \emph{resonantes} ---aquellas cuya
+frecuencia orbital coincide con la del modo, $\omega(\Jr_{\rm res}) = \omega_r/k$---
 que produce un decaimiento
 \begin{equation}
   |h_k(t)| \;\propto\; \ee^{-\gamma t},
@@ -400,14 +750,14 @@ modos de van Kampen~\cite{vankampen1955} y Case~\cite{case1959}, y su versión
 estelar está desarrollada en~\cite[\S5.5]{binney2008}.
 
 \begin{idea}
-\textbf{El test operativo.} Los dos mecanismos dejan firmas distintas y medibles:
+\textbf{La prueba operativa.} Los dos mecanismos dejan firmas distintas y medibles:
 \begin{center}
 \begin{tabular}{lll}
 \toprule
- & envolvente & en escala log \\
+ & envolvente & en escala logarítmica \\
 \midrule
-phase mixing      & $\exp[-(k|\omega'|\sigma t)^2/4]$ & recta frente a $t^2$ \\
-Landau damping    & $\exp(-\gamma t)$                 & recta frente a $t$ \\
+phase mixing              & $\exp[-(k|\omega'|\sigma t)^2/4]$ & recta frente a $t^2$ \\
+amortiguamiento de Landau & $\exp(-\gamma t)$                 & recta frente a $t$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -415,23 +765,24 @@ Se ajustan las dos y se comparan los coeficientes de determinación. No hace fal
 nada más sofisticado.
 \end{idea}
 
-Hay una diferencia conceptual que conviene subrayar. El phase mixing es
-cinemática: ocurre aunque las partículas no se vean entre sí. El amortiguamiento
-de Landau requiere el acoplamiento colectivo y \emph{desaparece} si se apaga la
+Hay una diferencia conceptual que vale la pena subrayar. El phase mixing es
+cinemático: ocurre aunque las partículas no se vean entre sí. El amortiguamiento de
+Landau requiere el acoplamiento colectivo y \emph{desaparece} si se apaga la
 autogravedad. Por eso, en la práctica, la forma de aislarlo es correr el mismo
 problema con y sin autogravedad y comparar. Ese control aparecerá una y otra vez.
+
 \section{El método numérico}
 \label{sec:metodo}
 
 \subsection{Particle-in-cell}
 
-La ecuación de Vlasov es una PDE en seis dimensiones (aquí, tras la reducción, en
-dos). Discretizarla en malla es caro y difunde. La alternativa estándar es el
-método \emph{particle-in-cell}: se representa $F$ por un conjunto de
-\emph{macropartículas} que se mueven según las ecuaciones características, y el
-campo se calcula depositándolas en una malla. La referencia canónica en plasmas es
-Birdsall y Langdon~\cite{birdsall2004}, y en gravitación Hockney y
-Eastwood~\cite{hockney1988}.
+La ecuación de Vlasov es una ecuación en derivadas parciales en seis dimensiones
+(aquí, tras la reducción, en dos). Discretizarla en malla es caro y difusivo. La
+alternativa estándar es el método \emph{particle-in-cell}: se representa $F$ por un
+conjunto de \emph{macropartículas} que se mueven según las ecuaciones
+características~\eqref{eq:hamilton}, y el campo se calcula depositándolas en una
+malla. La referencia canónica en plasmas es Birdsall y Langdon~\cite{birdsall2004},
+y en gravitación Hockney y Eastwood~\cite{hockney1988}.
 
 El ciclo de cada paso es:
 \begin{enumerate}
@@ -451,20 +802,25 @@ partícula sienta su propio campo.
 
 El sistema es hamiltoniano, y eso debe respetarse. Un integrador genérico
 (Runge--Kutta, por ejemplo) introduce una deriva secular en la energía que a
-tiempos largos contamina cualquier medida. Un integrador \emph{simpléctico}
-preserva exactamente la forma simpléctica, y como consecuencia conserva un
-hamiltoniano modificado $\tilde H = H + \mathcal{O}(\Delta t^p)$; el error de
+tiempos largos contamina cualquier medida. Un integrador \emph{simpléctico} es, en
+sí mismo, una transformación canónica: preserva el área en el espacio de fases
+exactamente, igual que el flujo verdadero. Como consecuencia conserva un
+hamiltoniano modificado $\tilde H = H + \mathcal{O}(\Delta t^p)$, y el error de
 energía queda \emph{acotado} en vez de crecer~\cite{hairer2006}.
 
-El más simple es el salto de rana en su forma \emph{kick--drift--kick}:
+El más simple es el salto de rana (\emph{leapfrog}) en su forma
+\emph{kick--drift--kick}:
 \begin{equation}
   \rp^{n+1/2} = \rp^{n} + \tfrac{\Delta t}{2}\,F(r^n),\quad
   r^{n+1}    = r^{n} + \Delta t\,\rp^{n+1/2},\quad
   \rp^{n+1}  = \rp^{n+1/2} + \tfrac{\Delta t}{2}\,F(r^{n+1}),
   \label{eq:leapfrog}
 \end{equation}
-que es de segundo orden. Para subir de orden, Yoshida~\cite{yoshida1990} demostró
-que basta \emph{componer} pasos de salto de rana con coeficientes bien elegidos:
+que es de segundo orden. Cada una de las tres subetapas es el flujo exacto de un
+hamiltoniano más simple (solo cinético o solo potencial), y por eso cada una es
+canónica; la composición de transformaciones canónicas también lo es. Para subir de
+orden, Yoshida~\cite{yoshida1990} demostró que basta \emph{componer} pasos de salto
+de rana con coeficientes bien elegidos:
 \begin{equation}
   \mathcal{S}_{p+2}(\Delta t) = \mathcal{S}_p(w_1\Delta t)\circ
                                 \mathcal{S}_p(w_0\Delta t)\circ
@@ -482,16 +838,16 @@ eso es precisamente lo que cancela los términos de error de orden inferior. La
 composición sigue siendo simpléctica en cada orden.
 
 \medskip
-\textsc{coste.} Subir de orden no es automáticamente ganancia. Para reducir el
+\textsc{costo.} Subir de orden no es automáticamente ganancia. Para reducir el
 error un factor $R$, un método de orden $p$ necesita $\Delta t/R^{1/p}$ y cuesta
 $\sim n_{\rm etapas}\,R^{1/p}$. El de cuarto orden (3 etapas) es más barato que el
 de sexto (7 etapas) hasta errores muy pequeños.
 \end{aviso}
 
-En este trabajo se usa el de cuarto orden con $\Delta t = 0.1$, es decir unos
+En este trabajo se usa el de cuarto orden con $\Delta t = 0.1$, es decir, unos
 $10^3$ pasos por periodo orbital.
 
-\subsection{El diagnóstico $h_k$: cómo se evalúa}
+\subsection{\texorpdfstring{El diagnóstico $h_k$: cómo se evalúa}{El diagnóstico hk: cómo se evalúa}}
 
 La suma sobre partículas que aproxima~\eqref{eq:hk} es
 \begin{equation}
@@ -508,8 +864,8 @@ de prueba,
 \[
   a_k = \frac{1}{2\pi}\int_0^{2\pi} A(\Qr)\cos(k\Qr)\,\dd \Qr,
 \]
-no depende de las partículas. Calcularlo una vez fuera del bucle en lugar de una
-vez por partícula redujo el coste total de la simulación en un factor 10. La
+no depende de las partículas. Calcularlo una vez fuera del ciclo en lugar de una
+vez por partícula redujo el costo total de la simulación en un factor de 10. La
 cuadratura se hace con Simpson sobre $[0,\pi]$ aprovechando la paridad; con 512
 subintervalos el error es $2\times10^{-15}$ incluso para perfiles estrechos.
 \end{aviso}
@@ -524,17 +880,18 @@ Este punto es, numéricamente, el más importante de todo el documento.
 como $N^{-1/2}$, sin umbral y sin meseta. Es robusto y no exige pensar.
 
 \paragraph{Cuadratura.} Se colocan los nodos en una rejilla regular directamente en
-$(\Qr,\Jr)$ y se les asigna como peso el valor de $F_0$. Como los nodos están
-ordenados y los pesos son conocidos, esto no es muestreo estadístico sino una
-\emph{regla de cuadratura}, y su error no tiene por qué obedecer a $N^{-1/2}$.
+$(\Qr,\Jr)$ y se les asigna como peso el valor de $F_0$. Como la transformación es
+canónica, no hace falta jacobiano. Y como los nodos están ordenados y los pesos son
+conocidos, esto no es muestreo estadístico sino una \emph{regla de cuadratura}, y su
+error no tiene por qué obedecer a $N^{-1/2}$.
 
 \begin{idea}
 La diferencia es enorme y merece entenderse. En $\Qr$ el integrando es periódico y
 suave, y la regla del trapecio periódica converge entonces \emph{más rápido que
 cualquier potencia} de $1/N$~\cite{trefethen2014}: unos 25 nodos bastan. En $\Jr$
 el integrando oscila como $\ee^{-\ii k\omega(\Jr)t}$, y ahí la convergencia tiene
-\emph{umbral}: mientras no se cruce la condición de Nyquist de~\eqref{eq:franja} el
-resultado es inútil; en cuanto se cruza, el error se desploma varios órdenes de
+\emph{umbral}: mientras no se cumpla la condición de Nyquist de~\eqref{eq:franja}
+el resultado es inútil; en cuanto se cumple, el error cae varios órdenes de
 magnitud de golpe.
 
 \medskip
@@ -550,7 +907,7 @@ $M(r)=4\pi\int_0^r r'^2\rho\,\dd r'$,
 \begin{equation}
   \frac{\dd\Phi}{\dd r} = \frac{M(r)}{r^2}.
 \end{equation}
-El código integra el sistema con Runge--Kutta imponiendo $\Phi(0)=0$ y corrigiendo
+El código integra el sistema con Runge--Kutta imponiendo $\Phi(0)=0$ y corrige
 después la constante para que se cumpla la condición asintótica $\Phi \to -M_{\rm
 tot}/r$, es decir $\Phi + r\,\dd\Phi/\dd r \to 0$ en el borde.
 
@@ -560,127 +917,199 @@ solución debe ser exactamente kepleriana. Basta comparar la fuerza calculada co
 $-M(r)/r^2$, con $M$ obtenida integrando la \emph{misma} densidad depositada. En
 nuestro caso la razón entre ambas resultó $0.9927$, constante en todo el exterior;
 el $0.7\%$ es el error de integrar por trapecios un perfil con un borde abrupto,
-no del solver. Este tipo de comprobación cuesta minutos y descarta de un golpe toda
-una clase de errores.
+no del solver. Este tipo de comprobación toma minutos y descarta de una vez toda una
+clase de errores. Del mismo modo, el potencial propio guardado por el código vale
+$-4.988\times10^{-5}$ en $r=20$, frente al $-a_0/r=-5\times10^{-5}$ esperado.
 \end{aviso}
+
 \section{Verificación del código}
 \label{sec:verificacion}
 
 Antes de usar un código para descubrir algo hay que demostrar que reproduce lo que
 ya se sabe. La fórmula~\eqref{eq:hkexacto} permite calcular $h_k(t)$ con precisión
-de máquina mediante cuadratura, y eso da un patrón contra el que medir.
+de máquina mediante cuadratura, y eso da un patrón contra el cual medir.
 
 \subsection{Las dos convergencias}
 
-Con fondo fijo y $t_{\max}=2000$, el error medio de $h_k$ respecto del cálculo
-exacto, normalizado por $h_0$:
+Con fondo fijo y $t_{\max}=2000$, el error medio en el tiempo de $h_1$ respecto del
+cálculo exacto, normalizado por $h_0$, para la distribución bimodal de la
+sección~\ref{sec:agnosticas} (Monte Carlo: media de cinco semillas):
 
 \begin{center}
 \begin{tabular}{lrrr}
 \toprule
-esquema & $N=500$ & $N=5000$ & $N=50000$ \\
+esquema & $N=500$ & $N=5000$ & $N=50\,000$ \\
 \midrule
-Monte Carlo ($k=1$)  & $4.5\times10^{-2}$ & $4.9\times10^{-3}$ & $2.3\times10^{-3}$ \\
-Cuadratura ($k=1$)   & $2.7\times10^{-3}$ & $1.2\times10^{-9}$ & $1.3\times10^{-9}$ \\
+Monte Carlo  & $2.9\times10^{-2}$ & $1.0\times10^{-2}$ & $3.3\times10^{-3}$ \\
+Cuadratura   & $2.7\times10^{-3}$ & $1.2\times10^{-9}$ & $1.3\times10^{-9}$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Las dos filas cuentan historias distintas. El Monte Carlo baja como $N^{-1/2}$ —el
-ajuste sobre cinco realizaciones independientes por punto da pendientes entre
-$-0.47$ y $-0.55$— de forma monótona y predecible. La cuadratura, en cambio,
-\textbf{cae seis órdenes de magnitud entre dos puntos consecutivos}: eso es el
-umbral de Nyquist de~\eqref{eq:franja} siendo cruzado. Con $N=500$ solo hay 20
-nodos en $\Jr$, por debajo del requisito, y el resultado es peor que el del Monte
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{convergencia}
+  \caption{Error medio de $h_1$ frente al número de partículas para las tres
+  distribuciones de prueba, con fondo isócrono fijo. \textbf{(a)} Monte Carlo:
+  media y desviación estándar de cinco semillas; las tres distribuciones siguen
+  $N^{-1/2}$ (pendientes $-0.47$, $-0.53$ y $-0.55$). \textbf{(b)} Cuadratura: la
+  bimodal cae seis órdenes de magnitud entre $N=500$ y $5000$ al cumplirse la
+  condición de Nyquist; la espiral ya la cumple con $N=500$; la de King converge
+  como $h^2$ por su esquina (sección~\ref{sec:agnosticas}). La línea discontinua
+  es el error del integrador.}
+  \label{fig:convergencia}
+\end{figure}
+
+Las dos filas cuentan historias distintas (figura~\ref{fig:convergencia}). El Monte
+Carlo baja como $N^{-1/2}$ de forma monótona y predecible. La cuadratura, en cambio,
+\textbf{cae seis órdenes de magnitud entre dos puntos consecutivos}: es el umbral de
+Nyquist de~\eqref{eq:franja} al cruzarse. Con $N=500$ solo hay 20 nodos en $\Jr$,
+por debajo del requisito, y el resultado es apenas diez veces mejor que el del Monte
 Carlo; con $N=5000$ hay 200, por encima, y el error cae al nivel del integrador.
 
 \begin{aviso}
 \textsc{una lección de método.} Con una sola realización por valor de $N$, las
 pendientes del Monte Carlo salían entre $-0.29$ y $-0.65$: ruido de estimación
 disfrazado de física. Hicieron falta cinco semillas por punto para que se
-agruparan en torno a $-1/2$. Esto exigió, de paso, añadir un parámetro de semilla
-al código: por defecto \texttt{gfortran} siembra su generador desde el sistema
+agruparan en torno a $-1/2$. Esto exigió, de paso, agregar un parámetro de semilla
+al código: por omisión \texttt{gfortran} inicializa su generador desde el sistema
 operativo, de modo que dos corridas idénticas daban resultados distintos y
 ninguna era reproducible.
 \end{aviso}
 
 \subsection{Pruebas agnósticas: ¿depende el acuerdo de la distribución elegida?}
+\label{sec:agnosticas}
 
 Un peligro real al validar un código es que el acuerdo con la teoría refleje no
 que el método es correcto, sino que el código se fue ajustando a un problema
 concreto. La forma de descartarlo es cambiar el problema.
 
 Se probaron tres distribuciones iniciales nuevas, cada una elegida para hacer una
-\emph{predicción falsable} distinta:
+\emph{predicción falsable} distinta (figura~\ref{fig:agnosticas}):
 
 \begin{itemize}
   \item \textbf{Bimodal}: dos grupos de acciones que mezclan a ritmos distintos, con
     parte angular $1+0.8\cos \Qr+0.3\cos 2\Qr$. Al ser un polinomio trigonométrico
     de grado dos, \textbf{no tiene armónicos por encima de $k=2$}: $h_3$ y $h_4$
-    deben ser cero exactamente. Medidos: $2\times10^{-11}$ de $h_0$, ocho órdenes
-    por debajo de la señal.
+    deben ser cero exactamente. Medidos: $2\times10^{-11}$ y $8\times10^{-12}$ de
+    $h_0$, al nivel del error de redondeo acumulado.
   \item \textbf{Espiral}: no separable, centrada en $\Qr=\beta \Jr$. Nace enrollada
     y se \emph{desenrolla} en $t^\ast=-\beta/\omega'(\Jr_0)$, donde $|h_k|$ pasa por
-    un máximo. Predicho $t^\ast=720.6$; medido $722$, con la cadencia de salida de
+    un máximo. Predicho: $t^\ast=720.6$; medido: $722$, con la cadencia de salida de
     2 unidades.
-  \item \textbf{King}: isoterma bajada, no suave —termina en una esquina. Su
-    cuadratura converge como $h^2$ en vez de más rápido que cualquier potencia,
+  \item \textbf{King}: isoterma truncada, no suave ---termina en una esquina---. Su
+    cuadratura converge como $h^2$ en lugar de más rápido que cualquier potencia,
     exactamente como predice la teoría para un integrando solo continuo. Medido:
-    factores 133 y 95 al multiplicar por diez los nodos, frente a los 100 de $h^2$.
+    factores 133 y 95 al multiplicar por diez los nodos en $\Jr$, frente a los 100
+    de $h^2$.
 \end{itemize}
 
-Que un modo prohibido por la forma de $F_0$ salga a nivel de error numérico, y que
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{agnosticas}
+  \caption{Las tres predicciones falsables, con cuadratura. \textbf{(a)} Bimodal,
+  $N=50\,000$: los modos $k=3$ y $4$, prohibidos por la forma de $F_0$, quedan en
+  $10^{-11}$ mientras la señal $k=2$ decae desde $10^{-1}$. \textbf{(b)} Espiral,
+  $N=50\,000$: $|h_k|/h_0$ exacto (líneas) y medido (círculos, uno de cada 25);
+  el máximo cae en el $t^\ast$ calculado de antemano. \textbf{(c)} King: el error
+  de cuadratura sigue $N^{-2}$, el orden esperado para un integrando con una
+  esquina.}
+  \label{fig:agnosticas}
+\end{figure}
+
+Que un modo prohibido por la forma de $F_0$ salga al nivel del error numérico, y que
 un pico de recoherencia aparezca en el instante calculado de antemano, son dos
 pruebas que un código ajustado al problema anterior no pasaría por casualidad.
 
-\section{Caso de estudio: qué pasa al encender la autogravedad}
+\section{Caso de estudio: qué pasa al activar la autogravedad}
 \label{sec:autogravedad}
 
 Aquí empieza la parte interesante, y es también donde se ve cómo se descarta una
-explicación falsa. El montaje: la misma distribución gaussiana, con masa total
-$a_0=10^{-3}$ —\emph{una milésima} de la del fondo isócrono—, ahora con su propia
-gravedad encendida. $N=10^4$, cuadratura y Monte Carlo, $\Delta t=0.1$. Y, como
-control imprescindible, la misma corrida con la autogravedad apagada.
+explicación falsa. La configuración: la distribución gaussiana de la
+figura~\ref{fig:enrollamiento}, con masa total $a_0=10^{-3}$ ---\emph{una milésima}
+de la del fondo isócrono---, ahora con su propia gravedad activada. $N=10^4$,
+cuadratura y Monte Carlo, $\Delta t=0.1$, hasta $t=2000$ (unos 20 periodos
+orbitales). Y, como control imprescindible, la misma corrida con la autogravedad
+desactivada.
 
-\subsection{Resultado 1: la energía deja de conservarse a precisión de máquina}
+\subsection{Resultado 1: la energía, y un diagnóstico mal definido}
 
-\begin{center}
-\begin{tabular}{lrr}
-\toprule
- & deriva de $E$ & deriva de $h_0$ \\
-\midrule
-sin autogravedad          & $7.0\times10^{-11}$ & $-2.4\times10^{-10}$ \\
-con autogravedad (cuad.)  & $5.0\times10^{-4}$  & $-1.602\times10^{-2}$ \\
-con autogravedad (MC)     & $5.0\times10^{-4}$  & $-1.602\times10^{-2}$ \\
-\bottomrule
-\end{tabular}
-\end{center}
+La primera comprobación de salud es la energía. Sin autogravedad se conserva a
+$7.0\times10^{-11}$. Con autogravedad, el código reporta un cambio de
+$-5.0\times10^{-4}$, idéntico con cuadratura y con Monte Carlo.
 
-La energía cae de $10^{-11}$ a $10^{-4}$. La razón es conceptual: al calcular la
-fuerza depositando en una malla, \textbf{el esquema deja de ser exactamente
-simpléctico}, porque la fuerza ya no deriva de un hamiltoniano de las posiciones
-exactas. Ese $5\times10^{-4}$ es el suelo de confianza de estas corridas y hay que
-tenerlo presente.
-
-\subsection{Resultado 2: $h_0$ deriva, y eso es física}
-
-$h_0$ deriva un $1.6\%$, treinta veces más que el error de energía, y
-\emph{idéntico a tres cifras en los dos esquemas de muestreo}. No es ruido: es
-física. Recuérdese que $h_0$ mide $\langle B(\Jr)\rangle$ y sólo es constante
-mientras $\Jr$ lo sea. Al añadir el potencial propio, $\delta\Phi\sim a_0/r \sim
-2\times10^{-4}$ frente a $|\Phi_{\rm iso}|\sim0.086$, las energías orbitales se
-desplazan y con ellas las acciones.
+La primera interpretación fue que el cálculo de la fuerza en malla rompe el
+carácter simpléctico del integrador. \textbf{Era falsa}, y la forma de descubrirlo
+es instructiva. Un error de discretización debe cambiar al refinar la
+discretización; este no cambia: vale $-4.96\times10^{-4}$ con $\Delta r$ entre
+$0.2$ y $0.025$, con B-splines de orden 1 a 3, y con $N$ entre $10^3$ y $10^5$. En
+cambio, escala exactamente con la masa: $-5.0\times10^{-5}$, $-5.0\times10^{-4}$ y
+$-4.7\times10^{-3}$ para $a_0=10^{-4},10^{-3},10^{-2}$. Un número inmune a toda la
+discretización y lineal en $a_0$ no es error numérico: es una propiedad de la
+\emph{definición} de lo que se mide.
 
 \begin{idea}
-\textbf{La deriva de $h_0$ es la medida directa de cuánto deja de conservarse
-$\Jr$.} Es el diagnóstico más informativo de toda la simulación y es gratis.
-Escala linealmente con la masa: $1.6\times10^{-3}$, $1.6\times10^{-2}$ y
-$1.4\times10^{-1}$ para $a_0=10^{-4},10^{-3},10^{-2}$.
+\textbf{El diagnóstico cuenta dos veces la autoenergía.} El código calcula
+$E_{\rm diag}=\sum_j f_j\,\big(\tfrac12 p_{r,j}^2+\Phi_{\rm ef}(r_j)+\Phi_{\rm
+self}(r_j)\big)$. Pero en un sistema autogravitante la energía que se conserva es
+\begin{equation}
+  E = \sum_j f_j\Big(\tfrac12 p_{r,j}^2 + \Phi_{\rm ef}(r_j)\Big)
+      + \tfrac12\sum_j f_j\,\Phi_{\rm self}(r_j) ,
+\end{equation}
+con un factor $\tfrac12$ en la energía de interacción, porque cada par de partículas
+se cuenta una sola vez. La diferencia, $\tfrac12\sum_j f_j\Phi_{\rm self}$, cambia
+cuando el phase mixing redistribuye la masa. Es de orden $a_0^2$ frente a una
+energía total de orden $a_0$, lo que explica el escalamiento lineal del error
+relativo.
+\end{idea}
+
+La comprobación se hizo sin volver a simular, a partir de las posiciones, momentos y
+potenciales guardados. Recalculando $E_{\rm diag}$ se reproduce el valor del código,
+$-4.9595\times10^{-4}$. Con el factor $\tfrac12$, el cambio final es
+$-1.7\times10^{-7}$ y el máximo $3.9\times10^{-7}$: \textbf{tres mil veces menor}
+(figura~\ref{fig:salud}a). Y ese residuo sí se comporta como un error de
+discretización: vale $8.3\times10^{-7}$, $1.7\times10^{-7}$, $7.9\times10^{-9}$ y
+$3.3\times10^{-9}$ para $\Delta r=0.2$, $0.1$, $0.05$ y $0.025$. Ese es el verdadero
+costo de calcular la fuerza en malla.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{salud}
+  \caption{Salud numérica con autogravedad, $a_0=10^{-3}$. \textbf{(a)} Error
+  relativo de energía cada 4 unidades de tiempo. Naranja: la suma que calcula el
+  código, sin el $\tfrac12$ de la energía de interacción; salta a $5\times10^{-4}$
+  mientras la distribución se mezcla y luego se estabiliza. Azul: la energía que
+  realmente se conserva, calculada con las mismas partículas; queda en
+  $\sim10^{-7}$. \textbf{(b)} $h_0$ con y sin autogravedad. El cambio del $1.6\%$
+  es idéntico en los dos esquemas de muestreo y ocurre durante los primeros $\sim600$
+  tiempos, con oscilaciones al periodo orbital.}
+  \label{fig:salud}
+\end{figure}
+
+\subsection{\texorpdfstring{Resultado 2: $h_0$ cambia, y eso es física}{Resultado 2: h0 cambia, y eso es física}}
+
+$h_0$ cambia un $1.6\%$ ($-1.6019\times10^{-2}$ con cuadratura,
+$-1.6018\times10^{-2}$ con Monte Carlo) mientras que sin autogravedad se conserva a
+$2.4\times10^{-10}$. La coincidencia a cuatro cifras entre dos esquemas de muestreo
+independientes descarta el ruido. Recuerde que $h_0$ mide $\langle B(\Jr)\rangle$ y
+solo es constante mientras $\Jr$ lo sea. Al agregar el potencial propio,
+$\delta\Phi\sim a_0/r \sim 2\times10^{-4}$ frente a $|\Phi_{\rm iso}|\sim0.086$, las
+órbitas cambian y con ellas la acción \emph{isócrona}, que es la que calcula el
+diagnóstico.
+
+\begin{idea}
+\textbf{El cambio de $h_0$ mide directamente cuánto deja de conservarse
+$\Jr_{\rm iso}$.} Es un diagnóstico muy informativo y no cuesta nada. Escala
+linealmente con la masa: $1.6\times10^{-3}$, $1.6\times10^{-2}$ y
+$1.4\times10^{-1}$ para $a_0=10^{-4},10^{-3},10^{-2}$. La
+figura~\ref{fig:salud}(b) muestra además que no es una deriva secular: el cambio se
+produce durante la mezcla inicial y luego $h_0$ queda constante.
 \end{idea}
 
 \subsection{Resultado 3: sigue siendo phase mixing, no Landau}
 
-Aplicando el test de la sección~\ref{sec:landau} al tramo inicial de decaimiento:
+Aplicando la prueba de la sección~\ref{sec:landau} al tramo inicial de decaimiento,
+$t<250$ (figura~\ref{fig:envolvente}):
 
 \begin{center}
 \begin{tabular}{lrrl}
@@ -694,12 +1123,24 @@ con autogravedad (MC)    & $0.99859$ & $0.938$ & gaussiana \\
 \end{tabular}
 \end{center}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{envolvente}
+  \caption{La prueba de la envolvente. \textbf{(a)} $|h_1|/h_0$ con y sin
+  autogravedad. Sin ella (negro) decae monótonamente; con ella se detiene en una
+  meseta de $1.77\times10^{-3}$ (cuadratura, azul). El Monte Carlo (naranja) no
+  puede resolver la meseta: queda por encima, dominado por su ruido.
+  \textbf{(b)} $\ln|h_1/h_0|$ frente a $t^2$ para $t<400$: las tres corridas son
+  rectas, la firma del phase mixing.}
+  \label{fig:envolvente}
+\end{figure}
+
 La envolvente es gaussiana, no exponencial. Con una masa perturbadora de $10^{-3}$
 el efecto colectivo no cambia la \emph{naturaleza} del decaimiento. Lo que sí hace
-es \textbf{acelerarlo un 2.5\%}: el coeficiente del ajuste pasa de
-$-3.726\times10^{-6}$ a $-3.820\times10^{-6}$ (cuadratura) y
-$-3.843\times10^{-6}$ (Monte Carlo). Esa aceleración coherente entre dos esquemas
-independientes es lo que queda del amortiguamiento colectivo en este régimen.
+es \textbf{acelerarlo un poco}: el coeficiente del ajuste pasa de
+$-3.726\times10^{-6}$ a $-3.820\times10^{-6}$ con cuadratura ($+2.5\%$) y
+$-3.843\times10^{-6}$ con Monte Carlo ($+3.1\%$). Esa aceleración coherente entre
+dos esquemas independientes es lo que queda del efecto colectivo en este régimen.
 
 \subsection{Resultado 4: una meseta inesperada}
 
@@ -707,8 +1148,8 @@ Y aquí aparece lo que motivó todo lo demás. Con autogravedad, $|h_1|$ deja de
 decaer, toca un mínimo en torno a $t\simeq1200$, y se estabiliza en
 $1.77\times10^{-3}$ de $h_0$. Sin autogravedad sigue bajando monótonamente.
 
-La tentación es leerlo como un modo colectivo que sobrevive al phase mixing —sería
-el amortiguamiento de Landau que uno busca—. Antes de creerlo hay que descartar lo
+La tentación es leerlo como un modo colectivo que sobrevive al phase mixing ---sería
+el amortiguamiento de Landau que uno busca---. Antes de creerlo hay que descartar lo
 aburrido. Las dos hipótesis rivales predicen cosas opuestas:
 
 \begin{center}
@@ -717,14 +1158,15 @@ aburrido. Las dos hipótesis rivales predicen cosas opuestas:
  & ruido de discretización & respuesta física \\
 \midrule
 al refinar la malla & cambia & no cambia \\
-al subir $N$        & baja   & no cambia \\
-al subir el orden del spline & baja & no cambia \\
-al subir $a_0$      & no necesariamente & escala con $a_0$ \\
+al aumentar $N$     & baja   & no cambia \\
+al aumentar el orden del spline & baja & no cambia \\
+al aumentar $a_0$   & no necesariamente & escala con $a_0$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Los cuatro barridos, con el valor de la meseta en unidades de $h_0$:
+Los barridos, con el valor de la meseta (mediana en $t\in[1600,2000]$ salvo que se
+indique otra cosa) en unidades de $h_0$:
 
 \begin{center}
 \begin{tabular}{llllll}
@@ -732,7 +1174,7 @@ Los cuatro barridos, con el valor de la meseta en unidades de $h_0$:
 \textbf{malla} $\Delta r$ & $0.2$ & $0.1$ & $0.05$ & $0.025$ & \\
 (con $\Delta t$ fijo)     & $1.771$ & $1.770$ & $1.770$ & $1.771$ & $\times10^{-3}$\\
 \midrule
-\textbf{orden B-spline}   & 1 & 2 & 3 & & \\
+\textbf{orden del B-spline} & 1 & 2 & 3 & & \\
                           & $1.770$ & $1.770$ & $1.770$ & & $\times10^{-3}$\\
 \midrule
 \textbf{nodos en} $\Qr$   & 25 & 100 & 200 & & \\
@@ -741,100 +1183,169 @@ Los cuatro barridos, con el valor de la meseta en unidades de $h_0$:
 \textbf{partículas} $N$   & $10^3$ & $10^4$ & $10^5$ & & \\
                           & $1.763$ & $1.770$ & $1.770$ & & $\times10^{-3}$\\
 \midrule
-\textbf{masa} $a_0$       & $10^{-4}$ & $10^{-3}$ & $10^{-2}$ & & \\
-                          & $0.184$ & $1.771$ & $15.61$ & & $\times10^{-3}$\\
+\textbf{masa} $a_0$, $t\in[1600,2000]$   & $10^{-4}$ & $10^{-3}$ & $10^{-2}$ & & \\
+                          & $0.186$ & $1.770$ & $12.31$ & & $\times10^{-3}$\\
+\textbf{masa} $a_0$, $t\in[15\,000,20\,000]$ & $0.184$ & $1.771$ & $15.61$ & & $\times10^{-3}$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{Nada de la discretización lo mueve} —ni ocho veces más resolución de malla,
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{barridos}
+  \caption{$|h_1|/h_0$ en los cuatro barridos de discretización. En cada panel, la
+  corrida de referencia ($\Delta r=0.1$, B-spline de orden 1, 25 nodos en $\Qr$,
+  $N=10^4$) en negro, las variantes en color, y el control sin autogravedad en
+  gris. Las curvas con autogravedad son indistinguibles a simple vista: ocho veces
+  más resolución de malla, splines cúbicos, ocho veces más nodos angulares o cien
+  veces más partículas no mueven la meseta.}
+  \label{fig:barridos}
+\end{figure}
+
+\textbf{Nada de la discretización la mueve} ---ni ocho veces más resolución de malla,
 ni B-splines cúbicos, ni ocho veces más nodos angulares, ni \emph{cien veces} más
-partículas: tres dígitos iguales—. Y escala con la masa: la pendiente log-log vale
-$+0.965$, frente al $+1$ de una respuesta lineal.
+partículas: tres dígitos iguales--- (figura~\ref{fig:barridos}). Y escala con la
+masa (figura~\ref{fig:masa}a): la pendiente log-log vale $+0.91$ en la ventana
+temprana y $+0.96$ en la tardía, frente al $+1$ de una respuesta lineal. La
+diferencia entre ventanas viene casi toda de $a_0=10^{-2}$, cuya meseta
+\emph{crece} entre $t=2000$ y $t=20\,000$; volveremos a esto.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{masa}
+  \caption{\textbf{(a)} Meseta de $|h_1|/h_0$ frente a la masa, en corridas hasta
+  $t=20\,000$, medida en dos ventanas. La línea punteada es proporcionalidad
+  exacta. \textbf{(b)} $|h_1|$ sin normalizar: la cuadratura (azul) resuelve una
+  meseta de $4.4\times10^{-9}$; las tres corridas de Monte Carlo (naranja) se
+  estancan en $5.9$, $2.4$ y $1.6\times10^{-8}$, todas por encima de la señal.}
+  \label{fig:masa}
+\end{figure}
 
 \begin{aviso}
 \textsc{un error que merece quedar escrito.} En el primer análisis se concluyó lo
 contrario: que la meseta era ruido amplificado. El argumento se apoyaba en el
-escalado con $N$ \emph{del Monte Carlo}, que daba pendiente $-0.28$. Lo que fallaba
-es que el nivel físico ($1.77\times10^{-3}h_0 = 4.4\times10^{-9}$) queda por debajo
-del ruido del Monte Carlo en todo el rango explorado: sus mesetas valían
-$5.9$, $2.4$ y $1.6\times10^{-8}$. El Monte Carlo estaba midiendo su propio ruido, y
-ajustarlo a «ruido más una constante» era extrapolar desde tres puntos que aún no
-habían tocado suelo. La cuadratura resuelve la señal ya con $N=10^3$. Correr los dos
-esquemas no era redundancia: era lo que permitía distinguirlos.
+escalamiento con $N$ \emph{del Monte Carlo}, que daba pendiente $-0.28$. Lo que
+fallaba es que el nivel físico ($1.77\times10^{-3}h_0 = 4.4\times10^{-9}$) queda por
+debajo del ruido del Monte Carlo en todo el rango explorado: sus mesetas valían
+$5.9$, $2.4$ y $1.6\times10^{-8}$ (figura~\ref{fig:masa}b). El Monte Carlo estaba
+midiendo su propio ruido, y ajustarlo a «ruido más una constante» era extrapolar
+desde tres puntos que todavía no habían llegado al piso. La cuadratura resuelve la
+señal ya con $N=10^3$. Correr los dos esquemas no era redundancia: era lo que
+permitía distinguirlos.
 \end{aviso}
 
 \subsection{Pero no es un modo}
 
-Establecido que es físico y lineal en $a_0$, la pregunta siguiente es qué modo es.
-Un modo colectivo oscila: $h_k \sim \ee^{-\ii\omega_r t}$. Basta mirar la fase.
+Establecido que es física y lineal en $a_0$, la pregunta siguiente es qué modo es.
+Un modo colectivo oscila: $h_k \sim \ee^{-\ii\omega_r t}$. Basta mirar la fase, y
+para eso se extendieron las corridas hasta $t=20\,000$, unos 200 periodos orbitales
+(figura~\ref{fig:fase}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fase}
+  \caption{Corridas hasta $t=20\,000$ para tres masas. \textbf{(a)} Amplitud. La
+  banda alrededor de cada meseta es una pequeña componente que gira.
+  \textbf{(b)} Fase desenrollada. Tras la mezcla inicial, que avanza a la
+  frecuencia orbital, la fase se congela. La línea discontinua es lo que haría un
+  modo con la frecuencia orbital: más de $10^3$ radianes. Con $a_0=10^{-2}$ la fase
+  salta cerca de $t=18\,000$. \textbf{(c)} $h_1$ en el plano complejo, dividido por
+  su parte estática $S$. Con $a_0=10^{-3}$ (azul) es un pequeño círculo alrededor de
+  $S$: parte estática más una rotación del $9\%$. Con $a_0=10^{-2}$ y
+  $t\ge15\,000$ (naranja) la rotación creció hasta rodear el origen (cruz), y cada
+  vuelta completa suma $2\pi$ a la fase.}
+  \label{fig:fase}
+\end{figure}
+
+Conviene descomponer $h_1(t)=S+R(t)$ en una parte estática $S$, el promedio
+temporal, y una parte $R$ que fluctúa. Para $a_0=10^{-3}$:
 
 \begin{center}
-\begin{tabular}{lrl}
+\begin{tabular}{lrrl}
 \toprule
-ventana & $\omega$ medida & \\
+ventana & $|S|/h_0$ & $\arg S$ & parte que gira \\
 \midrule
-temprana, $t\in[100,400]$   & $0.0607$ & coincide con $\omega$ orbital ($0.0629$) \\
-tardía, $t\in[1300,2000]$   & $0.0008$ & \\
-$t\in[15000,20000]$         & $5\times10^{-7}$ & \\
+$t\in[2000,15\,000]$   & $1.767\times10^{-3}$ & $0.000$ & $8.7\%$ de $|S|$, a $\omega=0.058$ \\
+$t\in[15\,000,20\,000]$ & $1.767\times10^{-3}$ & $0.000$ & $10.2\%$ de $|S|$, a $\omega=0.059$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-En la ventana temprana la fase avanza a la frecuencia orbital, como debe ser: es el
-continuo, $h_1\sim\ee^{-\ii\omega(\Jr_0)t}$. En la tardía \textbf{la fase está
-congelada}. A lo largo de 200 periodos orbitales la amplitud pasa de
-$1.7692\times10^{-3}$ a $1.7713\times10^{-3}$ y la fase se mantiene en $0.000$. Un
-modo dentro de la banda~\eqref{eq:banda} habría acumulado más de $10^3$ radianes.
+\textbf{La parte dominante es estática y real.} Su fase es cero con tres decimales y
+su módulo es el mismo en las dos ventanas. En la ventana temprana, $t\in[100,400]$,
+la fase de $h_1$ avanza a $\omega=0.0607$, cercana a la frecuencia orbital en el
+pico de la distribución, $\omega(0.1)=0.0629$: es el continuo en plena mezcla. Pero
+entre $t=2000$ y $15\,000$ la fase recorre apenas $0.4$ radianes. Un modo dentro de
+la banda~\eqref{eq:banda} habría acumulado más de $10^3$.
 
-No es un modo. Es un residuo \emph{estático}.
+Hay además una componente pequeña que sí gira, con frecuencias entre $0.055$ y
+$0.062$, dentro de la banda orbital. Para $a_0=10^{-4}$ es el $1.4\%$ de la parte
+estática; para $a_0=10^{-3}$, el $9\%$. Su origen no está establecido.
+
+\textbf{No es un modo.} La meseta es, en lo esencial, un residuo \emph{estático}.
 
 \subsection{La explicación: son las coordenadas}
 
 Un residuo estático y proporcional a $a_0$ sugiere una explicación que no es ni
-ruido ni dinámica colectiva:
+ruido ni dinámica colectiva, y que conecta con la sección~\ref{sec:adiabatica}:
 
 \begin{idea}
 La simulación evoluciona en el potencial \emph{total} $\Phi_{\rm iso}+\delta\Phi$,
 pero el diagnóstico calcula $(\Qr,\Jr)$ con el mapa del isócrono \emph{solo}. Una
-distribución que ha mezclado por completo en las variables verdaderas —y que por
-tanto depende únicamente de $\Jr_{\rm verdadero}$— \textbf{no} sale independiente
-del ángulo al proyectarla con el mapa equivocado. El desajuste es
+distribución que mezcló por completo en las variables verdaderas ---y que por lo
+tanto depende únicamente de $\Jr_{\rm verdadera}$--- \textbf{no} resulta
+independiente del ángulo al proyectarla con el mapa equivocado. El desajuste es
 $\mathcal{O}(a_0)$, estático, y produce exactamente un $h_k$ residual constante.
 \end{idea}
 
 Esta hipótesis hace una predicción comprobable: si es cierta, la acción
 \emph{isócrona} de una partícula individual no debe ser constante a lo largo de su
 órbita real, sino \textbf{oscilar con el periodo orbital}. Guardando instantáneas
-cada 4 unidades de tiempo y siguiendo partículas concretas:
+cada 4 unidades de tiempo y siguiendo partículas concretas (figura~\ref{fig:accion}),
+medido después de la mezcla inicial ($t>500$):
 
 \begin{center}
-\begin{tabular}{rrrr}
+\begin{tabular}{rrrrr}
 \toprule
-$\langle \Jr\rangle$ & oscilación pico a pico & $\omega$ de la oscilación & $\omega$ orbital \\
+$\langle \Jr\rangle$ & pico a pico & deriva de la media & $\omega$ de la oscilación & $\omega$ orbital \\
 \midrule
-$0.3000$ & $0.88\%$ & $0.0502$ & $0.0500$ \\
-$0.4482$ & $0.79\%$ & $0.0439$ & $0.0426$ \\
-$0.5914$ & $0.82\%$ & $0.0376$ & $0.0368$ \\
+$0.3000$ & $0.45\%$ & $+0.003\%$ & $0.0502$ & $0.0500$ \\
+$0.4482$ & $0.44\%$ & $-0.002\%$ & $0.0439$ & $0.0426$ \\
+$0.5914$ & $0.45\%$ & $-0.026\%$ & $0.0376$ & $0.0368$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{La acción isócrona oscila exactamente a la frecuencia orbital}, con
-amplitud del orden del uno por ciento y una deriva neta diez veces menor. Es
-decir: no hay difusión física de la acción; hay una coordenada que se bambolea una
-vez por órbita porque no es la coordenada adecuada al potencial real.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{accion}
+  \caption{Acción isócrona de tres partículas individuales en la corrida con
+  autogravedad ($a_0=10^{-3}$, instantáneas cada 4 unidades). \textbf{(a)} Tras un
+  ajuste inicial, $\Jr_{\rm iso}$ oscila con amplitud de $\sim0.45\%$ pico a pico y
+  sin deriva apreciable. \textbf{(b)} Espectro de la oscilación, con la frecuencia
+  dividida por la orbital de cada partícula: el pico está en 1, con un armónico en
+  2.}
+  \label{fig:accion}
+\end{figure}
 
-Eso cierra el caso. La meseta no mide dinámica colectiva: mide el error sistemático
-de usar el mapa ángulo--acción del potencial equivocado. Es física en el sentido de
-que cuantifica una diferencia real entre dos potenciales, pero no dice nada sobre
-modos ni sobre amortiguamiento.
+\textbf{La acción isócrona oscila a la frecuencia orbital}, con amplitud de medio
+punto porcentual, y su media no se desplaza: la deriva entre la primera y la segunda
+mitad de la corrida es entre 17 y más de 100 veces menor que la oscilación. Es decir: no
+hay difusión física de la acción; hay una coordenada que oscila una vez por órbita
+porque no es la coordenada adecuada para el potencial real.
+
+Eso cierra el caso para la parte estática. La meseta no mide dinámica colectiva:
+mide el error sistemático de usar el mapa ángulo--acción del potencial equivocado.
+Es física en el sentido de que cuantifica una diferencia real entre dos potenciales,
+pero no dice nada sobre modos ni sobre amortiguamiento.
+
 \section{El régimen fuerte: construir el mapa ángulo--acción numéricamente}
 \label{sec:mapanumerico}
 
 La conclusión de la sección anterior deja una tarea clara: si la autogravedad no es
 despreciable, hay que abandonar el mapa analítico del isócrono y construir el del
-potencial real. Afortunadamente, con un grado de libertad esto es directo.
+potencial real. Afortunadamente, con un grado de libertad esto es directo, y la
+sección~\ref{sec:construccion} ya dio las fórmulas.
 
 \subsection{Las cuadraturas}
 
@@ -843,13 +1354,13 @@ Dado un potencial efectivo $\Phi_{\rm ef}(r)$ cualquiera y una energía $E$:
 \begin{enumerate}
   \item \textbf{Puntos de retorno.} Resolver $E=\Phi_{\rm ef}(r)$ para $r_-<r_+$.
     Como $\Phi_{\rm ef}$ tiene un único mínimo, basta bisección más Newton.
-  \item \textbf{Acción y periodo.}
+  \item \textbf{Acción y periodo}, por~\eqref{eq:accion} y~\eqref{eq:omegaT}:
     \begin{equation}
       \Jr(E)=\frac{1}{\pi}\int_{r_-}^{r_+}\!\!\sqrt{2(E-\Phi_{\rm ef})}\,\dd r,
       \qquad
       T_r(E)=2\!\int_{r_-}^{r_+}\!\frac{\dd r}{\sqrt{2(E-\Phi_{\rm ef})}} .
     \end{equation}
-  \item \textbf{Ángulo.} Con $t(r)$ el tiempo transcurrido desde el pericentro,
+  \item \textbf{Ángulo}, por~\eqref{eq:angulo}:
     \begin{equation}
       \Qr = \frac{2\pi}{T_r}\int_{r_-}^{r}\frac{\dd r'}{\sqrt{2(E-\Phi_{\rm ef})}}
       \quad (\rp>0),
@@ -858,11 +1369,12 @@ Dado un potencial efectivo $\Phi_{\rm ef}(r)$ cualquiera y una energía $E$:
     \end{equation}
 \end{enumerate}
 
-Obsérvese que el mapa \emph{directo} $(r,\rp)\to(\Qr,\Jr)$, que es el que necesita
+Observe que el mapa \emph{directo} $(r,\rp)\to(\Qr,\Jr)$, que es el que necesita
 el diagnóstico, no requiere invertir nada: son tres cuadraturas. La inversión por
 Newton solo hace falta para el mapa contrario, al colocar nodos de cuadratura.
 
 \subsection{La sustitución que lo hace viable}
+\label{sec:sustitucion}
 
 Los integrandos divergen como $(E-\Phi_{\rm ef})^{-1/2}$ en los puntos de retorno.
 Una cuadratura ingenua converge como $\sqrt{h}$ y es inservible. El remedio
@@ -872,19 +1384,20 @@ estándar es el cambio de variable
   \qquad \theta\in[-\tfrac{\pi}{2},\tfrac{\pi}{2}],
   \label{eq:sustitucion}
 \end{equation}
-que anula la singularidad: cerca de $r_\pm$ se tiene $E-\Phi_{\rm ef}\propto
-(r_\pm - r)$, y el jacobiano $\dd r = \tfrac{r_+-r_-}{2}\cos\theta\,\dd\theta$
-aporta justo el factor que hace falta. Tras el cambio el integrando es suave y
-Gauss--Legendre o el trapecio convergen espectralmente. El procedimiento está
-descrito en~\cite[apéndice de \S3.5]{binney2008}.
+que elimina la singularidad: cerca de $r_\pm$ se tiene $E-\Phi_{\rm ef}\propto
+(r-r_-)(r_+-r)$, que en la nueva variable es proporcional a $\cos^2\theta$, y el
+jacobiano $\dd r = \tfrac{r_+-r_-}{2}\cos\theta\,\dd\theta$ aporta justo el factor que
+lo cancela. Tras el cambio el integrando es suave y Gauss--Legendre converge
+espectralmente. La figura~\ref{fig:frecuencias} es la prueba: con 64 nodos, esta
+cuadratura reproduce la acción del isócrono a $10^{-15}$.
 
 \begin{aviso}
-\textsc{coste, y cómo domarlo.} Hacer estas cuadraturas por partícula y por paso de
-salida cuesta $\sim10^9$ evaluaciones para $N=10^4$ y mil salidas. La solución es
+\textsc{costo, y cómo reducirlo.} Hacer estas cuadraturas por partícula y por paso
+de salida cuesta $\sim10^9$ evaluaciones para $N=10^4$ y mil salidas. La solución es
 que, con $L$ fijo, $\Jr(E)$, $T_r(E)$ y $r_\pm(E)$ son funciones de \emph{una sola}
 variable: se tabulan una vez sobre $\sim10^3$ puntos y se interpolan con splines.
-Solo queda por partícula la integral parcial del ángulo, que es corta. El coste
-baja a algo comparable al diagnóstico actual.
+Solo queda por partícula la integral parcial del ángulo, que es corta. El costo baja
+a algo comparable al del diagnóstico actual.
 \end{aviso}
 
 \subsection{¿Respecto de qué potencial?}
@@ -896,34 +1409,40 @@ Con autogravedad $\Phi$ evoluciona, así que $\Jr$ solo es un invariante
   \item \textbf{Potencial instantáneo} $\Phi(r,t)$: $\Jr(t)$ es la acción
     instantánea, y sus cambios miden evolución genuinamente no adiabática.
   \item \textbf{Potencial medio o relajado} $\Phi_0(r)$: marco fijo, $\Jr$
-    conservado para el campo medio, y $\delta F$ se analiza como perturbación
+    conservada para el campo medio, y $\delta F$ se analiza como perturbación
     alrededor de un equilibrio. \textbf{Es lo estándar} para el análisis de modos, y
-    es el marco en el que la teoría de Landau está formulada.
+    es el marco en el que está formulada la teoría de Landau.
 \end{itemize}
 
-Para estudiar phase mixing y amortiguamiento conviene lo segundo: dejar relajar el
-sistema, tomar $\Phi_0$ como el potencial medio del estado final, construir el mapa
-numérico para $\Phi_0$, y analizar $\delta F$ en esas variables.
+Para estudiar phase mixing y amortiguamiento conviene lo segundo: dejar que el
+sistema relaje, tomar $\Phi_0$ como el potencial medio del estado final, construir
+el mapa numérico para $\Phi_0$, y analizar $\delta F$ en esas variables.
 
 \subsection{Cómo validarlo}
 
 Hay una prueba unitaria evidente y muy fuerte: \textbf{aplicar el mapa numérico al
 isócrono puro y comprobar que reproduce el analítico}. Si $\Jr_{\rm num}(E)$
 coincide con~\eqref{eq:Jiso} a precisión de máquina, y $\Qr_{\rm num}$ con el mapa
-de~\eqref{eq:kepler}, la implementación es correcta.
+de~\eqref{eq:kepler}, la implementación es correcta. La primera mitad de esa prueba
+ya está hecha (figura~\ref{fig:frecuencias}).
 
-Y hay una segunda prueba, específica de estas notas: \textbf{la meseta de la
-sección~\ref{sec:autogravedad} debe desaparecer}. Si la interpretación es correcta,
-al analizar con las variables del potencial total, $h_1$ debe decaer sin meseta. Es
-una predicción tajante, y sería la confirmación definitiva.
+Y hay una segunda prueba, específica de estas notas: \textbf{la parte estática de la
+meseta debe desaparecer}. Si la interpretación es correcta, al analizar con las
+variables del potencial total, $h_1$ debe decaer sin meseta estática. Es una
+predicción tajante, y sería la confirmación definitiva.
 
 \subsection{Dónde está el umbral, con números}
 
-De lo medido: la deriva de $h_0$ —que \emph{es} la medida de cuánto deja de
-conservarse $\Jr_{\rm iso}$— vale $1.6\%$ con $a_0=10^{-3}$ y $14\%$ con
-$a_0=10^{-2}$. El mapa analítico aguanta bien hasta $\sim10^{-3}$ y empieza a
-fallar de forma clara hacia $10^{-2}$. Ese es el punto a partir del cual el trabajo
-de la sección~\ref{sec:mapanumerico} deja de ser opcional.
+De lo medido: el cambio de $h_0$ ---que \emph{es} la medida de cuánto deja de
+conservarse $\Jr_{\rm iso}$--- es de $1.6\%$ con $a_0=10^{-3}$ y de $14\%$ con
+$a_0=10^{-2}$. Y con $a_0=10^{-2}$ aparece algo que no está en las masas menores: la
+componente que gira pasa de ser el $18\%$ de la parte estática en
+$t\in[2000,15\,000]$ al $86\%$ en $t\in[15\,000,20\,000]$, con frecuencia $0.062$,
+dentro de la banda orbital (figura~\ref{fig:fase}c). Algo crece. Con el mapa
+analítico no es posible separar si es dinámica colectiva genuina o un efecto de
+coordenadas de orden superior. El mapa analítico funciona bien hasta
+$a_0\sim10^{-3}$ y empieza a fallar claramente hacia $10^{-2}$: a partir de ahí el
+trabajo de esta sección deja de ser opcional.
 
 \section{Cuántas partículas hacen falta}
 \label{sec:cuantas}
@@ -931,28 +1450,29 @@ de la sección~\ref{sec:mapanumerico} deja de ser opcional.
 Una pregunta práctica recurrente, con respuesta distinta para cada esquema.
 
 \paragraph{Monte Carlo, fondo fijo.} El error escala como $N^{-1/2}$ sin meseta.
-De los datos, $\varepsilon \simeq 3\times10^{-2}\sqrt{500/N}$, luego
+De los datos de la figura~\ref{fig:convergencia}(a),
+$\varepsilon \simeq (3\text{--}5)\times10^{-2}\sqrt{500/N}$, luego
 \begin{equation}
-  N \simeq 500\left(\frac{3\times10^{-2}}{\varepsilon}\right)^{2}.
+  N \simeq 500\left(\frac{3\times10^{-2}}{\varepsilon}\right)^{2}
 \end{equation}
-Un 1\% cuesta $\sim5\times10^3$ partículas; un 0.1\%, $\sim5\times10^5$. Cada
-dígito adicional cuesta cien veces más.
+en el caso más favorable. Un 1\% cuesta $\sim5\times10^3$ partículas; un 0.1\%,
+$\sim5\times10^5$. Cada dígito adicional cuesta cien veces más.
 
 \paragraph{Cuadratura, fondo fijo.} Aquí $N$ es la variable equivocada: lo que manda
 es el reparto. Se necesita
 \begin{equation}
   N_J \gtrsim \frac{4\,k_{\max}\,\Delta\omega\,t_{\max}}{2\pi},
   \qquad
-  N_Q \sim 25\text{--}100 \ \text{según lo estrecho que sea } F_0 \text{ en } \Qr .
+  N_Q \sim 25\text{--}100 \ \text{según lo estrecha que sea } F_0 \text{ en } \Qr .
 \end{equation}
 Para $t_{\max}=2000$, $k\le4$ y $\Delta\omega\simeq0.02$ eso da $N_J\gtrsim107$, y
-con $N_Q=25$ el total es $N\gtrsim2.5\times10^3$. \textbf{El requisito crece lineal
-con $t_{\max}$}: es el único parámetro que no perdona.
+con $N_Q=25$ el total es $N\gtrsim2.5\times10^3$. \textbf{El requisito crece
+linealmente con $t_{\max}$}: es el único parámetro que no perdona.
 
 \paragraph{Caso autogravitante.} Es donde la diferencia se vuelve dramática. La
-cuadratura resuelve la señal colectiva con $N=10^3$; el Monte Carlo seguía
-dominado por su ruido con $N=10^5$. \textbf{Elegir bien el esquema valió más que
-multiplicar por mil el número de partículas.}
+cuadratura resuelve la meseta con $N=10^3$; el Monte Carlo seguía dominado por su
+ruido con $N=10^5$. \textbf{Elegir bien el esquema valió más que multiplicar por
+cien el número de partículas.}
 
 \section{Lecciones de método}
 
@@ -962,87 +1482,75 @@ generalicen.
 \begin{enumerate}
   \item \textbf{Un control es imprescindible.} Casi todas las conclusiones de la
     sección~\ref{sec:autogravedad} descansan en comparar con la misma corrida sin
-    autogravedad. Sin ella, la deriva de $h_0$ y la meseta habrían sido
+    autogravedad. Sin ella, el cambio de $h_0$ y la meseta habrían sido
     inatribuibles.
 
   \item \textbf{Cuando dos hipótesis predicen signos opuestos, hay un experimento.}
-    Refinar la malla \emph{baja} el error de fuerza y \emph{sube} el ruido de
-    disparo. Un solo barrido decide entre las dos.
+    Refinar la discretización cambia un error numérico y deja intacta una
+    propiedad física. Un solo barrido decide entre las dos.
+
+  \item \textbf{Un número inmune a toda discretización no es error numérico}, pero
+    tampoco es necesariamente física del sistema: puede ser la definición de lo que
+    se mide. El error de energía de $5\times10^{-4}$ resultó ser un $\tfrac12$
+    ausente en el diagnóstico, y la meseta de $h_1$, un mapa de coordenadas que no
+    corresponde al potencial. Antes de interpretar un número, hay que preguntarse
+    qué calcula exactamente la línea de código que lo produce.
 
   \item \textbf{Mirar la fase, no solo el módulo.} La distinción entre «modo
-    colectivo» y «residuo estático» se resolvió en una línea al desenrollar la fase.
-    Un espectro de Fourier sobre un registro de ocho periodos no lo habría visto.
+    colectivo» y «residuo estático» se resolvió al desenrollar la fase y dibujar
+    $h_1$ en el plano complejo.
 
   \item \textbf{Dos discretizaciones independientes valen más que una muy fina.} El
-    Monte Carlo y la cuadratura fallan de maneras distintas; cuando coinciden a tres
-    cifras, el resultado es sólido, y cuando discrepan, la discrepancia misma
+    Monte Carlo y la cuadratura fallan de maneras distintas; cuando coinciden a
+    tres cifras, el resultado es sólido, y cuando discrepan, la discrepancia misma
     informa.
 
-  \item \textbf{Los resultados negativos hay que escribirlos.} La primera
-    interpretación de la meseta era falsa. Dejar constancia del porqué evita que
-    alguien —empezando por uno mismo— repita el razonamiento.
+  \item \textbf{Los resultados negativos hay que escribirlos.} Tres
+    interpretaciones de estas notas fueron falsas en su primera versión: la meseta
+    como ruido, la meseta como modo colectivo y el error de energía como pérdida de
+    simplecticidad. Dejar constancia del porqué evita que alguien ---empezando por
+    uno mismo--- repita el razonamiento.
 \end{enumerate}
 
-\section{Para seguir}
+\section{Trabajo pendiente}
 
-Lo que queda pendiente, en orden de dificultad:
+Lo que queda por hacer, en orden de dificultad:
 
 \begin{itemize}
+  \item Corregir el diagnóstico de energía del código para incluir el factor
+    $\tfrac12$ en la energía de interacción propia.
   \item Implementar el mapa ángulo--acción numérico de la
-    sección~\ref{sec:mapanumerico} y comprobar que la meseta desaparece.
-  \item Con ese mapa, explorar $a_0\gtrsim10^{-2}$, donde el amortiguamiento
-    colectivo deja de ser una corrección del $2.5\%$ y puede llegar a dominar.
+    sección~\ref{sec:mapanumerico} y comprobar que la parte estática de la meseta
+    desaparece.
+  \item Con ese mapa, identificar la componente que gira a frecuencia orbital y que
+    crece con $a_0=10^{-2}$, y explorar $a_0\gtrsim10^{-2}$, donde el efecto colectivo
+    deja de ser una corrección de unos puntos porcentuales y puede llegar a dominar,
+    hasta el régimen de relajación violenta~\cite{lyndenbell1967}.
   \item Buscar modos discretos genuinos: resolver el problema de autovalores
     linealizado, o medir con cuidado $\omega_r$ y $\gamma$ en corridas largas, y
     comprobar si caen dentro o fuera de la banda~\eqref{eq:banda}. Un modo dentro de
-    la banda es resonante y por tanto amortiguado por Landau; fuera, no.
+    la banda es resonante y por lo tanto amortiguado por Landau; fuera, no.
   \item Levantar la restricción de $L$ fijo, lo que reintroduce un segundo grado de
     libertad y con él resonancias entre las dos frecuencias.
 \end{itemize}
 
 \begin{thebibliography}{99}
 
+\bibitem{arnold1989}
+V.~I.~Arnold,
+\emph{Mathematical Methods of Classical Mechanics}, 2\textsuperscript{a} ed.,
+Graduate Texts in Mathematics \textbf{60}, Springer, 1989.
+\newblock Formulación geométrica: flujos hamiltonianos, transformaciones canónicas y
+el teorema de Liouville--Arnold sobre sistemas integrables y variables
+ángulo--acción.
+
 \bibitem{binney2008}
 J.~Binney y S.~Tremaine,
 \emph{Galactic Dynamics}, 2\textsuperscript{a} ed.,
 Princeton University Press, 2008.
 \newblock El texto de referencia. El capítulo~3 desarrolla las variables
-ángulo--acción y el potencial isócrono; el~5, la teoría de perturbaciones y el
-amortiguamiento de Landau en sistemas estelares.
-
-\bibitem{henon1959}
-M.~Hénon,
-\emph{L'amas isochrone I},
-Annales d'Astrophysique \textbf{22} (1959) 126.
-\newblock Introduce el potencial isócrono y demuestra que sus acciones son
-expresables en forma cerrada.
-
-\bibitem{landau1946}
-L.~D.~Landau,
-\emph{On the vibrations of the electronic plasma},
-J. Phys. USSR \textbf{10} (1946) 25.
-\newblock El artículo original. La versión en inglés está recogida en
-\emph{Collected Papers of L. D. Landau}, Pergamon, 1965.
-
-\bibitem{vankampen1955}
-N.~G.~van Kampen,
-\emph{On the theory of stationary waves in plasmas},
-Physica \textbf{21} (1955) 949.
-
-\bibitem{case1959}
-K.~M.~Case,
-\emph{Plasma oscillations},
-Annals of Physics \textbf{7} (1959) 349.
-\newblock Junto con el anterior, la interpretación del amortiguamiento de Landau
-como superposición de modos del continuo que se desfasan, es decir, como phase
-mixing en el espacio de velocidades.
-
-\bibitem{lyndenbell1967}
-D.~Lynden-Bell,
-\emph{Statistical mechanics of violent relaxation in stellar systems},
-Monthly Notices of the Royal Astronomical Society \textbf{136} (1967) 101.
-\newblock El mecanismo de relajación colectiva rápida; complementa al phase mixing
-para perturbaciones grandes.
+ángulo--acción y el potencial isócrono; el~4, el teorema de Jeans; el~5, la teoría
+de perturbaciones y el amortiguamiento de Landau en sistemas estelares.
 
 \bibitem{birdsall2004}
 C.~K.~Birdsall y A.~B.~Langdon,
@@ -1051,31 +1559,79 @@ Taylor \& Francis, 2004 (edición original McGraw-Hill, 1985).
 \newblock La referencia clásica de PIC. Discute funciones de forma, autofuerza y el
 fenómeno de recurrencia.
 
-\bibitem{hockney1988}
-R.~W.~Hockney y J.~W.~Eastwood,
-\emph{Computer Simulation Using Particles},
-Adam Hilger, 1988.
+\bibitem{case1959}
+K.~M.~Case,
+\emph{Plasma oscillations},
+Annals of Physics \textbf{7} (1959) 349.
+\newblock Junto con van Kampen, la interpretación del amortiguamiento de Landau
+como superposición de modos del continuo que se desfasan, es decir, como phase
+mixing en el espacio de velocidades.
 
-\bibitem{yoshida1990}
-H.~Yoshida,
-\emph{Construction of higher order symplectic integrators},
-Physics Letters A \textbf{150} (1990) 262.
-\newblock Los coeficientes de composición usados aquí.
+\bibitem{goldstein2002}
+H.~Goldstein, C.~Poole y J.~Safko,
+\emph{Classical Mechanics}, 3\textsuperscript{a} ed.,
+Addison-Wesley, 2002.
+\newblock Ecuaciones de Hamilton (cap.~8), transformaciones canónicas y corchetes de
+Poisson (cap.~9), teoría de Hamilton--Jacobi y variables ángulo--acción (cap.~10).
 
 \bibitem{hairer2006}
 E.~Hairer, C.~Lubich y G.~Wanner,
 \emph{Geometric Numerical Integration: Structure-Preserving Algorithms for
 Ordinary Differential Equations}, 2\textsuperscript{a} ed.,
 Springer, 2006.
-\newblock Por qué los integradores simplécticos acotan el error de energía en vez
+\newblock Por qué los integradores simplécticos acotan el error de energía en lugar
 de dejarlo crecer: análisis del hamiltoniano modificado.
+
+\bibitem{henon1959}
+M.~Hénon,
+\emph{L'amas isochrone I},
+Annales d'Astrophysique \textbf{22} (1959) 126.
+\newblock Introduce el potencial isócrono.
+
+\bibitem{hockney1988}
+R.~W.~Hockney y J.~W.~Eastwood,
+\emph{Computer Simulation Using Particles},
+Adam Hilger, 1988.
+
+\bibitem{landau1946}
+L.~D.~Landau,
+\emph{On the vibrations of the electronic plasma},
+J. Phys. USSR \textbf{10} (1946) 25.
+\newblock El artículo original. La versión en inglés está recogida en
+\emph{Collected Papers of L. D. Landau}, Pergamon, 1965.
+
+\bibitem{landau1976}
+L.~D.~Landau y E.~M.~Lifshitz,
+\emph{Mechanics}, 3\textsuperscript{a} ed., Course of Theoretical Physics
+\textbf{1}, Butterworth-Heinemann, 1976.
+\newblock Exposición concisa de las ecuaciones canónicas, el teorema de Liouville,
+Hamilton--Jacobi, los invariantes adiabáticos (\S49) y las variables
+ángulo--acción (\S50).
+
+\bibitem{lyndenbell1967}
+D.~Lynden-Bell,
+\emph{Statistical mechanics of violent relaxation in stellar systems},
+Monthly Notices of the Royal Astronomical Society \textbf{136} (1967) 101.
+\newblock El mecanismo de relajación colectiva rápida; complementa al phase mixing
+para perturbaciones grandes.
 
 \bibitem{trefethen2014}
 L.~N.~Trefethen y J.~A.~C.~Weideman,
 \emph{The exponentially convergent trapezoidal rule},
 SIAM Review \textbf{56} (2014) 385.
-\newblock La razón de que bastan $\sim25$ nodos en el ángulo: para integrandos
+\newblock La razón por la que bastan $\sim25$ nodos en el ángulo: para integrandos
 periódicos y analíticos el trapecio converge más rápido que cualquier potencia.
+
+\bibitem{vankampen1955}
+N.~G.~van Kampen,
+\emph{On the theory of stationary waves in plasmas},
+Physica \textbf{21} (1955) 949.
+
+\bibitem{yoshida1990}
+H.~Yoshida,
+\emph{Construction of higher order symplectic integrators},
+Physics Letters A \textbf{150} (1990) 262.
+\newblock Los coeficientes de composición usados aquí.
 
 \end{thebibliography}
 

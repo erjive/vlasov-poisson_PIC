@@ -51,6 +51,7 @@ exe/*
 
 # El PDF se regenera con latexmk; se versiona solo la fuente
 docs/**/*.pdf
+!docs/introduccion/figuras/*.pdf
 docs/**/*.aux
 docs/**/*.log
 docs/**/*.out
