@@ -1113,6 +1113,61 @@ ahora ademas el costo en linea es marginal. La recomendacion es $h_k$ en
 linea + snapshots ralos vía `field_output` para diagnosticos posteriores
 -- que es justo lo que permitio encontrar el bug de `eps`.
 
+## Orden de los integradores, medido: `yoshida4` confirmado, `yoshida6` parcialmente
+
+Agregado `yoshida6` (Yoshida 1990 "Solucion A", 7 etapas, coeficientes
+$w_3,w_2,w_1,w_0,w_1,w_2,w_3$ con $w_0=1-2(w_1+w_2+w_3)$) via una
+composicion **manejada por tabla**, de modo que agregar ordenes mas
+altos sea solo agregar coeficientes.
+
+**Metodologia -- dos intentos fallidos antes de uno valido**, vale la
+pena registrarlos porque cada uno falla de una forma distinta:
+
+1. Comparando contra `hk_exact` con $\Delta t$ chico: los errores salieron
+   ~2.7e-20 y **planos** (orden medido 0.00). No se estaba midiendo el
+   integrador sino un piso: a ese nivel dominan la cuadratura en $J$ del
+   PIC y la de la propia referencia semi-analitica.
+2. Subiendo $\Delta t$ a 0.8-3.2: los errores (1e-14 a 7e-14) llegaron al
+   4-30% del propio $|h_1|$ -- **fuera del regimen asintotico**, ordenes
+   medidos sin sentido (5.86, luego 1.19).
+3. Valido: referencia = corrida con `integrator="analytic"` (comparte
+   particulas, rejilla, cuadratura y `analysish`, asi que la diferencia
+   es **solo** el integrador), ventana $\Delta t=0.05$-$0.4$, y salida
+   subida de `ES16.8` a `ES24.16` (resolucion 1e-29 en vez de 1e-21).
+
+**Resultado** (error absoluto en $h_1$ a $t=3000$ contra `analytic`):
+
+| Integrador | $\Delta t$ | error abs | razon | orden $p$ |
+|---|---|---|---|---|
+| leapfrog | 0.05 / 0.10 / 0.20 | 1.95e-15 / 8.03e-15 / 3.57e-14 | 4.13x, 4.44x | **2.05, 2.15** |
+| yoshida4 | 0.05 / 0.10 / 0.20 / 0.40 | 8.70e-20 / 1.41e-18 / 2.25e-17 / 3.60e-16 | 16.2x, 16.0x, 16.0x | **4.02, 4.00, 4.00** |
+| yoshida6 | 0.40 / 0.20 | 7.31e-20 / 6.07e-22 | 120x | **6.91** |
+| yoshida6 | 0.20 / 0.10 | 6.07e-22 / 1.27e-21 | 0.48x | -1.06 (piso) |
+
+`yoshida4` queda **confirmado sin ambiguedad**: tres razones consecutivas
+de 16.00 sobre tres decadas de $\Delta t$, lo que valida de paso que sus
+coeficientes estan bien.
+
+`yoshida6` es evidencia **mas debil**: solo hay **un** intervalo utilizable
+(0.4->0.2), $p=6.91$. Debajo de $\Delta t=0.2$ su error ya esta en ~1e-21 y
+choca contra un piso **no identificado** -- no es el formato de salida
+(resuelve 1e-29), ni el redondeo de la suma (~2e-26 estimado), ni la
+tolerancia del Newton-Raphson de `advance_analytic` (~8e-25 estimado).
+Queda abierto. Se puede afirmar que es de orden alto ($\geq$6, netamente
+mejor que 4), pero no con la solidez del 4.00,4.00,4.00 de `yoshida4`.
+
+**Conclusion practica: no hace falta sexto orden para este problema.**
+`yoshida4` a $\Delta t=0.05$ da error 8.7e-20, muy por debajo de
+$h_4^{exacto}=4.3\times10^{-19}$ a $t=10^4$: los modos altos ya se
+resuelven con cuarto orden. El sexto cuesta 7 evaluaciones de fuerza por
+paso en vez de 3 y resuelve un problema que no tenemos. Coincide con la
+estimacion a priori: para reducir el error un factor $R$, orden $p$
+cuesta $\sim n_{etapas}R^{1/p}$, asi que el 4to gana hasta $R\sim10^4$ y
+el 6to recien paga pasado $R\sim10^6$.
+
+Queda implementado igual, por si hiciera falta, y la tabla hace trivial
+agregar el 8vo orden (15 etapas) mas adelante.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),

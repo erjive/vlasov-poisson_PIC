@@ -124,31 +124,19 @@
     hk1 = (0.d0,0.d0)
     hk2 = (0.d0,0.d0)
 
-! phik(J,l,J0,sq,sj) = (1/pi) * Simpson[ g(J,J0,sq,sj,Q)*cos(l*Q) dQ, Q=0..pi ],
-! with g(...,Q) = exp(-sin(Q/2)^2/sq^2)*exp(-(J-J0)^2/sj^2)*J^2 the part
-! of the original phi(J,Q,l,J0,sq,sj) integrand that does NOT depend on
-! l (the mode). The previous implementation called phik() once per
-! (particle, mode, test function) -- (mode+1)*2 = 10 times per particle
-! -- and each call recomputed g(Q) at all 513 quadrature points from
-! scratch, i.e. 10x more exp() evaluations than necessary, since g only
-! depends on the particle (through Jr(j)) and on which test function
-! (Phi_1 or Phi_2) is being evaluated, not on which of the 5 modes is
-! being accumulated. Computing gval1/gval2 once per particle and
-! reusing them for all 5 modes removes that redundancy. It also
-! replaces the original complex phi(Q) = g(Q)*exp(-i*l*Q) with
-! g(Q)*cos(l*Q) directly: phik's own result was always real anyway (the
-! previous code built it from "real(auxsum)*2", silently discarding the
-! imaginary part of the Simpson sum every time -- see the symmetry
-! argument in BUGS_TODO.md), so the sin(l*Q) part it implicitly threw
-! away is simply never computed now.
-!
 ! Each particle's contribution to hk1(0:4)/hk2(0:4) is independent and
 ! only summed, so this parallelizes over particles with a plain
 ! reduction on the two (tiny, 5-element) accumulators -- no atomics
-! needed. This also replaces the disabled "!!$OMP" that used to
-! parallelize the outer do-i-over-modes loop (only 5 iterations, a poor
-! match for 8 threads): parallelizing over particles instead scales
-! with Npart, which is what actually matters at N_c ~ 10^3-10^5.
+! needed. Parallelizing over particles (rather than over the 5 modes, as
+! an earlier disabled directive did) scales with Npart, which is what
+! actually matters at N_c ~ 10^3-10^5.
+!
+! Historical note: phik() used to be a function called once per
+! (particle, mode, test function) that rebuilt the whole Q-quadrature on
+! every call. Two rounds of cleanup removed that: first hoisting the
+! mode-independent part out of the mode loop, then (see the
+! factorisation above) hoisting the entire Q-quadrature out of the
+! particle loop, which is where the 10x speedup came from.
 
     !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,i,bj1,bj2,expv) REDUCTION(+:hk1,hk2)
     do j=1,Npart
@@ -222,8 +210,8 @@
 ! ***   SAVE DATA   ***
 ! *********************
 
-  write(101,"(7ES16.8)") t,abs_hk1(:)
-  write(102,"(7ES16.8)") t,abs_hk2(:)
+  write(101,"(7ES24.16)") t,abs_hk1(:)
+  write(102,"(7ES24.16)") t,abs_hk2(:)
 
 ! hk1/hk2 above only ever save the magnitude |h_k|, which is fine for
 ! looking at a single run but useless for telling real decay-to-zero
@@ -238,8 +226,8 @@
 ! makes that kind of ensemble averaging possible in post-processing.
 ! See BUGS_TODO.md.
 
-  write(103,"(11ES16.8)") t,(real(hk1(k)),aimag(hk1(k)),k=0,mode)
-  write(104,"(11ES16.8)") t,(real(hk2(k)),aimag(hk2(k)),k=0,mode)
+  write(103,"(11ES24.16)") t,(real(hk1(k)),aimag(hk1(k)),k=0,mode)
+  write(104,"(11ES24.16)") t,(real(hk2(k)),aimag(hk2(k)),k=0,mode)
 
 
 ! ***************************

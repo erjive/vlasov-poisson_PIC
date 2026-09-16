@@ -20,12 +20,25 @@ program VP_PIC
   integer i,j,k,l       ! Counters
   integer :: isub       ! Sub-step counter for the Yoshida composition
   real(8) :: dsub       ! Sub-step size for the Yoshida composition
-! Yoshida (1990) 4th-order symplectic composition coefficients:
-! one step = LF(w1*dt) o LF(w0*dt) o LF(w1*dt), with w1 = 1/(2-2^(1/3))
-! and w0 = -2^(1/3)/(2-2^(1/3)). Note w0 < 0: the middle sub-step goes
-! BACKWARDS in time, which is what cancels the O(dt^2) error term.
-  real(8), parameter :: w1y =  1.0d0/(2.0d0-2.0d0**(1.0d0/3.0d0))
-  real(8), parameter :: w0y = -2.0d0**(1.0d0/3.0d0)/(2.0d0-2.0d0**(1.0d0/3.0d0))
+  integer :: nstage     ! Number of leapfrog sub-steps in the composition
+  real(8) :: wcomp(15)  ! Composition coefficients (symmetric, sum = 1)
+
+! --- Yoshida (1990) symmetric compositions of leapfrog sub-steps -------
+!
+! One step = LF(w_1 dt) o LF(w_2 dt) o ... o LF(w_n dt), symmetric, with
+! sum(w) = 1. Some w_i are NEGATIVE: those sub-steps run backwards in
+! time, and that is exactly what cancels the lower-order error terms.
+!
+! 4th order, 3 stages: w1 = 1/(2-2^(1/3)), w0 = -2^(1/3)/(2-2^(1/3)).
+  real(8), parameter :: y4a =  1.0d0/(2.0d0-2.0d0**(1.0d0/3.0d0))
+  real(8), parameter :: y4b = -2.0d0**(1.0d0/3.0d0)/(2.0d0-2.0d0**(1.0d0/3.0d0))
+!
+! 6th order, 7 stages: Yoshida (1990) "Solution A". The central weight is
+! fixed by the consistency condition w0 = 1 - 2*(w1+w2+w3).
+  real(8), parameter :: y6c = -1.17767998417887d0
+  real(8), parameter :: y6b =  0.235573213359357d0
+  real(8), parameter :: y6a =  0.784513610477560d0
+  real(8), parameter :: y6z =  1.0d0 - 2.0d0*(y6a+y6b+y6c)
 
 
   call read_initial_param()
@@ -192,22 +205,31 @@ program VP_PIC
 
 !   Fourth order symplectic (Yoshida composition of three leapfrog steps)
 
-    else if (integrator == 'yoshida4') then
+    else if (integrator == 'yoshida4' .or. integrator == 'yoshida6') then
 
-!     Three kick-drift-kick sub-steps with sizes w1*dt, w0*dt, w1*dt.
-!     Phase error drops from O(dt^2) to O(dt^4) at the cost of 3 force
-!     evaluations per step (3 Poisson solves per step when
-!     autointeraction=.true., where that path already dominates).
-!     Symplectic, unlike the rk4 branch below, so there is still no
-!     secular drift in the energy or in J3.
+!     Table-driven symmetric composition of leapfrog sub-steps. Each
+!     sub-step is a full kick-drift-kick of size w_i*dt, so the cost is
+!     nstage force evaluations per step (nstage Poisson solves per step
+!     when autointeraction=.true.). Symplectic at every order, unlike
+!     the rk4 branch below, so no secular drift is reintroduced.
+!
+!     Cost note: raising the order is NOT automatically a win. To cut the
+!     error by a factor R, order p needs dt/R^(1/p) and therefore costs
+!     ~nstage*R^(1/p). For R~1e2 the 4th order (3 stages) is cheaper than
+!     the 6th (7 stages); they break even near R~1e4 and only past ~1e6
+!     does 6th order pay. See BUGS_TODO.md for the measured comparison.
 
-      do isub = 1,3
+      if (integrator == 'yoshida4') then
+        nstage = 3
+        wcomp(1:3) = (/ y4a, y4b, y4a /)
+      else
+        nstage = 7
+        wcomp(1:7) = (/ y6a, y6b, y6c, y6z, y6c, y6b, y6a /)
+      end if
 
-        if (isub == 2) then
-          dsub = w0y*dt
-        else
-          dsub = w1y*dt
-        end if
+      do isub = 1,nstage
+
+        dsub = wcomp(isub)*dt
 
         p_part_h = p_part   + force_part*dsub*0.5D0
         r_part   = r_part   + p_part_h  *dsub
