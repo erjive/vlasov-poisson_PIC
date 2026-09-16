@@ -11,6 +11,8 @@
 #  Variables that can be set on the command line, e.g. "make FC=ifort":
 #
 #    FC           Fortran compiler (gfortran or ifort).
+#    HDF5_WRAPPER The h5fc wrapper to compile through. Found automatically;
+#                 set it empty to use HDF5_INC and HDF5_LIBS instead.
 #    HDF5_INC     -I flag for the HDF5 Fortran module.
 #    HDF5_LIBS    -L and -l flags for the HDF5 libraries.
 #    OMP_THREADS  Threads used by "make run".
@@ -34,6 +36,31 @@ ifeq ($(origin FC),default)
   FC := gfortran
 endif
 
+# HDF5 installs a wrapper, h5fc, that calls the compiler with the include and
+# library flags of that particular installation. Those paths are different on
+# every distribution and on macOS, so compiling through the wrapper is what
+# makes this Makefile work outside Debian/Ubuntu. It is used only if it is on
+# the path and wraps the compiler asked for; otherwise the explicit flags
+# below apply. Set HDF5_WRAPPER= on the command line to ignore it.
+
+ifeq ($(origin HDF5_WRAPPER),undefined)
+  HDF5_WRAPPER := $(shell command -v h5fc 2>/dev/null)
+  ifneq ($(HDF5_WRAPPER),)
+    WRAPPED := $(notdir $(shell $(HDF5_WRAPPER) -show 2>/dev/null | awk '{print $$1}'))
+    ifneq ($(WRAPPED),$(notdir $(FC)))
+      HDF5_WRAPPER :=
+    endif
+  endif
+endif
+
+# FCCMD is what actually gets invoked; FC still selects the flags.
+
+ifeq ($(HDF5_WRAPPER),)
+  FCCMD := $(FC)
+else
+  FCCMD := $(HDF5_WRAPPER)
+endif
+
 # Flags are split so that the optimized and the debug build share everything
 # except the optimization level and the checks.
 #
@@ -46,7 +73,12 @@ endif
 #                                  signature, so some ignore an argument
 
 ifeq ($(FC),gfortran)
-  FFLAGS_BASE  := -ffree-form -fopenmp -fallow-argument-mismatch -J$(OBJDIR) \
+  # -fallow-argument-mismatch only exists from GCC 10 on, and an older
+  # gfortran rejects the option instead of ignoring it, so ask first. Older
+  # versions do not need it: there the mismatch is only a warning.
+  MISMATCH := $(shell echo 'end' | $(FC) -ffree-form -fallow-argument-mismatch \
+                 -fsyntax-only -x f95 - > /dev/null 2>&1 && echo -fallow-argument-mismatch)
+  FFLAGS_BASE  := -ffree-form -fopenmp $(MISMATCH) -J$(OBJDIR) \
                   -Wall -Wno-unused-dummy-argument
   FFLAGS_OPT   := -O3 -funroll-loops
   FFLAGS_DEBUG := -O0 -g -fcheck=all -fbacktrace
@@ -69,15 +101,17 @@ endif
 BUILD  ?= opt
 FFLAGS  = $(FFLAGS_BASE) $(if $(filter debug,$(BUILD)),$(FFLAGS_DEBUG),$(FFLAGS_OPT))
 
-# HDF5 (Fortran bindings, serial build). These are the paths of a Debian or
-# Ubuntu libhdf5-dev; "h5fc -show" prints the ones of any other install. The
-# rpath records the library directory in the executable, so it runs without
-# LD_LIBRARY_PATH.
+# Used only when there is no h5fc to compile through. These are the paths of a
+# Debian or Ubuntu libhdf5-dev; "h5fc -show" prints the ones of any other
+# install. The rpath records the library directory in the executable, so it
+# runs without LD_LIBRARY_PATH.
 
-HDF5_INC  ?= -I/usr/include/hdf5/serial
-HDF5_LIBS ?= -L/usr/lib/x86_64-linux-gnu/hdf5/serial \
-             -Wl,-rpath,/usr/lib/x86_64-linux-gnu/hdf5/serial \
-             -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5
+ifeq ($(HDF5_WRAPPER),)
+  HDF5_INC  ?= -I/usr/include/hdf5/serial
+  HDF5_LIBS ?= -L/usr/lib/x86_64-linux-gnu/hdf5/serial \
+               -Wl,-rpath,/usr/lib/x86_64-linux-gnu/hdf5/serial \
+               -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5
+endif
 
 # Threads for "make run". OMP_PLACES/OMP_PROC_BIND put one thread per physical
 # core, instead of two sharing the hyperthreads of the same core.
@@ -124,12 +158,12 @@ all: $(EXE)
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.f90 | $(OBJDIR)
 	@ echo "COMPILING FILE: $(notdir $<)"
-	@ $(FC) $(FFLAGS) $(HDF5_INC) -I$(OBJDIR) -c $< -o $@
+	@ $(FCCMD) $(FFLAGS) $(HDF5_INC) -I$(OBJDIR) -c $< -o $@
 
 $(EXE) : $(MODOBJS) $(OBJS) | $(EXEDIR)
 	@ echo
 	@ echo "LINKING ..."
-	@ $(FC) $(FFLAGS) $^ $(HDF5_LIBS) -o $@
+	@ $(FCCMD) $(FFLAGS) $^ $(HDF5_LIBS) -o $@
 	@ echo
 	@ echo "COMPILATION DONE!"
 	@ echo
@@ -165,5 +199,5 @@ help :
 	@ echo "make clean      Delete $(OBJDIR)/ and $(EXE)"
 	@ echo "make veryclean  Delete $(OBJDIR)/ and $(EXEDIR)/ with ALL its contents"
 	@ echo
-	@ echo "Compiler: FC=$(FC)"
+	@ echo "Compiler: $(FCCMD)   (flags for $(FC))"
 	@ echo
