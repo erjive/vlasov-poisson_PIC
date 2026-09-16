@@ -58,11 +58,11 @@ program VP_PIC
 ! ****************************************************
 
 ! integrator="analytic" advances each particle with the closed-form
-! solution Q3(t)=Q3(0)+omega(J3)*t, which only exists while J3 is exactly
-! conserved: static background, fixed L /= 0, no self-interaction, and no
-! centrifugal softening (eps must be 0, or the dynamics would not match
-! the unsoftened action-angle map -- the very inconsistency documented in
-! BUGS_TODO.md).
+! solution Q3(t) = Q3(0) + omega(J3)*t, valid only where the radial action
+! J3 is an exact constant of motion: static isochrone background, fixed
+! L /= 0 and no self-interaction. The centrifugal softening must also be
+! off (eps = 0), since the action-angle map is built from the unsoftened
+! L^2/(2 r^2) term.
 
   if (integrator == 'analytic') then
 
@@ -77,9 +77,8 @@ program VP_PIC
         stop
      end if
 
-!    reduce_arrays reallocates r_part/p_part/f with a smaller Npart but
-!    knows nothing about q0_part/j0_part, so the per-particle arrays would
-!    silently get out of step with each other.
+!    The analytic advance needs the initial (Q3,J3) of every particle, and
+!    reduce_arrays resizes r_part/p_part/f without touching q0_part/j0_part.
      if (reduceparticles) then
         print *
         print *, 'integrator="analytic" is incompatible with reduceparticles=.true.'
@@ -190,17 +189,14 @@ program VP_PIC
 
     else if (integrator == 'leapfrog') then
 
-!     Leapfrog integration 'kick-drift-kick' form, fused into two
-!     parallel passes over the particles.
+!     Leapfrog in 'kick-drift-kick' form: half kick, full drift with the
+!     half-step momentum, force update, half kick. Second order and
+!     symplectic, so the energy error stays bounded instead of drifting.
 !
-!     This used to be six separate whole-array statements, ALL SERIAL:
-!     two copies into r_part_p/p_part_p, the kick, the drift, the second
-!     kick, and the origin-symmetry loop further below. Those passes were
-!     the bulk of the serial fraction that capped the OpenMP speedup
-!     (see BUGS_TODO.md). Fusing them also cuts the memory traffic, since
-!     each particle is now touched once per half-step instead of three
-!     times, and drops r_part_p/p_part_p entirely here: the drift can be
-!     done in place, so the old values were never actually needed.
+!     The kick and the drift are fused into one loop (and the final kick
+!     into another) so each particle is read and written once per force
+!     evaluation; the drift is done in place, so no copy of the old
+!     positions is needed.
 
       !$OMP PARALLEL DO SCHEDULE(STATIC)
       do i=1,Npart
@@ -227,11 +223,10 @@ program VP_PIC
 !     when autointeraction=.true.). Symplectic at every order, unlike
 !     the rk4 branch below, so no secular drift is reintroduced.
 !
-!     Cost note: raising the order is NOT automatically a win. To cut the
-!     error by a factor R, order p needs dt/R^(1/p) and therefore costs
-!     ~nstage*R^(1/p). For R~1e2 the 4th order (3 stages) is cheaper than
-!     the 6th (7 stages); they break even near R~1e4 and only past ~1e6
-!     does 6th order pay. See BUGS_TODO.md for the measured comparison.
+!     Raising the order is not automatically cheaper: reducing the error
+!     by a factor R needs dt/R^(1/p) and therefore costs ~nstage*R^(1/p)
+!     force evaluations, so the 7-stage 6th order only beats the 3-stage
+!     4th order when very small errors are demanded.
 
       if (integrator == 'yoshida4') then
         nstage = 3
@@ -267,10 +262,10 @@ program VP_PIC
     else if (integrator == 'analytic') then
 
 !     At fixed L the radial motion in a static background is integrable:
-!     J3 is exactly conserved and Q3(t) = Q3(0) + omega(J3)*t. Advance to
-!     the ABSOLUTE time t (not incrementally), so there is no accumulated
-!     phase error of any kind. Validation path: isolates the quadrature,
-!     analysish and the normalisations from all integrator error.
+!     J3 is conserved and Q3(t) = Q3(0) + omega(J3)*t. Each particle is
+!     advanced to the absolute time t rather than step by step, so no
+!     phase error accumulates and the diagnostics can be checked
+!     independently of any integrator error.
 
       call advance_analytic(t)
       call grav_force()

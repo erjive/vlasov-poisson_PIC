@@ -150,35 +150,23 @@
   pot_part   = 0.0D0
   force_part = 0.0D0
 
-! Since the grid r(1:Nr) is uniform with spacing dr and already
-! indexed in order (r(k) = r(1) + (k-1)*dr for both grid conventions
-! in construct_grid), we don't need a cell list here as in
-! density()/avg_density(): for each particle we can find the small
-! range of nearby grid indices directly by inverting that formula,
-! instead of scanning all Nr grid points.  This turns the
-! O(Npart*Nr) brute-force search into ~O(Npart).  The exact distance
-! check below is unchanged, so this is a pure performance change.
+! Interpolate the grid potential and force back to the particles.
 !
-! NOTE: parallelize only over "i" (not collapse(2) over i and j).
-! pot_part(i)/force_part(i) are accumulated across all j for a given
-! i, so collapsing i and j lets different threads update the same i
-! concurrently with no atomic/reduction protection -- a data race.
-! Keeping the parallel loop over i alone means each i is owned by
-! exactly one thread for the whole inner j loop, which is race-free
-! without needing atomics.
+! The grid is uniform, r(k) = r(1) + (k-1)*dr, so the few grid points
+! within the compact support of the interpolating weight are found by
+! inverting that relation instead of scanning all Nr points; no cell
+! list is needed here, unlike in density()/avg_density().
+!
+! The parallel loop runs over particles only, never collapsed with the
+! grid index: pot_part(i) and force_part(i) accumulate over j, so each
+! particle must stay with one thread to avoid a race.
 
   cutoff_interp = (dble(bsplineorder)+1.0d0)*dr
   Wgrid = ceiling(cutoff_interp/dr) + 1
 
-! Wn(bsplineorder,(r_part(i)-r(j))/dr) does not depend on pot/force,
-! so it was being evaluated twice per (particle,grid point) pair --
-! once for pot_part, once for force_part, with identical arguments.
-! Computing it once into "wgt" and reusing it removes that redundant
-! work. Measured this loop's own cost (isolated via cpu_time() around
-! it) at ~43% of the total self-gravitating step cost (avg_density()
-! was the other ~56%, the RK2 shooting itself <1%) in a 3000-step,
-! ~10072-particle benchmark, so halving its per-pair cost is a real
-! win, not a micro-optimization.
+! The interpolation weight depends only on the particle-grid distance,
+! so it is formed once into "wgt" and shared by the potential and the
+! force.
 
   !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,jc,jlo,jhi,wgt)
 

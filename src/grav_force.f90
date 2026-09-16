@@ -28,8 +28,7 @@ subroutine grav_force
   implicit none
   integer i
   real(8) :: smallpi
-  real(8) :: sq,den       ! per-particle temporaries for the fused loops
-                          ! (NB: "r2" would clash with parameters::r2)
+  real(8) :: sq,den       ! sqrt(1+r^2) and r^2+eps^2, evaluated once per particle
   character(100) :: filename
   smallpi = acos(-1.0d0)
 
@@ -75,13 +74,13 @@ subroutine grav_force
 
      else if (BGtype == "Isochrone") then
 
-!      Fused into a single pass over the particles, with sqrt(1+r^2)
-!      evaluated ONCE. Written as whole-array expressions, this was two
-!      passes with the same sqrt recomputed 2-3 times per particle (and
-!      two more passes in the angular-momentum block below). Those passes
-!      were serial and, once analysish stopped dominating the run cost,
-!      became the bottleneck: the measured OpenMP parallel fraction had
-!      dropped to p~0.11. See BUGS_TODO.md.
+!      Isochrone potential and force,
+!
+!        pot = -1/(1+sqrt(1+r^2)),   force = -r/(sqrt(1+r^2)*(1+sqrt(1+r^2))^2).
+!
+!      Potential and force share sqrt(1+r^2), so it is formed once per
+!      particle inside a single loop instead of being recomputed by
+!      separate whole-array expressions.
 
        if (autointeraction) then
 
@@ -148,8 +147,11 @@ subroutine grav_force
 ! *******************************
      if(Lfix /= 0.0d0) then
 
-!       Also fused: one pass, with the denominator formed once instead of
-!       twice per particle.
+!       Centrifugal barrier of the fixed angular momentum L0:
+!       pot += L0^2/(2 r^2), force += L0^2 r/(r^2)^2. The optional eps
+!       softens r -> sqrt(r^2+eps^2) near the origin; eps = 0 keeps the
+!       dynamics consistent with the exact action-angle variables.
+!       The common denominator is formed once per particle.
         !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(den)
         do i=1,Npart
           den = r_part(i)**2 + eps*eps

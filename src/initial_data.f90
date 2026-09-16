@@ -33,13 +33,10 @@
 
     smallpi = acos(-1.0d0)
 
-! 
-! For a fixed value of L, We generate particles for an 
-! arbitrary distribution function f(r,pr,L) via an acceptance-rejection method.
-! Let fmax the maximum value of f. We generate arbitrary (x,y,z) numbers 
-! in the range of (rmin,rmax), (pmin,pmax), (0,fmax) respectively. 
-! Then evaluate W=f(x,y,L), if z<=W, accept the point, 
-! otherwise, repeat until the condition in fulfilled.
+! At fixed L, particles are drawn from an arbitrary distribution function
+! f(r,p_r,L) by acceptance-rejection: with fmax the maximum of f, draw
+! (x,y,z) uniformly in (rmin,rmax) x (pmin,pmax) x (0,fmax), evaluate
+! W = f(x,y,L) and accept the point if z <= W, otherwise draw again.
 
 
 ! Initial data for the density function. Notice that
@@ -262,10 +259,11 @@
       print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
 
     else if(state .eq."aa_halton") then
-!     Same as "aa" but the regular (r,p) grid is jittered with a genuine
-!     2D low-discrepancy (Halton, bases 2 and 3) sequence instead of the
-!     original regular grid, to break the near-regular J3 lattice that
-!     causes the PIC recurrence artifact in h_k(t). See BUGS_TODO.md.
+!     Same as "aa", but each grid point is displaced within its own cell
+!     by a 2D low-discrepancy (Halton, bases 2 and 3) sequence. This
+!     breaks the near-regular lattice in J3 that makes all particles
+!     rephase at the same time, the PIC recurrence artifact in h_k(t),
+!     while keeping the sample far more uniform than random jitter.
 
       !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) PRIVATE(j,indx,raux,paux) SHARED(r_part,p_part,f)
       do i=1,Nrc
@@ -329,8 +327,7 @@
 !     inverted back to (r,p_r) by Newton-Raphson on the Kepler-like
 !     equation Qr = eta - ecc*sin(eta).
 !
-!     Why this (and why it is NOT the same as the reverted "aa_qj"):
-!     without self-interaction J3 is exactly conserved and the phase is
+!     Without self-interaction J3 is exactly conserved and the phase is
 !     exactly Q(t)=Q(0)+omega(J)t, so h_k(t) is not a statistical
 !     sampling problem at all -- it is a QUADRATURE of a smooth but
 !     increasingly oscillatory integral, with
@@ -346,24 +343,15 @@
 !     converges spectrally -- Npc ~ 40 is already enough, so nearly all
 !     particles should go into resolving J, not Q.
 !
-!     "aa_qj" (reverted) failed for unrelated reasons: a NaN-propagation
-!     bug that froze the J range at its +-1e30 sentinels, and then, once
-!     that was fixed, Weyl jitter on J plus random Q -- which is exactly
-!     what destroys the quadrature property this state relies on. The
-!     earlier claim that a uniform Q grid "must" cancel the Fourier sum
-!     was wrong: that argument applies to an UNWEIGHTED sum of roots of
-!     unity, whereas here the sum is weighted by F(Q), which converges
-!     spectrally to the true Fourier coefficient.
+!     Jitter of any kind must be avoided here: it destroys the ordered
+!     node placement the quadrature error estimate relies on, leaving
+!     only the 1/sqrt(N) Monte Carlo rate.
 !
-!     Normalization: all quadrature weights dQc*dJc are EQUAL here, so
-!     the constant is absorbed by the mass normalization below and f can
-!     simply hold the raw DF value, exactly as in "aa". Note this must
-!     use drc*dpc (not dJc*dQc): every consumer of f() -- density.f90,
-!     energy.f90, analysish.f90 -- multiplies by drc*dpc unconditionally,
-!     so using the same factor here makes it cancel. ("aa_qj" normalized
-!     with dJc*dQc instead, which left a spurious drc*dpc/(dJc*dQc)
-!     factor in h_k -- that is exactly the unexplained 2.87x bias in its
-!     h_0, see BUGS_TODO.md.)
+!     Normalization: every quadrature weight dQc*dJc is the same, so the
+!     constant is absorbed by the mass normalization below and f holds
+!     the raw value of the distribution function, as in "aa". The
+!     normalization uses drc*dpc because density, energy and analysish
+!     all multiply f by drc*dpc, so the factor cancels.
 
       Jminc = 1.0d-4*sr
       Jmaxc = 6.0d0*sr
@@ -488,15 +476,10 @@
 
             r_part(i) = raux
             p_part(i) = paux
-!           BUG FIX: this used to set f(i)=w, double-counting F -- the
-!           accepted particles from rejection sampling are ALREADY
-!           distributed with density proportional to F(Qr,Jr) (that is
-!           what rejection sampling means), so weighting them by F again
-!           on top of that biases the reconstructed distribution towards
-!           already-dense regions (effectively ~F^2, renormalized) instead
-!           of representing F itself. Equal-weight macroparticles is the
-!           correct MC representation; the density *shape* comes entirely
-!           from where particles land, not from their individual weight.
+!           Equal weights: rejection sampling already places particles
+!           with number density proportional to F, so the shape of the
+!           distribution comes from where they land. Weighting them by F
+!           again would represent F^2.
             f(i)      = 1.0d0
             !accepted = .true.
             i = i+1
@@ -510,20 +493,10 @@
 
 !      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
 !      !$OMP END PARALLEL DO
-!     drc*dpc IS needed here even though these particles are not on a
-!     regular grid: every consumer of f() (density.f90, energy.f90,
-!     analysish.f90) treats it as "F evaluated at that point" and
-!     multiplies by the drc*dpc quadrature weight itself, unconditionally,
-!     regardless of how the particle was placed -- so f() must be
-!     pre-divided by drc*dpc here for that multiplication to reconstruct
-!     the correct MC mass estimate downstream. (An earlier version of
-!     this fix dropped drc*dpc, reasoning these are already-random
-!     samples that need no cell-size weight on their own -- true in
-!     isolation, but wrong given analysish.f90 always multiplies by it;
-!     verified via h_0, which per phase-mixing theory must be constant
-!     in time and equal to the exact value ~1.4998e-8 from
-!     paper_runs/notebooks/hk_exact.ipynb -- dropping drc*dpc gave
-!     ~1.56e-10 (off by ~drc*dpc), restoring it gives the right order.)
+!     Normalize to the requested total mass a0. The drc*dpc factor stays
+!     even though these particles are not on a grid: density, energy and
+!     analysish always multiply f by drc*dpc, so dividing by it here lets
+!     it cancel and the sums recover the Monte Carlo estimate.
       print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
       print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc

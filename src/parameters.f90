@@ -33,14 +33,12 @@ module parameters
    real(8)   :: Lfix = 1.0D0             !< Angular momentum
    real(8)   :: eps  = 0.0D0             !< Softening length for the centrifugal term: the dynamics
                                           !< uses 0.5*L^2/(r^2+eps^2) instead of 0.5*L^2/r^2.
-                                          !< MUST normally be 0: analysish.f90 reconstructs E, J3 and
-                                          !< Q3 with the UNSOFTENED formulas, so any eps/=0 makes the
-                                          !< particles evolve under one Hamiltonian and be analysed
-                                          !< under another -- J3 then drifts and h_k floors out (with
-                                          !< the old eps=0.1 this floored h_k at ~5e-12 instead of
-                                          !< ~5.6e-16; see BUGS_TODO.md). Only meaningful for L0 -> 0,
-                                          !< where there is no centrifugal barrier to keep r away
-                                          !< from the origin; for L0 /= 0 leave it at 0.
+                                          !< Normally 0: the action-angle diagnostics reconstruct
+                                          !< (E,J3,Q3) from the unsoftened term, so eps /= 0 evolves
+                                          !< and analyses the particles under different Hamiltonians,
+                                          !< J3 stops being conserved and h_k floors out. Only useful
+                                          !< as L0 -> 0, where no centrifugal barrier keeps r away
+                                          !< from the origin.
    integer   :: ghost = 0                !< Number of ghost zones.
    !Time
    real(8)   :: courant = 0.5D0           !< Courant factor

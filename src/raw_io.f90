@@ -5,18 +5,14 @@
 !! utils.f90 and the HDF5 output in hdf5_io.f90, selected via
 !! output_format="raw".
 !!
-!! Motivated by measuring hdf5_io.f90's own overhead directly: writing the
-!! same data volume via plain Fortran stream I/O instead of through HDF5's
-!! group/dataset/attribute API was ~20x faster (0.18s vs 3.7-4.0s for 2000
-!! steps, ~10072 particles) -- HDF5's per-object metadata bookkeeping
-!! dominates over the actual bytes written, not compression (gzip barely
-!! helps here either: 98% of the data volume is r_part/p_part/f, which is
-!! high-entropy particle data that doesn't compress).
+!! Frequent snapshots are dominated by HDF5's per-object metadata
+!! bookkeeping rather than by the bytes themselves, so a plain stream of
+!! records is much cheaper to write. Compression does not help: almost
+!! all the volume is r_part/p_part/f, which is high-entropy data.
 !!
-!! Trade-off: this format has none of HDF5's self-description. A reader
-!! needs the exact layout below (or the matching Python reader in
-!! paper_runs/scripts/rawgraph.py) to make sense of the bytes -- there is
-!! no h5dump/h5py equivalent for free.
+!! The price is that the format is not self-describing: a reader needs
+!! the exact layout below (the Python reader in paper_runs/scripts/
+!! rawgraph.py implements it).
 !!
 !! On-disk layout: one file per run, "<directory>/vlasov_output.raw",
 !! opened with access="stream" (plain byte stream, no Fortran record

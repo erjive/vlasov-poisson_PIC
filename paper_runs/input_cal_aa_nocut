@@ -22,7 +22,7 @@ cal_aa_nocut ! directory
 0.1     ! sp = sigma_Q (width in Q of F0)
 aa ! Initial state
 0.0     ! j1: J0 of test function Phi_1 (matches F0: J3^(0)=0)
-0.15    ! j2: J0 of test function Phi_2 (paper's later M/Miso test, informational only)
+0.15    ! j2: J3 of test function Phi_2
 0.1     ! sj1: sigma_J of Phi_1 (matches F0)
 0.05    ! sj2: sigma_J of Phi_2
 0.1     ! sq1: sigma_Q of Phi_1 (matches F0)

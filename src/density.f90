@@ -57,13 +57,12 @@ subroutine density
   avg_rho = 0.D0
   curr = 0.D0
 
-! Build a cell list once (O(Nr+Npart)) so the deposit loop below only
-! scans particles in grid cells near "i" instead of all Npart
-! particles: the B-spline shape/weight functions have compact
-! support (a few cells wide), so the brute-force O(Nr*Npart) search
-! over every (i,j) pair was doing mostly wasted work.  See
-! build_cell_list in utils.f90 for details; the exact distance
-! checks below are unchanged, so this is a pure performance change.
+! The B-spline shape functions have compact support, a few cells wide,
+! so only particles lying near grid point "i" can contribute to it.
+! build_cell_list (utils.f90) groups the particles by radial cell in
+! O(Nr+Npart), which turns the deposit below from a scan over all
+! Npart particles per grid point into a scan over a few neighbouring
+! cells.
 
   call build_cell_list(cell_start,particle_order)
 
@@ -71,16 +70,13 @@ subroutine density
   cutoff_avg = (dble(bsplineorder)+1.0d0)*dr
   Wcell = ceiling(max(cutoff_rho,cutoff_avg)/dr) + 1
 
-! NOTE: parallelize only over "i" (not collapse(2) over i and j).
-! rho(i)/curr(i)/avg_rho(i) are accumulated across all j for a given
-! i, so collapsing i and j together lets different threads update
-! the same i concurrently with no atomic/reduction protection -- a
-! data race.  Keeping the parallel loop over i alone means each i is
-! owned by exactly one thread for the whole inner j loop, which is
-! race-free without needing atomics.
-! Sn(bsplineorder,(r(i)-r_part(j))/drc,drc) does not depend on p_part,
-! so it was evaluated twice per (i,j) pair -- once for rho, once for
-! curr, with identical arguments. Computed once into "sval" and reused.
+! The parallel loop runs over "i" only, never collapsed with "j":
+! rho(i), curr(i) and avg_rho(i) accumulate over all particles, so one
+! grid point must belong to a single thread for the whole inner loop
+! to keep the accumulation race-free without atomics.
+!
+! The shape function depends on r_part alone, so it is evaluated once
+! into "sval" and reused by the density and the current.
 
   !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval)
 
@@ -203,17 +199,10 @@ subroutine avg_density
 
   avg_rho = 0.D0
 
-! Cell list (see build_cell_list in utils.f90 and the matching note
-! in subroutine density above): avoids scanning all Npart particles
-! for every grid point. This subroutine is called from poisson_rk on
-! EVERY time step when autointeraction=.true. (not just every
-! spatial_output like density()), so it is the single most
-! performance-sensitive loop in the self-gravitating case. Replaces
-! the previous "parallelize over i, protect avg_rho(i) with !$OMP
-! ATOMIC" approach -- correct, but each addition serialized on the
-! atomic; parallelizing only over the outer index i (as density()
-! above now also does) makes each i race-free without needing any
-! atomics at all.
+! Same cell-list deposit as in density() above, and likewise parallel
+! over the grid index alone so each accumulator belongs to a single
+! thread. poisson_rk calls this routine on every time step of a
+! self-gravitating run, so it is the hottest loop in that case.
 
   call build_cell_list(cell_start,particle_order)
 

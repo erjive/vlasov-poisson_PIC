@@ -16,13 +16,13 @@
 100     ! Spatial_output
 ord_yoshida4_c16.0 ! directory
 0.0001  ! a0 (gas mass fraction of M_iso)
-0.01    ! r0 -- REUSED as cutoff fraction for state="aa" (see BUGS_TODO.md); paper's cutoff=0.01
+0.01    ! r0 -- reused as the cutoff fraction of the peak for the action-angle states
 0.0     ! p0 (unused by state="aa")
 0.1     ! sr = sigma_J (width in J of F0)
 0.1     ! sp = sigma_Q (width in Q of F0)
 aa_quad ! Initial state
 0.0     ! j1: J0 of test function Phi_1 (matches F0: J3^(0)=0)
-0.15    ! j2: J0 of test function Phi_2 (paper's later M/Miso test, informational only)
+0.15    ! j2: J3 of test function Phi_2
 0.1     ! sj1: sigma_J of Phi_1 (matches F0)
 0.05    ! sj2: sigma_J of Phi_2
 0.1     ! sq1: sigma_Q of Phi_1 (matches F0)

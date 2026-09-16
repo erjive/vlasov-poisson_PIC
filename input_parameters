@@ -1,30 +1,38 @@
-0.025   ! Grid spacing dr
-1500     ! Number of cells in r direction
-375    ! Number of cells in p direction
-0.5     ! Courant factor (dtfac)
-100000    ! Number of time steps
-0.0     ! Minimum radius of the grid
-15.0    ! Maximum radius of the grid
-2.0      ! Minimum radius of the support of f
-10.0     ! Maximum radius of the support of f
--0.4     ! Minimum momentum of the support of f
-0.4    ! Maximum momentum of the support of f
-1.5      ! Angular momentum fixed
-.false.  ! Do we discard particles outside domain?
-1000     ! How often we discard particles
-10000   ! Time_output
-1000      ! Spatial_output
-angle_action5 ! directory
-0.001      ! Amplitude of gaussian/Number of physical particles
-3.0      ! Center of initial gaussian in r
-0.0      ! Center of initial gaussian in p
-0.25      ! Width of initial gaussian in r
-0.25      ! Width of initial gaussian in p
-aa ! Initial state
-1         ! Bsplineorder
-leapfrog  ! Integrator
-two       ! Spatial order discretization
-bg        ! Forcetype
-Isochrone ! Background type
-.false.   ! Autointeraction
-
+0.1       ! dr: grid spacing in r
+200       ! Nrc: cells in r used to lay out the particles
+200       ! Npc: cells in p_r used to lay out the particles
+1.0       ! courant: Courant factor for the time step
+2000      ! Nt: number of time steps
+0.0       ! rmin: inner edge of the grid
+20.0      ! rmax: outer edge of the grid
+1.0       ! rminc: inner edge of the support of f
+10.0      ! rmaxc: outer edge of the support of f
+-0.6      ! pminc: lower edge in p_r of the support of f
+0.6       ! pmaxc: upper edge in p_r of the support of f
+2.0       ! Lfix: angular momentum L0 of the delta(L-L0) distribution
+.false.   ! reduceparticles: discard particles that leave the domain
+1000      ! Nreduce: how often particles are discarded
+100       ! time_output: cadence of the time-series output
+100       ! spatial_output: cadence of the grid (rho, energy) output
+run1      ! directory: output directory
+0.0001    ! a0: total mass of the distribution
+0.01      ! r0: center in r of the gaussian; for the action-angle states it is instead the fraction of the peak below which particles are dropped
+0.0       ! p0: center in p_r of the initial gaussian
+0.1       ! sr: width in r (sigma_J for the action-angle states)
+0.1       ! sp: width in p_r (sigma_Q for the action-angle states)
+aa        ! state: aa, aa_halton, aa_quad or aa_random (grid, Halton-jittered grid, (Q3,J3) quadrature, Monte Carlo)
+0.0       ! j1:  J3 of the first test function Phi_1
+0.15      ! j2:  J3 of the second test function Phi_2
+0.1       ! sj1: width in J3 of Phi_1
+0.05      ! sj2: width in J3 of Phi_2
+0.1       ! sq1: width in Q3 of Phi_1
+0.2       ! sq2: width in Q3 of Phi_2
+1         ! bsplineorder: order of the particle shape function
+yoshida4  ! integrator: euler, leapfrog, yoshida4, yoshida6 or analytic
+two       ! spatialorder: order of the spatial discretization
+bg        ! forcetype: bg (external background) or self (self-gravity)
+Isochrone ! BGtype: null, sphere, Isochrone, iso, isotrun, nfw or burkert
+.false.   ! autointeraction: solve the Poisson equation for the particles
+hdf5      ! output_format: ascii, hdf5 or raw
+1000      ! field_output: particle snapshot cadence (multiple of spatial_output)
+0.0       ! eps: softening of the centrifugal term; keep at 0 unless L0 -> 0

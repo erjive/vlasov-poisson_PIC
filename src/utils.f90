@@ -62,20 +62,16 @@ module utils
        stop
     end if
 
-! field_output gates the r_part/p_part/f snapshot (save_data_hdf5/raw/
-! save_data), which also writes rho/avg_rho/kinetic_energy -- populated
-! by density()/energy(), themselves only called when mod(l,spatial_output)
-! ==0. If field_output isn't a multiple of spatial_output, a field
-! snapshot could be written with a stale rho/energy from an earlier
-! step instead of the one matching its own time -- silently wrong, not
-! a crash, so worth catching here instead.
-! eps/=0 softens the centrifugal term in the DYNAMICS, but analysish.f90
-! reconstructs E, J3 and Q3 with the unsoftened formulas -- the particles
-! then evolve under one Hamiltonian and are analysed under another, J3
-! drifts, and h_k cannot decay below a floor set by eps (see BUGS_TODO.md).
-! For L0 /= 0 the centrifugal barrier already keeps r away from 0, so the
-! softening buys nothing there. Warn rather than abort: it stays available
-! for the L0 -> 0 case where it is actually needed.
+! A particle snapshot also stores rho and the energies, which are only
+! recomputed every spatial_output steps. Unless field_output is a
+! multiple of spatial_output, a snapshot would carry grid quantities
+! belonging to an earlier time.
+! eps softens the centrifugal term of the Hamiltonian that moves the
+! particles, while the action-angle diagnostics reconstruct (E,J3,Q3)
+! from the unsoftened one. With eps /= 0 the particles are therefore
+! evolved and analysed under different Hamiltonians, J3 is no longer
+! conserved and h_k floors out. For L0 /= 0 the barrier already keeps r
+! away from the origin, so the softening is only useful as L0 -> 0.
     if (eps /= 0.0d0 .and. Lfix /= 0.0d0) then
        print *
        print *, 'WARNING: eps /= 0 with Lfix /= 0.'
@@ -154,18 +150,6 @@ module utils
     print *
     print *, 'Number of points in r direction ',Nr
     !print *, 'Number of points in p direction ',Np
-
-!   eps (softening of the centrifugal term) used to be set HERE as
-!   eps = Lfix/(10*pmax). That was a bug with real consequences: "pmax"
-!   is a hardcoded default (parameters.f90, pmax=2.0) that is never read
-!   from the input file -- the input reads pmaxc, a different variable --
-!   so eps silently became Lfix/20, i.e. 0.1 for L0=2, the same scale as
-!   the distribution's own widths. Meanwhile analysish.f90 reconstructs
-!   E, J3 and Q3 with the UNSOFTENED formulas, so particles evolved under
-!   one Hamiltonian and were analysed under another: J3 drifted by
-!   ~6.6e-4 and h_k floored at ~5e-12 instead of ~5.6e-16, independently
-!   of dt and of how the particles were laid out. See BUGS_TODO.md.
-!   eps is now read from the input file instead (normally 0).
 
   end subroutine set_grid_size
 
@@ -266,14 +250,12 @@ module utils
 
   !> Free all the memory in the allocated arrays.
   !!
-  !! Must mirror alloc_mem_set0 exactly: deallocate every array
-  !! allocated there (and only those), each guarded by the same
-  !! condition used to allocate it. Deallocating an array that was
-  !! never allocated is a runtime error, not a no-op.
+  !! Mirrors alloc_mem_set0: every array is released under the same
+  !! condition that allocated it, since deallocating an unallocated
+  !! array is a runtime error.
   subroutine deallocate_mem
 
-! q0_part/j0_part are only allocated for integrator="analytic"
-! (init_action_angle), so guard the deallocation the same way.
+! q0_part/j0_part exist only for integrator="analytic".
   if (integrator == 'analytic') then
     deallocate(q0_part)
     deallocate(j0_part)
@@ -289,14 +271,9 @@ module utils
 
   deallocate(r)
 
-! force, pot and dev_pot are only allocated in alloc_mem_set0 if
-! (autointeraction); deallocating them unconditionally (as this
-! subroutine used to, via "p_part_hp" -- a typo for "p_part_h" that
-! was never allocated either) crashes when autointeraction=.false.
-! (never allocated), and deallocating pot/dev_pot a second time
-! afterwards when autointeraction=.true. is a double free. "res" is
-! declared in arrays.f90 but never allocated by alloc_mem_set0 at
-! all (regardless of conv_test), so it is not deallocated here either.
+! The grid fields force, pot and dev_pot exist only in the
+! self-gravitating case. "res" is declared in arrays.f90 but never
+! allocated, so it is not released here.
 
   if (autointeraction) then
     deallocate(force)
@@ -469,15 +446,14 @@ end subroutine construct_grid
   !> Advance every particle ANALYTICALLY to absolute time "tnow".
   !!
   !! Without self-interaction the radial motion at fixed L is integrable:
-  !! J3 is exactly conserved and Q3(t) = Q3(0) + omega(J3)*t. So the exact
-  !! solution is available in closed form and there is NO integration
-  !! phase error at all -- unlike leapfrog, whose O(dt^2) phase error is
-  !! what currently floors h_k (see BUGS_TODO.md). Intended as a
-  !! validation path: it isolates everything downstream (the quadrature,
-  !! analysish, the normalisations) from any integrator error.
+  !! J3 is conserved and the angle advances linearly,
+  !! Q3(t) = Q3(0) + omega(J3)*t with omega(J) = 1/(J+c)^3 and
+  !! c = (L + sqrt(L^2+4))/2 for the isochrone. The particle state is then
+  !! recovered by inverting (Q3,J3) back to (r,p_r).
   !!
-  !! Note this is NOT an approximation that gets better with smaller dt --
-  !! it is exact at any t, and its cost does not depend on dt at all.
+  !! This is exact at any t, not an approximation refined by smaller dt,
+  !! so it carries no phase error and serves as the reference against
+  !! which the symplectic integrators are measured.
   subroutine advance_analytic(tnow)
 
     implicit none
@@ -515,48 +491,29 @@ end subroutine construct_grid
     allocate(cell_count(1:Nr))
     allocate(ic(1:Npart))
 
-! Parallel counting sort (two-pass, per-thread local histograms),
-! replacing the previous fully serial version -- profiled at ~15% of
-! avg_density()'s wall time (the only serial piece left in the
-! self-gravitating step; see BUGS_TODO.md), so worth the extra
-! complexity here specifically.
+! Counting sort that groups the particles by radial cell, done in two
+! parallel passes over per-thread histograms:
 !
-! Pass 1 (embarrassingly parallel): compute each particle's cell index
-! "ic(j)" and, in the same pass, each thread accumulates its OWN
-! per-cell count into local_count(th,:) -- since only thread th ever
-! touches row th, this is race-free with no atomics.
+!   Pass 1: each particle's cell index ic(j) is computed and tallied
+!   into local_count(:,th), the private column of the thread that owns
+!   it, so no atomics are needed.
 !
-! Between passes (serial, O(Nr*nth) and O(Nr), cheap): reduce
-! local_count across threads into the global cell_count/cell_start
-! (unchanged from before), then compute each thread's own starting
-! write-offset per cell: local_offset(th,c) = cell_start(c) + the
-! count of particles thread 0..th-1 put in cell c. This partitions
-! each cell's slot range into disjoint per-thread sub-ranges.
+!   Between passes (serial, O(Nr*nth)): the columns are reduced into the
+!   global cell_start, and each thread gets its own write offset per
+!   cell, local_offset(c,th) = cell_start(c) + what threads 0..th-1 put
+!   in cell c. This splits every cell's slot range into disjoint
+!   per-thread sub-ranges.
 !
-! Pass 2 (embarrassingly parallel, SAME iteration schedule as pass 1
-! so each particle is handled by the same thread both times, matching
-! it to the local_count it was already tallied into): each thread
-! places its own particles using its own local_offset(th,ic(j)), then
-! advances that private counter -- again race-free, since only thread
-! th ever reads/writes row th.
+!   Pass 2: each thread writes its own particles into its own sub-range.
+!   Both loops use SCHEDULE(STATIC) with no chunk size, which OpenMP
+!   guarantees to partition identically for the same bounds and team
+!   size, so a particle is handled by the thread that counted it.
 !
-! Correctness of "same schedule" relies on OpenMP's guarantee that
-! STATIC scheduling with no explicit chunk size is deterministic for a
-! given loop bound and team size (same chunks every time), which both
-! DO loops below satisfy (same Npart, same thread count).
-
-! local_count/local_offset are indexed (c,th), not (th,c): Fortran
-! arrays are column-major, so with (c,th) each thread's own nth-th
-! "column" is one contiguous block of Nr elements, entirely disjoint
-! from every other thread's block. With (th,c) instead, one row per
-! thread, different threads' entries for the SAME c sit only nth
-! elements apart -- close enough to land in the same cache line, so
-! even though each thread only ever writes its own logical row, two
-! threads hitting nearby cells around the same time cause false
-! sharing (cache-line ping-pong with no actual data race). Swapping
-! the layout was measured to matter a lot: it took build_cell_list
-! from a 1.6x speedup at 4 threads (the (th,c) layout) to 3.1x (this
-! (c,th) layout) -- see BUGS_TODO.md.
+! Memory layout: the histograms are indexed (cell,thread) rather than
+! (thread,cell). Fortran is column-major, so each thread then owns one
+! contiguous block of Nr elements; with the transposed layout, entries
+! of different threads for the same cell would sit a few elements apart
+! and share cache lines, causing false sharing.
     nth = omp_get_max_threads()
     allocate(local_count(1:Nr,0:nth-1))
     allocate(local_offset(1:Nr,0:nth-1))
@@ -626,32 +583,17 @@ end subroutine construct_grid
 !  pmax_aux = MAXVAL(abs(p_part))
 !  dtr = courant*dr/pmax_aux
   dtr = courant*dr/pmax
-! Now bound the time step using the maximum value of the
-! force (acceleration).  Rather than requiring that the
-! momentum change per step stay below a fixed momentum-space
-! cell width dpc (a resolution scale unrelated to the actual
-! dynamics, and linear in 1/Fmax, i.e. needlessly restrictive
-! for large forces), we use the standard "acceleration"
-! criterion from symplectic N-body/leapfrog integration
-! (e.g. Gadget-2, Springel 2005): the time to move a distance
-! drc (the radial resolution scale of the phase-space support)
-! under a constant acceleration Fmax, i.e.
+! Second bound, from the acceleration: the time a particle needs to
+! cross the radial resolution scale drc under the largest force present,
 !
-!   dtp = courant * sqrt(2*drc/Fmax)
+!   dtp = courant * sqrt(2*drc/Fmax),
 !
-! This is directly tied to the local curvature of the force
-! field (an oscillator integrated with leapfrog is stable for
-! dt*omega <~ 2, with omega^2 ~ dF/dr) instead of to an
-! arbitrary momentum bin size, and it is less restrictive than
-! the previous criterion when Fmax is large, since it scales
-! as 1/sqrt(Fmax) instead of 1/Fmax.
-
-! Force can be nonzero from a fixed background (BGtype/="null") *or*
-! from self-gravity (autointeraction) -- gating this solely on BGtype
-! (as before) silently skipped the force-based criterion whenever
-! BGtype=="null", even with autointeraction=.true., leaving dt fixed
-! at the plain CFL value dtr regardless of how large the self-gravity
-! force actually got.
+! the usual criterion for symplectic N-body integrators. It tracks the
+! curvature of the force field, since leapfrog applied to an oscillator
+! is stable for dt*omega <~ 2 with omega^2 ~ dF/dr.
+!
+! A force can come either from the background or from self-gravity, so
+! both cases enable the criterion.
 
   if (BGtype /= "null" .or. autointeraction) then
     Fmax = 0.0d0
