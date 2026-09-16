@@ -14,6 +14,31 @@ mismo bug con el mismo síntoma, verificado leyendo el código de este
 repo antes de portar cada fix (no asumido por analogía). Un commit por
 ítem resuelto.
 
+
+## Configuracion recomendada (destilado de toda la sesion)
+
+Despues de los hallazgos de esta sesion, "como se corre bien este codigo"
+quedo repartido en muchos commits. Resumen operativo:
+
+| parametro | valor | por que |
+|---|---|---|
+| `eps` | **0.0** | distinto de 0 hace que la dinamica use un centrifugo suavizado mientras `analysish` reconstruye sin suavizar: $J_3$ deriva y $h_k$ toca piso en ~5e-12 |
+| `integrator` | **`yoshida4`** | 4to orden simplectico verificado ($p$=4.00 x3); ~17000x mas preciso que leapfrog al mismo $\Delta t$. `yoshida6` no hace falta; `rk4` NO (no es simplectico) |
+| `state` | **`aa_quad`** | cuadratura en $(Q_3,J_3)$: unico esquema que alcanza la fisica a $t$ tardio. Alternativa: `aa` **con `r0` chico** |
+| `r0` | **$\leq10^{-9}$** si se usa `aa` | con `r0`=0.01 el error se clava en ~1e-2 sin importar $N$: descarta 98% de los nodos y trunca la cuadratura |
+| `courant` | segun $t_{max}$ | con `yoshida4`, 1.0 alcanza para $t\sim3000$. Con `leapfrog` a $t=10^4$ hace falta $\leq$0.25 |
+| `Nrc` ($N_J$) | $\gtrsim 4k\Delta\omega t_{max}/2\pi$ | Nyquist: resolver las franjas de la espiral de mixing. A $t=10^4$, $k$=4 pide $N_J\gtrsim440$ |
+| `Npc` ($N_Q$) | **~40** | el trapecio periodico converge espectralmente; subirlo desperdicia particulas que deberian ir a $J$ |
+| `field_output` | multiplo grande de `spatial_output` | separa el volcado pesado de la cadencia de `hk1.tl` (645 MB -> 18 MB) |
+| `OMP_NUM_THREADS` | **4** (`make run`) | 8 hilos es mas lento que 1 por hyperthreading. Para barridos, **4 corridas concurrentes de 1 hilo** rinden 4x contra 2.1x |
+
+**Verificacion minima antes de confiar en una corrida nueva**: comparar
+$h_k(t=0)$ contra los valores exactos del notebook ($h_0=1.4998$e-8). Si
+no coincide a varias cifras, algo esta mal en normalizacion o colocacion
+-- ese chequeo de 5 segundos detecta la mayoria de los bugs que costaron
+horas en esta sesion.
+
+
 ## Resueltos
 
 - [x] **Makefile: `FLAGS` vacío para gfortran.** Idéntico al bug
