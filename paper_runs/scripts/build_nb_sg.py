@@ -163,116 +163,173 @@ del total: no cambia la naturaleza del decaimiento, sólo lo acelera un poco.
 """)
 
 md(r"""
-## 3. El rebote tardío: ¿un modo colectivo, o ruido amplificado?
+## 3. El rebote tardío
 
 Lo llamativo del panel izquierdo es que con autogravedad $|h_1|$ **deja de decaer,
 toca un mínimo y vuelve a subir**, mientras que sin autogravedad baja monótonamente
-hasta el final. La tentación es leerlo como un modo colectivo que sobrevive al phase
-mixing. Antes de creerlo hay que descartar lo aburrido.
+hasta el final.
 """)
 
 code(r"""
-print(f"{'corrida':>26} {'t del minimo':>13} {'|h1| minimo':>13} {'meseta t>1600':>15}")
+print(f"{'corrida':>26} {'t del minimo':>13} {'|h1|/h_0 minimo':>17} {'meseta t>1600':>15}")
 for k in RUNS:
-    t, h = T[k], np.abs(H[k][1])
+    t, h = T[k], np.abs(H[k][1])/H[k][0].real[0]
     m = t > 100
-    print(f'{k:>26} {t[m][np.argmin(h[m])]:>13.0f} {h[m].min():>13.3e} '
+    print(f'{k:>26} {t[m][np.argmin(h[m])]:>13.0f} {h[m].min():>17.3e} '
           f'{np.median(h[t>1600]):>15.3e}')
 """)
 
 md(r"""
-Tres cosas no cuadran con un modo físico:
+Hay dos lecturas posibles y son incompatibles:
 
-1. Los **dos esquemas discrepan en la frecuencia** del tramo tardío (0.0575 frente a
-   0.0680) mientras coinciden a tres cifras en todo lo demás.
-2. Tocan el mínimo en **tiempos distintos** (1216 y 1368).
-3. La **altura de la meseta sigue al piso de ruido de cada esquema**, no a una
-   amplitud común.
+- **Ruido de discretización realimentado.** La gravedad propia amplifica el ruido del
+  depósito en malla. Entonces el nivel debe depender de $N$, de la resolución de la
+  malla y del orden del B-spline.
+- **Respuesta colectiva.** El estado inicial es un equilibrio del isócrono *solo*, no
+  del potencial total; al encender la gravedad propia el sistema responde. Entonces el
+  nivel debe ser **independiente de la discretización** y escalar con la masa $a_0$.
 
-La prueba que zanja el punto 3 es variar $N$: el ruido de muestreo escala como
-$N^{-1/2}$, y un modo físico no depende de $N$.
-""")
-
-code(r"""
-esc = [(1000,'mc_1000'), (10000,'mc'), (100000,'mc_100000')]
-Ns = np.array([n for n,_ in esc], float)
-mes = np.array([np.median(np.abs(leer(d)[1][1])[leer(d)[0] > 1600]) for _,d in esc])
-
-print('Monte Carlo con autogravedad, variando N')
-print(f"{'N':>8} {'meseta t>1600':>15}")
-for n, m in zip(Ns, mes):
-    print(f'{int(n):>8} {m:>15.3e}')
-print(f'\n   pendiente frente a N: {np.polyfit(np.log(Ns), np.log(mes), 1)[0]:+.3f}')
-print( '   ruido de muestreo puro predice -0.500 ; un modo fisico, 0.000')
-
-# Dos aportaciones incoherentes se suman en cuadratura: meseta^2 = a/N + b^2
-A = np.vstack([1/Ns, np.ones_like(Ns)]).T
-(a_, b2), *_ = np.linalg.lstsq(A, mes**2, rcond=None)
-print(f'\n   ajuste  meseta^2 = a/N + b^2')
-print(f'      parte de ruido     sqrt(a/N)|_(N=1e4) = {np.sqrt(a_/1e4):.3e}')
-print(f'      parte que N no baja b                 = {np.sqrt(max(b2,0)):.3e}')
-for n, m in zip(Ns, mes):
-    print(f'      N={int(n):>6}  medido {m:.3e}   modelo {np.sqrt(a_/n+b2):.3e}')
-
-mq = np.median(np.abs(H['autogravedad, cuadratura'][1])[T['autogravedad, cuadratura'] > 1600])
-mn = np.median(np.abs(H['sin autogravedad'][1])[T['sin autogravedad'] > 1600])
-print(f'\n   meseta de la CUADRATURA a N=1e4          {mq:.3e}')
-print(f'   parte independiente de N segun el MC     {np.sqrt(max(b2,0)):.3e}   (factor {np.sqrt(max(b2,0))/mq:.1f})')
-print(f'   meseta SIN autogravedad                  {mn:.3e}')
+Predicen cosas distintas para cada barrido, así que se puede decidir.
 """)
 
 md(r"""
-El modelo de dos aportaciones sumadas en cuadratura —ruido de muestreo más algo que
-$N$ no elimina— reproduce los tres puntos al 1%. Pero esa segunda parte vale
-$1.5\times10^{-8}$, y **la meseta de la cuadratura al mismo $N$ es 3.5 veces menor**.
-Si fuese física, los dos esquemas tendrían que coincidir. No coinciden.
+### 3.1 Los barridos de discretización
 
-La lectura que sostienen los datos es entonces: el rebote **necesita la autogravedad**
-—sin ella la meseta está dos órdenes por debajo, en $4\times10^{-11}$— y su altura la
-fija la discretización de cada esquema, amplificada por el campo propio. No es un modo
-colectivo limpio, y tampoco es ruido que se vaya como $N^{-1/2}$: es ruido de
-discretización que la gravedad propia realimenta, y la realimentación misma depende de
-$N$, por eso baja más despacio.
+Cuatro resoluciones de malla con $\Delta t$ fijo (se compensa con el factor de Courant),
+tres órdenes del B-spline, y tres valores de $N$ con el esquema de cuadratura, que es
+el que menos ruido de muestreo tiene.
+""")
 
-Lo que estas corridas **no** permiten decidir es si por debajo de todo eso sobrevive
-una componente física genuina. Para zanjarlo haría falta comparar el escalado en $N$
-de los dos esquemas por separado, no sólo del Monte Carlo.
+code(r"""
+import glob
+def met(d):
+    a = np.loadtxt(os.path.join(DATA, d, 'hk1.tl'))
+    t, h0 = a[:,0], a[0,1]
+    return np.median(a[t>1600, 2])/h0, a[-1,1]/h0 - 1, t[t>100][np.argmin(a[t>100,2])]
+
+print('Malla: dr con dt = 0.1 fijo en las cuatro')
+print(f"{'dr':>7} {'Nr':>5} {'part/celda':>11} {'meseta |h1|/h0':>16}")
+for dr, d in [(0.2,'scan_dr_0.200'), (0.1,'quad'), (0.05,'scan_dr_0.050'), (0.025,'scan_dr_0.025')]:
+    m, _, _ = met(d)
+    print(f'{dr:>7} {int(20/dr)+1:>5} {10000/(11/dr):>11.0f} {m:>16.3e}')
+
+print('\nOrden del B-spline, dr = 0.1')
+for b, d in [(1,'quad'), (2,'scan_bspl_2'), (3,'scan_bspl_3')]:
+    m, _, _ = met(d); print(f'   orden {b}:  meseta {m:.3e}')
+
+print('\nNumero de particulas, con cuadratura')
+for n, d in [(1000,'scan_N_1000'), (10000,'quad'), (100000,'scan_N_100000')]:
+    m, _, _ = met(d); print(f'   N={n:>6}:  meseta {m:.3e}')
+""")
+
+md(r"""
+**Nada de esto lo mueve.** La meseta vale $1.77\times10^{-3}$ de $h_0$ con ocho veces
+más resolución de malla, con ocho veces menos partículas por celda, con B-splines
+cúbicos en vez de lineales, y con **cien veces más partículas**. Las cifras coinciden
+en tres dígitos.
+
+Eso liquida la hipótesis del ruido: ninguna discretización que se refine cambia el
+resultado.
+""")
+
+md(r"""
+### 3.2 El barrido en la masa
+
+Si es respuesta colectiva, tiene que escalar con la masa que la produce.
+""")
+
+code(r"""
+A, M, Dh, Tm = [], [], [], []
+for a0, d in [(1e-4,'scan_a0_1e-4'), (1e-3,'quad'), (1e-2,'scan_a0_1e-2')]:
+    m, dh, tm = met(d)
+    A.append(a0); M.append(m); Dh.append(abs(dh)); Tm.append(tm)
+    print(f'   a0={a0:.0e}:  meseta {m:.3e}   deriva h_0 {dh:+.3e}   t del minimo {tm:.0f}')
+print(f'\n   pendiente log-log de la meseta frente a a0: {np.polyfit(np.log(A),np.log(M),1)[0]:+.3f}')
+print(f'   pendiente log-log de la deriva de h_0:      {np.polyfit(np.log(A),np.log(Dh),1)[0]:+.3f}')
+print( '   una respuesta lineal predice +1.000 en ambas')
+""")
+
+code(r"""
+fig, axes = plt.subplots(1, 2, figsize=(10.5, 4))
+for a0, d, c in [(1e-4,'scan_a0_1e-4','tab:green'), (1e-3,'quad','tab:blue'),
+                 (1e-2,'scan_a0_1e-2','tab:red')]:
+    a = np.loadtxt(os.path.join(DATA, d, 'hk1.tl'))
+    axes[0].semilogy(a[:,0], a[:,2]/a[0,1], lw=1, color=c, label=f'$a_0={a0:.0e}$')
+a = np.loadtxt(os.path.join(DATA, 'quad_nosg', 'hk1.tl'))
+axes[0].semilogy(a[:,0], a[:,2]/a[0,1], 'k-', lw=1, label='sin autogravedad')
+axes[0].set_xlabel('$t$'); axes[0].set_ylabel('$|h_1|/h_0$'); axes[0].legend(fontsize=7)
+axes[0].set_title('el rebote crece con la masa', fontsize=10)
+
+axes[1].loglog(A, M, 'o-', label='meseta de $|h_1|/h_0$')
+axes[1].loglog(A, Dh, 's-', label='deriva de $h_0$')
+axes[1].loglog(A, np.array(A)*M[1]/A[1], 'k:', lw=1, label=r'$\propto a_0$')
+axes[1].set_xlabel('$a_0$'); axes[1].legend(fontsize=8)
+axes[1].set_title('ambas escalan linealmente con $a_0$', fontsize=10)
+fig.tight_layout()
+""")
+
+md(r"""
+**Escala linealmente con $a_0$**: pendientes $+0.91$ para la meseta y $+0.97$ para la
+deriva de $h_0$, frente al $+1$ de una respuesta lineal. Y el mínimo se adelanta al
+subir la masa —$t=1414$, $1216$, $896$—, que es lo que hace una respuesta colectiva:
+cuanto más fuerte es el acoplamiento, antes domina sobre el decaimiento cinemático.
+
+**El rebote es físico.** Es la respuesta colectiva del sistema autogravitante: el
+estado inicial es un equilibrio del isócrono solo, y al encender la gravedad propia el
+sistema se reajusta. Una vez que el phase mixing ha borrado la estructura angular
+impuesta, lo que queda es esa respuesta.
+""")
+
+md(r"""
+### 3.3 Por qué el Monte Carlo me había engañado
+
+En la primera pasada del análisis concluí lo contrario: que el rebote era ruido
+amplificado. Ese error merece quedar escrito, porque es instructivo.
+
+El argumento era el escalado en $N$ **del Monte Carlo**, que daba pendiente $-0.28$ y
+se ajustaba bien a *ruido más una componente independiente de $N$*. Pero el nivel
+físico es $1.77\times10^{-3}\,h_0 = 4.4\times10^{-9}$, y las mesetas del Monte Carlo a
+$N=10^3,10^4,10^5$ valían $5.9\times10^{-8}$, $2.4\times10^{-8}$ y $1.6\times10^{-8}$:
+**las tres por encima de la señal**. El Monte Carlo estaba dominado por su propio ruido
+en todo el rango, y lo que yo interpretaba como "una componente que $N$ no elimina" era
+sólo una extrapolación mala desde tres puntos que todavía no habían llegado al suelo.
+
+La cuadratura, con mucho menos ruido de muestreo, ya resuelve la señal con $N=10^3$.
+Correr **los dos esquemas** no era redundancia: era lo que permitía distinguirlos.
 """)
 
 md(r"""
 ## 4. Qué queda establecido
 
-1. **La energía se conserva a $5\times10^{-4}$** en el caso autogravitante, frente a
-   $7\times10^{-11}$ con fondo fijo. El depósito en malla rompe el carácter simpléctico;
-   ese número es el suelo de confianza.
+1. **La energía se conserva a $5\times10^{-4}$** con autogravedad, frente a
+   $7\times10^{-11}$ con fondo fijo: el depósito en malla rompe el carácter simpléctico.
+   Esa cifra es proporcional a $a_0$ y es el suelo de confianza de cada corrida.
 
-2. **$h_0$ deriva un 1.6%**, idéntico en los dos esquemas y treinta veces mayor que el
-   error de energía. Es la medida directa de cuánto deja de conservarse $J$ cuando se
-   añade el potencial propio.
+2. **$h_0$ deriva linealmente con la masa**, un $1.6\%$ para $a_0=10^{-3}$. Es la medida
+   directa de cuánto deja de conservarse $J$ al añadir el potencial propio.
 
-3. **El decaimiento es phase mixing, no Landau damping.** La envolvente es gaussiana en
-   $t$ ($R^2=1.00000$), no exponencial ($R^2=0.938$). Con una masa perturbadora de
-   $10^{-3}$ el efecto colectivo no cambia la naturaleza del decaimiento.
+3. **El decaimiento inicial es phase mixing, no Landau damping.** La envolvente es
+   gaussiana en $t$ ($R^2=1.00000$ en el control), no exponencial ($R^2=0.938$).
 
-4. **La autogravedad acelera ese decaimiento un ~2.5%**, coherentemente en los dos
-   esquemas. Eso sí es la contribución colectiva, y es lo que queda del amortiguamiento
-   de Landau en este régimen.
+4. **La autogravedad acelera ese decaimiento un $2.5\%$**, coherentemente en los dos
+   esquemas de muestreo.
 
-### Lo que este cuaderno no establece
+5. **El rebote tardío es la respuesta colectiva del sistema.** Es insensible a la
+   resolución de la malla, al orden del B-spline y al número de partículas —tres dígitos
+   iguales con cien veces más partículas— y escala linealmente con $a_0$. El solver de
+   Poisson se verificó aparte: fuera de la distribución reproduce $-M(r)/r^2$ con un
+   error del $0.7\%$, que es el de la propia comprobación.
 
-**El rebote tardío.** Está claro que lo causa la autogravedad, porque el control sin
-ella no lo tiene. Y está claro que no es un modo colectivo limpio, porque los dos
-esquemas de muestreo discrepan en su altura, en su frecuencia y en el instante del
-mínimo, mientras coinciden a tres cifras en todo lo demás. Lo que queda abierto es si
-bajo el ruido amplificado hay una componente física; el escalado en $N$ del Monte
-Carlo sugiere una parte que $N$ no elimina, pero la cuadratura la contradice por un
-factor 3.5, así que la respuesta honesta es que con estas corridas **no se sabe**.
+### Lo que sigue abierto
 
-**El régimen.** Todo esto es perturbación débil: $a_0 = 10^{-3}$ de la masa del fondo.
-Para ver amortiguamiento de Landau de verdad haría falta que el campo propio compitiera
-con el externo. Ahí, además, las variables ángulo-acción del isócrono dejarían de
-describir bien las órbitas y el diagnóstico entero habría que replantearlo — empezando
-por $h_0$, que ya con $10^{-3}$ deriva un 1.6%.
+El rebote está caracterizado pero no explicado: sabemos que es colectivo y lineal en
+$a_0$, no qué modo es. Identificarlo pediría resolver el problema de autovalores del
+sistema linealizado, o al menos medir con cuidado su frecuencia y su ritmo de
+crecimiento en corridas más largas, con $t_{\max}$ muy por encima de los $2000$ de aquí.
+
+Y el régimen sigue siendo el de perturbación débil. Con $a_0=10^{-2}$ la deriva de $h_0$
+ya es del $14\%$, señal de que las variables ángulo-acción del isócrono empiezan a no
+describir las órbitas. Ir más arriba obliga a replantear el diagnóstico entero.
 """)
 
 nb={"cells":cells,"metadata":{"kernelspec":{"display_name":"Python 3","language":"python",
