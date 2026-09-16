@@ -40,3 +40,11 @@ objs/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 __pycache__/
+
+# Videos de las animaciones: se regeneran con paper_runs/scripts/make_video.py
+paper_runs/videos/
+
+# Salidas de las corridas. Todo lo que aparece en exe/ son directorios de
+# resultados, salvo el ejecutable.
+exe/*
+!exe/VP_PIC
