@@ -48,3 +48,12 @@ paper_runs/videos/
 # resultados, salvo el ejecutable.
 exe/*
 !exe/VP_PIC
+
+# El PDF se regenera con latexmk; se versiona solo la fuente
+docs/**/*.pdf
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.fls
+docs/**/*.fdb_latexmk
