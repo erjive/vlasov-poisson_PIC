@@ -102,6 +102,11 @@ program VP_PIC
   call system('mkdir -p '//trim(directory))
   call system('cp '//trim(parameter_file)//' '//trim(directory))
 
+! Record the configuration actually used, overrides included, so the output
+! directory alone is enough to reproduce the run.
+
+  call dump_parameters()
+
   if (output_format=="hdf5") call open_hdf5_file()
   if (output_format=="raw")  call open_raw_file()
 

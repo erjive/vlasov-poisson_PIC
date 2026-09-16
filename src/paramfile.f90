@@ -22,7 +22,7 @@ module paramfile
   implicit none
 
   private
-  public :: read_parameters, parameter_file
+  public :: read_parameters, dump_parameters, parameter_file
 
   character(256) :: parameter_file = 'input_parameters'  !< File actually read
 
@@ -468,6 +468,221 @@ module paramfile
     end do
 
   end subroutine report
+
+
+
+! ******************************************
+! ***   WRITE THE RESOLVED CONFIGURATION ***
+! ******************************************
+
+!> Write every parameter, with the value in force after the file and the
+!! command line overrides have been applied, to "<directory>/params_usados.par".
+!! That file is a complete input file, so re-running it reproduces this run;
+!! the copy of the base file kept next to it does not carry the overrides.
+!!
+!! Reals are written with the fewest digits that read back as the same double,
+!! so the round trip is exact without printing 17 digits for every value.
+
+  subroutine dump_parameters
+
+    implicit none
+
+    integer :: u
+    character(512) :: cmdline
+    character(8)  :: today
+    character(10) :: now
+
+    call get_command(cmdline)
+    call date_and_time(date=today,time=now)
+
+    open(newunit=u,file=trim(directory)//'/params_usados.par', &
+         form='formatted',status='replace',action='write')
+
+    write(u,'(a)') '# Resolved configuration of this run: the base file plus the'
+    write(u,'(a)') '# command line overrides, already applied. Re-running it'
+    write(u,'(a)') '# reproduces the run:'
+    write(u,'(a)') '#'
+    write(u,'(a)') '#     ./VP_PIC params_usados.par'
+    write(u,'(a)') '#'
+    write(u,'(a)') '# Base file  : '//trim(parameter_file)// &
+                   '   (copied next to this one, WITHOUT the overrides)'
+    write(u,'(a)') '# Command    : '//trim(cmdline)
+    write(u,'(a)') '# Written    : '//today(1:4)//'-'//today(5:6)//'-'//today(7:8)// &
+                   ' '//now(1:2)//':'//now(3:4)//':'//now(5:6)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Grid and time'
+    call put_r(u,'dr',dr)
+    call put_i(u,'Nrc',Nrc)
+    call put_i(u,'Npc',Npc)
+    call put_r(u,'courant',courant)
+    call put_i(u,'Nt',Nt)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Domain'
+    call put_r(u,'rmin',rmin)
+    call put_r(u,'rmax',rmax)
+    call put_r(u,'rminc',rminc)
+    call put_r(u,'rmaxc',rmaxc)
+    call put_r(u,'pminc',pminc)
+    call put_r(u,'pmaxc',pmaxc)
+    call put_r(u,'pmax',pmax)
+    call put_r(u,'Lfix',Lfix)
+    call put_r(u,'eps',eps)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Particle bookkeeping'
+    call put_l(u,'reduceparticles',reduceparticles)
+    call put_i(u,'Nreduce',Nreduce)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Output'
+    call put_i(u,'time_output',time_output)
+    call put_i(u,'spatial_output',spatial_output)
+    call put_i(u,'field_output',field_output)
+    call put_s(u,'directory',directory)
+    call put_s(u,'output_format',output_format)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Initial distribution'
+    call put_r(u,'a0',a0)
+    call put_r(u,'r0',r0)
+    call put_r(u,'p0',p0)
+    call put_r(u,'sr',sr)
+    call put_r(u,'sp',sp)
+    call put_s(u,'state',state)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Test functions for the h_k modes'
+    call put_r(u,'j1',j1)
+    call put_r(u,'j2',j2)
+    call put_r(u,'sj1',sj1)
+    call put_r(u,'sj2',sj2)
+    call put_r(u,'sq1',sq1)
+    call put_r(u,'sq2',sq2)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Radial window of the averaged density'
+    call put_r(u,'r1',r1)
+    call put_r(u,'r2',r2)
+
+    write(u,'(a)') ''
+    write(u,'(a)') '# Numerical methods'
+    call put_i(u,'bsplineorder',bsplineorder)
+    call put_s(u,'integrator',integrator)
+    call put_s(u,'spatialorder',spatialorder)
+    call put_s(u,'forcetype',forcetype)
+    call put_s(u,'BGtype',BGtype)
+    call put_l(u,'autointeraction',autointeraction)
+
+    close(u)
+
+  end subroutine dump_parameters
+
+
+  subroutine put_r(u,name,value)
+
+    implicit none
+
+    integer,      intent(in) :: u
+    character(*), intent(in) :: name
+    real(8),      intent(in) :: value
+    character(16) :: nm
+
+    nm = name
+    write(u,'(a,a,a)') nm,' = ',trim(shortest(value))
+
+  end subroutine put_r
+
+
+  subroutine put_i(u,name,value)
+
+    implicit none
+
+    integer,      intent(in) :: u
+    character(*), intent(in) :: name
+    integer,      intent(in) :: value
+    character(16) :: nm
+
+    nm = name
+    write(u,'(a,a,i0)') nm,' = ',value
+
+  end subroutine put_i
+
+
+  subroutine put_l(u,name,value)
+
+    implicit none
+
+    integer,      intent(in) :: u
+    character(*), intent(in) :: name
+    logical,      intent(in) :: value
+    character(16) :: nm
+
+    nm = name
+
+    if (value) then
+       write(u,'(a,a)') nm,' = .true.'
+    else
+       write(u,'(a,a)') nm,' = .false.'
+    end if
+
+  end subroutine put_l
+
+
+  subroutine put_s(u,name,value)
+
+    implicit none
+
+    integer,      intent(in) :: u
+    character(*), intent(in) :: name,value
+    character(16) :: nm
+
+    nm = name
+    write(u,'(a,a,a)') nm,' = ',trim(value)
+
+  end subroutine put_s
+
+
+!> Shortest decimal form of "x" that reads back as exactly the same double.
+!! A plain decimal is tried first and an exponent form afterwards, so common
+!! values stay readable while awkward ones keep every digit they need.
+
+  function shortest(x) result(s)
+
+    implicit none
+
+    real(8), intent(in) :: x
+    character(32) :: s,try,fmt
+    real(8) :: back
+    integer :: p,ios
+
+    do p=1,17
+       write(fmt,'(a,i0,a)') '(f0.',p,')'
+       write(try,fmt) x
+       read(try,*,iostat=ios) back
+       if (ios == 0 .and. back == x .and. len_trim(try) <= 10) then
+          s = adjustl(try)
+!         f0.d drops the zero before the point; put it back.
+          if (s(1:1) == '.') then
+             s = '0'//trim(s)
+          else if (s(1:2) == '-.') then
+             s = '-0'//trim(s(2:))
+          end if
+          return
+       end if
+    end do
+
+    do p=1,17
+       write(fmt,'(a,i0,a)') '(es24.',p,')'
+       write(try,fmt) x
+       read(try,*,iostat=ios) back
+       if (ios == 0 .and. back == x) exit
+    end do
+
+    s = adjustl(try)
+
+  end function shortest
 
 
   subroutine usage_and_stop(arg)
