@@ -28,6 +28,8 @@ subroutine grav_force
   implicit none
   integer i
   real(8) :: smallpi
+  real(8) :: sq,den       ! per-particle temporaries for the fused loops
+                          ! (NB: "r2" would clash with parameters::r2)
   character(100) :: filename
   smallpi = acos(-1.0d0)
 
@@ -73,18 +75,36 @@ subroutine grav_force
 
      else if (BGtype == "Isochrone") then
 
+!      Fused into a single pass over the particles, with sqrt(1+r^2)
+!      evaluated ONCE. Written as whole-array expressions, this was two
+!      passes with the same sqrt recomputed 2-3 times per particle (and
+!      two more passes in the angular-momentum block below). Those passes
+!      were serial and, once analysish stopped dominating the run cost,
+!      became the bottleneck: the measured OpenMP parallel fraction had
+!      dropped to p~0.11. See BUGS_TODO.md.
+
        if (autointeraction) then
 
-         pot_part =  pot_part + (-1.0D0/(1.0D0+sqrt(1.0D0+r_part**2)))
-         force_part = force_part + (-r_part/(sqrt(1.D0+r_part**2)*(1.D0+sqrt(1.D0+r_part**2))**2))
+         !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(sq)
+         do i=1,Npart
+           sq = sqrt(1.0D0+r_part(i)**2)
+           pot_part(i)   = pot_part(i)   - 1.0D0/(1.0D0+sq)
+           force_part(i) = force_part(i) - r_part(i)/(sq*(1.0D0+sq)**2)
+         end do
+         !$OMP END PARALLEL DO
 
          pot = pot + (-1.0D0/(1.0D0+sqrt(1.0D0+r**2)))
          force = force + (-r/(sqrt(1.D0+r**2)*(1.D0+sqrt(1.D0+r**2))**2))
 
        else
 
-         pot_part =  (-1.0D0/(1.0D0+sqrt(1.0D0+r_part**2)))
-         force_part = (-r_part/sqrt(1.D0+r_part**2)*pot_part**2)
+         !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(sq)
+         do i=1,Npart
+           sq = sqrt(1.0D0+r_part(i)**2)
+           pot_part(i)   = -1.0D0/(1.0D0+sq)
+           force_part(i) = -r_part(i)/sq*pot_part(i)**2
+         end do
+         !$OMP END PARALLEL DO
 
        end if
 
@@ -128,9 +148,16 @@ subroutine grav_force
 ! *******************************
      if(Lfix /= 0.0d0) then
 
-        pot_part   = pot_part + 0.5d0*Lfix**2/(r_part**2 + eps*eps)
-        force_part = force_part + Lfix**2*r_part/(r_part**2 + eps*eps)**2
-        
+!       Also fused: one pass, with the denominator formed once instead of
+!       twice per particle.
+        !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(den)
+        do i=1,Npart
+          den = r_part(i)**2 + eps*eps
+          pot_part(i)   = pot_part(i)   + 0.5d0*Lfix**2/den
+          force_part(i) = force_part(i) + Lfix**2*r_part(i)/den**2
+        end do
+        !$OMP END PARALLEL DO
+
         !pot   = pot + 0.5d0*Lfix**2/(r**2 + eps*eps)
         !force = force + Lfix**2*r/(r**2 + eps*eps)**2
 

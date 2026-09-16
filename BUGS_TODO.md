@@ -1168,6 +1168,61 @@ el 6to recien paga pasado $R\sim10^6$.
 Queda implementado igual, por si hiciera falta, y la tabla hace trivial
 agregar el 8vo orden (15 etapas) mas adelante.
 
+## Barridos seriales eliminados: la corrida pasa de 333 s a 14 s (23x en total)
+
+Los barridos seriales sobre `Npart` que estaban diagnosticados pero sin
+corregir (ver la seccion de autogravedad, items A y B) finalmente se
+arreglaron. Se volvieron **el** cuello de botella despues de factorizar
+`analysish`: al desaparecer el 90% del costo (que era paralelo), la
+fraccion paralela medida se derrumbo de $p=0.78$ a $p=0.11$ -- techo de
+Amdahl 1.1x, o sea el codigo practicamente habia dejado de escalar.
+
+**Que se hizo**, en pasos medidos por separado:
+
+1. `main.f90`: leapfrog y Yoshida fusionados de **6 barridos seriales a 2
+   pasadas paralelas**, eliminando de paso las copias `r_part_p`/
+   `p_part_p` (el *drift* se hace in-place, los valores viejos nunca
+   hacian falta). El bucle de simetria en el origen: la condicion
+   `rmin == 0` es constante de corrida, asi que se evalua una vez en vez
+   de una por particula por paso, y si `rmin > 0` la pasada se saltea.
+2. `grav_force.f90`: el bloque isocrono y el centrifugo fusionados en una
+   pasada cada uno, con `sqrt(1+r^2)` evaluada **una** vez en lugar de
+   2-3, y el denominador centrifugo formado una vez en vez de dos.
+3. Recien **despues** de fusionar, se agregaron las directivas OMP.
+
+**Ese orden fue deliberado y resulto ser la clave.** Un intento anterior
+de paralelizar `grav_force` habia dado una **regresion de 3x**
+(documentada arriba): se habian puesto regiones paralelas alrededor de
+operaciones de arreglo diminutas, y el costo de lanzar hilos dominaba.
+Con los bucles ya fusionados, cada region hace trabajo sustancial y el
+overhead se amortiza -- esta vez no hubo regresion sino 2.11x.
+
+**Medido** (mismo benchmark de siempre: `aa_quad`, $N_c=3.2\times10^4$,
+$N_t=60000$, cronometrado limpio):
+
+| etapa | 1 hilo | 4 hilos |
+|---|---|---|
+| inicio del dia | -- | 333.2 s |
+| tras factorizar `analysish` | -- | 32.0 s |
+| tras fusionar el push | 34.2 s | 31.3 s |
+| tras fusionar `grav_force` (sin OMP) | 30.2 s | 25.1 s |
+| **tras agregar OMP** | 30.3 s | **14.3 s** |
+
+**23x mas rapida la corrida completa** respecto del inicio del dia, y la
+fraccion paralela se recupero de $p=0.11$ a $p\approx0.70$ (techo 3.3x).
+
+**Fisica intacta**: el error contra la referencia exacta es 1.9460e-15
+antes y despues (identico a 5 cifras); la diferencia entre versiones es
+3.8e-27, y el maximo sobre todos los modos y tiempos es 6.6e-24 -- doce
+ordenes por debajo del error propio del integrador.
+
+**Nota sobre hilos**: con 8 hilos el codigo seguia siendo mas lento que
+con 1 antes de este cambio (47.9 s vs 34.2 s) por hyperthreading. El
+default de `make run` (4 hilos) sigue siendo el correcto. Y para la
+serie de convergencia conviene igual **paralelismo a nivel de trabajos**
+(4 corridas concurrentes de 1 hilo) antes que una sola corrida a 4
+hilos: 4x de throughput contra 2.1x de latencia.
+
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 
 - [x] **Agregado un tercer `output_format="raw"`** (`src/raw_io.f90`),

@@ -175,16 +175,12 @@ program VP_PIC
 
      t = t + dt
 
-!    Save old time step.
-
-      r_part_p = r_part
-
-      p_part_p = p_part
-
- 
 !    Euler method (forward differencing in time, first order).
 
      if (integrator=='euler') then
+
+       r_part_p = r_part
+       p_part_p = p_part
 
        r_part = r_part_p + p_part*dt
        p_part = p_part_p + force_part*dt
@@ -194,14 +190,32 @@ program VP_PIC
 
     else if (integrator == 'leapfrog') then
 
-!     Leapfrog integration 'kick-drift-kick' form
+!     Leapfrog integration 'kick-drift-kick' form, fused into two
+!     parallel passes over the particles.
+!
+!     This used to be six separate whole-array statements, ALL SERIAL:
+!     two copies into r_part_p/p_part_p, the kick, the drift, the second
+!     kick, and the origin-symmetry loop further below. Those passes were
+!     the bulk of the serial fraction that capped the OpenMP speedup
+!     (see BUGS_TODO.md). Fusing them also cuts the memory traffic, since
+!     each particle is now touched once per half-step instead of three
+!     times, and drops r_part_p/p_part_p entirely here: the drift can be
+!     done in place, so the old values were never actually needed.
 
-      p_part_h = p_part_p + force_part*dt*0.5D0
-      r_part   = r_part_p + p_part_h * dt
+      !$OMP PARALLEL DO SCHEDULE(STATIC)
+      do i=1,Npart
+        p_part_h(i) = p_part(i)   + force_part(i)*dt*0.5D0
+        r_part(i)   = r_part(i)   + p_part_h(i)  *dt
+      end do
+      !$OMP END PARALLEL DO
 
       call  grav_force()
 
-      p_part   = p_part_h + force_part*dt*0.5D0
+      !$OMP PARALLEL DO SCHEDULE(STATIC)
+      do i=1,Npart
+        p_part(i)   = p_part_h(i) + force_part(i)*dt*0.5D0
+      end do
+      !$OMP END PARALLEL DO
 
 !   Fourth order symplectic (Yoshida composition of three leapfrog steps)
 
@@ -231,12 +245,20 @@ program VP_PIC
 
         dsub = wcomp(isub)*dt
 
-        p_part_h = p_part   + force_part*dsub*0.5D0
-        r_part   = r_part   + p_part_h  *dsub
+        !$OMP PARALLEL DO SCHEDULE(STATIC)
+        do i=1,Npart
+          p_part_h(i) = p_part(i)   + force_part(i)*dsub*0.5D0
+          r_part(i)   = r_part(i)   + p_part_h(i)  *dsub
+        end do
+        !$OMP END PARALLEL DO
 
         call grav_force()
 
-        p_part   = p_part_h + force_part*dsub*0.5D0
+        !$OMP PARALLEL DO SCHEDULE(STATIC)
+        do i=1,Npart
+          p_part(i)   = p_part_h(i) + force_part(i)*dsub*0.5D0
+        end do
+        !$OMP END PARALLEL DO
 
       end do
 
@@ -279,16 +301,22 @@ program VP_PIC
 
 !   At the origin impose symmetry condition f(r,p) = f(-r,-p)
 
-    do i=1,Npart
+!   "rmin == 0" is a run constant, so it is tested once here instead of
+!   once per particle per step, and the remaining loop is parallel. When
+!   rmin > 0 the whole pass is skipped outright (it could never fire).
 
-      if (rmin == 0 .and. r_part(i)<0.d0) then
+    if (rmin == 0.0d0) then
 
-        r_part(i) = -r_part(i)
-        p_part(i) = -p_part(i)
+      !$OMP PARALLEL DO SCHEDULE(STATIC)
+      do i=1,Npart
+        if (r_part(i)<0.d0) then
+          r_part(i) = -r_part(i)
+          p_part(i) = -p_part(i)
+        end if
+      end do
+      !$OMP END PARALLEL DO
 
-      end if
-
-    end do
+    end if
 
 !    **************************************
 !    ***   FIND DENSITY AND FLUX IN r   ***
