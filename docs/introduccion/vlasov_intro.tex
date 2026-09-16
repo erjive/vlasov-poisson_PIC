@@ -985,24 +985,68 @@ que el método es correcto, sino que el código se fue ajustando a un problema
 concreto. La forma de descartarlo es cambiar el problema.
 
 Se probaron tres distribuciones iniciales nuevas, cada una elegida para hacer una
-\emph{predicción falsable} distinta (figura~\ref{fig:agnosticas}):
+\emph{predicción falsable} distinta (figura~\ref{fig:agnosticas}). Todas usan la
+misma convención para los anchos, $\exp(-x^2/s^2)$, y se evalúan en
+$\Qr\in[0,2\pi)$, $\Jr\ge0$.
 
-\begin{itemize}
-  \item \textbf{Bimodal}: dos grupos de acciones que mezclan a ritmos distintos, con
-    parte angular $1+0.8\cos \Qr+0.3\cos 2\Qr$. Al ser un polinomio trigonométrico
-    de grado dos, \textbf{no tiene armónicos por encima de $k=2$}: $h_3$ y $h_4$
-    deben ser cero exactamente. Medidos: $2\times10^{-11}$ y $8\times10^{-12}$ de
-    $h_0$, al nivel del error de redondeo acumulado.
-  \item \textbf{Espiral}: no separable, centrada en $\Qr=\beta \Jr$. Nace enrollada
-    y se \emph{desenrolla} en $t^\ast=-\beta/\omega'(\Jr_0)$, donde $|h_k|$ pasa por
-    un máximo. Predicho: $t^\ast=720.6$; medido: $722$, con la cadencia de salida de
-    2 unidades.
-  \item \textbf{King}: isoterma truncada, no suave ---termina en una esquina---. Su
-    cuadratura converge como $h^2$ en lugar de más rápido que cualquier potencia,
-    exactamente como predice la teoría para un integrando solo continuo. Medido:
-    factores 133 y 95 al multiplicar por diez los nodos en $\Jr$, frente a los 100
-    de $h^2$.
-\end{itemize}
+\paragraph{Bimodal.} Dos grupos de acciones con tres armónicos angulares:
+\begin{equation}
+  F_0^{\rm bim}(\Qr,\Jr) =
+  \big[\,1 + b_1\cos\Qr + b_2\cos 2\Qr\,\big]\,
+  \Big[\ee^{-(\Jr-\Jr_a)^2/s_a^2} + w_b\,\ee^{-(\Jr-\Jr_b)^2/s_b^2}\Big],
+  \label{eq:bimodal}
+\end{equation}
+con $b_1=0.8$, $b_2=0.3$, $\Jr_a=0.10$, $s_a=0.025$, $\Jr_b=0.24$, $s_b=0.035$ y
+$w_b=0.7$. Los dos grupos están en acciones distintas, así que mezclan a ritmos
+distintos y $h_1$ pulsa con la diferencia de sus frecuencias. La parte angular es
+un polinomio trigonométrico de grado dos: sus coeficientes de Fourier son
+$c_0\propto1$, $c_{\pm1}\propto b_1/2$, $c_{\pm2}\propto b_2/2$ y cero para
+$|k|\ge3$. Por~\eqref{eq:hkexacto}, \textbf{$h_3$ y $h_4$ deben ser cero
+exactamente} en todo tiempo. Medidos: $2\times10^{-11}$ y $8\times10^{-12}$ de
+$h_0$, al nivel del error de redondeo acumulado.
+
+\paragraph{Espiral.} No separable, enrollada ya en $t=0$:
+\begin{equation}
+  F_0^{\rm esp}(\Qr,\Jr) =
+  \exp\!\Big[-\frac{(\Jr-\Jr_0)^2}{s_0^2}\Big]\,
+  \exp\!\Big[-\frac{\sin^2\!\big((\Qr-\beta\Jr)/2\big)}{s_Q^2}\Big],
+  \label{eq:espiral}
+\end{equation}
+con $\Jr_0=0.15$, $s_0=0.04$, $\beta=50$ y $s_Q=0.5$. El perfil angular está
+centrado en $\Qr=\beta\Jr$: una espiral en el plano $(\Qr,\Jr)$. Por la
+solución~\eqref{eq:solucion}, al tiempo $t$ el centro está en
+$\Qr_c(\Jr,t)=\beta\Jr+\omega(\Jr)\,t$. La espiral se convierte en una recta vertical,
+$\Qr_c$ igual para todas las acciones, cuando $\partial\Qr_c/\partial\Jr=\beta+\omega'(\Jr)\,t$ se anula en el
+centro de la distribución:
+\begin{equation}
+  t^\ast = -\frac{\beta}{\omega'(\Jr_0)} .
+\end{equation}
+Como $\omega'<0$, $t^\ast>0$: \textbf{la distribución se desenrolla} y $|h_k|$ pasa
+por un máximo antes de decaer definitivamente. Con~\eqref{eq:omega},
+$\omega'(0.15)=-0.0694$ y $t^\ast=720.6$. Medido: $722$, con la cadencia de salida
+de 2 unidades.
+
+\paragraph{King.} Un equilibrio en acción con una perturbación de un solo armónico:
+\begin{equation}
+  F_0^{\rm King}(\Qr,\Jr) = f_{\rm eq}(\Jr)\,\big[1+\varepsilon\cos\Qr\big],
+  \qquad
+  f_{\rm eq}(\Jr) =
+  \begin{cases}
+    \ee^{-E(\Jr)/\sigma_E^2} - \ee^{-E(\Jr_t)/\sigma_E^2}, & \Jr<\Jr_t,\\[2pt]
+    0, & \Jr\ge\Jr_t,
+  \end{cases}
+  \label{eq:king}
+\end{equation}
+con $E(\Jr)$ dada por~\eqref{eq:omega}, $\Jr_t=0.35$, $\sigma_E^2=0.01$ y
+$\varepsilon=0.5$. Sacando el factor común,
+$f_{\rm eq}\propto\exp[(E_t-E)/\sigma_E^2]-1$, que es la isoterma truncada de
+King~\cite[\S4.3]{binney2008} escrita en el espacio de acciones: una
+distribución de Maxwell--Boltzmann a la que se le resta una constante para que
+se anule en la energía de corte $E_t=E(\Jr_t)$. Es continua pero su derivada salta
+en $\Jr_t$: \textbf{termina en una esquina}. Para un integrando así, la regla del
+punto medio converge como $h^2$ en lugar de más rápido que cualquier potencia.
+Medido: factores 133 y 95 al multiplicar por diez los nodos en $\Jr$, frente a los
+100 de $h^2$.
 
 \begin{figure}[t]
   \centering
