@@ -1,0 +1,53 @@
+# Self-gravitating case: the same gaussian distribution of the study, now with
+# a0 = 0.001 (0.1% of the isochrone mass) and its own gravity switched on.
+#
+# forcetype stays "bg": poisson_rk adds the gravity of the particles ON TOP of
+# the isochrone background, so the action-angle diagnostics keep meaning and
+# self-gravity enters as a perturbation. rmin must be 0 for the Poisson solve.
+#
+# The box in (r,p_r) covers every bound orbit with J <= 0.45 completely:
+# those live in r = [3.65, 12.8] with |p_r| <= 0.223, so nothing of any of
+# the three test distributions is cut by the sampling region.
+#
+# Run as, for example:
+#   ./VP_PIC base_dftest.par dftype=bimodal state=aa_random Nrc=250 Npc=200 directory=...
+
+dr               = 0.1        # grid spacing in r
+Nrc              = 400        # nodes in J (quadrature) / set with Npc the particle count
+Npc              = 25         # nodes in Q (quadrature)
+courant          = 2.0        # gives dt = courant*dr/pmax = 0.1, the same for every run
+Nt               = 20000      # to t = 2000
+rmin             = 0.0        # inner edge of the grid
+rmax             = 20.0       # outer edge of the grid
+rminc            = 3.0        # inner edge of the sampling box
+rmaxc            = 14.0       # outer edge of the sampling box
+pminc            = -0.25      # lower edge in p_r of the sampling box
+pmaxc            = 0.25       # upper edge in p_r of the sampling box
+Lfix             = 2.0        # angular momentum L0
+reduceparticles  = .false.    # discard particles that leave the domain
+Nreduce          = 1000       # how often particles are discarded
+time_output      = 2000       # cadence of the time series output
+spatial_output   = 20         # h_k every 2.0 units of time: 1000 points
+directory        = sg          # output directory
+a0               = 0.001      # total mass
+r0               = 1.0e-9     # cutoff of the support (only used by state="aa")
+p0               = 0.0        # unused by the action-angle states
+sr               = 0.1        # sigma_J, only used by dftype="gauss"
+sp               = 0.1        # sigma_Q, only used by dftype="gauss"
+state            = aa_random  # how the particles are laid out
+dftype           = gauss      # which F0(Q,J) is sampled
+j1               = 0.10       # J3 of the first test function Phi_1
+j2               = 0.24       # J3 of the second test function Phi_2
+sj1              = 0.10       # width in J3 of Phi_1
+sj2              = 0.10       # width in J3 of Phi_2
+sq1              = 0.40       # width in Q3 of Phi_1
+sq2              = 0.40       # width in Q3 of Phi_2
+bsplineorder     = 1          # order of the particle shape function
+integrator       = yoshida4   # fourth order symplectic
+spatialorder     = two        # order of the spatial discretization
+forcetype        = bg         # external background
+BGtype           = Isochrone  # isochrone potential
+autointeraction  = .true.     # solve the Poisson equation for the particles
+output_format    = hdf5       # output format
+field_output     = 20000      # particle snapshots only at the ends
+eps              = 0.0        # no softening: consistent with the diagnostics
