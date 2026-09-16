@@ -24,7 +24,7 @@ subroutine energy
 
   implicit none
 
-  integer i,j
+  integer i
   real(8) :: smallpi,factor
 
   smallpi = acos(-1.0d0)

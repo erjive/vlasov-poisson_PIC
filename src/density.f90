@@ -30,7 +30,7 @@ subroutine density
   implicit none
 
   integer i,j
-  real(8) :: smallpi,factor,average_rho,mass
+  real(8) :: smallpi,factor,average_rho
   real(8) :: cutoff_rho,cutoff_avg,sval
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)

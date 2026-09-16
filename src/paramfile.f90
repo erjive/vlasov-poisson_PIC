@@ -62,10 +62,16 @@ module paramfile
     if (nargs >= 1) then
        call get_command_argument(1,line)
        if (line(1:1) == '-') call usage_and_stop(trim(line))
+       if (len_trim(line) > len(parameter_file)) then
+          print *
+          print '(a,i0,a)', ' Parameter file name is longer than the ', &
+                            len(parameter_file),' characters allowed.'
+          call stop_run
+       end if
 !      A first argument holding "=" is an override, not a file name, so the
 !      default file is kept and every argument is treated as an override.
        if (index(line,'=') == 0) then
-          parameter_file = line
+          parameter_file = line(1:len(parameter_file))
           iarg = 2
        else
           iarg = 1

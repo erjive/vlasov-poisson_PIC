@@ -12,7 +12,6 @@
 
     implicit none
 
-    logical :: accepted
     integer :: i,j,indx
     real(8) :: smallpi,f_max
     real(8) :: raux,paux

@@ -29,7 +29,6 @@ subroutine grav_force
   integer i
   real(8) :: smallpi
   real(8) :: sq,den       ! sqrt(1+r^2) and r^2+eps^2, evaluated once per particle
-  character(100) :: filename
   smallpi = acos(-1.0d0)
 
 ! Self-gravitating case.  In this case we need to

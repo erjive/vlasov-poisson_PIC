@@ -36,14 +36,13 @@
 
   implicit none
 
-  integer i,j,l
+  integer i,j
 
   real(8) spot,sdev_pot
   real(8) poth,dev_poth
   real(8) rho0,pi
   real(8) cutoff_interp,wgt
   integer :: Wgrid,jc,jlo,jhi
-  character(100) :: filename
 
 ! *******************
 ! ***   NUMBERS   ***

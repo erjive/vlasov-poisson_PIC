@@ -18,7 +18,7 @@ program VP_PIC
 
   implicit none
 
-  integer i,j,k,l       ! Counters
+  integer i,l           ! Counters
   integer :: isub       ! Sub-step counter for the Yoshida composition
   real(8) :: dsub       ! Sub-step size for the Yoshida composition
   integer :: nstage     ! Number of leapfrog sub-steps in the composition
