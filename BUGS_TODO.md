@@ -948,7 +948,7 @@ por un mecanismo **distinto** -- y cada uno se midio por separado:
 | Esquema | piso a $t=10^4$ | lo limita |
 |---|---|---|
 | `aa_random` (MC puro) | $\sim10^{-10}$ | ruido de muestreo $1/\sqrt{N}$ |
-| baseline `aa` (rejilla en $r,p$) | $\sim2.2\times10^{-13}$ | el *layout*: espaciado irregular en $J$ |
+| baseline `aa` (rejilla en $r,p$) | $\sim2.2\times10^{-13}$ | **el corte `r0`** (ver correccion abajo), NO el layout |
 | `aa_quad` (cuadratura en $Q,J$) | $\sim4.6\times10^{-16}$ | fase del leapfrog, $O(\Delta t^2)$ |
 
 Baseline `aa` con $\epsilon=0$ contra el exacto:
@@ -1222,6 +1222,61 @@ default de `make run` (4 hilos) sigue siendo el correcto. Y para la
 serie de convergencia conviene igual **paralelismo a nivel de trabajos**
 (4 corridas concurrentes de 1 hilo) antes que una sola corrida a 4
 hilos: 4x de throughput contra 2.1x de latencia.
+
+## Estudio de calibracion, y una correccion: el corte `r0` era el limitante del baseline
+
+Barrido de 4 esquemas x 4 decadas de $N$ ($10^2$ a $10^5$), con
+`yoshida4`, $\epsilon=0$ y courant=1.0 (elegido para que el integrador
+NO sea el limitante: su error a ese $\Delta t$ es 8.7e-20). Particulas
+**supervivientes** igualadas entre esquemas, no nominales.
+
+Error relativo en $|h_1|$:
+
+| $t$ | esquema | $N=10^2$ | $10^3$ | $10^4$ | $10^5$ |
+|---|---|---|---|---|---|
+| 500 | `aa` | 7.54e-3 | 7.38e-3 | 7.48e-3 | 7.54e-3 |
+| 500 | `aa_halton` | 2.97e-2 | 8.66e-3 | 7.43e-3 | 7.54e-3 |
+| 500 | `aa_random` | 1.66e-1 | 2.42e-2 | 2.89e-2 | 7.33e-3 |
+| 500 | `aa_quad` | -- | 7.76e-5 | 1.29e-7 | 1.18e-7 |
+| 3000 | `aa` | 2.03e+4 | 1.44 | 8.53e-2 | 3.44e-2 |
+| 3000 | `aa_halton` | 2.87e+3 | 3.30e+2 | 6.13e+1 | 2.95e-1 |
+| 3000 | `aa_random` | 7.70e+3 | 5.29e+2 | 4.70e+2 | 1.55e+2 |
+| 3000 | `aa_quad` | -- | 2.75e+4 | 9.98e-6 | 4.70e-7 |
+
+`aa_quad` muestra exactamente el **umbral de Nyquist** predicho: basura a
+$N=10^3$ ($N_J=25$, por debajo del $\sim66$ requerido a $t=3000$) y luego
+un salto de **nueve ordenes** a $N=10^4$. No es ley de potencias.
+
+**Lo inesperado: `aa` no mejora NADA con $N$** a $t=500$ -- 7.54e-3,
+7.38e-3, 7.48e-3, 7.54e-3 sobre tres decadas. Eso es un sistematico.
+Probado de forma controlada (mismo $N$ superviviente, solo cambia el
+corte):
+
+| $t$ | `r0`=0.01, $N$=10020 | `r0`=1e-9, $N$=7025 | mejora |
+|---|---|---|---|
+| 500 | 7.48e-3 | **1.02e-7** | 73000x |
+| 1500 | 6.51e-3 | 1.18e-7 | 55000x |
+| 3000 | 8.53e-2 | **3.11e-7** | 274000x |
+
+Con **menos** particulas, cinco ordenes menos de error. El corte
+`r0`=0.01 -- el que usa el paper -- descarta el 98% de los nodos de la
+rejilla, lo que **trunca la regla de cuadratura**; y a $t$ grande la
+integral sobrevive solo por cancelacion casi total, asi que truncar las
+colas al 1% domina el resultado.
+
+**CORRECCION a la seccion "los tres limites"**: alli se atribuyo el piso
+del baseline `aa` ($\sim2.2\times10^{-13}$) al *layout* -- al espaciado
+irregular en $J$ de una rejilla uniforme en $(r,p)$. **Era el corte
+`r0`.** Sin corte, la rejilla $(r,p)$ llega a 3.1e-7 con 7025 particulas,
+comparable a `aa_quad` con $10^5$. O sea que la rejilla en $(r,p)$ es
+perfectamente buena como cuadratura; lo que la arruinaba era descartar
+nodos. (El mecanismo estaba anticipado en el comentario de `aa_quad`,
+donde se decidio no aplicar corte por esta misma razon -- pero nunca se
+habia probado sobre el baseline.)
+
+**Consecuencia practica**: si se usa la rejilla `aa`, **bajar `r0`** es
+el cambio de un solo numero que mas precision compra. Grafica:
+`paper_runs/notebooks/calibracion.png`.
 
 ## `output_format="raw"`: binario crudo, alternativa a HDF5
 

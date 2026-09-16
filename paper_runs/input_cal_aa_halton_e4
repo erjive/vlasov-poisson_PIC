@@ -1,0 +1,38 @@
+0.1     ! Grid spacing dr
+2397     ! Nrc
+2397     ! Npc
+1.0     ! Courant
+60000   ! Nt
+0.0     ! Minimum radius of the grid
+20.0    ! Maximum radius of the grid
+1.0     ! Minimum radius of the support of f
+10.0    ! Maximum radius of the support of f
+-0.6    ! Minimum momentum of the support of f
+0.6     ! Maximum momentum of the support of f
+2.0     ! Angular momentum fixed (L0)
+.false. ! Do we discard particles outside domain?
+1000    ! How often we discard particles
+20000   ! Time_output
+100     ! Spatial_output
+cal_aa_halton_e4 ! directory
+0.0001  ! a0 (gas mass fraction of M_iso)
+0.01    ! r0 -- REUSED as cutoff fraction for state="aa" (see BUGS_TODO.md); paper's cutoff=0.01
+0.0     ! p0 (unused by state="aa")
+0.1     ! sr = sigma_J (width in J of F0)
+0.1     ! sp = sigma_Q (width in Q of F0)
+aa_halton ! Initial state
+0.0     ! j1: J0 of test function Phi_1 (matches F0: J3^(0)=0)
+0.15    ! j2: J0 of test function Phi_2 (paper's later M/Miso test, informational only)
+0.1     ! sj1: sigma_J of Phi_1 (matches F0)
+0.05    ! sj2: sigma_J of Phi_2
+0.1     ! sq1: sigma_Q of Phi_1 (matches F0)
+0.2     ! sq2: sigma_Q of Phi_2
+1       ! Bsplineorder
+yoshida4 ! Integrator
+two     ! Spatial order discretization
+bg      ! Forcetype
+Isochrone ! Background type
+.false. ! Autointeraction
+hdf5    ! Output format (ascii,hdf5)
+1000000 ! field_output
+0.0    ! eps (suavizado del termino centrifugo; 0 = consistente con analysish)
