@@ -9,6 +9,7 @@
     use parameters
     use arrays
     use utils
+    use distribution
 
     implicit none
 
@@ -198,7 +199,8 @@
 
     else if(state .eq."aa") then
 
-      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux) SHARED(r_part,p_part,f)
+      !$OMP PARALLEL DO SCHEDULE(GUIDED) SHARED(r_part,p_part,f) &
+      !$OMP PRIVATE(j,raux,paux,energy,er1,er2,s,s1,s2,argaux,eta,Qr,Jr)
       do i=1,Nrc
         do j=1,Npc
           raux = rminc+(dble(i)-0.5D0)*drc
@@ -225,7 +227,7 @@
           Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
           Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
 
-          f((i-1)*Npc+j) = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+          f((i-1)*Npc+j) = df0(Qr,Jr)
 
           if ((f((i-1)*Npc+j) /= f((i-1)*Npc+j) )) then
 
@@ -264,7 +266,8 @@
 !     rephase at the same time, the PIC recurrence artifact in h_k(t),
 !     while keeping the sample far more uniform than random jitter.
 
-      !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) PRIVATE(j,indx,raux,paux) SHARED(r_part,p_part,f)
+      !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) SHARED(r_part,p_part,f) &
+      !$OMP PRIVATE(j,indx,raux,paux,energy,er1,er2,s,s1,s2,argaux,eta,Qr,Jr)
       do i=1,Nrc
         do j=1,Npc
           indx = (i-1)*Npc+j
@@ -291,7 +294,7 @@
           Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
           Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
 
-          f((i-1)*Npc+j) = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+          f((i-1)*Npc+j) = df0(Qr,Jr)
 
           if ((f((i-1)*Npc+j) /= f((i-1)*Npc+j) )) then
             f((i-1)*Npc+j) = 0.D0
@@ -403,7 +406,7 @@
 
           Jr = Jgrid
           Qr = Qgrid
-          f((i-1)*Npc+j) = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+          f((i-1)*Npc+j) = df0(Qr,Jr)
 
           if ((f((i-1)*Npc+j) /= f((i-1)*Npc+j)) .or. (raux /= raux)) then
             f((i-1)*Npc+j) = 0.D0
@@ -426,7 +429,7 @@
     else if(state .eq."aa_random") then
 
       Npart = Nrc*Npc
-      f_max = dexp(-dsin(0.5d0*0.0)**2/sp**2)*dexp(-sr**2/sr**2)*sr**2
+      f_max = df0_max()
 
       i = 1
       do while(i<= Npart)
@@ -469,7 +472,7 @@
 
           Qr = eta - dsqrt((-2.d0*energy)**3)*dsqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*dsin(eta)
           Jr = 1.d0/dsqrt(-2.d0*energy)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
-           w = dexp(-dsin(0.5d0*Qr)**2/sp**2)*dexp(-Jr**2/sr**2)*Jr**2
+           w = df0(Qr,Jr)
 
           if (z <= w ) then
 

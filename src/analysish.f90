@@ -53,7 +53,7 @@
     smallpi =  acos(-1.0d0)
 
 
-    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,energy,s, s1, s2, er1, er2,argaux) SHARED(Qr,Jr)
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,energy,s,s1,s2,er1,er2,argaux,eta) SHARED(Qr,Jr)
     do i = 1,Npart
       energy = -1.0/(1.0D0+dsqrt(1.0D0+r_part(i)**2)) + 0.5d0*Lfix**2/(r_part(i)**2) + 0.5D0*p_part(i)**2
       er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))

@@ -29,14 +29,14 @@ module paramfile
 !> Every name the parser accepts. Used to reject unknown names and to
 !! suggest the intended one when a name is misspelled, so it must list
 !! exactly the names handled by assign_param below.
-  integer, parameter :: NPARAM = 41
+  integer, parameter :: NPARAM = 42
   character(16), parameter :: pname(NPARAM) = [ character(16) :: &
       'dr', 'Nrc', 'Npc', 'courant', 'Nt',                       &
       'rmin', 'rmax', 'rminc', 'rmaxc', 'pminc', 'pmaxc', 'pmax',&
       'Lfix', 'eps', 'reduceparticles', 'Nreduce',               &
       'time_output', 'spatial_output', 'field_output',           &
       'directory', 'output_format',                              &
-      'a0', 'r0', 'p0', 'sr', 'sp', 'state',                     &
+      'a0', 'r0', 'p0', 'sr', 'sp', 'state', 'dftype',           &
       'j1', 'j2', 'sj1', 'sj2', 'sq1', 'sq2',                    &
       'r1', 'r2',                                                &
       'bsplineorder', 'integrator', 'spatialorder',              &
@@ -203,6 +203,7 @@ module paramfile
     case ('sr')              ; call get_real(value,sr,name,origin)
     case ('sp')              ; call get_real(value,sp,name,origin)
     case ('state')           ; call get_str (value,state,name,origin)
+    case ('dftype')          ; call get_str (value,dftype,name,origin)
 
 !   Test functions for the h_k modes.
     case ('j1')              ; call get_real(value,j1,name,origin)
@@ -362,6 +363,7 @@ module paramfile
 
     call check_option(output_format,'output_format','ascii hdf5 raw')
     call check_option(state,'state','gaussian aa aa_halton aa_quad aa_random checkpoint')
+    call check_option(dftype,'dftype','gauss bimodal spiral')
     call check_option(integrator,'integrator','euler leapfrog yoshida4 yoshida6 analytic rk4')
     call check_option(spatialorder,'spatialorder','two four')
     call check_option(forcetype,'forcetype','bg self')

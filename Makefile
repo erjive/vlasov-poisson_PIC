@@ -127,7 +127,7 @@ ARGS        ?=
 # The modules go first: everything else uses them. Listed by hand because the
 # order matters, the rest is picked up automatically.
 
-MODULES := parameters paramfile arrays utils functions hdf5_io raw_io
+MODULES := parameters paramfile distribution arrays utils functions hdf5_io raw_io
 
 MODOBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(MODULES)))
 ALLOBJS := $(patsubst $(SRCDIR)/%.f90,$(OBJDIR)/%.o,$(wildcard $(SRCDIR)/*.f90))
@@ -141,7 +141,8 @@ OBJS    := $(filter-out $(MODOBJS),$(ALLOBJS))
 # Which module uses which, so that "make -j" still compiles them in an order
 # that works.
 
-$(OBJDIR)/paramfile.o : $(OBJDIR)/parameters.o
+$(OBJDIR)/paramfile.o    : $(OBJDIR)/parameters.o
+$(OBJDIR)/distribution.o : $(OBJDIR)/parameters.o
 $(OBJDIR)/utils.o     : $(OBJDIR)/parameters.o $(OBJDIR)/arrays.o
 $(OBJDIR)/hdf5_io.o   : $(OBJDIR)/parameters.o $(OBJDIR)/arrays.o
 $(OBJDIR)/raw_io.o    : $(OBJDIR)/parameters.o $(OBJDIR)/arrays.o

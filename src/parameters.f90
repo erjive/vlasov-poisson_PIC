@@ -55,7 +55,8 @@ module parameters
 
 
    real(8)   :: m0 = 1.0D0                !< Mass of the particles
-   character(10) :: state = "gaussian"    !< Initial distribution (gaussian,other2,other3)
+   character(10) :: state = "gaussian"    !< How the particles are laid out (grid, Halton, quadrature, Monte Carlo)
+   character(20) :: dftype = "gauss"      !< Which initial distribution F0(Q,J) is sampled; see distribution.f90
 
    !Gaussian distribution
 
