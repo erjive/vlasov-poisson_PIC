@@ -11,6 +11,7 @@ program VP_PIC
   use utils
   use hdf5_io
   use raw_io
+  use paramfile
 
 
 ! Declare variables.
@@ -41,7 +42,7 @@ program VP_PIC
   real(8), parameter :: y6z =  1.0d0 - 2.0d0*(y6a+y6b+y6c)
 
 
-  call read_initial_param()
+  call read_parameters()
 
 !  call test_consistency()
 
@@ -99,7 +100,7 @@ program VP_PIC
 ! Create output directory and copy parameter file to it.
 
   call system('mkdir -p '//trim(directory))
-  call system('cp input_parameters '//trim(directory))
+  call system('cp '//trim(parameter_file)//' '//trim(directory))
 
   if (output_format=="hdf5") call open_hdf5_file()
   if (output_format=="raw")  call open_raw_file()

@@ -1,11 +1,15 @@
-# input_o2_yoshida4_c2.0
+# base.par -- configuracion comun de las corridas de paper_runs/.
+# Pensado para usarse con overrides en la linea de ordenes:
+#
+#   ./VP_PIC base.par directory=mi_corrida Nrc=758 Npc=758 integrator=yoshida4
+#
 
 # Grid and time
 dr               = 0.1          # grid spacing in r
 Nrc              = 800          # cells in r used to lay out the particles
 Npc              = 40           # cells in p_r used to lay out the particles
-courant          = 2.0          # Courant factor for the time step
-Nt               = 30000        # number of time steps
+courant          = 1.0          # Courant factor for the time step
+Nt               = 60000        # number of time steps
 
 # Domain
 rmin             = 0.0          # inner edge of the grid
@@ -23,7 +27,7 @@ Nreduce          = 1000         # how often particles are discarded
 # Output
 time_output      = 20000        # cadence of the time series output
 spatial_output   = 100          # cadence of the grid output, and of h_k
-directory        = o2_yoshida4_c2.0 # output directory
+directory        = run1        # output directory
 
 # Initial distribution
 a0               = 0.0001       # total mass of the distribution
@@ -56,3 +60,4 @@ field_output     = 1000000      # particle snapshot cadence (multiple of spatial
 
 # Physics
 eps              = 0.0          # softening of the centrifugal term; 0 unless L0 -> 0
+

@@ -1,38 +1,58 @@
-0.1     ! Grid spacing dr
-800     ! Number of cells in r direction (NJ: resuelve la oscilacion en J)
-40      ! Number of cells in p direction (NQ: trapecio periodico)
-0.5     ! Courant factor (dtfac)
-400000  ! Number of time steps
-0.0     ! Minimum radius of the grid
-20.0    ! Maximum radius of the grid
-1.0     ! Minimum radius of the support of f
-10.0    ! Maximum radius of the support of f
--0.6    ! Minimum momentum of the support of f
-0.6     ! Maximum momentum of the support of f
-2.0     ! Angular momentum fixed (L0)
-.false. ! Do we discard particles outside domain?
-1000    ! How often we discard particles
-20000   ! Time_output
-100     ! Spatial_output
-articleN1e4_quad ! directory
-0.0001  ! a0 (gas mass fraction of M_iso)
-0.01    ! r0 -- reused as the cutoff fraction of the peak for the action-angle states
-0.0     ! p0 (unused by state="aa")
-0.1     ! sr = sigma_J (width in J of F0)
-0.1     ! sp = sigma_Q (width in Q of F0)
-aa_quad ! Initial state
-0.0     ! j1: J0 of test function Phi_1 (matches F0: J3^(0)=0)
-0.15    ! j2: J3 of test function Phi_2
-0.1     ! sj1: sigma_J of Phi_1 (matches F0)
-0.05    ! sj2: sigma_J of Phi_2
-0.1     ! sq1: sigma_Q of Phi_1 (matches F0)
-0.2     ! sq2: sigma_Q of Phi_2
-1       ! Bsplineorder
-leapfrog ! Integrator
-two     ! Spatial order discretization
-bg      ! Forcetype
-Isochrone ! Background type
-.false. ! Autointeraction
-hdf5    ! Output format (ascii,hdf5)
-10000  ! field_output (snapshots espaciados, ahorra disco)
-0.0    ! eps (suavizado del termino centrifugo; 0 = consistente con analysish)
+# input_N1e4_quad
+
+# Grid and time
+dr               = 0.1          # grid spacing in r
+Nrc              = 800          # cells in r used to lay out the particles
+Npc              = 40           # cells in p_r used to lay out the particles
+courant          = 0.5          # Courant factor for the time step
+Nt               = 400000       # number of time steps
+
+# Domain
+rmin             = 0.0          # inner edge of the grid
+rmax             = 20.0         # outer edge of the grid
+rminc            = 1.0          # inner edge of the support of f
+rmaxc            = 10.0         # outer edge of the support of f
+pminc            = -0.6         # lower edge in p_r of the support of f
+pmaxc            = 0.6          # upper edge in p_r of the support of f
+Lfix             = 2.0          # angular momentum L0 of the delta(L-L0) distribution
+
+# Particle bookkeeping
+reduceparticles  = .false.      # discard particles that leave the domain
+Nreduce          = 1000         # how often particles are discarded
+
+# Output
+time_output      = 20000        # cadence of the time series output
+spatial_output   = 100          # cadence of the grid output, and of h_k
+directory        = articleN1e4_quad # output directory
+
+# Initial distribution
+a0               = 0.0001       # total mass of the distribution
+r0               = 0.01         # center in r of the gaussian; for the action-angle states,
+          # the fraction of the peak below which particles are dropped
+p0               = 0.0          # center in p_r of the initial gaussian
+sr               = 0.1          # width in r   (sigma_J for the action-angle states)
+sp               = 0.1          # width in p_r (sigma_Q for the action-angle states)
+state            = aa_quad      # aa, aa_halton, aa_quad or aa_random
+
+# Test functions for the h_k modes
+j1               = 0.0          # J3 of the first test function Phi_1
+j2               = 0.15         # J3 of the second test function Phi_2
+sj1              = 0.1          # width in J3 of Phi_1
+sj2              = 0.05         # width in J3 of Phi_2
+sq1              = 0.1          # width in Q3 of Phi_1
+sq2              = 0.2          # width in Q3 of Phi_2
+
+# Numerical methods
+bsplineorder     = 1            # order of the particle shape function
+integrator       = leapfrog     # euler, leapfrog, yoshida4, yoshida6 or analytic
+spatialorder     = two          # order of the spatial discretization
+forcetype        = bg           # bg (external background) or self
+BGtype           = Isochrone    # null, sphere, Isochrone, iso, isotrun, nfw or burkert
+autointeraction  = .false.      # solve the Poisson equation for the particles
+output_format    = hdf5         # ascii, hdf5 or raw
+
+# Output
+field_output     = 10000        # particle snapshot cadence (multiple of spatial_output)
+
+# Physics
+eps              = 0.0          # softening of the centrifugal term; 0 unless L0 -> 0

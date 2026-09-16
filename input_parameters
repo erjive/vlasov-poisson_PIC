@@ -1,38 +1,58 @@
-0.1       ! dr: grid spacing in r
-200       ! Nrc: cells in r used to lay out the particles
-200       ! Npc: cells in p_r used to lay out the particles
-1.0       ! courant: Courant factor for the time step
-2000      ! Nt: number of time steps
-0.0       ! rmin: inner edge of the grid
-20.0      ! rmax: outer edge of the grid
-1.0       ! rminc: inner edge of the support of f
-10.0      ! rmaxc: outer edge of the support of f
--0.6      ! pminc: lower edge in p_r of the support of f
-0.6       ! pmaxc: upper edge in p_r of the support of f
-2.0       ! Lfix: angular momentum L0 of the delta(L-L0) distribution
-.false.   ! reduceparticles: discard particles that leave the domain
-1000      ! Nreduce: how often particles are discarded
-100       ! time_output: cadence of the time-series output
-100       ! spatial_output: cadence of the grid (rho, energy) output
-run1      ! directory: output directory
-0.0001    ! a0: total mass of the distribution
-0.01      ! r0: center in r of the gaussian; for the action-angle states it is instead the fraction of the peak below which particles are dropped
-0.0       ! p0: center in p_r of the initial gaussian
-0.1       ! sr: width in r (sigma_J for the action-angle states)
-0.1       ! sp: width in p_r (sigma_Q for the action-angle states)
-aa        ! state: aa, aa_halton, aa_quad or aa_random (grid, Halton-jittered grid, (Q3,J3) quadrature, Monte Carlo)
-0.0       ! j1:  J3 of the first test function Phi_1
-0.15      ! j2:  J3 of the second test function Phi_2
-0.1       ! sj1: width in J3 of Phi_1
-0.05      ! sj2: width in J3 of Phi_2
-0.1       ! sq1: width in Q3 of Phi_1
-0.2       ! sq2: width in Q3 of Phi_2
-1         ! bsplineorder: order of the particle shape function
-yoshida4  ! integrator: euler, leapfrog, yoshida4, yoshida6 or analytic
-two       ! spatialorder: order of the spatial discretization
-bg        ! forcetype: bg (external background) or self (self-gravity)
-Isochrone ! BGtype: null, sphere, Isochrone, iso, isotrun, nfw or burkert
-.false.   ! autointeraction: solve the Poisson equation for the particles
-hdf5      ! output_format: ascii, hdf5 or raw
-1000      ! field_output: particle snapshot cadence (multiple of spatial_output)
-0.0       ! eps: softening of the centrifugal term; keep at 0 unless L0 -> 0
+# input_parameters
+
+# Grid and time
+dr               = 0.1          # grid spacing in r
+Nrc              = 200          # cells in r used to lay out the particles
+Npc              = 200          # cells in p_r used to lay out the particles
+courant          = 1.0          # Courant factor for the time step
+Nt               = 2000         # number of time steps
+
+# Domain
+rmin             = 0.0          # inner edge of the grid
+rmax             = 20.0         # outer edge of the grid
+rminc            = 1.0          # inner edge of the support of f
+rmaxc            = 10.0         # outer edge of the support of f
+pminc            = -0.6         # lower edge in p_r of the support of f
+pmaxc            = 0.6          # upper edge in p_r of the support of f
+Lfix             = 2.0          # angular momentum L0 of the delta(L-L0) distribution
+
+# Particle bookkeeping
+reduceparticles  = .false.      # discard particles that leave the domain
+Nreduce          = 1000         # how often particles are discarded
+
+# Output
+time_output      = 100          # cadence of the time series output
+spatial_output   = 100          # cadence of the grid output, and of h_k
+directory        = run1         # output directory
+
+# Initial distribution
+a0               = 0.0001       # total mass of the distribution
+r0               = 0.01         # center in r of the gaussian; for the action-angle states,
+          # the fraction of the peak below which particles are dropped
+p0               = 0.0          # center in p_r of the initial gaussian
+sr               = 0.1          # width in r   (sigma_J for the action-angle states)
+sp               = 0.1          # width in p_r (sigma_Q for the action-angle states)
+state            = aa           # aa, aa_halton, aa_quad or aa_random
+
+# Test functions for the h_k modes
+j1               = 0.0          # J3 of the first test function Phi_1
+j2               = 0.15         # J3 of the second test function Phi_2
+sj1              = 0.1          # width in J3 of Phi_1
+sj2              = 0.05         # width in J3 of Phi_2
+sq1              = 0.1          # width in Q3 of Phi_1
+sq2              = 0.2          # width in Q3 of Phi_2
+
+# Numerical methods
+bsplineorder     = 1            # order of the particle shape function
+integrator       = yoshida4     # euler, leapfrog, yoshida4, yoshida6 or analytic
+spatialorder     = two          # order of the spatial discretization
+forcetype        = bg           # bg (external background) or self
+BGtype           = Isochrone    # null, sphere, Isochrone, iso, isotrun, nfw or burkert
+autointeraction  = .false.      # solve the Poisson equation for the particles
+output_format    = hdf5         # ascii, hdf5 or raw
+
+# Output
+field_output     = 1000         # particle snapshot cadence (multiple of spatial_output)
+
+# Physics
+eps              = 0.0          # softening of the centrifugal term; 0 unless L0 -> 0
