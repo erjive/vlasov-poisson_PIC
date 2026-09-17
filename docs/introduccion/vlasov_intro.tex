@@ -1244,7 +1244,7 @@ nuestro caso la razón entre ambas resultó $0.9927$, constante en todo el exter
 el $0.7\%$ es el error de integrar por trapecios un perfil con un borde abrupto,
 no del solver. Este tipo de comprobación toma minutos y descarta de una vez toda una
 clase de errores. Del mismo modo, el potencial propio guardado por el código vale
-$-4.988\times10^{-5}$ en $r=20$, frente al $-a_0/r=-5\times10^{-5}$ esperado.
+$-4.988\times10^{-5}$ en el último nodo, $r=20.05$, donde $-a_0/r=-4.988\times10^{-5}$.
 \end{aviso}
 
 \section{Verificación del código}
@@ -1460,7 +1460,7 @@ desactivada.
 
 La primera comprobación de salud es la energía. Sin autogravedad se conserva a
 $7.0\times10^{-11}$. Con autogravedad, el código reporta un cambio de
-$-5.0\times10^{-4}$, idéntico con cuadratura y con Monte Carlo.
+$-4.96\times10^{-4}$ con cuadratura y $-4.99\times10^{-4}$ con Monte Carlo.
 
 La primera interpretación fue que el cálculo de la fuerza en malla rompe el
 carácter simpléctico del integrador. \textbf{Era falsa}, y la forma de descubrirlo
@@ -1614,10 +1614,11 @@ indique otra cosa) en unidades de $h_0$:
 \textbf{partículas} $N$   & $10^3$ & $10^4$ & $10^5$ & & \\
                           & $1.763$ & $1.770$ & $1.770$ & & $\times10^{-3}$\\
 \midrule
-\textbf{masa} $a_0$, $t\in[1600,2000]$   & $10^{-4}$ & $10^{-3}$ & $10^{-2}$ & & \\
-                          & $0.186$ & $1.770$ & $12.31$ & & $\times10^{-3}$\\
-\textbf{masa} $a_0$, $t\in[15\,000,20\,000]$ & $0.184$ & $1.771$ & $15.61$ & & $\times10^{-3}$\\
+\textbf{masa} $a_0$, $t\in[1600,2000]$\,$^\ast$   & $10^{-4}$ & $10^{-3}$ & $10^{-2}$ & & \\
+                          & $0.184$ & $1.770$ & $12.29$ & & $\times10^{-3}$\\
+\textbf{masa} $a_0$, $t\in[15\,000,20\,000]$\,$^\ast$ & $0.184$ & $1.767$ & $12.38$ & & $\times10^{-3}$\\
 \bottomrule
+\multicolumn{6}{l}{\footnotesize $^\ast$ Parte estática $|\langle h_1\rangle|/h_0$, promedio complejo en la ventana.}\\
 \end{tabular}
 \end{center}
 
@@ -1635,20 +1636,26 @@ indique otra cosa) en unidades de $h_0$:
 
 \textbf{Nada de la discretización la mueve} ---ni ocho veces más resolución de malla,
 ni B-splines cúbicos, ni ocho veces más nodos angulares, ni \emph{cien veces} más
-partículas: tres dígitos iguales--- (figura~\ref{fig:barridos}). Y escala con la
-masa (figura~\ref{fig:masa}a): la pendiente log-log vale $+0.91$ en la ventana
-temprana y $+0.96$ en la tardía, frente al $+1$ de una respuesta lineal. La
-diferencia entre ventanas viene casi toda de $a_0=10^{-2}$, cuya meseta
-\emph{crece} entre $t=2000$ y $t=20\,000$; volveremos a esto.
+partículas: todos los valores caen entre $1.763$ y $1.771\times10^{-3}$---
+(figura~\ref{fig:barridos}). Y escala con la masa (figura~\ref{fig:masa}a): la parte
+estática tiene pendiente log-log $+0.91$ en las dos ventanas, frente al $+1$ de una
+respuesta estrictamente lineal.
+
+Para las masas grandes conviene medir la parte estática como promedio complejo de
+$h_1$ y no como mediana de $|h_1|$. Con $a_0=10^{-2}$ la mediana de $|h_1|$ sube de
+$12.3$ a $15.6\times10^{-3}$ entre las dos ventanas mientras la parte estática no
+cambia ($12.29$ y $12.38\times10^{-3}$): lo que crece es una componente que gira, que
+al final de esta sección resulta ser ruido de discreción.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{masa}
-  \caption{\textbf{(a)} Meseta de $|h_1|/h_0$ frente a la masa, en corridas hasta
-  $t=20\,000$, medida en dos ventanas. La línea punteada es proporcionalidad
-  exacta. \textbf{(b)} $|h_1|$ sin normalizar: la cuadratura (azul) resuelve una
-  meseta de $4.4\times10^{-9}$; las tres corridas de Monte Carlo (naranja) se
-  estancan en $5.9$, $2.4$ y $1.6\times10^{-8}$, todas por encima de la señal.}
+  \caption{\textbf{(a)} Parte estática de $h_1$ (promedio complejo) frente a la masa,
+  en corridas hasta $t=20\,000$, medida en dos ventanas: pendiente $+0.91$ en ambas.
+  La línea punteada es proporcionalidad exacta. \textbf{(b)} $|h_1|$ sin normalizar,
+  $a_0=10^{-3}$: la cuadratura (azul) resuelve un nivel de $4.4\times10^{-9}$; las tres
+  corridas de Monte Carlo (naranja) se estancan en $5.9$, $2.4$ y $1.6\times10^{-8}$,
+  todas por encima de ese nivel.}
   \label{fig:masa}
 \end{figure}
 
@@ -1656,19 +1663,19 @@ diferencia entre ventanas viene casi toda de $a_0=10^{-2}$, cuya meseta
 \textsc{un error que merece quedar escrito.} En el primer análisis se concluyó lo
 contrario: que la meseta era ruido amplificado. El argumento se apoyaba en el
 escalamiento con $N$ \emph{del Monte Carlo}, que daba pendiente $-0.28$. Lo que
-fallaba es que el nivel físico ($1.77\times10^{-3}h_0 = 4.4\times10^{-9}$) queda por
+fallaba es que el nivel de la meseta ($1.77\times10^{-3}h_0 = 4.4\times10^{-9}$) queda por
 debajo del ruido del Monte Carlo en todo el rango explorado: sus mesetas valían
 $5.9$, $2.4$ y $1.6\times10^{-8}$ (figura~\ref{fig:masa}b). El Monte Carlo estaba
 midiendo su propio ruido, y ajustarlo a «ruido más una constante» era extrapolar
-desde tres puntos que todavía no habían llegado al piso. La cuadratura resuelve la
-señal ya con $N=10^3$. Correr los dos esquemas no era redundancia: era lo que
+desde tres puntos que todavía no habían llegado al piso. La cuadratura resuelve ese
+nivel de $|h_1|$ ya con $N=10^3$. Correr los dos esquemas no era redundancia: era lo que
 permitía distinguirlos.
 \end{aviso}
 
 \subsection{Pero no es un modo}
 
-Establecido que es física y lineal en $a_0$, la pregunta siguiente es qué modo es.
-Un modo colectivo oscila: $h_k \sim \ee^{-\ii\omega_r t}$. Basta mirar la fase, y
+Descartado el ruido de discretización, y con una meseta proporcional a $a_0$, la
+lectura natural en este punto era un modo colectivo. Un modo oscila: $h_k \sim \ee^{-\ii\omega_r t}$. Basta mirar la fase, y
 para eso se extendieron las corridas hasta $t=20\,000$, unos 200 periodos orbitales
 (figura~\ref{fig:fase}).
 
@@ -1676,7 +1683,8 @@ para eso se extendieron las corridas hasta $t=20\,000$, unos 200 periodos orbita
   \centering
   \includegraphics[width=\textwidth]{fase}
   \caption{Corridas hasta $t=20\,000$ para tres masas. \textbf{(a)} Amplitud. La
-  banda alrededor de cada meseta es una pequeña componente que gira.
+  banda alrededor de cada meseta es una pequeña componente que gira; al final de la
+  sección se muestra que, después de $t=2000$, es ruido de discreción.
   \textbf{(b)} Fase desenrollada. Tras la mezcla inicial, que avanza a la
   frecuencia orbital, la fase se congela. La línea discontinua es lo que haría un
   modo con la frecuencia orbital: más de $10^3$ radianes. Con $a_0=10^{-2}$ la fase
@@ -1723,7 +1731,7 @@ ventana por ventana, la suma de las rotaciones propias de las filas: no hay una
 oscilación coherente a una frecuencia común. Y las filas no son rígidas: su amplitud
 cae de $0.91$ a $0.26$, porque sus partículas comparten acción \emph{isócrona} pero no
 acción verdadera y se desfasan entre sí. Por qué esa suma no termina de cancelarse
-sigue abierto.
+se aclara al final de la sección: después de $t=2000$ es ruido de discreción.
 
 \textbf{No es un modo.} La meseta es, en lo esencial, un residuo \emph{estático}.
 
@@ -1811,11 +1819,13 @@ numérico, potencial real & $7.9\times10^{-7}$  & $1.541\times10^{-4}$ & $0.001\
   \label{fig:mapanumerico}
 \end{figure}
 
-\textbf{La parte estática desaparece}: baja 2200 veces, hasta el nivel del ruido del
-promedio (figura~\ref{fig:mapanumerico}). La acción de cada partícula, calculada en
+\textbf{La parte estática desaparece}: baja 2200 veces
+(figura~\ref{fig:mapanumerico}). La acción de cada partícula, calculada en
 el potencial real, es constante a $10^{-5}$ en lugar de oscilar a la frecuencia
-orbital. Y la diferencia entre los dos cálculos de $h_1$ es un desplazamiento fijo,
-$1.77\times10^{-3}$ con fase cero, presente ya desde $t=0$.
+orbital. Y la diferencia entre los dos cálculos de $h_1$ es, para $t\ge2000$, un
+desplazamiento fijo de $1.77\times10^{-3}$ con fase cero; ya está presente desde el
+principio, con valores de $2.1\times10^{-3}$ en $t=0$ y $2.8\times10^{-3}$ en $t=200$,
+mientras el potencial propio todavía se reajusta.
 
 Eso cierra el caso para la parte estática. La meseta no mide dinámica colectiva:
 mide el error sistemático de usar el mapa ángulo--acción del potencial equivocado.
@@ -1840,7 +1850,8 @@ $t\in[12\,000,20\,000]$ & $0.58\times$ (corr.\ $0.26$) & $0.55\times$ (corr.\ $0
 
 Hasta $t=2000$ la componente es idéntica con cualquier resolución: es el continuo,
 todavía cancelándose, y es física. Después, al duplicar las partículas en cualquiera
-de las dos direcciones, baja a la mitad y deja de parecerse a la original: \textbf{es
+de las dos direcciones, se multiplica por $0.3$--$0.65$ y deja de parecerse a la
+original: \textbf{es
 ruido de discreción}. Sin autogravedad la misma cuadratura cancela $h_1$ hasta
 $10^{-10}$. Una causa plausible, compatible con lo medido pero no demostrada: con
 autogravedad, las partículas de una misma fila adquieren acciones verdaderas
@@ -2028,7 +2039,7 @@ el potencial de un equilibrio autoconsistente.
 \subsection{Cuándo basta el mapa analítico}
 
 La meseta estática es proporcional a la masa: $|h_1|/h_0\simeq1.8\times10^{-4}$,
-$1.8\times10^{-3}$ y $1.2$--$1.6\times10^{-2}$ para $a_0=10^{-4}$, $10^{-3}$ y
+$1.8\times10^{-3}$ y $1.2\times10^{-2}$ para $a_0=10^{-4}$, $10^{-3}$ y
 $10^{-2}$ (sección~\ref{sec:autogravedad}). Da un criterio práctico: \textbf{el mapa
 del isócrono sirve mientras la señal que se quiera medir esté muy por encima de
 $\sim2a_0\,h_0$}. Para seguir el decaimiento inicial de $h_1$, que empieza en
@@ -2060,14 +2071,21 @@ es el reparto. Se necesita
   \qquad
   N_Q \sim 25\text{--}100 \ \text{según lo estrecha que sea } F_0 \text{ en } \Qr .
 \end{equation}
-Para $t_{\max}=2000$, $k\le4$ y $\Delta\omega\simeq0.02$ eso da $N_J\gtrsim107$, y
-con $N_Q=25$ el total es $N\gtrsim2.5\times10^3$. \textbf{El requisito crece
+Para $t_{\max}=2000$, $k\le4$ y el ancho de la banda~\eqref{eq:banda},
+$\Delta\omega=0.0711-0.0473\simeq0.024$, eso da $N_J\gtrsim121$, y con $N_Q=25$ el
+total es $N\gtrsim3.0\times10^3$. \textbf{El requisito crece
 linealmente con $t_{\max}$}: es el único parámetro que no perdona.
 
-\paragraph{Caso autogravitante.} Es donde la diferencia se vuelve dramática. La
-cuadratura resuelve la meseta con $N=10^3$; el Monte Carlo seguía dominado por su
-ruido con $N=10^5$. \textbf{Elegir bien el esquema valió más que multiplicar por
-cien el número de partículas.}
+\paragraph{Caso autogravitante.} Dos cosas cambian. Primero, el Monte Carlo deja de
+servir para niveles pequeños de $h_1$: con $a_0=10^{-3}$ la cuadratura resuelve un
+$|h_1|\sim4\times10^{-9}$ ya con $N=10^3$, mientras que el Monte Carlo seguía por
+encima, dominado por su ruido, con $N=10^5$. Segundo, con autogravedad la cuadratura
+también tiene un piso: después de la mezcla inicial queda una componente de $h_1$ que
+depende de la resolución, de $\sim10^{-4}h_0$ con $N=10^4$ y $a_0=10^{-3}$, que baja a
+$0.3$--$0.65\times$ al duplicar las partículas en $\Jr$ o en $\Qr$, y que con
+$a_0=10^{-2}$ crece con el tiempo hasta $\sim10^{-2}h_0$ en $t=20\,000$. Cualquier
+señal que se quiera medir a tiempos largos tiene que estar por encima de ese piso,
+y $N$ se elige con esa condición.
 
 \section{Lecciones de método}
 
@@ -2096,14 +2114,15 @@ generalicen.
     $h_1$ en el plano complejo.
 
   \item \textbf{Dos discretizaciones independientes valen más que una muy fina.} El
-    Monte Carlo y la cuadratura fallan de maneras distintas; cuando coinciden a
-    tres cifras, el resultado es sólido, y cuando discrepan, la discrepancia misma
-    informa.
+    Monte Carlo y la cuadratura fallan de maneras distintas; cuando discrepan, la
+    discrepancia misma informa. Pero su acuerdo solo descarta errores de muestreo:
+    en este caso coincidían en la meseta de $h_1$ y en el error de energía, y los dos
+    eran errores de definición del diagnóstico.
 
-  \item \textbf{Los resultados negativos hay que escribirlos.} Tres
+  \item \textbf{Los resultados negativos hay que escribirlos.} Cuatro
     interpretaciones de estas notas fueron falsas en su primera versión: la meseta
-    como ruido, la meseta como modo colectivo y el error de energía como pérdida de
-    simplecticidad. Dejar constancia del porqué evita que alguien ---empezando por
+    como ruido, la meseta como modo colectivo, el error de energía como pérdida de
+    simplecticidad, y la componente que gira como posible dinámica colectiva. Dejar constancia del porqué evita que alguien ---empezando por
     uno mismo--- repita el razonamiento.
 \end{enumerate}
 
@@ -2187,7 +2206,7 @@ repositorio. En orden de dificultad:
     $\sim0.35$) y crece como $t^{1.9}$ en ambas resoluciones, no exponencialmente: es
     numérica, no una inestabilidad. Falta el mecanismo y su escalamiento con $N$.
   \item Construir un equilibrio autoconsistente con una perturbación pequeña y
-    separada. Con el montaje actual, el reajuste del equilibrio y la respuesta a la
+    separada (en curso). Con el montaje de la sección~\ref{sec:autogravedad}, el reajuste del equilibrio y la respuesta a la
     perturbación quedan mezclados, y sin separarlos no tiene sentido medir un
     amortiguamiento de Landau.
   \item Explorar $a_0\gtrsim10^{-2}$, donde el efecto colectivo deja de ser una

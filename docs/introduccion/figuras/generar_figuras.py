@@ -694,7 +694,10 @@ def fig_masa():
         ms = []
         for a0, d, _ in LARGAS:
             t, h = leer_hk(os.path.join(SG, d))
-            ms.append(mediana_en(t, np.abs(h[1])/h[0].real[0], a, b))
+            m_ = (t >= a) & (t <= b)
+            # Parte estática: el promedio complejo. La mediana de |h_1| la infla
+            # la componente que gira (ruido de discreción) con a0=1e-2.
+            ms.append(abs((h[1][m_]/h[0].real[0]).mean()))
         ms = np.array(ms)
         p = np.polyfit(np.log(A), np.log(ms), 1)[0]
         ax[0].loglog(A, ms, '-', marker=mk, ms=4, lw=1, color=col,
@@ -703,7 +706,7 @@ def fig_masa():
     ax[0].loglog(A, 1.77e-3*A/1e-3, ':', color=TINTA, lw=1,
                  label=r'$\propto a_0$')
     ax[0].set_xlabel('$a_0$')
-    ax[0].set_ylabel('meseta de $|h_1|/h_0$')
+    ax[0].set_ylabel(r'parte estática $|\langle h_1\rangle|/h_0$')
     ax[0].legend(loc='upper left', fontsize=6.5)
     ax[0].set_title('(a) escala con la masa', loc='left')
 

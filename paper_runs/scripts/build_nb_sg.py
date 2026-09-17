@@ -178,12 +178,22 @@ BARRIDOS = [
 for nombre, runs in BARRIDOS:
     print(f'{nombre:>15}: ' + '   '.join(f'{lab}: {meseta(d):.4e}' for lab, d in runs))
 
-print('\nmasa, corridas hasta t=20000:')
+def estatica(d, a, b):
+    t, h = leer(d)
+    m = (t >= a) & (t <= b)
+    return abs((h[1][m]/h[0].real[0]).mean())
+
+print('\nmasa, corridas hasta t=20000 (parte estática = promedio complejo; la mediana de')
+print('|h_1| la infla con a0=1e-2 una componente que gira, ruido de discreción, sección 8):')
 A = [1e-4, 1e-3, 1e-2]
 for a, b in [(1600, 2000), (15000, 20000)]:
-    M = [meseta(f'long_a0_{x:.0e}'.replace('e-0', 'e-'), a, b) for x in A]
-    p = np.polyfit(np.log(A), np.log(M), 1)[0]
-    print(f'   t in [{a},{b}]: ' + '  '.join(f'{m:.4e}' for m in M) + f'   pendiente {p:+.3f}')
+    nombres = [f'long_a0_{x:.0e}'.replace('e-0', 'e-') for x in A]
+    S = [estatica(d, a, b) for d in nombres]
+    M = [meseta(d, a, b) for d in nombres]
+    print(f'   t in [{a},{b}]: parte estática ' + '  '.join(f'{m:.4e}' for m in S)
+          + f'  pendiente {np.polyfit(np.log(A), np.log(S), 1)[0]:+.3f}'
+          + f'   | mediana de |h1| ' + '  '.join(f'{m:.4e}' for m in M)
+          + f'  pendiente {np.polyfit(np.log(A), np.log(M), 1)[0]:+.3f}')
 """)
 
 code(r"""
@@ -206,9 +216,11 @@ fig.tight_layout()
 """)
 
 md(r"""
-**Nada de la discretización la mueve** (tres cifras iguales con ocho veces más
-malla, splines cúbicos, ocho veces más nodos angulares o cien veces más partículas) y
-**escala con la masa** (pendiente $+0.96$ en la ventana tardía).
+**Nada de la discretización la mueve** (todos los valores entre $1.763$ y
+$1.771\times10^{-3}$ con ocho veces más malla, splines cúbicos, ocho veces más nodos
+angulares o cien veces más partículas) y **escala con la masa**: la parte estática
+tiene pendiente $+0.91$ en las dos ventanas. La mediana de $|h_1|$ da $+0.96$ en la
+ventana tardía, pero solo porque con $a_0=10^{-2}$ la infla la componente que gira.
 
 El Monte Carlo no sirve aquí: el nivel de la meseta ($4.4\times10^{-9}$) queda por
 debajo de su ruido en todo el rango de $N$ explorado. La primera versión de este
