@@ -1063,10 +1063,114 @@ def fig_mapa_marco():
     guardar(fig, 'mapa_marco')
 
 
+# ===========================================================================
+# Amortiguamiento de Landau en un equilibrio autoconsistente.
+LAN = os.path.join(EXE, 'landau')
+VENT_COLA = [(1000, 1600), (1100, 1800), (1200, 2000)]
+
+
+def _pert(sufijo, nrc=400):
+    d0 = np.load(os.path.join(LAN, f'L_a1e-2_n{nrc}_e0{sufijo}', 'landau.npz'))
+    d1 = np.load(os.path.join(LAN, f'L_a1e-2_n{nrc}_e0.1{sufijo}', 'landau.npz'))
+    return d1['t'], (d1['hk'][:, 1] - d0['hk'][:, 1])/0.1, d0
+
+
+def fig_landau_respuesta():
+    from landau_cola import ajustar
+    print('[landau_respuesta] simulación, phase mixing libre y teoría lineal')
+    t, h, d0 = _pert('', 800)
+    lb = np.load(os.path.join(LAN, 'L_a1e-2_n800_e0.1', 'libre.npz'))
+    lin = np.load(os.path.join(LAN, 'lineal', 'lin_1600x64.npz'))
+    fig, ax = plt.subplots(1, 2, figsize=(ANCHO, 2.6),
+                           gridspec_kw=dict(width_ratios=[1.25, 1]))
+    ax[0].semilogy(lb['t'], np.abs(lb['hk'][:, 1])/0.1, color=GRIS, lw=1,
+                   ls=(0, (4, 2)), label='phase mixing libre')
+    ax[0].semilogy(t, np.abs(d0['hk'][:, 1])/0.1, color=GRIS_CLARO, lw=0.8,
+                   label=r'piso: corrida sin perturbación$/\varepsilon$')
+    ax[0].semilogy(t, np.abs(h), color=AZUL, lw=1.2, label='simulación')
+    ax[0].semilogy(lin['t'], np.abs(lin['h1']), color=NARANJA, lw=0.9,
+                   ls=(0, (1.5, 1.5)), label='teoría lineal')
+    ax[0].set_ylim(1e-6, 1)
+    ax[0].set_xlabel('$t$')
+    ax[0].set_ylabel(r'$|h_1|/\varepsilon$')
+    ax[0].legend(loc='upper right', fontsize=6.2)
+    ax[0].set_title(r'(a) respuesta, $a_0=10^{-2}$', loc='left')
+    r = ajustar(t, h, 1100, 1800)
+    w, g = r['pencil M=2']
+    v = (t >= 900) & (t <= 2000)
+    ax[1].semilogy(t[v], np.abs(h[v]), color=AZUL, lw=1.2, label='simulación')
+    m = (lin['t'] >= 900) & (lin['t'] <= 2000)
+    ax[1].semilogy(lin['t'][m], np.abs(lin['h1'][m]), color=NARANJA, lw=0.9,
+                   ls=(0, (1.5, 1.5)), label='teoría lineal')
+    vv = (t >= 1100) & (t <= 1800)
+    A = np.exp(np.mean(np.log(np.abs(h[vv])) + g*t[vv]))
+    tt = np.linspace(1000, 2000, 50)
+    ax[1].semilogy(tt, A*np.exp(-g*tt), color=TINTA, lw=0.8, ls=':',
+                   label=rf'$\propto e^{{-\gamma t}}$, $\gamma={g*1e3:.2f}\times10^{{-3}}$')
+    ax[1].set_xlabel('$t$')
+    ax[1].legend(loc='upper right', fontsize=6.2)
+    ax[1].set_title('(b) la cola colectiva', loc='left')
+    print(f'   ajuste [1100,1800], pencil M=2: w={w:.5f} g={g:.4e}')
+    fig.tight_layout(w_pad=1.2)
+    guardar(fig, 'landau_respuesta')
+
+
+def fig_landau_controles():
+    from landau_cola import ajustar
+    print('[landau_controles] equilibrio, linealidad y robustez de gamma')
+    fig, ax = plt.subplots(1, 3, figsize=(ANCHO, 2.35),
+                           gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
+    # (a) prueba de equilibrio: corrida sin perturbación
+    d0 = np.load(os.path.join(LAN, 'L_a1e-2_n400_e0', 'landau.npz'))
+    t0 = d0['t']; r = d0['r']; z = (r >= 3) & (r <= 15)
+    rms = np.sqrt(np.mean(d0['dphi'][:, z]**2, axis=1))/d0['escala']
+    ax[0].semilogy(t0[1:], np.abs(d0['hk'][1:, 1]), color=AZUL, lw=0.9, label=r'$|h_1|/h_0$')
+    ax[0].semilogy(t0, rms, color=NARANJA, lw=0.9, label=r'rms $\delta\Phi/|\Phi_{\rm self}|$')
+    ax[0].semilogy(t0[1:], np.abs(d0['hk'][1:, 0].real - 1), color=AQUA, lw=0.9, label=r'$|h_0-1|$')
+    ax[0].set_ylim(1e-7, 1e-3)
+    ax[0].set_xlabel('$t$')
+    ax[0].legend(loc='lower right', fontsize=5.8)
+    ax[0].set_title(r'(a) equilibrio, $\varepsilon=0$', loc='left')
+    # (b) linealidad
+    for e, col, ls in [('0.1', AZUL, '-'), ('0.05', NARANJA, (0, (3, 2)))]:
+        d = np.load(os.path.join(EXE, 'landau', f'eq_a1e-2_eps{e}', 'landau.npz'))
+        ax[1].semilogy(d['t'], np.abs(d['hk'][:, 1])/float(e), color=col, ls=ls, lw=1,
+                       label=rf'$\varepsilon={e}$')
+    ax[1].set_ylim(1e-5, 1)
+    ax[1].set_xlabel('$t$')
+    ax[1].set_ylabel(r'$|h_1|/\varepsilon$')
+    ax[1].legend(loc='lower left', fontsize=6)
+    ax[1].set_title('(b) linealidad', loc='left')
+    # (c) gamma con cada variante
+    casos = [('PIC $N_J$=400', lambda: _pert('', 400)[:2]),
+             ('PIC $N_J$=800', lambda: _pert('', 800)[:2]),
+             (r'PIC $\Delta t$=0.05', lambda: _pert('_c1', 400)[:2]),
+             (r'PIC $\Delta t$=0.2', lambda: _pert('_c4', 400)[:2])]
+    for nom in ['lin_400x25', 'lin_800x25', 'lin_1600x32', 'lin_1600x32_dt025', 'lin_1600x64']:
+        casos.append((nom.replace('lin_', 'lineal ').replace('_dt025', r' $\Delta t$=0.25'),
+                      (lambda n=nom: (lambda d: (d['t'], d['h1']))(np.load(os.path.join(LAN, 'lineal', n + '.npz'))))))
+    for i, (nom, carga) in enumerate(casos):
+        t, h = carga()
+        gs = [ajustar(t, h, lo, hi)['pencil M=2'][1]*1e3 for lo, hi in VENT_COLA]
+        col = AZUL if nom.startswith('PIC') else NARANJA
+        ax[2].errorbar(np.mean(gs), i, xerr=[[np.mean(gs) - min(gs)], [max(gs) - np.mean(gs)]],
+                       fmt='o', ms=3, color=col, capsize=2, lw=0.9)
+        print(f'   {nom:>28}: gamma*1e3 en las tres ventanas = ' + ', '.join(f'{x:.3f}' for x in gs))
+    ax[2].set_yticks(range(len(casos)))
+    ax[2].set_yticklabels([c[0] for c in casos], fontsize=6)
+    ax[2].invert_yaxis()
+    ax[2].set_xlabel(r'$\gamma\times10^{3}$')
+    ax[2].set_xlim(4.95, 5.2)
+    ax[2].set_title(r'(c) $\gamma$', loc='left')
+    fig.tight_layout(w_pad=0.6)
+    guardar(fig, 'landau_controles')
+
+
 TODAS = [fig_liouville, fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
          fig_hk_exacto, fig_convergencia, fig_agnosticas, fig_salud,
          fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion,
-         fig_capturas, fig_mapa_numerico, fig_mapa_validacion, fig_mapa_marco]
+         fig_capturas, fig_mapa_numerico, fig_mapa_validacion, fig_mapa_marco,
+         fig_landau_respuesta, fig_landau_controles]
 
 if __name__ == '__main__':
     filtro = sys.argv[1:]

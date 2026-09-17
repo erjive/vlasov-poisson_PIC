@@ -66,7 +66,10 @@ explicaciones falsas es parte del método. El hilo conductor es un caso de estud
 una meseta inesperada en $h_1(t)$ al activar la autogravedad, que tras varios
 barridos de control resulta no ser ni ruido numérico ni un modo colectivo, sino la
 huella de estar usando las coordenadas equivocadas; al recalcularla con las
-variables ángulo--acción del potencial real, desaparece.
+variables ángulo--acción del potencial real, desaparece. Finalmente, partiendo de un
+equilibrio autoconsistente, se mide la respuesta colectiva a una perturbación pequeña:
+una cola amortiguada a frecuencia orbital, independiente de la resolución y del paso de
+tiempo, que reproduce una teoría lineal resuelta sin partículas.
 \end{abstract}
 
 \tableofcontents
@@ -1556,6 +1559,7 @@ instantáneas finas & \texttt{field\_output=40} (cada 4 unidades), $t\le2000$ & 
 larga con instantáneas & \texttt{Nt=200000 field\_output=400} & figs.~\ref{fig:mapanumerico}, \ref{fig:mapamarco} \\
 resolución, largas & \texttt{Nt=200000}; \texttt{Nrc=800}, o bien \texttt{Npc=50} & prueba de la parte que gira \\
 resolución, $a_0=10^{-2}$ & \texttt{Nt=200000 a0=1e-2 Nrc=800} & ídem \\
+paso de tiempo & \texttt{courant}$=1$ (\texttt{Nt=40000 spatial\_output=40}) y $4$ (\texttt{Nt=10000 spatial\_output=10}) & prueba de $\Delta t$ \\
 \midrule
 \multicolumn{3}{p{0.94\textwidth}}{Scripts: \texttt{paper\_runs/scripts/run\_selfgrav\_scans.sh}
 (malla, spline, masa, partículas); el resto, con la línea de comando guardada en
@@ -1611,6 +1615,29 @@ corrida, el cambio de energía pasa de $-4.9595\times10^{-4}$ a
 $-1.6975\times10^{-7}$, el valor que había predicho la reconstrucción, mientras que
 las posiciones y los momentos a $t=2000$ salen idénticos bit a bit: la dinámica
 nunca estuvo afectada, solo la medida.
+
+\paragraph{El paso de tiempo.} Las corridas usan $\Delta t=0.1$, unos $10^3$ pasos por
+periodo orbital. Para comprobar que ninguna cifra de esta sección depende de esa
+elección se repitió la corrida de referencia con $\Delta t=0.05$ y $0.2$:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+$\Delta t$ & cambio de energía & cambio de $h_0$ & parte estática de $h_1$ & coef.\ gaussiano \\
+\midrule
+$0.05$ & $-1.703\times10^{-7}$ & $-1.60187\times10^{-2}$ & $1.77015\times10^{-3}$ & $-3.8169\times10^{-6}$ \\
+$0.1$  & $-1.697\times10^{-7}$ & $-1.60186\times10^{-2}$ & $1.77015\times10^{-3}$ & $-3.8200\times10^{-6}$ \\
+$0.2$  & $-1.693\times10^{-7}$ & $-1.60186\times10^{-2}$ & $1.77040\times10^{-3}$ & $-3.8200\times10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Hasta $t=800$, $h_1$ difiere de la corrida con $\Delta t=0.1$ a lo sumo $1.6\times10^{-6}$
+relativo. Que el error de energía corregido no cambie con $\Delta t$ confirma que no viene
+del integrador, sino del cálculo de la fuerza en malla, que sí mejora al refinar
+$\Delta r$. El coeficiente gaussiano con $\Delta t=0.05$ difiere un $0.08\%$ de los otros
+dos; no encontramos la causa, y es treinta veces menor que el efecto de la
+autogravedad que se mide con él.
 
 \begin{figure}[t]
   \centering
@@ -2181,6 +2208,182 @@ La componente que gira y crece con $a_0=10^{-2}$, que en una primera lectura par
 posible dinámica colectiva, resultó ser ruido de discreción: depende de la resolución
 de la rejilla (sección~\ref{sec:autogravedad}). No es un límite del mapa analítico.
 
+\section{Amortiguamiento de Landau en un equilibrio autoconsistente}
+\label{sec:landaumedido}
+
+El montaje de la sección~\ref{sec:autogravedad} no permite medir amortiguamiento de
+Landau. Parte de un equilibrio del isócrono \emph{solo}; al activar la autogravedad,
+toda la componente es a la vez perturbación y fuente del potencial, y el reajuste del
+equilibrio (el cambio de $h_0$, el potencial propio que cambia un $22\%$) se mezcla con
+la respuesta a la perturbación. Esta sección separa las dos cosas y mide la respuesta
+colectiva de una perturbación pequeña. Los parámetros están en la
+tabla~\ref{tab:landau}.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Parámetros del estudio de Landau. Base: \texttt{paper\_runs/base\_selfgrav.par}
+con los parámetros comunes de la tabla~\ref{tab:comun}.}
+\label{tab:landau}
+\begin{tabular}{p{0.28\textwidth}p{0.62\textwidth}}
+\toprule
+parámetro & valor \\
+\midrule
+equilibrio & $F_{\rm eq}=A\,\Jr^2\ee^{-\Jr^2/\sigma_J^2}$, $\sigma_J=0.1$, $\Jr$ del potencial total; \texttt{a0=1e-2} \\
+perturbación & $F=F_{\rm eq}(\Jr)\,[1+\varepsilon\cos\Qr]$, $\varepsilon=0$ y $0.1$ (linealidad: $0.05$) \\
+estado inicial & \texttt{state=checkpoint}; nodos en $(\Qr,\Jr)$ del equilibrio, $\Jr\in[0,0.6]$, \texttt{Npc=25} \\
+resolución & \texttt{Nrc}$=400$ y $800$ \\
+tiempo & \texttt{Nt=30000} ($t_{\max}=3000$), \texttt{field\_output=40} (cada 4 unidades) \\
+prueba de $\Delta t$ & \texttt{courant}$=1$: \texttt{Nt=60000 spatial\_output=40 field\_output=80}; \\
+ & \texttt{courant}$=4$: \texttt{Nt=15000 spatial\_output=10 field\_output=20} \\
+teoría lineal & $N_J\times N_Q = 400\times25,\ 800\times25,\ 1600\times32,\ 1600\times64$; $\Delta t=0.5$ y $0.25$ \\
+\midrule
+scripts & \texttt{equilibrio.py}, \texttt{landau\_analisis.py}, \texttt{landau\_libre.py}, \texttt{landau\_cola.py}, \texttt{lineal.py}, \texttt{lineal\_compara.py} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{El equilibrio}
+
+Un equilibrio es cualquier $F_{\rm eq}(\Jr)$ con $\Jr$ la acción del potencial
+\emph{total}, $\Phi_{\rm iso}+\Phi_{\rm self}[F_{\rm eq}]$ (teorema de Jeans,
+sección~\ref{sec:hamilton}). Como la acción depende del potencial y el potencial de la
+distribución, se itera: potencial propio $\to$ mapa ángulo--acción numérico
+(sección~\ref{sec:mapanumerico}) $\to$ $F_{\rm eq}(\Jr)$ $\to$ densidad $\to$ Poisson.
+Una simplificación hace la iteración barata: como $\dd r\,\dd\rp=\dd\Qr\,\dd\Jr$, la masa
+$M=16\pi^3L_0\int F_{\rm eq}\,\dd\Jr$ no depende del potencial, así que la amplitud $A$
+queda fija de entrada y solo se itera la forma del potencial. Con $a_0=10^{-2}$ converge
+en siete iteraciones, con el cambio del potencial reduciéndose unas 70 veces por
+iteración hasta $4\times10^{-15}$, y la masa sale exacta a $4\times10^{-9}$.
+
+Las partículas se colocan en una rejilla regular de las $(\Qr,\Jr)$ del equilibrio y se
+invierte el mapa numérico para obtener $(r,\rp)$; mapeadas de vuelta, recuperan los
+nodos a $5\times10^{-9}$ en $\Jr$ y $6\times10^{-7}$ en $\Qr$. El código las lee de un
+archivo (estado \texttt{checkpoint}); leer así las partículas iniciales de una corrida
+\texttt{aa\_quad} reproduce su $h_k$ a $8\times10^{-15}$ relativo.
+
+\paragraph{Prueba de equilibrio.} Sin perturbación ($\varepsilon=0$), el estado debe
+quedarse quieto (figura~\ref{fig:landaucontroles}a). Hasta $t=3000$, $h_0$ cambia
+$2.1\times10^{-5}$ (frente al $14\%$ del montaje anterior con la misma masa), $|h_1|$ queda
+en $\sim10^{-5}$ tras un transitorio que no pasa de $7\times10^{-5}$, la acción media de
+las partículas se mueve $4\times10^{-6}$, y el potencial difiere del de equilibrio en
+$3\times10^{-5}$ de $|\Phi_{\rm self}|$. Ese residuo está presente desde $t=0$
+($6.7\times10^{-5}$): es el desajuste entre el Poisson continuo con que se construyó el
+equilibrio y el discreto del código. Es determinista y el mismo para cualquier
+$\varepsilon$, así que se elimina restando la corrida sin perturbación:
+\begin{equation}
+  h_1^{\rm pert}(t)=\frac{h_1(\varepsilon)-h_1(0)}{\varepsilon}.
+\end{equation}
+
+\subsection{La respuesta}
+
+La respuesta es lineal: con $\varepsilon=0.05$ y $0.1$, $h_1/\varepsilon$ coincide a
+$0.2\%$ hasta $t=600$ (figura~\ref{fig:landaucontroles}b). Como referencia sin efecto
+colectivo se usa el phase mixing puro en el potencial de equilibrio: las mismas
+partículas iniciales rotando libres con $\omega_{\rm eq}(\Jr)$, lo que pasaría si la
+perturbación no generara campo propio (\texttt{landau\_libre.py}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{landau_respuesta}
+  \caption{Respuesta de $h_1$ a una perturbación $\varepsilon\cos\Qr$ de un equilibrio
+  autoconsistente con $a_0=10^{-2}$ ($N_J=800$). \textbf{(a)} Simulación, con la corrida
+  sin perturbación restada (azul); phase mixing libre en el potencial de equilibrio
+  (gris discontinuo); teoría lineal sin partículas (naranja punteado); y el piso que se
+  resta (gris claro). Hasta $t\approx800$ la autogravedad acelera la mezcla; después
+  aparece una cola que el phase mixing libre no tiene. La simulación se separa de la
+  teoría lineal hacia $t\approx2300$, cuando alcanza su piso de ruido.
+  \textbf{(b)} Detalle de la cola. La teoría lineal reproduce también el hombro en
+  $t\approx1350$ y el mínimo en $t\approx1780$; la recta punteada es la tasa del polo
+  dominante del ajuste.}
+  \label{fig:landaurespuesta}
+\end{figure}
+
+La figura~\ref{fig:landaurespuesta} muestra dos regímenes. Primero, el campo propio
+\emph{acelera} la mezcla: la respuesta vale $0.89$ veces la referencia libre en $t=400$
+y $0.61$ en $t=800$. Después aparece algo que el phase mixing libre no produce: mientras
+la referencia decae de forma gaussiana hasta $5\times10^{-5}$ en $t=1400$, la respuesta
+decae mucho más despacio, y en $t=1400$--$1600$ está entre 26 y 32 veces por encima.
+
+La cola no es una exponencial pura: tiene un hombro en $t\approx1350$ y un mínimo en
+$t\approx1780$, señal de más de una componente. Se ajusta con \emph{matrix pencil} de dos
+términos, que separa el polo dominante, en tres ventanas entre $t=1000$ y $2000$. Con
+$N_J=800$ y la ventana $[1100,1800]$:
+\begin{equation}
+  \omega = 0.05705, \qquad \gamma = 5.08\times10^{-3}, \qquad \gamma/\omega = 0.089 .
+\end{equation}
+La frecuencia está dentro de la banda orbital del equilibrio,
+$\omega_{\rm eq}\in[0.048,\,0.072]$ para $\Jr\in[0,0.35]$, y coincide con la frecuencia
+orbital de las órbitas con $\Jr\simeq0.198$: la respuesta está en resonancia con órbitas
+del sistema.
+
+\subsection{Controles}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{landau_controles}
+  \caption{\textbf{(a)} Corrida sin perturbación: $|h_1|$, el potencial respecto del de
+  equilibrio y el cambio de $h_0$ quedan en $10^{-5}$--$10^{-4}$.
+  \textbf{(b)} Linealidad: $h_1/\varepsilon$ con $\varepsilon=0.1$ y $0.05$ (sin restar la
+  corrida sin perturbación). \textbf{(c)} Tasa de amortiguamiento del polo dominante
+  (\emph{matrix pencil} de dos términos): punto, media en las tres ventanas; barras,
+  mínimo y máximo. Azul, simulaciones con dos resoluciones en $\Jr$ y tres pasos de
+  tiempo; naranja, teoría lineal con cuatro rejillas y dos pasos de tiempo.}
+  \label{fig:landaucontroles}
+\end{figure}
+
+\paragraph{Resolución y paso de tiempo.} Con $N_J=800$ en lugar de $400$, la respuesta
+coincide a 3--4 cifras hasta $t=1600$ (en $t=1800$, cerca del mínimo de la cola, difiere
+un $5\%$) y $\gamma$ cambia menos de $0.5\%$ en cada ventana. Con
+$\Delta t=0.05$ y $0.2$ en lugar de $0.1$, la respuesta difiere a lo sumo
+$4\times10^{-4}$ relativo hasta $t=1400$, y $\gamma$ queda en $5.095$--$5.098\times10^{-3}$
+en la ventana $[1100,1800]$. En todas las variantes y ventanas, $\gamma$ cae entre $5.04$
+y $5.10\times10^{-3}$ (figura~\ref{fig:landaucontroles}c).
+
+\paragraph{Teoría lineal.} El control más fuerte es independiente del método de
+partículas. En las variables $(\Qr,\Jr)$ del equilibrio, con $F=F_{\rm eq}+\delta F$, la
+ecuación de Vlasov linealizada es
+\begin{equation}
+  \frac{\partial\,\delta F}{\partial t} + \omega(\Jr)\,\frac{\partial\,\delta F}{\partial\Qr}
+  = F_{\rm eq}'(\Jr)\,\frac{\partial\,\delta\Phi}{\partial\Qr},
+\end{equation}
+con $\delta\Phi$ el potencial de la densidad de $\delta F$. Se resuelve sin partículas
+(\texttt{lineal.py}):
+\begin{itemize}
+  \item $\delta F$ vive en una rejilla fija de $N_J\times N_Q$ nodos, cuyos radios
+    $r(\Qr,\Jr)$ se calculan una vez con el mapa inverso;
+  \item el transporte en $\Qr$ se hace exacto, como un cambio de fase en Fourier, y se
+    alterna con el golpe del campo en pasos de Strang;
+  \item $\delta\Phi$ sale de la función de Green de capas esféricas,
+    $\delta\Phi(r_i)=-\delta M(<r_i)/r_i-\sum_{r_j>r_i}\delta m_j/r_j$, con sumas
+    acumuladas sobre los radios ordenados.
+\end{itemize}
+Sin el campo, reproduce la referencia libre a $4\times10^{-8}$ hasta $t=500$. Con el
+campo, reproduce la simulación completa, fase incluida: la mediana de la diferencia
+relativa es $0.1\%$ hasta $t=800$, $0.7$--$0.9\%$ hasta $1400$ y $2$--$3\%$ hasta
+$2000$, donde la simulación se acerca a su piso. El ajuste de la cola da
+$\omega=0.05705$ y $\gamma=5.01$--$5.07\times10^{-3}$, sin cambios apreciables entre
+rejillas de $400\times25$ a $1600\times64$ y pasos de $0.5$ y $0.25$. La diferencia con
+la simulación en $\gamma$, de alrededor de un $0.5\%$, es del orden de la dispersión entre
+ventanas.
+
+\subsection{Qué queda establecido}
+
+En un equilibrio autoconsistente con $a_0=10^{-2}$, una perturbación $\cos\Qr$ tiene una
+respuesta colectiva: primero acelera la mezcla y después deja una cola amortiguada, con
+$\omega=0.0571$ y $\gamma\simeq5.1\times10^{-3}$, a frecuencia orbital de órbitas del
+propio sistema. La cola no depende de la resolución ni del paso de tiempo, escala
+linealmente con la perturbación y la reproduce una teoría lineal sin partículas. Es el
+comportamiento del amortiguamiento de Landau: una respuesta colectiva que decae por
+resonancia con las órbitas, no por mezcla cinemática.
+
+Hay tres límites que conviene no olvidar. La cola solo es medible entre $t\approx1000$ y
+$2000$, unos doce periodos, antes de caer al piso de ruido. Es una sola masa y una sola
+distribución. Y que $\omega-\ii\gamma$ sea un polo de la relación de dispersión, un
+\emph{modo de Landau} en sentido estricto, requiere la continuación analítica de la
+matriz de respuesta (Fouvry y Prunet~\cite{fouvry2022}), que aquí no se hizo; lo medido
+es la tasa efectiva del polo dominante en esa ventana.
+
 \section{Cuántas partículas hacen falta}
 \label{sec:cuantas}
 
@@ -2315,8 +2518,8 @@ fondo externo; Chaturvedi y Luk tienen el marco riguroso pero no números; Fouvr
 Prunet, el método matricial para $\ell=1$.
 
 \medskip
-Lo obtenido en estas notas no alcanza todavía para un artículo de física: el
-amortiguamiento de Landau no se ha medido en un montaje limpio. Sí alcanza como
+El amortiguamiento de Landau se midió ya en un montaje limpio
+(sección~\ref{sec:landaumedido}), pero para una sola masa y una sola distribución. Sí alcanza como
 sección de métodos que haga creíble esa medición: la verificación contra soluciones
 exactas, la meseta estática como artefacto del mapa, y la separación entre física y
 ruido de discreción mediante pruebas de resolución. Esta evaluación se apoya en los
@@ -2336,10 +2539,9 @@ repositorio. En orden de dificultad:
     también depende de la resolución (duplicar las filas en $\Jr$ la multiplica por
     $\sim0.35$) y crece como $t^{1.9}$ en ambas resoluciones, no exponencialmente: es
     numérica, no una inestabilidad. Falta el mecanismo y su escalamiento con $N$.
-  \item Construir un equilibrio autoconsistente con una perturbación pequeña y
-    separada (en curso). Con el montaje de la sección~\ref{sec:autogravedad}, el reajuste del equilibrio y la respuesta a la
-    perturbación quedan mezclados, y sin separarlos no tiene sentido medir un
-    amortiguamiento de Landau.
+  \item Extender la medición de la sección~\ref{sec:landaumedido}: $\omega$ y $\gamma$
+    frente a $a_0$ y a la forma de $F_{\rm eq}$, y la continuación analítica de la
+    relación de dispersión para decidir si la cola es un polo.
   \item Explorar $a_0\gtrsim10^{-2}$, donde el efecto colectivo deja de ser una
     corrección de unos puntos porcentuales y puede llegar a dominar, hasta el
     régimen de relajación violenta~\cite{lyndenbell1967}.

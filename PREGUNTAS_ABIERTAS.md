@@ -43,16 +43,25 @@ t_max para que quede por debajo de la señal.
 
 ---
 
-## 2. Un montaje limpio para amortiguamiento de Landau
+## 2. Amortiguamiento de Landau: extender la medición
 
-**Problema.** El estado inicial es equilibrio del isócrono *solo*; al activar la
-autogravedad toda la componente es a la vez "perturbación" y fuente del potencial.
-Eso mezcla el reajuste del equilibrio (el cambio de h_0 del 1.6% en t < 600, las
-amplitudes de fila que cambian entre 0.83 y 1.005) con la respuesta a la perturbación.
+**Qué se sabe** (notas, sección "Amortiguamiento de Landau en un equilibrio
+autoconsistente"). Con un equilibrio autoconsistente F_eq(J) (a0=1e-2, J del potencial
+total; `equilibrio.py`) y una perturbación eps·F_eq·cos Q, restando la corrida con eps=0:
+- la respuesta es lineal (eps=0.05 y 0.1 coinciden a 0.2% hasta t=600);
+- primero acelera la mezcla (0.89× y 0.61× la referencia libre en t=400 y 800);
+- después deja una cola amortiguada: omega=0.05705, gamma=5.08e-3 (matrix pencil de
+  dos términos, [1100,1800], Nrc=800), dentro de la banda orbital (J_res=0.198);
+- gamma entre 5.04 y 5.10e-3 con Nrc 400/800, Delta t 0.05/0.1/0.2 y tres ventanas;
+- la teoría lineal sin partículas (`lineal.py`) reproduce h_1 completo (mediana 0.1%
+  hasta t=800, 0.7-0.9% hasta 1400) y da gamma=5.01-5.07e-3.
 
-**Siguiente paso.** Construir un equilibrio autoconsistente F_eq(J) del potencial
-total (iterando Poisson con el mapa numérico, `paper_runs/scripts/aa_numerico.py`) y agregar encima una
-perturbación pequeña y separada. Solo entonces tiene sentido medir omega_r y gamma.
+**Lo que falta.**
+- omega y gamma frente a a0 y a la forma de F_eq.
+- La cola solo es medible entre t~1000 y 2000 (unos 12 periodos) antes del piso de
+  ruido; tiene un hombro (t~1350) y un mínimo (t~1780), de modo que no es un solo polo.
+- Continuación analítica de la matriz de respuesta (Fouvry y Prunet 2022) para decidir
+  si omega - i gamma es un polo de la relación de dispersión.
 
 ---
 
@@ -60,7 +69,8 @@ perturbación pequeña y separada. Solo entonces tiene sentido medir omega_r y g
 
 Con a0=1e-2 el cambio de h_0 es 14% y la componente que gira crece hasta dominar
 (ruido de discreción, ver *Resueltas*).
-El mapa analítico ya no sirve; hay que usar el numérico. Depende de 1 y 2. Para perturbaciones grandes,
+El mapa analítico ya no sirve; hay que usar el numérico, y partir de un equilibrio
+autoconsistente como en la pregunta 2. Para perturbaciones grandes,
 relajación violenta (Lynden-Bell 1967).
 
 ---
