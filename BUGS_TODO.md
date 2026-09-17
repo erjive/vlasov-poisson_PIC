@@ -41,6 +41,21 @@ horas en esta sesion.
 
 ## Resueltos
 
+- [x] **`energy.f90`: la energía con autogravedad contaba dos veces la
+  autoenergía.** Sumaba `sum f*(p^2/2 + pot_part)`, con `pot_part` incluyendo el
+  potencial propio sin el factor 1/2 de la energía de interacción (cada par se
+  cuenta desde ambos lados). Síntoma: un cambio de energía de -4.96e-4 idéntico
+  con cualquier dr (0.2-0.025), orden de B-spline (1-3) y N (1e3-1e5), y
+  proporcional a a0: no era error numérico sino de definición. Arreglo: se
+  guarda el potencial propio por partícula (`potself_part`) antes de sumarle el
+  fondo y la barrera centrífuga, y la energía lleva `-potself_part/2`.
+  Medido en `sg/quad` (a0=1e-3, t=2000): dE/E pasa de -4.9595e-4 a -1.6975e-7
+  (la reconstrucción offline predecía -1.697e-7); sin autogravedad 7.0056e-11
+  -> 7.0058e-11. Posiciones y momentos a t=2000 idénticos bit a bit; h_k
+  difiere en 2e-21 y la energía cinética en 2e-16 (orden de las sumas OpenMP).
+  El error corregido sí converge con la malla: 8.3e-7, 1.7e-7, 7.9e-9, 3.3e-9
+  para dr = 0.2, 0.1, 0.05, 0.025.
+
 - [x] **Makefile: `FLAGS` vacío para gfortran.** Idéntico al bug
   original: las 4 líneas candidatas de `FLAGS` del bloque `gfortran`
   estaban comentadas, rompiendo el build con gfortran (faltaba

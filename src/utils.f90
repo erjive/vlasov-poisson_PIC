@@ -135,6 +135,7 @@ module utils
   allocate(p_part_p    (1:Npart))
   allocate(p_part_h   (1:Npart))
   allocate(pot_part    (1:Npart))
+  allocate(potself_part(1:Npart))
   allocate(force_part  (1:Npart))
 
   r_part     = 0.d0
@@ -143,6 +144,7 @@ module utils
   p_part_p   = 0.d0
   p_part_h   = 0.d0
   pot_part   = 0.d0
+  potself_part = 0.d0
   force_part = 0.d0
 
 ! Coordinates, force and potential.
@@ -218,6 +220,7 @@ module utils
   deallocate(p_part_p)
   deallocate(p_part_h)
   deallocate(pot_part)
+  deallocate(potself_part)
   deallocate(force_part)
 
   deallocate(r)
@@ -1098,6 +1101,7 @@ subroutine reduce_arrays
   deallocate(p_part_p)
   deallocate(p_part_h)
   deallocate(pot_part)
+  deallocate(potself_part)
   deallocate(force_part)
   deallocate(f)
 !  deallocate(f_p)
@@ -1113,6 +1117,8 @@ subroutine reduce_arrays
   allocate(p_part_p(1:Npart))
   allocate(p_part_h(1:Npart))
   allocate(pot_part(1:Npart))
+  allocate(potself_part(1:Npart))
+  potself_part = 0.d0
   allocate(force_part(1:Npart))
   allocate(f(1:Npart))
 !  allocate(f_p(1:Npart))
