@@ -1911,7 +1911,9 @@ $6\times10^{-7}$ en $\Qr$.
 \label{sec:sustitucion}
 
 Los integrandos divergen como $(E-\Phi_{\rm ef})^{-1/2}$ en los puntos de retorno.
-Una cuadratura ingenua converge como $\sqrt{h}$ y es inservible. El remedio
+Una regla de trapecios converge entonces como $\sqrt{h}$; Gauss--Legendre, que
+acumula nodos cerca de los extremos, mejora a $n^{-1}$ con $n$ nodos, pero sigue
+siendo inservible (figura~\ref{fig:mapavalidacion}b). El remedio
 estándar es el cambio de variable
 \begin{equation}
   r = \frac{r_++r_-}{2} + \frac{r_+-r_-}{2}\,\sin\theta,
@@ -1921,9 +1923,13 @@ estándar es el cambio de variable
 que elimina la singularidad: cerca de $r_\pm$ se tiene $E-\Phi_{\rm ef}\propto
 (r-r_-)(r_+-r)$, que en la nueva variable es proporcional a $\cos^2\theta$, y el
 jacobiano $\dd r = \tfrac{r_+-r_-}{2}\cos\theta\,\dd\theta$ aporta justo el factor que
-lo cancela. Tras el cambio el integrando es suave y basta Gauss--Legendre con 64
-nodos: con el potencial propio incluido, pasar a 128 nodos cambia $\Jr$ en
-$10^{-8}$ y $\Qr$ en $7\times10^{-8}$.
+lo cancela. Tras el cambio el integrando es suave. En el isócrono puro la convergencia
+es espectral y 64 nodos dan la acción a $10^{-15}$ (figura~\ref{fig:frecuencias}). Con
+el potencial propio incluido la convergencia es igual de rápida hasta $\sim10^{-10}$ y
+ahí se estanca (figura~\ref{fig:mapavalidacion}b). El límite no es la cuadratura sino
+el spline cúbico: su tercera derivada salta en cada nodo de la malla, y ese salto
+deja de ser resoluble. Para lo que se necesita aquí sobra: pasar de 64 a 128 nodos
+cambia $\Jr$ en $10^{-8}$ y $\Qr$ en $7\times10^{-8}$.
 
 \begin{aviso}
 \textsc{costo.} Sin tabular nada, el mapa numérico procesa una instantánea de $10^4$
@@ -1935,12 +1941,29 @@ potencial.
 
 \subsection{Validación}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{mapa_validacion}
+  \caption{Validación del mapa numérico. \textbf{(a)} Sin potencial propio, diferencia
+  con el mapa analítico del isócrono para las $10^4$ partículas de una instantánea,
+  frente a su distancia angular al punto de retorno más cercano. $\Jr$ coincide a
+  $10^{-15}$. En $\Qr$ la diferencia típica es $10^{-12}$; solo las partículas a
+  menos de $0.01$~rad de un punto de retorno llegan a $10^{-6}$, porque ahí $\Qr$ es
+  muy sensible a $r$. \textbf{(b)} Error relativo del periodo radial, con el potencial
+  propio promediado de la corrida con $a_0=10^{-3}$, para dos órbitas. Sin la
+  sustitución~\eqref{eq:sustitucion}, Gauss--Legendre converge como $n^{-1}$; con ella,
+  llega a $10^{-10}$ con 32 a 64 nodos y se estanca ahí por la regularidad del spline
+  cúbico que representa el potencial propio.}
+  \label{fig:mapavalidacion}
+\end{figure}
+
 \paragraph{Contra el isócrono.} Sin potencial propio, el mapa numérico debe
-reproducir el analítico. Sobre las $10^4$ partículas de una instantánea real:
+reproducir el analítico (figura~\ref{fig:mapavalidacion}a). Sobre las $10^4$ partículas de una instantánea real:
 $\max|\Jr_{\rm num}-\Jr_{\rm an}|=1.2\times10^{-15}$, y en $\Qr$ la mediana de la
 diferencia es $1.6\times10^{-12}$. El máximo, $1.4\times10^{-6}$, aparece solo en unas
 pocas partículas a menos de $0.01$~rad de un punto de retorno, donde $\Qr$ es muy
-sensible a $r$ (el arcoseno tiene derivada infinita en $\pm1$). La frecuencia obtenida
+sensible a $r$ (el arcoseno tiene derivada infinita en $\pm1$); más lejos de $0.01$~rad
+el máximo es $7\times10^{-9}$. La frecuencia obtenida
 derivando la tabla $\Jr(E)$ reproduce $1/(\Jr+c)^3$ a $2\times10^{-8}$.
 
 \paragraph{Contra la dinámica.} La prueba física es que, en el potencial real, la
@@ -1962,8 +1985,23 @@ Con autogravedad el potencial evoluciona, así que $\Jr$ solo es un invariante
     teoría lineal y del amortiguamiento de Landau.
 \end{itemize}
 
-En la corrida con $a_0=10^{-3}$ el potencial propio cambia un $21\%$ entre $t=0$ y
-$t=2000$, mientras la distribución se mezcla, y después fluctúa solo un $0.05\%$. Se
+En la corrida con $a_0=10^{-3}$ el potencial propio cambia un $22\%$ entre $t=0$ y
+$t=2000$, mientras la distribución se mezcla, y después fluctúa solo un $0.05\%$
+(figura~\ref{fig:mapamarco}a).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{mapa_marco}
+  \caption{\textbf{(a)} Potencial propio en la corrida con $a_0=10^{-3}$. Mientras la
+  distribución se mezcla, la masa se redistribuye y el potencial en el interior cambia
+  un $22\%$; desde $t\approx2000$ ya no se mueve (la curva de $t=20\,000$ coincide con la
+  de $t=2000$). \textbf{(b)} Cambio de $h_0$ calculado con tres mapas sobre las mismas
+  partículas. Con el mapa del isócrono llega a $-1.6\%$ con oscilaciones al periodo
+  orbital; con el potencial promediado, a $-1.35\%$ sin oscilaciones; con el
+  instantáneo, a $-0.76\%$. Los tres quedan constantes después de $t\approx800$, hasta
+  el final de la corrida.}
+  \label{fig:mapamarco}
+\end{figure} Se
 probaron ambos marcos sobre las mismas partículas, con el potencial promediado en
 $t\ge2000$:
 
@@ -1979,7 +2017,8 @@ cambio de $h_0$ entre $t=0$ y $20\,000$ & $1.35\%$ & $0.76\%$ \\
 \end{tabular}
 \end{center}
 
-Para la meseta, los dos marcos dan lo mismo. El cambio de $h_0$ sí depende del marco:
+Para la meseta, los dos marcos dan lo mismo. El cambio de $h_0$ sí depende del marco
+(figura~\ref{fig:mapamarco}b):
 con el mapa del isócrono era del $1.6\%$, y con los numéricos baja pero no
 desaparece. La mayor parte es un cambio real de las acciones mientras el potencial
 propio se reajusta al principio. Para lo que sigue se usa un marco fijo: el potencial

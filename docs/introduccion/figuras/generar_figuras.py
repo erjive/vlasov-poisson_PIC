@@ -941,10 +941,129 @@ def fig_mapa_numerico():
     guardar(fig, 'mapa_numerico')
 
 
+# ===========================================================================
+# Sección 10: el mapa ángulo-acción numérico.
+def fig_mapa_validacion():
+    import h5py
+    from aa_numerico import MapaAA
+    print('[mapa_validacion] contra el isócrono y convergencia de la cuadratura')
+    fig, ax = plt.subplots(1, 2, figsize=(ANCHO, 2.6))
+
+    # (a) numérico sin potencial propio frente al analítico, partícula por partícula.
+    f = h5py.File(os.path.join(SG, 'long_fino_nosg', 'vlasov_output.h5'))
+    pas = sorted([k for k in f if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+    r = f[pas[250]]['r_part'][:]; p = f[pas[250]]['p_part'][:]
+    Qa, Ja = rp_to_QJ(r, p)
+    Qn, Jn, _ = MapaAA()(r, p)
+    dQ = np.abs(np.angle(np.exp(1j*(Qn - Qa))))
+    dJ = np.abs(Jn - Ja)
+    dist = np.minimum.reduce([Qa, np.abs(Qa - np.pi), 2*np.pi - Qa])
+    piso = 1e-17
+    ax[0].loglog(np.maximum(dist, 1e-6), np.maximum(dQ, piso), '.', ms=1.2, color=AZUL,
+                 alpha=0.5, rasterized=True, label=r'$|Q_{\rm num}-Q_{\rm an}|$')
+    ax[0].loglog(np.maximum(dist, 1e-6), np.maximum(dJ, piso), '.', ms=1.2, color=NARANJA,
+                 alpha=0.5, rasterized=True, label=r'$|J_{\rm num}-J_{\rm an}|$')
+    ax[0].set_ylim(1e-17, 1e-4)
+    ax[0].set_xlabel('distancia angular al punto de retorno (rad)')
+    ax[0].set_ylabel('diferencia')
+    ax[0].legend(loc='upper right', fontsize=6.5, markerscale=5)
+    ax[0].set_title('(a) numérico frente a analítico', loc='left')
+    print(f'   max|dJ| = {dJ.max():.1e}; |dQ|: mediana {np.median(dQ):.1e}, máx {dQ.max():.1e};'
+          f' máx |dQ| con distancia > 0.01: {dQ[dist > 0.01].max():.1e}')
+
+    # (b) convergencia del periodo radial con y sin la sustitución r = rm + ra sin(th).
+    g = h5py.File(os.path.join(SG, 'long20k_snap', 'vlasov_output.h5'))
+    pas = sorted([k for k in g if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+    tg = np.array([g[k].attrs['time'] for k in pas])
+    rg = g['grid']['r'][:]
+    ps = np.mean([g[k]['potential'][:] - phi_iso(rg) for k, tt in zip(pas, tg) if tt >= 2000], axis=0)
+    m = MapaAA(rg, ps)
+    nodos = np.array([4, 8, 16, 32, 64, 128])
+    for Jobj, col in [(0.05, AZUL), (0.30, NARANJA)]:
+        E = E_de_J(Jobj)
+        r1 = m._raiz(np.array([E]), 1e-2, m.rc)[0]
+        r2 = m._raiz(np.array([E]), m.rc, 60.0)[0]
+        rm, ra = 0.5*(r1 + r2), 0.5*(r2 - r1)
+
+        def T_sust(n):
+            x, w = np.polynomial.legendre.leggauss(n)
+            th = 0.5*np.pi*x
+            rr = rm + ra*np.sin(th)
+            v = np.sqrt(np.maximum(2*(E - m.phi_ef(rr)), 0))
+            return 2*np.sum(0.5*np.pi*w*ra*np.cos(th)/v)
+
+        def T_ingenuo(n):
+            x, w = np.polynomial.legendre.leggauss(n)
+            rr = rm + ra*x
+            v = np.sqrt(np.maximum(2*(E - m.phi_ef(rr)), 0))
+            return 2*np.sum(ra*w/v)
+
+        ref = T_sust(1024)
+        es = [abs(T_sust(n)/ref - 1) for n in nodos]
+        ei = [abs(T_ingenuo(n)/ref - 1) for n in nodos]
+        ax[1].loglog(nodos, np.maximum(es, 1e-16), '-o', ms=3, color=col,
+                     label=f'con sustitución, $J\\approx{Jobj}$')
+        ax[1].loglog(nodos, ei, '--s', ms=3, color=col, mfc='white',
+                     label=f'sin sustitución, $J\\approx{Jobj}$')
+        print(f'   J~{Jobj}: error relativo de T con sustitución {np.array(es)}')
+        print(f'   J~{Jobj}: sin sustitución {np.array(ei)}')
+    ax[1].loglog(nodos, 0.5*nodos**-1.0, ':', color=TINTA, lw=0.9, label=r'$\propto n^{-1}$')
+    ax[1].set_ylim(1e-16, 2)
+    ax[1].set_xlabel('nodos de Gauss--Legendre')
+    ax[1].set_ylabel(r'error relativo de $T_r$')
+    ax[1].legend(loc='lower left', fontsize=5.8, ncol=1)
+    ax[1].set_title('(b) cuadratura del periodo', loc='left')
+    fig.tight_layout(w_pad=1.2)
+    guardar(fig, 'mapa_validacion')
+
+
+def fig_mapa_marco():
+    import h5py
+    print('[mapa_marco] el potencial propio en el tiempo y h_0 en tres marcos')
+    fig, ax = plt.subplots(1, 2, figsize=(ANCHO, 2.5))
+    g = h5py.File(os.path.join(SG, 'long20k_snap', 'vlasov_output.h5'))
+    pas = sorted([k for k in g if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+    tg = np.array([g[k].attrs['time'] for k in pas])
+    rg = g['grid']['r'][:]
+    cols = [GRIS_CLARO, AQUA, NARANJA, AZUL, TINTA]
+    for tt, col in zip([0, 400, 1000, 2000, 20000], cols):
+        n = np.argmin(np.abs(tg - tt))
+        ps = g[pas[n]]['potential'][:] - phi_iso(rg)
+        ax[0].plot(rg, 1e4*ps, color=col, lw=1.1 if tt < 20000 else 0.9,
+                   ls='-' if tt < 20000 else (0, (4, 2)), label=f'$t={tt}$')
+    i5 = np.argmin(np.abs(rg - 5.0))
+    p0 = g[pas[0]]['potential'][i5] - phi_iso(rg[i5])
+    p2 = g[pas[np.argmin(np.abs(tg - 2000))]]['potential'][i5] - phi_iso(rg[i5])
+    tarde = np.array([g[pas[n]]['potential'][i5] - phi_iso(rg[i5]) for n in np.where(tg >= 2000)[0]])
+    print(f'   Phi_self(r=5): t=0 {p0:.4e}, t=2000 {p2:.4e} (cambio {p2/p0-1:+.1%});'
+          f' fluctuación para t>=2000: {tarde.std()/abs(tarde.mean()):.1e}')
+    ax[0].set_xlim(0, 20)
+    ax[0].set_xlabel('$r$')
+    ax[0].set_ylabel(r'$10^4\,\Phi_{\rm self}(r)$')
+    ax[0].legend(loc='lower right', fontsize=6.5)
+    ax[0].set_title('(a) potencial propio, $a_0=10^{-3}$', loc='left')
+
+    d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+    t = d['t']
+    for k, col, lab in [('iso', AZUL, 'mapa del isócrono'),
+                        ('promedio', NARANJA, 'potencial promediado'),
+                        ('instante', AQUA, 'potencial instantáneo')]:
+        h0 = d[f'h0_{k}']
+        ax[1].plot(t, 100*(h0/h0[0] - 1), color=col, lw=1, label=lab)
+        print(f'   {k:>9}: h0(20000)/h0(0)-1 = {h0[-1]/h0[0]-1:+.4e}')
+    ax[1].set_xlim(0, 4000)
+    ax[1].set_xlabel('$t$')
+    ax[1].set_ylabel(r'$h_0(t)/h_0(0)-1$ (%)')
+    ax[1].legend(loc='center right', fontsize=6.5)
+    ax[1].set_title(r'(b) $h_0$ según el marco, $t\leq4000$', loc='left')
+    fig.tight_layout(w_pad=1.2)
+    guardar(fig, 'mapa_marco')
+
+
 TODAS = [fig_liouville, fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
          fig_hk_exacto, fig_convergencia, fig_agnosticas, fig_salud,
          fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion,
-         fig_capturas, fig_mapa_numerico]
+         fig_capturas, fig_mapa_numerico, fig_mapa_validacion, fig_mapa_marco]
 
 if __name__ == '__main__':
     filtro = sys.argv[1:]
