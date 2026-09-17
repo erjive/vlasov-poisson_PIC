@@ -69,7 +69,7 @@ module parameters
    real(8)   :: sp  = 0.5D0               !< Width of the gaussian in p
 
    !CheckPoint
-   character(100) :: CheckPointfile = "input_file.2D"  !< Initial state file
+   character(100) :: CheckPointfile = "ic.dat"  !< state="checkpoint": one line "r p_r f" per particle
 
    !Output
    character(100) :: directory = "test"     !< Output directory (may include subdirectories)

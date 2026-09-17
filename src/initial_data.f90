@@ -14,6 +14,7 @@
     implicit none
 
     integer :: i,j,indx
+    integer :: unit_ic,ios              ! state="checkpoint"
     real(8) :: smallpi,f_max
     real(8) :: raux,paux
     real(8) :: rand3(3)
@@ -507,17 +508,50 @@
 
 
 
-    else if(state.eq."checkpoint") then !NO IMPLEMENTED
+    else if(state.eq."checkpoint") then
+!     Particles read from a file, one line "r p_r f" per particle, exactly
+!     Npart = Nrc*Npc lines. This is how an initial state that the code
+!     cannot build itself enters the run -- for instance a self-consistent
+!     equilibrium plus a perturbation, placed on a quadrature grid in the
+!     action-angle variables of the total potential
+!     (paper_runs/scripts/equilibrio.py).
+!
+!     f holds raw values of the distribution function on a grid of equal
+!     cells, as in "aa_quad", so the same normalization to the mass a0
+!     applies: density, energy and analysish multiply f by drc*dpc, which
+!     cancels here.
 
-!       open(101,file=CheckPointFile)
+      open(newunit=unit_ic,file=trim(CheckPointfile),status='old',action='read',iostat=ios)
+      if (ios /= 0) then
+         print *
+         print *, 'state="checkpoint": cannot open ',trim(CheckPointfile)
+         print *, 'Aborting ...'
+         print *
+         stop 1
+      end if
+      do i=1,Npart
+         read(unit_ic,*,iostat=ios) r_part(i),p_part(i),f(i)
+         if (ios /= 0) then
+            print *
+            print *, 'state="checkpoint": ',trim(CheckPointfile),' has fewer than Npart=Nrc*Npc =',Npart,' lines'
+            print *, 'Aborting ...'
+            print *
+            stop 1
+         end if
+      end do
+      read(unit_ic,*,iostat=ios) raux
+      if (ios == 0) then
+         print *
+         print *, 'state="checkpoint": ',trim(CheckPointfile),' has more than Npart=Nrc*Npc =',Npart,' lines'
+         print *, 'Aborting ...'
+         print *
+         stop 1
+      end if
+      close(unit_ic)
 
-!       do i=0,Nr
-!          do j=0,Np
-!             read(101,*) aux1, aux2, f(i,j)
-!          end do
-!       end do
-
-!       close(101)
+      f = a0/(drc*dpc*8.0d0*smallpi**2*Lfix*sum(f))*f
+      print *, "Read",Npart," particles from ",trim(CheckPointfile)
+      print *, "Initial total mass=",sum(f)*8.0d0*smallpi**2*Lfix*drc*dpc
 
     else if(state.eq."other3") then !NO IMPLEMENTED
        f = 0.0d0       

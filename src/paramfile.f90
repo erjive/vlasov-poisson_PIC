@@ -36,6 +36,7 @@ module paramfile
       'time_output', 'spatial_output', 'field_output',           &
       'directory', 'output_format',                              &
       'a0', 'r0', 'p0', 'sr', 'sp', 'state', 'dftype', 'seed',   &
+      'checkpointfile',                                          &
       'j1', 'j2', 'sj1', 'sj2', 'sq1', 'sq2',                    &
       'r1', 'r2',                                                &
       'bsplineorder', 'integrator', 'spatialorder',              &
@@ -206,6 +207,7 @@ module paramfile
     case ('state')           ; call get_str (value,state,name,origin)
     case ('dftype')          ; call get_str (value,dftype,name,origin)
     case ('seed')            ; call get_int (value,seed,name,origin)
+    case ('checkpointfile')  ; call get_str (value,CheckPointfile,name,origin)
 
 !   Test functions for the h_k modes.
     case ('j1')              ; call get_real(value,j1,name,origin)
@@ -563,6 +565,7 @@ module paramfile
     call put_r(u,'sp',sp)
     call put_s(u,'state',state)
     call put_i(u,'seed',seed)
+    if (state == 'checkpoint') call put_s(u,'checkpointfile',CheckPointfile)
 
     write(u,'(a)') ''
     write(u,'(a)') '# Test functions for the h_k modes'
