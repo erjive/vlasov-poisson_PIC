@@ -12,11 +12,10 @@ Convención: corridas en `exe/sg/<nombre>`, configuración base
 
 ---
 
-## 1. La componente de h_1 que gira a frecuencia orbital
+## 1. La componente de h_1 que crece con a0=1e-2
 
-**Qué se sabe.** Además de la parte estática S (que resultó ser un efecto de
-coordenadas, ver *Resueltas*), h_1 tiene una componente que gira a
-omega = 0.055-0.062 (dentro de la banda orbital [0.047, 0.071]):
+**Qué se sabe.** Además de la parte estática S (efecto de coordenadas, ver
+*Resueltas*), h_1 tiene una componente que gira a omega = 0.055-0.062:
 
 | a0 | t in [2000,15000] | t in [15000,20000] |
 |---|---|---|
@@ -24,59 +23,15 @@ omega = 0.055-0.062 (dentro de la banda orbital [0.047, 0.071]):
 | 1e-3 | 8.7% de S | 10.2% de S |
 | 1e-2 | 18% de S | **86% de S** (rodea el origen: saltos de fase) |
 
-Por filas (`long_fino`, t <= 2000): hasta t=2000 es el continuo de filas que aún no
-termina de cancelarse (el ajuste S_i + A_i exp(-i w_i t) por fila reproduce 14.5 de
-los 15.4% medidos en [1300,2000]). Los residuos de cada fila están en su propia
-omega_i y en 2 omega_i y son incoherentes entre filas (coherencia 0.017): **no hay
-un modo con frecuencia común en t <= 2000**.
+Con a0=1e-3 quedó establecido que, después de t=2000, es **ruido de discreción**
+(ver *Resueltas*). Con a0=1e-2 no se ha comprobado, y ahí la componente **crece** en
+el tiempo, lo que un piso de ruido fijo no explica por sí solo: podría ser ruido
+amplificado por la autogravedad más fuerte, o una inestabilidad genuina.
 
-**Lo que no cuadra.** Ese continuo, extrapolado con los A_i y w_i ajustados, bajaría a
-0.5% de S en [2000,15000] y 0.1% en [15000,20000]. Se mide ~9-10%. Algo después de
-t=2000 detiene la cancelación.
-
-**Corrida hasta t=20000 con instantáneas** (`sg/long20k_snap`, reproduce
-`long_a0_1e-3` a 2.5e-21), ajuste por filas en ventanas de 2000
-(`filas_J.por_ventanas`):
-
-| ventana | abs(S)/h0 | arg S | rms(h-S)/abs(S) | rms C/abs(S) | rms residuos/abs(S) | amplitud de fila relativa a t=0 |
-|---|---|---|---|---|---|---|
-| [2600,4600] | 1.7663e-3 | +0.000 | 0.032 | 0.036 | 0.009 | 0.91 |
-| [8600,10600] | 1.7659e-3 | -0.000 | 0.083 | 0.074 | 0.017 | 0.68 |
-| [14600,16600] | 1.7657e-3 | -0.001 | 0.086 | 0.092 | 0.025 | 0.37 |
-| [16600,18600] | 1.7655e-3 | -0.001 | 0.104 | 0.112 | 0.024 | 0.26 |
-
-Tres cosas quedan establecidas:
-
-1. **La parte estática no se mueve** en 16 000 unidades de tiempo (cuarta cifra), y
-   es la suma de contribuciones de fila casi todas en fase.
-2. **La componente que gira es el continuo de filas en cada ventana**: el rms de
-   C = sum A_i exp(-i w_i t) coincide con el de h - S, y la suma de residuos es 3-10
-   veces menor. No hay una oscilación coherente a frecuencia común.
-3. **Las filas no son rígidas**: su amplitud cae de 0.91 a 0.26. Las 25 partículas de
-   una fila comparten J *isócrona* inicial pero no J verdadera (dispersión de J_iso
-   dentro de la fila ~2.9e-3), así que giran a frecuencias distintas y la fila se
-   desfasa internamente en ~1/(abs(omega') dJ) ~ 1e4. Las frecuencias de fila también
-   cambian (rms 2e-4 entre la primera y la última ventana, con una parte no suave en J
-   de 2.2e-5). Por eso falló la extrapolación desde t <= 2000: suponía filas rígidas.
-
-**Lo que sigue abierto.** Por qué ese continuo no se cancela por debajo de ~10% de S.
-Hipótesis a probar:
-- **Discreción de la rejilla**: con 400 filas cuyas fases evolucionan de forma no
-  suave en J, la suma no se cancela por debajo de un piso incoherente ~ 1/sqrt(Nrc).
-  Predicción: con Nrc=1600 el componente baja a la mitad. Costo: t=20000 con
-  N=4e4 son ~45 min.
-- ~~**Mismo efecto de coordenadas**~~ **Descartada.** Con el mapa numérico del
-  potencial real (ver *Resueltas*), la parte que gira no cambia: rms 1.540e-4 frente
-  a 1.541e-4, correlación 0.99988 entre los dos cálculos de h_1. No es un efecto del
-  mapa, es una propiedad de la distribución.
-- **Dinámica colectiva genuina**: es lo que queda si se descarta la discreción.
-- Para a0=1e-2, donde la componente crece a 86% de S, repetir `por_ventanas` con
-  instantáneas (no hecho).
-
-**Preguntas.** ¿Qué la sostiene con a0=1e-3? ¿Por qué crece con a0=1e-2? ¿Es dinámica
-colectiva genuina (candidata a lo que se quería medir) o un piso de discreción?
-Con el mapa numérico, repetir el análisis por filas agrupando por J verdadera: si
-las filas vuelven a ser rígidas y la componente sigue ahí, la discreción pierde peso.
+**Siguiente paso.** Repetir la prueba de resolución con a0=1e-2: corrida hasta
+t=20000 con Nrc=800 (~22 min) y comparar con `long_a0_1e-2` usando
+`paper_runs/scripts/giro_resolucion.py`. Si baja y se descorrelaciona, es numérica;
+si no cambia, es física y merece un análisis de estabilidad.
 
 ---
 
@@ -95,7 +50,8 @@ perturbación pequeña y separada. Solo entonces tiene sentido medir omega_r y g
 
 ## 3. Régimen a0 >= 1e-2
 
-Con a0=1e-2 el cambio de h_0 es 14% y la componente que gira crece hasta dominar.
+Con a0=1e-2 el cambio de h_0 es 14% y la componente que gira crece hasta dominar
+(pregunta 1).
 El mapa analítico ya no sirve; hay que usar el numérico. Depende de 1 y 2. Para perturbaciones grandes,
 relajación violenta (Lynden-Bell 1967).
 
@@ -138,6 +94,33 @@ diferencia entre los dos h_1 es un desplazamiento fijo de 1.77e-3 con fase 0,
 presente desde t=0. El cambio de h_0 durante la mezcla inicial baja de 1.60% a 1.35%
 (potencial promedio) o 0.76% (instantáneo): la mayor parte es un cambio real de las
 acciones mientras el potencial propio se reajusta (cambia 21% entre t=0 y t=2000).
+
+### Con a0=1e-3, la componente que gira es física hasta t=2000 y ruido de discreción después
+
+La componente no cambia con el mapa (correlación 0.99988), así que no es un efecto de
+coordenadas. Pruebas:
+
+- **Sin autogravedad** (`sg/long20k_nosg`), la misma cuadratura cancela h_1 hasta
+  ~2e-10 en t > 12000: la rejilla sola no tiene piso.
+- **Barridos existentes, t in [1600,2000]**: 5.675e-5 con N=1e4 y 5.680e-5 con N=1e5;
+  igual con Npc, dr y orden del spline. Hasta t=2000 es el continuo resuelto.
+- **Streaming libre** (`rotadores.py`): en variables verdaderas las partículas tienen J
+  constante a 6e-4 pero la fase se desvía ~0.01 rad de una recta, y h_1 en t=2000 es
+  una cancelación de 6e4 (sum|G| = 0.79, |sum G| = 1.4e-5). La reconstrucción no es
+  concluyente (correlación 0.60-0.90): basta una modulación de fase coherente de
+  ~2e-4 rad para producir la componente.
+- **Prueba de resolución hasta t=20000** (`giro_resolucion.py`):
+
+| ventana | Nrc=800 (doble en J) | Npc=50 (doble en Q) |
+|---|---|---|
+| [1600,2000] | 1.001x, correlación 1.000 | 1.000x, 1.000 |
+| [2000,6000] | 0.31x, 0.76 | 0.65x, 0.61 |
+| [6000,12000] | 0.53x, 0.84 | 0.35x, 0.61 |
+| [12000,20000] | 0.58x, 0.26 | 0.55x, 0.16 |
+
+Al duplicar las partículas en cualquiera de las dos direcciones la componente tardía
+baja a 0.3-0.65x y deja de parecerse a la de la corrida base: depende de la
+discretización, luego es numérica. La parte estática vale 1.767e-3 en las tres.
 
 ## Pendientes técnicos menores
 

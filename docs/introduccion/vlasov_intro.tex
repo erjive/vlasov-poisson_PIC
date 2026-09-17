@@ -1821,8 +1821,32 @@ Eso cierra el caso para la parte estática. La meseta no mide dinámica colectiv
 mide el error sistemático de usar el mapa ángulo--acción del potencial equivocado.
 
 Queda la componente que gira. Su correlación entre los dos mapas es $0.9999$: no la
-toca el cambio de coordenadas, así que \emph{no} es un efecto del mapa. Es una
-propiedad de la distribución misma, y es lo que queda por explicar.
+toca el cambio de coordenadas, así que \emph{no} es un efecto del mapa. ¿Es entonces
+una propiedad de la distribución? La prueba es la de siempre: cambiar la resolución.
+Se repitió la corrida hasta $t=20\,000$ con el doble de filas en $\Jr$ y, aparte, con el
+doble de nodos en $\Qr$:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+ventana & doble de filas en $\Jr$ & doble de nodos en $\Qr$ \\
+\midrule
+$t\in[1600,2000]$     & $1.00\times$ (corr.\ $1.00$) & $1.00\times$ (corr.\ $1.00$) \\
+$t\in[2000,6000]$     & $0.31\times$ (corr.\ $0.76$) & $0.65\times$ (corr.\ $0.61$) \\
+$t\in[12\,000,20\,000]$ & $0.58\times$ (corr.\ $0.26$) & $0.55\times$ (corr.\ $0.16$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Hasta $t=2000$ la componente es idéntica con cualquier resolución: es el continuo,
+todavía cancelándose, y es física. Después, al duplicar las partículas en cualquiera
+de las dos direcciones, baja a la mitad y deja de parecerse a la original: \textbf{es
+ruido de discreción}. Sin autogravedad la misma cuadratura cancela $h_1$ hasta
+$10^{-10}$. Una causa plausible, compatible con lo medido pero no demostrada: con
+autogravedad, las partículas de una misma fila adquieren acciones verdaderas
+distintas, la rejilla se desordena a escala menor que su separación y deja un piso de
+$\sim10^{-4}h_0$. La parte estática, en cambio, vale
+$1.767\times10^{-3}$ en las tres corridas.
 
 \section{El régimen fuerte: construir el mapa ángulo--acción numéricamente}
 \label{sec:mapanumerico}
@@ -2003,10 +2027,10 @@ cada una, se mantienen en el archivo \texttt{PREGUNTAS\_ABIERTAS.md} de la raíz
 repositorio. En orden de dificultad:
 
 \begin{itemize}
-  \item Explicar la componente que gira a frecuencia orbital, de $\sim10^{-4}h_0$ con
-    $a_0=10^{-3}$, que crece con $a_0=10^{-2}$. Sobrevive intacta al mapa numérico,
-    así que no es un efecto de coordenadas: queda decidir entre un piso por la
-    discreción de la rejilla y dinámica colectiva.
+  \item Con $a_0=10^{-2}$, la componente que gira crece hasta el $86\%$ de la parte
+    estática. Con $a_0=10^{-3}$ resultó ser ruido de discreción; con $a_0=10^{-2}$
+    falta repetir la prueba de resolución para saber si es ruido amplificado o una
+    inestabilidad.
   \item Construir un equilibrio autoconsistente con una perturbación pequeña y
     separada. Con el montaje actual, el reajuste del equilibrio y la respuesta a la
     perturbación quedan mezclados, y sin separarlos no tiene sentido medir un

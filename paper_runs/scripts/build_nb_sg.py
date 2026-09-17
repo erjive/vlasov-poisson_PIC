@@ -31,8 +31,9 @@ idéntico.
 4. La meseta no es un modo: su fase está congelada. Es el efecto de calcular $(Q,J)$
    con el mapa del isócrono cuando el potencial ya no es el isócrono: **con el mapa
    ángulo-acción del potencial real desaparece** (sección 7).
-5. Queda sin explicar una componente pequeña que gira a frecuencia orbital, que no
-   cambia con el mapa.
+5. Queda una componente pequeña que gira a frecuencia orbital: física hasta
+   $t=2000$ y ruido de discreción después (sección 8). Con $a_0=10^{-2}$, donde crece,
+   está pendiente.
    Las preguntas abiertas están en `PREGUNTAS_ABIERTAS.md`.
 
 Los mismos resultados, con más contexto, están en `docs/introduccion/vlasov_intro.tex`.
@@ -388,6 +389,32 @@ md(r"""
 
 **La parte que gira no cambia** (correlación 0.9999 entre los dos mapas): no es un
 efecto de coordenadas. Es lo que queda por explicar; ver `PREGUNTAS_ABIERTAS.md`.
+""")
+
+md(r"""
+## 8. La componente que gira: ¿física o discreción?
+
+No cambia con el mapa, así que no es un efecto de coordenadas. La prueba es cambiar la
+resolución: corridas hasta $t=20\,000$ con el doble de filas en $J$ (`long20k_nrc800`)
+y con el doble de nodos en $Q$ (`long20k_npc50`), y el control sin autogravedad.
+""")
+
+code(r"""
+import subprocess
+print(subprocess.run([sys.executable, '../scripts/giro_resolucion.py'],
+                     capture_output=True, text=True).stdout)
+""")
+
+md(r"""
+- **Hasta $t=2000$** es idéntica con cualquier resolución: el continuo, física.
+- **Después** baja a 0.3–0.65× al duplicar partículas en $J$ o en $Q$ y deja de estar
+  correlacionada con la corrida base: **es ruido de discreción**. Sin autogravedad la
+  misma cuadratura cancela hasta $10^{-10}$; la autogravedad desordena la rejilla en
+  acción verdadera y deja un piso de $\sim10^{-4}h_0$.
+- La parte estática ($1.767\times10^{-3}$) no depende de la resolución.
+
+Con $a_0=10^{-2}$, donde la componente crece, la prueba está pendiente
+(`PREGUNTAS_ABIERTAS.md`).
 """)
 
 nb={"cells":cells,"metadata":{"kernelspec":{"display_name":"Python 3","language":"python",
