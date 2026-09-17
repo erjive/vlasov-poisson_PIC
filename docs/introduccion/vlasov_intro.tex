@@ -1254,6 +1254,54 @@ Antes de usar un código para descubrir algo hay que demostrar que reproduce lo 
 ya se sabe. La fórmula~\eqref{eq:hkexacto} permite calcular $h_k(t)$ con precisión
 de máquina mediante cuadratura, y eso da un patrón contra el cual medir.
 
+\subsection{Cómo reproducir las corridas}
+\label{sec:reproducir}
+
+Todas las simulaciones de estas notas se hicieron con el código
+\texttt{vlasov-poisson\_PIC}, rama \texttt{clean/comentarios}. Cada corrida escribe
+en su directorio un archivo \texttt{params\_usados.par} con la configuración completa
+y la línea de comando exacta; ejecutar \texttt{./VP\_PIC params\_usados.par} la
+repite. Las tablas de esta sección y de las siguientes resumen lo necesario para
+reproducirlas sin ese archivo. La tabla~\ref{tab:comun} reúne lo que comparten todas.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Parámetros comunes a todas las simulaciones. Los nombres son los del archivo
+de parámetros del código.}
+\label{tab:comun}
+\begin{tabular}{p{0.30\textwidth}p{0.19\textwidth}p{0.43\textwidth}}
+\toprule
+parámetro & valor & significado \\
+\midrule
+\texttt{Lfix} & $2.0$ & momento angular $L_0$ \\
+\texttt{BGtype}, \texttt{forcetype} & \texttt{Isochrone}, \texttt{bg} & fondo isócrono~\eqref{eq:isocrono} \\
+\texttt{integrator} & \texttt{yoshida4} & Yoshida de cuarto orden~\eqref{eq:yoshida} \\
+\texttt{dr}, \texttt{rmin}, \texttt{rmax} & $0.1$, $0$, $20$ & malla radial (salvo el barrido en $\Delta r$) \\
+\texttt{courant}, \texttt{pmax} & $2.0$, $2.0$ & $\Delta t=\texttt{courant}\cdot\Delta r/\texttt{pmax}=0.1$ \\
+\texttt{bsplineorder} & $1$ & función de forma (salvo el barrido de orden) \\
+\texttt{eps} & $0$ & sin suavizado del término centrífugo \\
+\texttt{spatial\_output} & $20$ & $h_k$ cada $2$ unidades de tiempo \\
+\texttt{j1}, \texttt{sj1}, \texttt{sq1} & $0.10$, $0.10$, $0.40$ & función de prueba~\eqref{eq:prueba}: $\Jr_0$, $\sigma_J$, $\sigma_Q$ \\
+\texttt{rminc}, \texttt{rmaxc} & $3$, $14$ & caja de muestreo en $r$ (solo normalización) \\
+\texttt{pminc}, \texttt{pmaxc} & $-0.25$, $0.25$ & caja de muestreo en $\rp$ (solo normalización) \\
+\texttt{output\_format} & \texttt{hdf5} & instantáneas cada \texttt{field\_output} pasos \\
+\midrule
+\multicolumn{3}{p{0.94\textwidth}}{Archivos base: \texttt{paper\_runs/base\_dftest.par}
+(sección~\ref{sec:verificacion}) y \texttt{paper\_runs/base\_selfgrav.par}
+(secciones~\ref{sec:autogravedad}--\ref{sec:mapanumerico}). Número de partículas:
+$N=\texttt{Nrc}\times\texttt{Npc}$; con cuadratura, \texttt{Nrc} filas en $\Jr$ y
+\texttt{Npc} nodos en $\Qr$. Figuras y análisis:
+\texttt{docs/introduccion/figuras/generar\_figuras.py} y \texttt{paper\_runs/scripts/}.} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El código con el que se hicieron las corridas de las secciones~\ref{sec:verificacion}
+y~\ref{sec:autogravedad} es anterior a la corrección del diagnóstico de energía
+(commit \texttt{b0f3915}). Esa corrección no cambia la dinámica: las posiciones y los
+momentos salen idénticos bit a bit, y solo cambia la energía reportada.
+
 \subsection{Las dos convergencias}
 
 Con fondo fijo y $t_{\max}=2000$, el error medio en el tiempo de $h_1$ respecto del
@@ -1301,6 +1349,29 @@ al código: por omisión \texttt{gfortran} inicializa su generador desde el sist
 operativo, de modo que dos corridas idénticas daban resultados distintos y
 ninguna era reproducible.
 \end{aviso}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Corridas de verificación (secciones~\ref{sec:verificacion} y~\ref{sec:agnosticas}),
+con fondo fijo. Base: \texttt{paper\_runs/base\_dftest.par}.}
+\label{tab:verificacion}
+\begin{tabular}{ll}
+\toprule
+parámetro & valor \\
+\midrule
+\texttt{autointeraction} & \texttt{.false.} \\
+\texttt{a0} & $10^{-4}$ (irrelevante sin autogravedad) \\
+\texttt{Nt} & $20\,000$ ($t_{\max}=2000$) \\
+\texttt{dftype} & \texttt{bimodal}, \texttt{spiral}, \texttt{king}; parámetros en~\eqref{eq:bimodal}--\eqref{eq:king} \\
+cuadratura & \texttt{state=aa\_quad}, \texttt{Npc=25}, \texttt{Nrc} $=20,\ 200,\ 2000$ ($N=500,\ 5000,\ 50\,000$) \\
+Monte Carlo & \texttt{state=aa\_random}, mismas $N$, \texttt{seed} $=1007,\ 2007,\ 3007,\ 4007,\ 5007$ \\
+capturas (figs.~\ref{fig:capbim}--\ref{fig:capking}) & \texttt{aa\_quad}, \texttt{Nrc=2000}, \texttt{Npc=25}, \texttt{field\_output=400} \\
+\midrule
+scripts & \texttt{paper\_runs/scripts/run\_dfstudy.sh}, \texttt{run\_dfsnap.sh} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Pruebas agnósticas: ¿depende el acuerdo de la distribución elegida?}
 \label{sec:agnosticas}
@@ -1454,7 +1525,45 @@ figura~\ref{fig:enrollamiento}, con masa total $a_0=10^{-3}$ ---\emph{una milés
 de la del fondo isócrono---, ahora con su propia gravedad activada. $N=10^4$,
 cuadratura y Monte Carlo, $\Delta t=0.1$, hasta $t=2000$ (unos 20 periodos
 orbitales). Y, como control imprescindible, la misma corrida con la autogravedad
-desactivada.
+desactivada. La tabla~\ref{tab:autogravedad} da los parámetros de todas las corridas
+de esta sección.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Corridas con autogravedad. Base: \texttt{paper\_runs/base\_selfgrav.par}, que
+fija la distribución gaussiana~\eqref{eq:gauss} con \texttt{sr}$=\sigma_J=0.1$,
+\texttt{sp}$=\sigma_Q=0.1$. La columna ``cambios'' lista lo que difiere de la corrida
+de referencia.}
+\label{tab:autogravedad}
+\footnotesize
+\begin{tabular}{p{0.20\textwidth}p{0.52\textwidth}p{0.20\textwidth}}
+\toprule
+corrida & cambios respecto de la referencia & uso \\
+\midrule
+referencia & \texttt{state=aa\_quad Nrc=400 Npc=25 a0=1e-3 Nt=20000} & todo \\
+ & \texttt{autointeraction=.true.} & \\
+control & \texttt{autointeraction=.false.} & todo \\
+energía corregida & referencia y control repetidos con el código del commit \texttt{b0f3915} & fig.~\ref{fig:salud}, Resultado 1 \\
+Monte Carlo & \texttt{state=aa\_random seed=1007}; \texttt{Nrc}$=40,400,4000$ & figs.~\ref{fig:envolvente}, \ref{fig:masa} \\
+malla & \texttt{dr}$=0.2,0.05,0.025$ con \texttt{courant}$=1,4,8$ ($\Delta t=0.1$) & fig.~\ref{fig:barridos} \\
+orden del spline & \texttt{bsplineorder}$=2,3$ & fig.~\ref{fig:barridos} \\
+nodos en $\Qr$, $N$ fijo & $(\texttt{Nrc},\texttt{Npc})=(100,100),\ (50,200)$ & fig.~\ref{fig:barridos} \\
+partículas & \texttt{Nrc}$=40,\ 4000$ ($N=10^3,\ 10^5$) & fig.~\ref{fig:barridos} \\
+masa, $t\le2000$ & \texttt{a0}$=10^{-4},\ 10^{-2}$ & tabla de mesetas \\
+largas & \texttt{Nt=200000 field\_output=1000}; \texttt{a0}$=10^{-4},10^{-3},10^{-2}$ & figs.~\ref{fig:fase}, \ref{fig:masa} \\
+instantáneas finas & \texttt{field\_output=40} (cada 4 unidades), $t\le2000$ & fig.~\ref{fig:accion} \\
+larga con instantáneas & \texttt{Nt=200000 field\_output=400} & figs.~\ref{fig:mapanumerico}, \ref{fig:mapamarco} \\
+resolución, largas & \texttt{Nt=200000}; \texttt{Nrc=800}, o bien \texttt{Npc=50} & prueba de la parte que gira \\
+resolución, $a_0=10^{-2}$ & \texttt{Nt=200000 a0=1e-2 Nrc=800} & ídem \\
+\midrule
+\multicolumn{3}{p{0.94\textwidth}}{Scripts: \texttt{paper\_runs/scripts/run\_selfgrav\_scans.sh}
+(malla, spline, masa, partículas); el resto, con la línea de comando guardada en
+\texttt{params\_usados.par} de cada corrida. Análisis: \texttt{filas\_J.py},
+\texttt{giro\_resolucion.py}, \texttt{rotadores.py}.} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Resultado 1: la energía, y un diagnóstico mal definido}
 
@@ -1635,8 +1744,8 @@ indique otra cosa) en unidades de $h_0$:
 \end{figure}
 
 \textbf{Nada de la discretización la mueve} ---ni ocho veces más resolución de malla,
-ni B-splines cúbicos, ni ocho veces más nodos angulares, ni \emph{cien veces} más
-partículas: todos los valores caen entre $1.763$ y $1.771\times10^{-3}$---
+ni B-splines cúbicos, ni ocho veces más nodos angulares (a $N$ fijo, es decir, con
+ocho veces menos filas en $\Jr$), ni \emph{cien veces} más partículas: todos los valores caen entre $1.763$ y $1.771\times10^{-3}$---
 (figura~\ref{fig:barridos}). Y escala con la masa (figura~\ref{fig:masa}a): la parte
 estática tiene pendiente log-log $+0.91$ en las dos ventanas, frente al $+1$ de una
 respuesta estrictamente lineal.
@@ -1874,6 +1983,28 @@ construir el del potencial real. Con un grado de libertad es directo, y la
 sección~\ref{sec:construccion} ya dio las fórmulas. Aquí se describe cómo se
 implementó (\texttt{paper\_runs/scripts/aa\_numerico.py}), cómo se validó, y qué
 decisiones hubo que tomar.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Parámetros del mapa ángulo--acción numérico y de su aplicación.}
+\label{tab:mapanumerico}
+\begin{tabular}{ll}
+\toprule
+parámetro & valor \\
+\midrule
+corrida analizada & larga con instantáneas (tabla~\ref{tab:autogravedad}), 501 instantáneas, $\Delta t_{\rm salida}=40$ \\
+potencial propio & potencial del código menos $\Phi_{\rm iso}$, en la malla $r=0.05+0.1\,i$, $i=0,\dots,200$ \\
+marco fijo & promedio de las instantáneas con $t\ge2000$ (450) \\
+interpolación & spline cúbico natural; para $r>20.05$, $-M/r$ \\
+puntos de retorno & bisección, 80 iteraciones, en $[10^{-2},r_c]$ y $[r_c,60]$ \\
+cuadratura & sustitución~\eqref{eq:sustitucion} y Gauss--Legendre de 64 nodos \\
+mapa inverso & bisección en $\theta$, 60 iteraciones, Gauss--Legendre de 32 nodos \\
+\midrule
+scripts & \texttt{paper\_runs/scripts/aa\_numerico.py}, \texttt{aa\_meseta.py} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{El potencial}
 
