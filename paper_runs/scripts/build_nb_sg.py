@@ -32,8 +32,8 @@ idéntico.
    con el mapa del isócrono cuando el potencial ya no es el isócrono: **con el mapa
    ángulo-acción del potencial real desaparece** (sección 7).
 5. Queda una componente pequeña que gira a frecuencia orbital: física hasta
-   $t=2000$ y ruido de discreción después (sección 8). Con $a_0=10^{-2}$, donde crece,
-   está pendiente.
+   $t=2000$ y ruido de discreción después, también con $a_0=10^{-2}$ donde crece
+   (sección 8).
    Las preguntas abiertas están en `PREGUNTAS_ABIERTAS.md`.
 
 Los mismos resultados, con más contexto, están en `docs/introduccion/vlasov_intro.tex`.
@@ -413,8 +413,20 @@ md(r"""
   desordena la rejilla en acción verdadera y deja un piso de $\sim10^{-4}h_0$.
 - La parte estática ($1.767\times10^{-3}$) no depende de la resolución.
 
-Con $a_0=10^{-2}$, donde la componente crece, la prueba está pendiente
-(`PREGUNTAS_ABIERTAS.md`).
+Con $a_0=10^{-2}$, donde la componente crece, la misma prueba:
+""")
+
+code(r"""
+print(subprocess.run([sys.executable, '../scripts/giro_resolucion.py',
+                      'long_a0_1e-2', 'long20k_a0_1e-2_nrc800'],
+                     capture_output=True, text=True).stdout)
+""")
+
+md(r"""
+Mismo veredicto: después de $t=2000$ la amplitud baja a 0.24–0.41× con el doble de
+filas. Crece como $t^{1.9}$ en ambas resoluciones (algebraico, no exponencial): ruido
+de discreción que se acumula, no una inestabilidad. El mecanismo está en
+`PREGUNTAS_ABIERTAS.md`.
 """)
 
 nb={"cells":cells,"metadata":{"kernelspec":{"display_name":"Python 3","language":"python",

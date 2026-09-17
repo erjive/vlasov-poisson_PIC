@@ -12,26 +12,34 @@ Convención: corridas en `exe/sg/<nombre>`, configuración base
 
 ---
 
-## 1. La componente de h_1 que crece con a0=1e-2
+## 1. Mecanismo del ruido de discreción que crece en el tiempo
 
-**Qué se sabe.** Además de la parte estática S (efecto de coordenadas, ver
-*Resueltas*), h_1 tiene una componente que gira a omega = 0.055-0.062:
+**Qué se sabe.** La componente de h_1 que gira a frecuencia orbital es, después de
+t=2000, ruido de discreción tanto con a0=1e-3 como con a0=1e-2 (ver *Resueltas*).
+Pero crece con el tiempo:
 
-| a0 | t in [2000,15000] | t in [15000,20000] |
-|---|---|---|
-| 1e-4 | 1.4% de S | 1.3% de S |
-| 1e-3 | 8.7% de S | 10.2% de S |
-| 1e-2 | 18% de S | **86% de S** (rodea el origen: saltos de fase) |
+| a0 | Nrc | rms por ventana de 2000, de t=2000 a 20000 | ley |
+|---|---|---|---|
+| 1e-3 | 400 | 3.4e-5 ... 1.9e-4 (se satura hacia t~10000) | ~t^0.9 |
+| 1e-3 | 800 | 1.4e-5 ... 1.4e-4 | ~t^0.9 |
+| 1e-2 | 400 | 2.7e-4 ... 1.2e-2 | ~t^1.9 (R2 0.96; exponencial 0.93) |
+| 1e-2 | 800 | 1.0e-4 ... 3.4e-3 | ~t^1.9 (R2 0.99; exponencial 0.92) |
 
-Con a0=1e-3 quedó establecido que, después de t=2000, es **ruido de discreción**
-(ver *Resueltas*). Con a0=1e-2 no se ha comprobado, y ahí la componente **crece** en
-el tiempo, lo que un piso de ruido fijo no explica por sí solo: podría ser ruido
-amplificado por la autogravedad más fuerte, o una inestabilidad genuina.
+Con a0=1e-2, duplicar Nrc multiplica la amplitud por ~0.35 en todas las ventanas
+(0.23-0.50), cerca de 2^{-3/2}, y deja igual la ley de crecimiento.
 
-**Siguiente paso.** Repetir la prueba de resolución con a0=1e-2: corrida hasta
-t=20000 con Nrc=800 (~22 min) y comparar con `long_a0_1e-2` usando
-`paper_runs/scripts/giro_resolucion.py`. Si baja y se descorrelaciona, es numérica;
-si no cambia, es física y merece un análisis de estabilidad.
+**Interpretación plausible, no demostrada.** El potencial propio calculado con N
+partículas finitas fluctúa; esas fluctuaciones, proporcionales a a0, desvían las
+fases orbitales de cada partícula, y el desfase acumulado crece con t hasta
+saturarse. Encaja con: amplitud dependiente de la resolución, crecimiento algebraico
+y no exponencial, y crecimiento más rápido con más masa. No encaja con una
+inestabilidad física, que crecería exponencialmente con una tasa propia.
+
+**Siguiente paso, si importa.** Medir el escalamiento completo: Nrc=1600 con a0=1e-2
+(~45 min), predicción ~0.35 otra vez; variar dr a tiempos largos; medir la difusión
+de las acciones verdaderas por partícula (`rotadores.py`) y compararla con la
+amplitud. Para el objetivo físico (Landau) basta saber que es numérico y escoger N y
+t_max para que quede por debajo de la señal.
 
 ---
 
@@ -51,7 +59,7 @@ perturbación pequeña y separada. Solo entonces tiene sentido medir omega_r y g
 ## 3. Régimen a0 >= 1e-2
 
 Con a0=1e-2 el cambio de h_0 es 14% y la componente que gira crece hasta dominar
-(pregunta 1).
+(ruido de discreción, ver *Resueltas*).
 El mapa analítico ya no sirve; hay que usar el numérico. Depende de 1 y 2. Para perturbaciones grandes,
 relajación violenta (Lynden-Bell 1967).
 
@@ -121,6 +129,22 @@ coordenadas. Pruebas:
 Al duplicar las partículas en cualquiera de las dos direcciones la componente tardía
 baja a 0.3-0.65x y deja de parecerse a la de la corrida base: depende de la
 discretización, luego es numérica. La parte estática vale 1.767e-3 en las tres.
+
+### Con a0=1e-2, la componente que crece también es ruido de discreción
+
+`sg/long20k_a0_1e-2_nrc800` frente a `sg/long_a0_1e-2` (`giro_resolucion.py`):
+
+| ventana | cociente Nrc=800/Nrc=400 | correlación |
+|---|---|---|
+| [1600,2000] | 1.01 | 0.999 |
+| [2000,6000] | 0.24 | 0.78 |
+| [6000,12000] | 0.41 | 0.48 |
+| [12000,20000] | 0.29 | 0.46 |
+| [15000,20000] | 0.25 | 0.56 |
+
+Hasta t=2000 es física resuelta; después, la amplitud depende de la resolución. La
+parte estática vale 1.233e-2 en ambas. El crecimiento en el tiempo tiene la misma ley
+en las dos resoluciones (pregunta 1).
 
 ## Pendientes técnicos menores
 

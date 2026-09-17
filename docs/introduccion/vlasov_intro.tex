@@ -1848,6 +1848,12 @@ distintas, la rejilla se desordena a escala menor que su separación y deja un p
 $\sim10^{-4}h_0$. La parte estática, en cambio, vale
 $1.767\times10^{-3}$ en las tres corridas.
 
+La misma prueba con $a_0=10^{-2}$, donde la componente crece hasta el $86\%$ de la
+parte estática, da el mismo veredicto: con el doble de filas en $\Jr$ la amplitud se
+multiplica por $0.24$--$0.41$ en cada ventana después de $t=2000$. Crece con el tiempo
+como $t^{1.9}$ en las dos resoluciones, algebraica y no exponencialmente, que es lo
+que se espera de un desfase acumulado por ruido y no de una inestabilidad.
+
 \section{El régimen fuerte: construir el mapa ángulo--acción numéricamente}
 \label{sec:mapanumerico}
 
@@ -2027,10 +2033,11 @@ cada una, se mantienen en el archivo \texttt{PREGUNTAS\_ABIERTAS.md} de la raíz
 repositorio. En orden de dificultad:
 
 \begin{itemize}
-  \item Con $a_0=10^{-2}$, la componente que gira crece hasta el $86\%$ de la parte
-    estática. Con $a_0=10^{-3}$ resultó ser ruido de discreción; con $a_0=10^{-2}$
-    falta repetir la prueba de resolución para saber si es ruido amplificado o una
-    inestabilidad.
+  \item Entender cómo crece el ruido de discreción con autogravedad. Con
+    $a_0=10^{-2}$ la componente que gira llega al $86\%$ de la parte estática, pero
+    también depende de la resolución (duplicar las filas en $\Jr$ la multiplica por
+    $\sim0.35$) y crece como $t^{1.9}$ en ambas resoluciones, no exponencialmente: es
+    numérica, no una inestabilidad. Falta el mecanismo y su escalamiento con $N$.
   \item Construir un equilibrio autoconsistente con una perturbación pequeña y
     separada. Con el montaje actual, el reajuste del equilibrio y la respuesta a la
     perturbación quedan mezclados, y sin separarlos no tiene sentido medir un

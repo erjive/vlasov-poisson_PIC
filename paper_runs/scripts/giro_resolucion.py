@@ -6,15 +6,20 @@ se mide directamente sobre el h_1 que escribe el código: R = h_1 - <h_1> por ve
 
 Si R fuera un piso de discreción de la rejilla, bajaría al duplicar las filas en J
 (Nrc) o los nodos en Q (Npc). Si es una propiedad resuelta de la distribución, no.
+
+Uso:  python3 giro_resolucion.py                      (a0=1e-3, las corridas de abajo)
+      python3 giro_resolucion.py base otra [otra ...]  (la primera es la referencia)
 """
-import os, numpy as np
+import os, sys, numpy as np
 
 SG = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'exe', 'sg')
 CORRIDAS = [('Nrc=400, Npc=25 (N=1e4)', 'long20k_snap'),
             ('Nrc=800, Npc=25 (N=2e4)', 'long20k_nrc800'),
             ('Nrc=400, Npc=50 (N=2e4)', 'long20k_npc50'),
             ('sin autogravedad, N=1e4', 'long20k_nosg')]
-VENTANAS = [(1600, 2000), (2000, 6000), (6000, 12000), (12000, 20000)]
+VENTANAS = [(1600, 2000), (2000, 6000), (6000, 12000), (12000, 20000), (15000, 20000)]
+if len(sys.argv) > 2:
+    CORRIDAS = [(d, d) for d in sys.argv[1:]]
 
 
 def leer(d):
@@ -33,7 +38,7 @@ for nombre, d in CORRIDAS:
         v = (t >= lo) & (t <= hi)
         R = z[v] - z[v].mean()
         r = np.sqrt(np.mean(np.abs(R)**2))
-        if d == 'long20k_snap':
+        if d == CORRIDAS[0][1]:
             base[(lo, hi)] = (r, R)
             cociente, corr = 1.0, 1.0
         else:
