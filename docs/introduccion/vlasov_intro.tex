@@ -2026,6 +2026,73 @@ generalicen.
     uno mismo--- repita el razonamiento.
 \end{enumerate}
 
+\section{Relación con la literatura}
+\label{sec:literatura}
+
+Antes de decidir qué de lo anterior es nuevo, conviene situarlo. Una búsqueda
+bibliográfica dirigida muestra que casi todos los ingredientes tienen antecedentes, y
+señala dónde queda un hueco.
+
+\paragraph{El montaje.} El phase mixing de un gas no colisional atrapado en un
+potencial central externo, con partículas de momento angular fijo, fue estudiado por
+Rioseco y Sarbach~\cite{rioseco2020}: muestran que las observables macroscópicas
+convergen a las de la distribución promediada. Es el mismo montaje de estas notas,
+sin autogravedad. La versión rigurosa con autogravedad existe: Chaturvedi y
+Luk~\cite{chaturvedi2024} demuestran phase mixing lineal y no lineal para
+Vlasov--Poisson con un potencial de Kepler externo en simetría esférica, y para ello
+necesitan variables ángulo--acción \emph{definidas dinámicamente} a partir del
+potencial autoconsistente. Es, en lenguaje matemático, lo mismo que tuvimos que
+construir numéricamente en la sección~\ref{sec:mapanumerico}.
+
+\paragraph{La cuadratura en ángulo--acción.} Colocar las partículas en una rejilla
+regular sobre el toro de ángulo--acción, en lugar de sortearlas, es el
+\emph{quiet start} introducido por Sellwood para simulaciones de galaxias~\cite{sellwood1997}.
+El umbral de resolución en $\Jr$ de la ecuación~\eqref{eq:franja} es la recurrencia
+de Cheng y Knorr~\cite{chengknorr1976}, $\tau=2\pi/(k\,\Delta v)$, trasladada de
+velocidades a acciones. Ninguno de los dos es nuevo; lo que estas notas agregan es
+su medición cuantitativa en este problema (figura~\ref{fig:convergencia}).
+
+\paragraph{Las acciones en el potencial equivocado.} Que las acciones calculadas con
+un potencial aproximado oscilen a lo largo de la órbita es conocido en dinámica
+galáctica, y es el criterio con el que se comparan los métodos de estimación de
+acciones~\cite{sanders2016}. Burger, Peñarrubia y Zavala~\cite{burger2021} calculan
+cómo oscilan las acciones radiales en potenciales esféricos que cambian con el
+tiempo. Lo que no encontramos descrito es la consecuencia para un diagnóstico de
+phase mixing: un residuo \emph{estático} en $h_k$, proporcional a la masa de la
+perturbación, que imita un modo que no decae y desaparece al usar el mapa correcto
+(sección~\ref{sec:autogravedad}).
+
+\paragraph{Modos y amortiguamiento en sistemas esféricos.} Weinberg~\cite{weinberg1994}
+mostró que los sistemas esféricos estables pueden tener modos débilmente
+amortiguados. Fouvry y Prunet~\cite{fouvry2022} desarrollan el método matricial con
+la continuación analítica necesaria para los modos amortiguados, encuentran un modo
+$\ell=1$ débilmente amortiguado en el isócrono isotrópico y lo contrastan con
+simulaciones $N$-body. Polyachenko, Shukhman y Borodina~\cite{polyachenko2021}
+distinguen entre modos genuinos y ondas amortiguadas por Landau, y advierten que las
+desviaciones del amortiguamiento de Landau son comunes. Para perturbaciones esféricas
+($\ell=0$), Ramming y Rein~\cite{ramming2018} y Straub~\cite{straub2024} encuentran
+numéricamente, alrededor de equilibrios estables, oscilaciones que no se amortiguan en
+unos modelos y amortiguamiento en otros, y lo relacionan con la función de periodo
+radial de las partículas.
+
+\begin{idea}
+\textbf{Dónde queda el hueco.} Ninguno de estos trabajos combina las tres cosas de
+este problema: perturbaciones $\ell=0$ con momento angular fijo, un fondo externo
+isócrono con autogravedad encima, y un diagnóstico espectral en variables
+ángulo--acción comparado con la teoría lineal. Straub trabaja $\ell=0$ sin $L$ fijo ni
+fondo externo; Chaturvedi y Luk tienen el marco riguroso pero no números; Fouvry y
+Prunet, el método matricial para $\ell=1$.
+
+\medskip
+Lo obtenido en estas notas no alcanza todavía para un artículo de física: el
+amortiguamiento de Landau no se ha medido en un montaje limpio. Sí alcanza como
+sección de métodos que haga creíble esa medición: la verificación contra soluciones
+exactas, la meseta estática como artefacto del mapa, y la separación entre física y
+ruido de discreción mediante pruebas de resolución. Esta evaluación se apoya en los
+resúmenes de los trabajos citados; antes de afirmar novedad hay que leerlos completos,
+en particular~\cite{straub2024} y~\cite{fouvry2022}.
+\end{idea}
+
 \section{Trabajo pendiente}
 
 Las preguntas abiertas, con los números medidos y el siguiente paso concreto de
@@ -2151,6 +2218,72 @@ H.~Yoshida,
 \emph{Construction of higher order symplectic integrators},
 Physics Letters A \textbf{150} (1990) 262.
 \newblock Los coeficientes de composición usados aquí.
+
+
+\bibitem{burger2021}
+J.~D.~Burger, J.~Peñarrubia y J.~Zavala,
+\emph{Conservation of radial actions in time-dependent spherical potentials},
+Monthly Notices of the Royal Astronomical Society (2021), arXiv:2012.00737.
+
+\bibitem{chaturvedi2024}
+S.~Chaturvedi y J.~Luk,
+\emph{Linear and nonlinear phase mixing for the gravitational Vlasov--Poisson
+system under an external Kepler potential},
+Archive for Rational Mechanics and Analysis (2026), arXiv:2409.14626.
+
+\bibitem{chengknorr1976}
+C.~Z.~Cheng y G.~Knorr,
+\emph{The integration of the Vlasov equation in configuration space},
+Journal of Computational Physics \textbf{22} (1976) 330.
+\newblock Introduce el esquema de separación y el tiempo de recurrencia
+$2\pi/(k\Delta v)$.
+
+\bibitem{fouvry2022}
+J.-B.~Fouvry y S.~Prunet,
+\emph{Linear response theory and damped modes of stellar clusters},
+Monthly Notices of the Royal Astronomical Society \textbf{509} (2022) 2443,
+arXiv:2105.01371.
+
+\bibitem{polyachenko2021}
+E.~V.~Polyachenko, I.~G.~Shukhman y O.~I.~Borodina,
+\emph{Damped perturbations in stellar systems: genuine modes and Landau-damped waves},
+Monthly Notices of the Royal Astronomical Society \textbf{503} (2021) 660,
+arXiv:2101.08287.
+
+\bibitem{ramming2018}
+T.~Ramming y G.~Rein,
+\emph{Oscillating solutions of the Vlasov--Poisson system: a numerical investigation},
+Physica D \textbf{365} (2018) 72, arXiv:1602.07989.
+
+\bibitem{rioseco2020}
+P.~Rioseco y O.~Sarbach,
+\emph{Phase space mixing in an external gravitational central potential},
+Classical and Quantum Gravity (2020), arXiv:2005.05988.
+
+\bibitem{sanders2016}
+J.~L.~Sanders y J.~Binney,
+\emph{A review of action estimation methods for galactic dynamics},
+Monthly Notices of the Royal Astronomical Society \textbf{457} (2016) 2107,
+arXiv:1511.08213.
+
+\bibitem{sellwood1997}
+J.~A.~Sellwood,
+\emph{Galaxy dynamics by N-body simulation},
+en \emph{Computational Astrophysics}, ASP Conference Series (1997),
+arXiv:astro-ph/9612087.
+\newblock Describe el \emph{quiet start}: partículas en una rejilla sobre el toro de
+ángulo--acción.
+
+\bibitem{straub2024}
+C.~Straub,
+\emph{Numerical experiments on stationary, oscillating, and damped spherical galaxy
+models},
+Physica D \textbf{470} (2024) 134351, arXiv:2405.01235.
+
+\bibitem{weinberg1994}
+M.~D.~Weinberg,
+\emph{Weakly damped modes in star clusters and galaxies},
+The Astrophysical Journal \textbf{421} (1994) 481.
 
 \end{thebibliography}
 
