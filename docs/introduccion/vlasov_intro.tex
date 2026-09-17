@@ -65,7 +65,8 @@ cometidos durante su desarrollo, porque la forma en que se descartan las
 explicaciones falsas es parte del método. El hilo conductor es un caso de estudio:
 una meseta inesperada en $h_1(t)$ al activar la autogravedad, que tras varios
 barridos de control resulta no ser ni ruido numérico ni un modo colectivo, sino la
-huella de estar usando las coordenadas equivocadas.
+huella de estar usando las coordenadas equivocadas; al recalcularla con las
+variables ángulo--acción del potencial real, desaparece.
 \end{abstract}
 
 \tableofcontents
@@ -1776,10 +1777,52 @@ mitad de la corrida es entre 17 y más de 100 veces menor que la oscilación. Es
 hay difusión física de la acción; hay una coordenada que oscila una vez por órbita
 porque no es la coordenada adecuada para el potencial real.
 
+Todo lo anterior es consistente con la explicación, pero no la prueba. La prueba
+directa es la que se describe en la sección~\ref{sec:mapanumerico}: construir el mapa
+ángulo--acción del potencial \emph{real} y recalcular $h_1$ con él. Si la explicación
+es correcta, la parte estática debe desaparecer; si no desaparece, es falsa.
+
+Se hizo sobre la corrida hasta $t=20\,000$, con el potencial propio promediado en
+$t\ge2000$ (después de la mezcla inicial fluctúa solo un $0.05\%$). El mapa numérico se
+validó antes contra el analítico del isócrono: coinciden a $10^{-15}$ en $\Jr$ y a
+$10^{-12}$ en $\Qr$ (mediana).
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+mapa & parte estática & parte que gira (rms) & oscilación de $\Jr$ \\
+\midrule
+isócrono, el del código & $1.767\times10^{-3}$ & $1.540\times10^{-4}$ & $0.435\%$ \\
+numérico, potencial real & $7.9\times10^{-7}$  & $1.541\times10^{-4}$ & $0.001\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{mapa_numerico}
+  \caption{La prueba directa. \textbf{(a)} $|h_1|/h_0$ calculado sobre las mismas
+  partículas con el mapa del isócrono (azul) y con el mapa numérico del potencial
+  real (naranja). La meseta de $1.77\times10^{-3}$ desaparece: la parte estática baja
+  2200 veces. Lo que queda, $\sim10^{-4}$, es la componente que gira, idéntica en los
+  dos mapas. \textbf{(b)} Acción de una partícula entre $t=1500$ y $2000$: la
+  isócrona oscila $0.435\%$ pico a pico a la frecuencia orbital; la calculada en el
+  potencial real es constante a $0.001\%$.}
+  \label{fig:mapanumerico}
+\end{figure}
+
+\textbf{La parte estática desaparece}: baja 2200 veces, hasta el nivel del ruido del
+promedio (figura~\ref{fig:mapanumerico}). La acción de cada partícula, calculada en
+el potencial real, es constante a $10^{-5}$ en lugar de oscilar a la frecuencia
+orbital. Y la diferencia entre los dos cálculos de $h_1$ es un desplazamiento fijo,
+$1.77\times10^{-3}$ con fase cero, presente ya desde $t=0$.
+
 Eso cierra el caso para la parte estática. La meseta no mide dinámica colectiva:
 mide el error sistemático de usar el mapa ángulo--acción del potencial equivocado.
-Es física en el sentido de que cuantifica una diferencia real entre dos potenciales,
-pero no dice nada sobre modos ni sobre amortiguamiento.
+
+Queda la componente que gira. Su correlación entre los dos mapas es $0.9999$: no la
+toca el cambio de coordenadas, así que \emph{no} es un efecto del mapa. Es una
+propiedad de la distribución misma, y es lo que queda por explicar.
 
 \section{El régimen fuerte: construir el mapa ángulo--acción numéricamente}
 \label{sec:mapanumerico}
@@ -1869,9 +1912,8 @@ de~\eqref{eq:kepler}, la implementación es correcta. La primera mitad de esa pr
 ya está hecha (figura~\ref{fig:frecuencias}).
 
 Y hay una segunda prueba, específica de estas notas: \textbf{la parte estática de la
-meseta debe desaparecer}. Si la interpretación es correcta, al analizar con las
-variables del potencial total, $h_1$ debe decaer sin meseta estática. Es una
-predicción tajante, y sería la confirmación definitiva.
+meseta debe desaparecer}. Se hizo, y desaparece: baja 2200 veces
+(figura~\ref{fig:mapanumerico}).
 
 \subsection{Dónde está el umbral, con números}
 
@@ -1961,13 +2003,10 @@ cada una, se mantienen en el archivo \texttt{PREGUNTAS\_ABIERTAS.md} de la raíz
 repositorio. En orden de dificultad:
 
 \begin{itemize}
-  \item Implementar el mapa ángulo--acción numérico de la
-    sección~\ref{sec:mapanumerico} y comprobar que la parte estática de la meseta
-    desaparece.
-  \item Explicar por qué la componente que gira a frecuencia orbital no se cancela
-    por debajo de $\sim10\%$ de la parte estática con $a_0=10^{-3}$, y por qué crece
-    con $a_0=10^{-2}$: piso de discreción de la rejilla, el mismo efecto de
-    coordenadas, o dinámica colectiva.
+  \item Explicar la componente que gira a frecuencia orbital, de $\sim10^{-4}h_0$ con
+    $a_0=10^{-3}$, que crece con $a_0=10^{-2}$. Sobrevive intacta al mapa numérico,
+    así que no es un efecto de coordenadas: queda decidir entre un piso por la
+    discreción de la rejilla y dinámica colectiva.
   \item Construir un equilibrio autoconsistente con una perturbación pequeña y
     separada. Con el montaje actual, el reajuste del equilibrio y la respuesta a la
     perturbación quedan mezclados, y sin separarlos no tiene sentido medir un

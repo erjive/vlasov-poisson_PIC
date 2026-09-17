@@ -12,34 +12,10 @@ Convención: corridas en `exe/sg/<nombre>`, configuración base
 
 ---
 
-## 1. Confirmar que la parte estática de la meseta es un efecto de coordenadas
+## 1. La componente de h_1 que gira a frecuencia orbital
 
-**Qué se sabe.** Con autogravedad, `|h_1|/h_0` se detiene en `1.77e-3` (a0=1e-3).
-- No cambia con dr (0.2-0.025), orden de B-spline (1-3), nodos en Q (25-200) ni
-  N (1e3-1e5): tres cifras iguales.
-- Escala con a0: pendiente log-log +0.96 en t in [15000,20000].
-- Su fase es 0.000 y constante de t=2000 a t=20000: no es un modo.
-- La J isócrona de partículas individuales oscila ~0.45% pico a pico a su
-  frecuencia orbital (`long_fino`).
-- Por filas de acción (`paper_runs/scripts/filas_J.py`): cada fila lleva una parte
-  estática de 0.2-2% de su amplitud, todas en fase (sum|S_i|/|sum S_i| = 1.19);
-  sin autogravedad son 1e-9.
-
-**Interpretación.** El diagnóstico usa el mapa ángulo-acción del isócrono cuando el
-potencial es isócrono + autogravedad. Es consistente con todo lo anterior, **pero no
-está confirmada de forma directa.**
-
-**Siguiente paso.** Construir el mapa ángulo-acción numérico del potencial real
-(cuadraturas con la sustitución `r = rm + ra sin(theta)`, ya validada contra el
-isócrono a 1e-15 en `docs/introduccion/figuras/generar_figuras.py`), con el potencial
-promediado de las instantáneas tardías, y recalcular h_1. **Predicción: la parte
-estática desaparece.** Si no desaparece, la interpretación es falsa.
-
----
-
-## 2. La componente de h_1 que gira a frecuencia orbital
-
-**Qué se sabe.** Además de la parte estática S, h_1 tiene una componente que gira a
+**Qué se sabe.** Además de la parte estática S (que resultó ser un efecto de
+coordenadas, ver *Resueltas*), h_1 tiene una componente que gira a
 omega = 0.055-0.062 (dentro de la banda orbital [0.047, 0.071]):
 
 | a0 | t in [2000,15000] | t in [15000,20000] |
@@ -89,19 +65,22 @@ Hipótesis a probar:
   suave en J, la suma no se cancela por debajo de un piso incoherente ~ 1/sqrt(Nrc).
   Predicción: con Nrc=1600 el componente baja a la mitad. Costo: t=20000 con
   N=4e4 son ~45 min.
-- **Mismo efecto de coordenadas**: la agrupación en filas de J isócrona es la
-  equivocada. Con el mapa numérico de la pregunta 1, agrupar por J verdadera
-  debería devolver filas rígidas y la cancelación suave.
+- ~~**Mismo efecto de coordenadas**~~ **Descartada.** Con el mapa numérico del
+  potencial real (ver *Resueltas*), la parte que gira no cambia: rms 1.540e-4 frente
+  a 1.541e-4, correlación 0.99988 entre los dos cálculos de h_1. No es un efecto del
+  mapa, es una propiedad de la distribución.
+- **Dinámica colectiva genuina**: es lo que queda si se descarta la discreción.
 - Para a0=1e-2, donde la componente crece a 86% de S, repetir `por_ventanas` con
   instantáneas (no hecho).
 
 **Preguntas.** ¿Qué la sostiene con a0=1e-3? ¿Por qué crece con a0=1e-2? ¿Es dinámica
-colectiva genuina (candidata a lo que se quería medir) o un efecto de coordenadas de
-orden superior?
+colectiva genuina (candidata a lo que se quería medir) o un piso de discreción?
+Con el mapa numérico, repetir el análisis por filas agrupando por J verdadera: si
+las filas vuelven a ser rígidas y la componente sigue ahí, la discreción pierde peso.
 
 ---
 
-## 3. Un montaje limpio para amortiguamiento de Landau
+## 2. Un montaje limpio para amortiguamiento de Landau
 
 **Problema.** El estado inicial es equilibrio del isócrono *solo*; al activar la
 autogravedad toda la componente es a la vez "perturbación" y fuente del potencial.
@@ -109,20 +88,20 @@ Eso mezcla el reajuste del equilibrio (el cambio de h_0 del 1.6% en t < 600, las
 amplitudes de fila que cambian entre 0.83 y 1.005) con la respuesta a la perturbación.
 
 **Siguiente paso.** Construir un equilibrio autoconsistente F_eq(J) del potencial
-total (iterando Poisson con el mapa numérico de la pregunta 1) y agregar encima una
+total (iterando Poisson con el mapa numérico, `paper_runs/scripts/aa_numerico.py`) y agregar encima una
 perturbación pequeña y separada. Solo entonces tiene sentido medir omega_r y gamma.
 
 ---
 
-## 4. Régimen a0 >= 1e-2
+## 3. Régimen a0 >= 1e-2
 
 Con a0=1e-2 el cambio de h_0 es 14% y la componente que gira crece hasta dominar.
-El mapa analítico ya no sirve. Depende de 1 y 3. Para perturbaciones grandes,
+El mapa analítico ya no sirve; hay que usar el numérico. Depende de 1 y 2. Para perturbaciones grandes,
 relajación violenta (Lynden-Bell 1967).
 
 ---
 
-## 5. Modos discretos
+## 4. Modos discretos
 
 Resolver el problema lineal de autovalores (método matricial de Kalnajs) para este
 equilibrio y comparar omega_r, gamma con las corridas. Un modo dentro de la banda
@@ -130,12 +109,35 @@ orbital es resonante y se amortigua por Landau; fuera, no.
 
 ---
 
-## 6. Levantar L fijo
+## 5. Levantar L fijo
 
 Con dispersión en L hay dos frecuencias y resonancias entre ellas. Existe una rama
 con `l_part` en `VlasovPoisson_PIC_sp`. Es otro proyecto.
 
 ---
+
+## Resueltas
+
+### La parte estática de la meseta es un efecto de coordenadas (confirmado)
+
+Antes era una interpretación consistente con todo (insensible a la discretización,
+lineal en a0, fase congelada, J isócrona oscilando a la frecuencia orbital), pero no
+probada. **Prueba directa** (`paper_runs/scripts/aa_meseta.py`, sobre
+`sg/long20k_snap`): h_1 recalculado con el mapa ángulo-acción numérico del potencial
+real (isócrono + potencial propio promediado en t >= 2000; el mapa,
+`aa_numerico.py`, reproduce el analítico del isócrono a 1e-15 en J y 1e-12 en Q).
+
+| mapa | parte estática, t in [2000,15000] | parte que gira (rms) | oscilación de J (t in [1500,2000]) |
+|---|---|---|---|
+| isócrono | 1.767e-3 | 1.540e-4 | 0.435% |
+| numérico, potencial promedio | **7.9e-7** | 1.541e-4 | **0.001%** |
+| numérico, potencial instantáneo | 1.4e-6 | 1.539e-4 | |
+
+La parte estática baja 2200 veces y la acción de cada partícula queda constante. La
+diferencia entre los dos h_1 es un desplazamiento fijo de 1.77e-3 con fase 0,
+presente desde t=0. El cambio de h_0 durante la mezcla inicial baja de 1.60% a 1.35%
+(potencial promedio) o 0.76% (instantáneo): la mayor parte es un cambio real de las
+acciones mientras el potencial propio se reajusta (cambia 21% entre t=0 y t=2000).
 
 ## Pendientes técnicos menores
 

@@ -28,10 +28,11 @@ idéntico.
    autogravedad.
 3. $|h_1|$ se detiene en una meseta de $1.77\times10^{-3}h_0$ que ninguna
    discretización mueve y que escala con $a_0$.
-4. La meseta no es un modo: su fase está congelada. Es, en lo esencial, el efecto de
-   calcular $(Q,J)$ con el mapa del isócrono cuando el potencial ya no es el
-   isócrono.
-5. Queda sin explicar una componente pequeña que gira a frecuencia orbital.
+4. La meseta no es un modo: su fase está congelada. Es el efecto de calcular $(Q,J)$
+   con el mapa del isócrono cuando el potencial ya no es el isócrono: **con el mapa
+   ángulo-acción del potencial real desaparece** (sección 7).
+5. Queda sin explicar una componente pequeña que gira a frecuencia orbital, que no
+   cambia con el mapa.
    Las preguntas abiertas están en `PREGUNTAS_ABIERTAS.md`.
 
 Los mismos resultados, con más contexto, están en `docs/introduccion/vlasov_intro.tex`.
@@ -341,6 +342,52 @@ md(r"""
 
 Por qué ese continuo no se cancela por debajo de $\sim10\%$ de $S$ sigue abierto; las
 hipótesis y las pruebas propuestas están en `PREGUNTAS_ABIERTAS.md`.
+""")
+
+md(r"""
+## 7. La prueba directa: el mapa ángulo-acción del potencial real
+
+Si la parte estática es un efecto de coordenadas, al recalcular $h_1$ con las variables
+ángulo-acción del potencial **real** (isócrono + potencial propio) debe desaparecer.
+El mapa numérico está en `paper_runs/scripts/aa_numerico.py` (cuadraturas con la
+sustitución $r=r_m+r_a\sin\theta$ y Gauss-Legendre); el cálculo sobre las 501
+instantáneas de `long20k_snap`, en `aa_meseta.py`, que guarda `aa_meseta.npz`.
+""")
+
+code(r"""
+from aa_numerico import MapaAA, phi_iso
+# Validación: sin potencial propio, el mapa numérico reproduce el analítico.
+f = h5py.File(os.path.join(DATA, 'long_fino_nosg', 'vlasov_output.h5'))
+s = sorted([k for k in f if k.startswith('step_')])[250]
+r, p = f[s]['r_part'][:], f[s]['p_part'][:]
+Qa, Ja = rp_to_QJ(r, p); Qn, Jn, _ = MapaAA()(r, p)
+dQ = np.abs(np.angle(np.exp(1j*(Qn - Qa))))
+print(f'validación: max|dJ| = {np.max(np.abs(Jn-Ja)):.1e}, mediana|dQ| = {np.median(dQ):.1e}, max|dQ| = {dQ.max():.1e}')
+
+d = np.load(os.path.join(DATA, 'long20k_snap', 'aa_meseta.npz'))
+t = d['t']
+rms = lambda x: np.sqrt(np.mean(np.abs(x)**2))
+print(f"\n{'mapa':>9} {'|<h1>|/h0, t in [2000,15000]':>28} {'rms parte que gira':>19}")
+for k in ('iso', 'promedio', 'instante'):
+    v = (t >= 2000) & (t <= 15000); z = d[f'h1_{k}'][v]
+    print(f'{k:>9} {abs(z.mean()):>28.3e} {rms(z - z.mean()):>19.3e}')
+v = t >= 2000
+Ri = d['h1_iso'][v] - d['h1_iso'][v].mean(); Rn = d['h1_promedio'][v] - d['h1_promedio'][v].mean()
+print(f'\ncorrelación de la parte que gira entre los dos mapas: '
+      f'{abs(np.vdot(Ri, Rn))/np.linalg.norm(Ri)/np.linalg.norm(Rn):.5f}')
+fig, ax = plt.subplots(figsize=(7, 3))
+ax.semilogy(t, np.abs(d['h1_iso']), lw=.8, label='mapa del isócrono')
+ax.semilogy(t, np.abs(d['h1_promedio']), lw=.8, label='mapa numérico del potencial real')
+ax.set_ylim(1e-6, 1.5); ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.legend(fontsize=7)
+fig.tight_layout()
+""")
+
+md(r"""
+**La parte estática desaparece**: baja de $1.77\times10^{-3}$ a $\sim8\times10^{-7}$, unas
+2200 veces. La explicación por coordenadas queda confirmada.
+
+**La parte que gira no cambia** (correlación 0.9999 entre los dos mapas): no es un
+efecto de coordenadas. Es lo que queda por explicar; ver `PREGUNTAS_ABIERTAS.md`.
 """)
 
 nb={"cells":cells,"metadata":{"kernelspec":{"display_name":"Python 3","language":"python",

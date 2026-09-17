@@ -888,10 +888,63 @@ def fig_capturas():
         guardar(fig, f'capturas_{dft}')
 
 
+# ===========================================================================
+def fig_mapa_numerico():
+    print('[mapa_numerico] h_1 con el mapa del isócrono y con el del potencial real')
+    d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+    t = d['t']
+    fig, ax = plt.subplots(1, 2, figsize=(ANCHO, 2.5),
+                           gridspec_kw=dict(width_ratios=[1.3, 1]))
+    for k, col, lab in [('iso', AZUL, 'mapa del isócrono'),
+                        ('promedio', NARANJA, 'mapa numérico')]:
+        ax[0].semilogy(t, np.abs(d[f'h1_{k}']), color=col, lw=0.8, label=lab)
+        v = t >= 2000
+        z = d[f'h1_{k}'][v]
+        print(f'   {k:>9}: |<h1>|/h0 = {abs(z.mean()):.2e}   rms parte que gira = '
+              f'{np.sqrt(np.mean(np.abs(z - z.mean())**2)):.3e}')
+    ax[0].set_ylim(1e-6, 1.5)
+    ax[0].set_xlabel('$t$')
+    ax[0].set_ylabel('$|h_1|/h_0$')
+    ax[0].legend(loc='upper right', fontsize=6.5)
+    ax[0].set_xticks([0, 10000, 20000])
+    ax[0].set_xticklabels(['0', '10\u2009000', '20\u2009000'])
+    ax[0].set_title('(a) la meseta desaparece', loc='left')
+    # (b) con long_fino, instantáneas cada 4 unidades: la oscilación orbital
+    # (periodo ~125) queda resuelta. Mismo potencial promediado que en (a).
+    import h5py
+    from aa_numerico import MapaAA
+    g = h5py.File(os.path.join(SG, 'long20k_snap', 'vlasov_output.h5'))
+    pas = sorted([k for k in g if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+    tg = np.array([g[k].attrs['time'] for k in pas])
+    rg = g['grid']['r'][:]
+    ps = np.mean([g[k]['potential'][:] - phi_iso(rg)
+                  for k, tt in zip(pas, tg) if tt >= 2000], axis=0)
+    mapa = MapaAA(rg, ps)
+    h = h5py.File(os.path.join(SG, 'long_fino', 'vlasov_output.h5'))
+    pas = sorted([k for k in h if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+    tf = np.array([h[k].attrs['time'] for k in pas])
+    sel = tf >= 1500
+    r = np.array([h[k]['r_part'][4978] for k, s_ in zip(pas, sel) if s_])
+    p = np.array([h[k]['p_part'][4978] for k, s_ in zip(pas, sel) if s_])
+    _, Ji = rp_to_QJ(r, p)
+    _, Jn, _ = mapa(r, p)
+    for x, col, lab in [(Ji, AZUL, 'isócrona'), (Jn, NARANJA, 'numérica')]:
+        ax[1].plot(tf[sel], 100*(x/x.mean() - 1), color=col, lw=0.9, label=lab)
+        print(f'   partícula 4978, t in [1500,2000], J {lab}: pico a pico '
+              f'{100*np.ptp(x)/x.mean():.3f}%')
+    ax[1].set_xlabel('$t$')
+    ax[1].set_ylabel(r'$J/\langle J\rangle-1$ (%)')
+    ax[1].legend(loc='lower right', fontsize=6.5, ncol=2)
+    ax[1].set_ylim(-0.32, 0.32)
+    ax[1].set_title(r'(b) acción de una partícula, $\langle J\rangle=0.30$', loc='left')
+    fig.tight_layout(w_pad=1.2)
+    guardar(fig, 'mapa_numerico')
+
+
 TODAS = [fig_liouville, fig_potencial, fig_frecuencias, fig_orbita, fig_enrollamiento,
          fig_hk_exacto, fig_convergencia, fig_agnosticas, fig_salud,
          fig_envolvente, fig_barridos, fig_masa, fig_fase, fig_accion,
-         fig_capturas]
+         fig_capturas, fig_mapa_numerico]
 
 if __name__ == '__main__':
     filtro = sys.argv[1:]
