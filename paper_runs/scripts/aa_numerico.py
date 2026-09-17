@@ -57,6 +57,10 @@ class MapaAA:
     def __init__(self, r_malla=None, phi_self=None, L=L0, nodos=64):
         self.L = L
         self.self_ = None if phi_self is None else SplineCubico(r_malla, phi_self)
+        if phi_self is not None:
+            # Fuera de la tabla el potencial propio es kepleriano: -M/r.
+            self.r_ult = float(r_malla[-1])
+            self.M_self = -float(phi_self[-1])*self.r_ult
         x, w = np.polynomial.legendre.leggauss(nodos)
         self.x, self.w = x, w
         # Radio de la órbita circular: mínimo de Phi_ef, en malla fina y refinado.
@@ -65,7 +69,11 @@ class MapaAA:
 
     def phi(self, r):
         p = phi_iso(r)
-        return p if self.self_ is None else p + self.self_(r)
+        if self.self_ is None:
+            return p
+        r = np.asarray(r, float)
+        return p + np.where(r <= self.r_ult, self.self_(np.minimum(r, self.r_ult)),
+                            -self.M_self/np.maximum(r, 1e-300))
 
     def phi_ef(self, r):
         return self.phi(r) + 0.5*self.L**2/r**2

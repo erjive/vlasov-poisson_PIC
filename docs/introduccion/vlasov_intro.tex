@@ -1854,21 +1854,37 @@ multiplica por $0.24$--$0.41$ en cada ventana después de $t=2000$. Crece con el
 como $t^{1.9}$ en las dos resoluciones, algebraica y no exponencialmente, que es lo
 que se espera de un desfase acumulado por ruido y no de una inestabilidad.
 
-\section{El régimen fuerte: construir el mapa ángulo--acción numéricamente}
+\section{Variables ángulo--acción del potencial real}
 \label{sec:mapanumerico}
 
-La conclusión de la sección anterior deja una tarea clara: si la autogravedad no es
-despreciable, hay que abandonar el mapa analítico del isócrono y construir el del
-potencial real. Afortunadamente, con un grado de libertad esto es directo, y la
-sección~\ref{sec:construccion} ya dio las fórmulas.
+La sección anterior llevó a una tarea concreta: si la autogravedad no es
+despreciable, el mapa analítico del isócrono deja de ser el adecuado y hay que
+construir el del potencial real. Con un grado de libertad es directo, y la
+sección~\ref{sec:construccion} ya dio las fórmulas. Aquí se describe cómo se
+implementó (\texttt{paper\_runs/scripts/aa\_numerico.py}), cómo se validó, y qué
+decisiones hubo que tomar.
+
+\subsection{El potencial}
+
+El código guarda en cada instantánea el potencial total en su malla radial, con
+$\Delta r=0.1$ hasta $r=20.05$. Restándole el isócrono analítico queda el potencial
+propio, que se interpola con un spline cúbico natural (probado sobre una función suave
+en la misma malla, el error relativo es $8\times10^{-9}$). Fuera de la malla el
+potencial propio es exactamente kepleriano, $-M/r$, y se usa esa forma en lugar de
+extrapolar el spline. En los datos de estas notas la cola no cambia ningún
+resultado, pero la bisección de $r_+$ explora hasta $r=60$, donde una extrapolación
+cúbica no es confiable.
 
 \subsection{Las cuadraturas}
 
-Dado un potencial efectivo $\Phi_{\rm ef}(r)$ cualquiera y una energía $E$:
+Dados $\Phi_{\rm ef}(r)$ y la energía $E=\tfrac12\rp^2+\Phi_{\rm ef}(r)$ de cada
+partícula:
 
 \begin{enumerate}
-  \item \textbf{Puntos de retorno.} Resolver $E=\Phi_{\rm ef}(r)$ para $r_-<r_+$.
-    Como $\Phi_{\rm ef}$ tiene un único mínimo, basta bisección más Newton.
+  \item \textbf{Puntos de retorno.} $E=\Phi_{\rm ef}(r)$ tiene una raíz a cada lado del
+    mínimo $r_c$ (que se localiza una vez por potencial). Se resuelve por bisección
+    vectorizada, 80 iteraciones por lado, sin Newton: es lenta pero no puede fallar,
+    y el costo es despreciable frente a las integrales.
   \item \textbf{Acción y periodo}, por~\eqref{eq:accion} y~\eqref{eq:omegaT}:
     \begin{equation}
       \Jr(E)=\frac{1}{\pi}\int_{r_-}^{r_+}\!\!\sqrt{2(E-\Phi_{\rm ef})}\,\dd r,
@@ -1878,15 +1894,18 @@ Dado un potencial efectivo $\Phi_{\rm ef}(r)$ cualquiera y una energía $E$:
   \item \textbf{Ángulo}, por~\eqref{eq:angulo}:
     \begin{equation}
       \Qr = \frac{2\pi}{T_r}\int_{r_-}^{r}\frac{\dd r'}{\sqrt{2(E-\Phi_{\rm ef})}}
-      \quad (\rp>0),
+      \quad (\rp\ge0),
       \qquad
       \Qr = 2\pi - (\text{lo anterior}) \quad (\rp<0).
     \end{equation}
 \end{enumerate}
 
-Observe que el mapa \emph{directo} $(r,\rp)\to(\Qr,\Jr)$, que es el que necesita
-el diagnóstico, no requiere invertir nada: son tres cuadraturas. La inversión por
-Newton solo hace falta para el mapa contrario, al colocar nodos de cuadratura.
+El mapa \emph{directo} $(r,\rp)\to(\Qr,\Jr)$, que es el que necesita el diagnóstico,
+no requiere invertir nada. El \emph{inverso}, necesario para colocar partículas en
+una rejilla de $(\Qr,\Jr)$, se obtiene buscando por bisección el $r$ cuya integral
+parcial del ángulo da el $\Qr$ pedido; aplicado a una rejilla de $10^4$ nodos y
+vuelto a mapear hacia adelante, recupera los nodos a $5\times10^{-9}$ en $\Jr$ y
+$6\times10^{-7}$ en $\Qr$.
 
 \subsection{La sustitución que lo hace viable}
 \label{sec:sustitucion}
@@ -1902,61 +1921,84 @@ estándar es el cambio de variable
 que elimina la singularidad: cerca de $r_\pm$ se tiene $E-\Phi_{\rm ef}\propto
 (r-r_-)(r_+-r)$, que en la nueva variable es proporcional a $\cos^2\theta$, y el
 jacobiano $\dd r = \tfrac{r_+-r_-}{2}\cos\theta\,\dd\theta$ aporta justo el factor que
-lo cancela. Tras el cambio el integrando es suave y Gauss--Legendre converge
-espectralmente. La figura~\ref{fig:frecuencias} es la prueba: con 64 nodos, esta
-cuadratura reproduce la acción del isócrono a $10^{-15}$.
+lo cancela. Tras el cambio el integrando es suave y basta Gauss--Legendre con 64
+nodos: con el potencial propio incluido, pasar a 128 nodos cambia $\Jr$ en
+$10^{-8}$ y $\Qr$ en $7\times10^{-8}$.
 
 \begin{aviso}
-\textsc{costo, y cómo reducirlo.} Hacer estas cuadraturas por partícula y por paso
-de salida cuesta $\sim10^9$ evaluaciones para $N=10^4$ y mil salidas. La solución es
-que, con $L$ fijo, $\Jr(E)$, $T_r(E)$ y $r_\pm(E)$ son funciones de \emph{una sola}
-variable: se tabulan una vez sobre $\sim10^3$ puntos y se interpolan con splines.
-Solo queda por partícula la integral parcial del ángulo, que es corta. El costo baja
-a algo comparable al del diagnóstico actual.
+\textsc{costo.} Sin tabular nada, el mapa numérico procesa una instantánea de $10^4$
+partículas en unos $0.4$~s, bastante más que el mapa analítico pero suficiente para
+analizar corridas de cientos de instantáneas en pocos minutos. Si hiciera falta más velocidad hay margen claro: con $L$ fijo, $\Jr(E)$,
+$T_r(E)$ y $r_\pm(E)$ dependen de una sola variable y pueden tabularse una vez por
+potencial.
 \end{aviso}
+
+\subsection{Validación}
+
+\paragraph{Contra el isócrono.} Sin potencial propio, el mapa numérico debe
+reproducir el analítico. Sobre las $10^4$ partículas de una instantánea real:
+$\max|\Jr_{\rm num}-\Jr_{\rm an}|=1.2\times10^{-15}$, y en $\Qr$ la mediana de la
+diferencia es $1.6\times10^{-12}$. El máximo, $1.4\times10^{-6}$, aparece solo en unas
+pocas partículas a menos de $0.01$~rad de un punto de retorno, donde $\Qr$ es muy
+sensible a $r$ (el arcoseno tiene derivada infinita en $\pm1$). La frecuencia obtenida
+derivando la tabla $\Jr(E)$ reproduce $1/(\Jr+c)^3$ a $2\times10^{-8}$.
+
+\paragraph{Contra la dinámica.} La prueba física es que, en el potencial real, la
+acción de cada partícula sea constante. Con el mapa del isócrono oscila un $0.435\%$
+pico a pico a la frecuencia orbital; con el numérico, un $0.001\%$
+(figura~\ref{fig:mapanumerico}b). Y la parte estática de la meseta de $h_1$ baja de
+$1.767\times10^{-3}$ a $7.9\times10^{-7}$ (figura~\ref{fig:mapanumerico}a).
 
 \subsection{¿Respecto de qué potencial?}
 
-Con autogravedad $\Phi$ evoluciona, así que $\Jr$ solo es un invariante
-\emph{adiabático}. Hay que elegir marco:
+Con autogravedad el potencial evoluciona, así que $\Jr$ solo es un invariante
+\emph{adiabático}. Hay dos marcos posibles:
 
 \begin{itemize}
-  \item \textbf{Potencial instantáneo} $\Phi(r,t)$: $\Jr(t)$ es la acción
-    instantánea, y sus cambios miden evolución genuinamente no adiabática.
-  \item \textbf{Potencial medio o relajado} $\Phi_0(r)$: marco fijo, $\Jr$
-    conservada para el campo medio, y $\delta F$ se analiza como perturbación
-    alrededor de un equilibrio. \textbf{Es lo estándar} para el análisis de modos, y
-    es el marco en el que está formulada la teoría de Landau.
+  \item \textbf{Potencial instantáneo} $\Phi(r,t)$: $\Jr(t)$ es la acción del
+    potencial de ese instante, y sus cambios miden evolución no adiabática.
+  \item \textbf{Potencial fijo}, promediado o de equilibrio: $\Jr$ se conserva para
+    el campo medio y la perturbación se analiza alrededor de él. Es el marco de la
+    teoría lineal y del amortiguamiento de Landau.
 \end{itemize}
 
-Para estudiar phase mixing y amortiguamiento conviene lo segundo: dejar que el
-sistema relaje, tomar $\Phi_0$ como el potencial medio del estado final, construir
-el mapa numérico para $\Phi_0$, y analizar $\delta F$ en esas variables.
+En la corrida con $a_0=10^{-3}$ el potencial propio cambia un $21\%$ entre $t=0$ y
+$t=2000$, mientras la distribución se mezcla, y después fluctúa solo un $0.05\%$. Se
+probaron ambos marcos sobre las mismas partículas, con el potencial promediado en
+$t\ge2000$:
 
-\subsection{Cómo validarlo}
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+ & potencial promediado & potencial instantáneo \\
+\midrule
+parte estática de $h_1$, $t\in[2000,15\,000]$ & $7.9\times10^{-7}$ & $1.4\times10^{-6}$ \\
+parte que gira (rms) & $1.541\times10^{-4}$ & $1.539\times10^{-4}$ \\
+cambio de $h_0$ entre $t=0$ y $20\,000$ & $1.35\%$ & $0.76\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-Hay una prueba unitaria evidente y muy fuerte: \textbf{aplicar el mapa numérico al
-isócrono puro y comprobar que reproduce el analítico}. Si $\Jr_{\rm num}(E)$
-coincide con~\eqref{eq:Jiso} a precisión de máquina, y $\Qr_{\rm num}$ con el mapa
-de~\eqref{eq:kepler}, la implementación es correcta. La primera mitad de esa prueba
-ya está hecha (figura~\ref{fig:frecuencias}).
+Para la meseta, los dos marcos dan lo mismo. El cambio de $h_0$ sí depende del marco:
+con el mapa del isócrono era del $1.6\%$, y con los numéricos baja pero no
+desaparece. La mayor parte es un cambio real de las acciones mientras el potencial
+propio se reajusta al principio. Para lo que sigue se usa un marco fijo: el potencial
+promediado para analizar corridas ya hechas y, cuando se construye el estado inicial,
+el potencial de un equilibrio autoconsistente.
 
-Y hay una segunda prueba, específica de estas notas: \textbf{la parte estática de la
-meseta debe desaparecer}. Se hizo, y desaparece: baja 2200 veces
-(figura~\ref{fig:mapanumerico}).
+\subsection{Cuándo basta el mapa analítico}
 
-\subsection{Dónde está el umbral, con números}
+La meseta estática es proporcional a la masa: $|h_1|/h_0\simeq1.8\times10^{-4}$,
+$1.8\times10^{-3}$ y $1.2$--$1.6\times10^{-2}$ para $a_0=10^{-4}$, $10^{-3}$ y
+$10^{-2}$ (sección~\ref{sec:autogravedad}). Da un criterio práctico: \textbf{el mapa
+del isócrono sirve mientras la señal que se quiera medir esté muy por encima de
+$\sim2a_0\,h_0$}. Para seguir el decaimiento inicial de $h_1$, que empieza en
+$h_1/h_0\sim0.8$, sirve incluso con $a_0=10^{-2}$; para decidir si una distribución
+``terminó de mezclarse'' por debajo de $10^{-2}h_0$, ya no.
 
-De lo medido: el cambio de $h_0$ ---que \emph{es} la medida de cuánto deja de
-conservarse $\Jr_{\rm iso}$--- es de $1.6\%$ con $a_0=10^{-3}$ y de $14\%$ con
-$a_0=10^{-2}$. Y con $a_0=10^{-2}$ aparece algo que no está en las masas menores: la
-componente que gira pasa de ser el $18\%$ de la parte estática en
-$t\in[2000,15\,000]$ al $86\%$ en $t\in[15\,000,20\,000]$, con frecuencia $0.062$,
-dentro de la banda orbital (figura~\ref{fig:fase}c). Algo crece. Con el mapa
-analítico no es posible separar si es dinámica colectiva genuina o un efecto de
-coordenadas de orden superior. El mapa analítico funciona bien hasta
-$a_0\sim10^{-3}$ y empieza a fallar claramente hacia $10^{-2}$: a partir de ahí el
-trabajo de esta sección deja de ser opcional.
+La componente que gira y crece con $a_0=10^{-2}$, que en una primera lectura parecía
+posible dinámica colectiva, resultó ser ruido de discreción: depende de la resolución
+de la rejilla (sección~\ref{sec:autogravedad}). No es un límite del mapa analítico.
 
 \section{Cuántas partículas hacen falta}
 \label{sec:cuantas}
