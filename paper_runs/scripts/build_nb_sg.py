@@ -409,8 +409,8 @@ md(r"""
 - **Hasta $t=2000$** es idéntica con cualquier resolución: el continuo, física.
 - **Después** baja a 0.3–0.65× al duplicar partículas en $J$ o en $Q$ y deja de estar
   correlacionada con la corrida base: **es ruido de discreción**. Sin autogravedad la
-  misma cuadratura cancela hasta $10^{-10}$; la autogravedad desordena la rejilla en
-  acción verdadera y deja un piso de $\sim10^{-4}h_0$.
+  misma cuadratura cancela hasta $10^{-10}$. Causa plausible, no demostrada: la autogravedad
+  desordena la rejilla en acción verdadera y deja un piso de $\sim10^{-4}h_0$.
 - La parte estática ($1.767\times10^{-3}$) no depende de la resolución.
 
 Con $a_0=10^{-2}$, donde la componente crece, la prueba está pendiente
