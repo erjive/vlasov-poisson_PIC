@@ -13,12 +13,15 @@ estándar).
 Las figuras en `figuras/*.pdf` se versionan para que el documento compile sin
 nada más. Se regeneran con
 
-    cd figuras && python3 generar_figuras.py          # todas
-    cd figuras && python3 generar_figuras.py fase     # solo una
+    cd ../../reproducir/figuras && python3 generar_figuras.py          # todas
+    cd ../../reproducir/figuras && python3 generar_figuras.py fase     # solo una
+
+Todo lo necesario para reproducir las simulaciones, los análisis y las figuras
+está en `reproducir/` (ver su `README.md`).
 
 Las seis primeras (Liouville, potencial, frecuencias, órbita, enrollamiento, h_k exacto)
 son analíticas. Las demás leen las corridas de `exe/dfstudy`, `exe/dfsnap` y
-`exe/sg`, que no se versionan; se regeneran con `paper_runs/scripts/run_*.sh`
+`exe/sg` y `exe/landau`, que no se versionan; se regeneran con `reproducir/correr.sh`
 (las capturas de la sección 8.2, con `run_dfsnap.sh`).
 
 Cada figura imprime en la terminal las cifras que cita el texto, para poder

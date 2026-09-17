@@ -41,6 +41,15 @@ horas en esta sesion.
 
 ## Resueltos
 
+- [x] **`paramfile.f90`: `dump_parameters` no escribía `dftype`.** `params_usados.par`
+  prometía reproducir la corrida, pero sin `dftype` cualquier corrida con una
+  distribución distinta de `gauss` se repetía con `gauss`. Detectado al volver a
+  correr `dfstudy/king_quad_500` desde su `params_usados.par`: h_k difería en el
+  tamaño de la señal. Único parámetro de `pname` que faltaba en el volcado. Tras el
+  arreglo, y agregando `dftype` desde la línea `Command` a los archivos ya
+  escritos (`reproducir/corridas/`), `king_quad_500` y `spiral_mcs3_500` se
+  reproducen a 1e-22.
+
 - [x] **`energy.f90`: la energía con autogravedad contaba dos veces la
   autoenergía.** Sumaba `sum f*(p^2/2 + pot_part)`, con `pot_part` incluyendo el
   potencial propio sin el factor 1/2 de la energía de interacción (cada par se

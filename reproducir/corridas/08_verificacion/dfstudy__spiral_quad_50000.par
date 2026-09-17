@@ -1,0 +1,70 @@
+# (dftype agregado después desde la línea "Command": la versión del código que
+#  escribió este archivo no lo volcaba.)
+# Resolved configuration of this run: the base file plus the
+# command line overrides, already applied. Re-running it
+# reproduces the run:
+#
+#     ./VP_PIC params_usados.par
+#
+# Base file  : ../paper_runs/base_dftest.par   (copied next to this one, WITHOUT the overrides)
+# Command    : ./VP_PIC ../paper_runs/base_dftest.par dftype=spiral state=aa_quad Nrc=2000 Npc=25 directory=dfstudy/spiral_quad_50000
+# Written    : 2026-09-16 00:10:18
+
+# Grid and time
+dr               = 0.1
+Nrc              = 2000
+Npc              = 25
+courant          = 2.0
+Nt               = 20000
+
+# Domain
+rmin             = 0.0
+rmax             = 20.0
+rminc            = 3.0
+rmaxc            = 14.0
+pminc            = -0.25
+pmaxc            = 0.25
+pmax             = 2.0
+Lfix             = 2.0
+eps              = 0.0
+
+# Particle bookkeeping
+reduceparticles  = .false.
+Nreduce          = 1000
+
+# Output
+time_output      = 2000
+spatial_output   = 20
+field_output     = 20000
+directory        = dfstudy/spiral_quad_50000
+output_format    = hdf5
+
+# Initial distribution
+a0               = 0.0001
+r0               = 0.000000001
+p0               = 0.0
+sr               = 0.1
+sp               = 0.1
+state            = aa_quad
+dftype           = spiral
+seed             = 205603801
+
+# Test functions for the h_k modes
+j1               = 0.1
+j2               = 0.24
+sj1              = 0.1
+sj2              = 0.1
+sq1              = 0.4
+sq2              = 0.4
+
+# Radial window of the averaged density
+r1               = 2.0
+r2               = 3.0
+
+# Numerical methods
+bsplineorder     = 1
+integrator       = yoshida4
+spatialorder     = two
+forcetype        = bg
+BGtype           = Isochrone
+autointeraction  = .false.

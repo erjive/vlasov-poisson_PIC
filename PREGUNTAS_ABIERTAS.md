@@ -3,11 +3,11 @@
 Lo que queda por entender o por hacer después del estudio de phase mixing con
 autogravedad. Cada entrada dice qué se sabe (con los números medidos), qué falta y
 cuál sería el siguiente paso concreto. Las conclusiones establecidas están en
-`docs/introduccion/vlasov_intro.tex` y en `paper_runs/notebooks/selfgrav_mixing.ipynb`;
+`docs/introduccion/vlasov_intro.tex` y en `reproducir/notebooks/selfgrav_mixing.ipynb`;
 los bugs, en `BUGS_TODO.md`.
 
 Convención: corridas en `exe/sg/<nombre>`, configuración base
-`paper_runs/base_selfgrav.par` (gaussiana, `a0=1e-3`, cuadratura `Nrc=400 Npc=25`,
+`reproducir/corridas/base/base_selfgrav.par` (gaussiana, `a0=1e-3`, cuadratura `Nrc=400 Npc=25`,
 `yoshida4`, `dt=0.1`).
 
 ---
@@ -96,7 +96,7 @@ con `l_part` en `VlasovPoisson_PIC_sp`. Es otro proyecto.
 
 Antes era una interpretación consistente con todo (insensible a la discretización,
 lineal en a0, fase congelada, J isócrona oscilando a la frecuencia orbital), pero no
-probada. **Prueba directa** (`paper_runs/scripts/aa_meseta.py`, sobre
+probada. **Prueba directa** (`reproducir/scripts/aa_meseta.py`, sobre
 `sg/long20k_snap`): h_1 recalculado con el mapa ángulo-acción numérico del potencial
 real (isócrono + potencial propio promediado en t >= 2000; el mapa,
 `aa_numerico.py`, reproduce el analítico del isócrono a 1e-15 en J y 1e-12 en Q).

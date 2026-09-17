@@ -1264,7 +1264,10 @@ Todas las simulaciones de estas notas se hicieron con el código
 \texttt{vlasov-poisson\_PIC}, rama \texttt{clean/comentarios}. Cada corrida escribe
 en su directorio un archivo \texttt{params\_usados.par} con la configuración completa
 y la línea de comando exacta; ejecutar \texttt{./VP\_PIC params\_usados.par} la
-repite. Las tablas de esta sección y de las siguientes resumen lo necesario para
+repite. El directorio \texttt{reproducir/} del repositorio reúne esos archivos para las
+106 corridas de estas notas, agrupados por sección, junto con un script que las
+ejecuta en serie, los scripts de análisis, los notebooks y el generador de figuras; su
+\texttt{README.md} indica qué corrida y qué script producen cada figura y cada tabla. Las tablas de esta sección y de las siguientes resumen lo necesario para
 reproducirlas sin ese archivo. La tabla~\ref{tab:comun} reúne lo que comparten todas.
 
 \begin{table}[ht]
@@ -1290,12 +1293,12 @@ parámetro & valor & significado \\
 \texttt{pminc}, \texttt{pmaxc} & $-0.25$, $0.25$ & caja de muestreo en $\rp$ (solo normalización) \\
 \texttt{output\_format} & \texttt{hdf5} & instantáneas cada \texttt{field\_output} pasos \\
 \midrule
-\multicolumn{3}{p{0.94\textwidth}}{Archivos base: \texttt{paper\_runs/base\_dftest.par}
-(sección~\ref{sec:verificacion}) y \texttt{paper\_runs/base\_selfgrav.par}
+\multicolumn{3}{p{0.94\textwidth}}{Archivos base: \texttt{reproducir/corridas/base/base\_dftest.par}
+(sección~\ref{sec:verificacion}) y \texttt{reproducir/corridas/base/base\_selfgrav.par}
 (secciones~\ref{sec:autogravedad}--\ref{sec:mapanumerico}). Número de partículas:
 $N=\texttt{Nrc}\times\texttt{Npc}$; con cuadratura, \texttt{Nrc} filas en $\Jr$ y
 \texttt{Npc} nodos en $\Qr$. Figuras y análisis:
-\texttt{docs/introduccion/figuras/generar\_figuras.py} y \texttt{paper\_runs/scripts/}.} \\
+\texttt{reproducir/figuras/generar\_figuras.py} y \texttt{reproducir/scripts/}.} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1357,7 +1360,7 @@ ninguna era reproducible.
 \centering
 \small
 \caption{Corridas de verificación (secciones~\ref{sec:verificacion} y~\ref{sec:agnosticas}),
-con fondo fijo. Base: \texttt{paper\_runs/base\_dftest.par}.}
+con fondo fijo. Base: \texttt{reproducir/corridas/base/base\_dftest.par}.}
 \label{tab:verificacion}
 \begin{tabular}{ll}
 \toprule
@@ -1371,7 +1374,7 @@ cuadratura & \texttt{state=aa\_quad}, \texttt{Npc=25}, \texttt{Nrc} $=20,\ 200,\
 Monte Carlo & \texttt{state=aa\_random}, mismas $N$, \texttt{seed} $=1007,\ 2007,\ 3007,\ 4007,\ 5007$ \\
 capturas (figs.~\ref{fig:capbim}--\ref{fig:capking}) & \texttt{aa\_quad}, \texttt{Nrc=2000}, \texttt{Npc=25}, \texttt{field\_output=400} \\
 \midrule
-scripts & \texttt{paper\_runs/scripts/run\_dfstudy.sh}, \texttt{run\_dfsnap.sh} \\
+scripts & \texttt{reproducir/scripts/run\_dfstudy.sh}, \texttt{run\_dfsnap.sh} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1534,7 +1537,7 @@ de esta sección.
 \begin{table}[ht]
 \centering
 \small
-\caption{Corridas con autogravedad. Base: \texttt{paper\_runs/base\_selfgrav.par}, que
+\caption{Corridas con autogravedad. Base: \texttt{reproducir/corridas/base/base\_selfgrav.par}, que
 fija la distribución gaussiana~\eqref{eq:gauss} con \texttt{sr}$=\sigma_J=0.1$,
 \texttt{sp}$=\sigma_Q=0.1$. La columna ``cambios'' lista lo que difiere de la corrida
 de referencia.}
@@ -1561,7 +1564,7 @@ resolución, largas & \texttt{Nt=200000}; \texttt{Nrc=800}, o bien \texttt{Npc=5
 resolución, $a_0=10^{-2}$ & \texttt{Nt=200000 a0=1e-2 Nrc=800} & ídem \\
 paso de tiempo & \texttt{courant}$=1$ (\texttt{Nt=40000 spatial\_output=40}) y $4$ (\texttt{Nt=10000 spatial\_output=10}) & prueba de $\Delta t$ \\
 \midrule
-\multicolumn{3}{p{0.94\textwidth}}{Scripts: \texttt{paper\_runs/scripts/run\_selfgrav\_scans.sh}
+\multicolumn{3}{p{0.94\textwidth}}{Scripts: \texttt{reproducir/scripts/run\_selfgrav\_scans.sh}
 (malla, spline, masa, partículas); el resto, con la línea de comando guardada en
 \texttt{params\_usados.par} de cada corrida. Análisis: \texttt{filas\_J.py},
 \texttt{giro\_resolucion.py}, \texttt{rotadores.py}.} \\
@@ -2008,7 +2011,7 @@ La sección anterior llevó a una tarea concreta: si la autogravedad no es
 despreciable, el mapa analítico del isócrono deja de ser el adecuado y hay que
 construir el del potencial real. Con un grado de libertad es directo, y la
 sección~\ref{sec:construccion} ya dio las fórmulas. Aquí se describe cómo se
-implementó (\texttt{paper\_runs/scripts/aa\_numerico.py}), cómo se validó, y qué
+implementó (\texttt{reproducir/scripts/aa\_numerico.py}), cómo se validó, y qué
 decisiones hubo que tomar.
 
 \begin{table}[ht]
@@ -2028,7 +2031,7 @@ puntos de retorno & bisección, 80 iteraciones, en $[10^{-2},r_c]$ y $[r_c,60]$ 
 cuadratura & sustitución~\eqref{eq:sustitucion} y Gauss--Legendre de 64 nodos \\
 mapa inverso & bisección en $\theta$, 60 iteraciones, Gauss--Legendre de 32 nodos \\
 \midrule
-scripts & \texttt{paper\_runs/scripts/aa\_numerico.py}, \texttt{aa\_meseta.py} \\
+scripts & \texttt{reproducir/scripts/aa\_numerico.py}, \texttt{aa\_meseta.py} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2222,8 +2225,9 @@ tabla~\ref{tab:landau}.
 \begin{table}[ht]
 \centering
 \small
-\caption{Parámetros del estudio de Landau. Base: \texttt{paper\_runs/base\_selfgrav.par}
-con los parámetros comunes de la tabla~\ref{tab:comun}.}
+\caption{Parámetros del estudio de Landau. Base:
+\texttt{reproducir/corridas/base/} \texttt{base\_selfgrav.par}, con los parámetros
+comunes de la tabla~\ref{tab:comun}.}
 \label{tab:landau}
 \begin{tabular}{p{0.28\textwidth}p{0.62\textwidth}}
 \toprule

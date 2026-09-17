@@ -564,6 +564,7 @@ module paramfile
     call put_r(u,'sr',sr)
     call put_r(u,'sp',sp)
     call put_s(u,'state',state)
+    call put_s(u,'dftype',dftype)
     call put_i(u,'seed',seed)
     if (state == 'checkpoint') call put_s(u,'checkpointfile',CheckPointfile)
 
