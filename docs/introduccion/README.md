@@ -3,7 +3,7 @@
 `vlasov_intro.tex`: notas didácticas sobre mecánica hamiltoniana, variables
 ángulo-acción, phase mixing y amortiguamiento de Landau en Vlasov–Poisson con
 simetría esférica, para alguien con formación en física o matemáticas que se
-inicie en el tema. 42 páginas, 20 figuras.
+inicie en el tema. 41 páginas, 20 figuras.
 
 Se compila con `latexmk -pdf vlasov_intro.tex` (solo paquetes de TeX Live
 estándar).
