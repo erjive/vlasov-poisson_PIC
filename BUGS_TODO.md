@@ -1523,3 +1523,17 @@ son bugs propios de este repo.
   `pot_part`/`force_part`): siguen **pendientes también en el otro
   repo** (nunca se corrigieron ahí), así que no hay nada que "portar"
   — si se quieren corregir, es trabajo nuevo en ambos repos a la vez.
+
+## Pendiente: consistencia del acoplamiento partícula-malla (hallado en `_sp`, 2026-09-17)
+
+- [ ] La revisión de `VlasovPoisson_PIC_sp` (commit `a81f4cf` de ese repositorio)
+  encontró fallas que este código comparte: la interpolación a las partículas no usa
+  los nodos espejo del origen (`poisson_rk.f90`, `jlo = max(1,...)`), el depósito con
+  W_n divide por el volumen de NGP `r²dr + dr³/12` en lugar de `r²dr + (n+1)dr³/12`
+  (`density.f90`), las partículas fuera de la malla no sienten la masa, la reflexión en
+  r<0 no cambia el signo de la fuerza (`main.f90`) y `reduce_arrays` no recalcula la
+  fuerza. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
+  así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
+  en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
+  corrida de referencia y la de Landau antes de citar esos resultados en un artículo.
