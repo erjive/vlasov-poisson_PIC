@@ -6,335 +6,346 @@ def code(t): cells.append({"cell_type":"code","metadata":{},"execution_count":No
                            "outputs":[],"source":_src(t)})
 
 md(r"""
-# Phase mixing y Landau damping con autogravedad
+# Phase mixing con autogravedad: qué es la meseta de $h_1$
 
 Todo lo anterior se hizo con el fondo isócrono fijo, donde $J$ es una constante
 exacta del movimiento y existe una respuesta cerrada contra la que comparar. Aquí
-se enciende la gravedad de las propias partículas.
+se activa la gravedad de las propias partículas.
 
-**El montaje.** La distribución gaussiana de siempre,
+**La configuración.** La distribución gaussiana,
 $F_0 \propto e^{-\sin^2(Q/2)/\sigma_Q^2}\,e^{-J^2/\sigma_J^2} J^2$, con masa total
-$a_0 = 10^{-3}$, es decir **una milésima de la masa del isócrono**. El fondo isócrono
-sigue ahí y la autogravedad entra como perturbación encima, de modo que las variables
-ángulo-acción del isócrono siguen siendo una descripción útil. $N = 10^4$ partículas,
-yoshida4 con $\Delta t = 0.1$, hasta $t = 2000$, unos 20 periodos orbitales.
+$a_0 = 10^{-3}$, **una milésima de la masa del isócrono**. $N = 10^4$ partículas,
+yoshida4 con $\Delta t = 0.1$, hasta $t = 2000$ (unos 20 periodos orbitales), con
+cuadratura y con Monte Carlo, y un **control sin autogravedad** con todo lo demás
+idéntico.
 
-Se corrieron los **dos esquemas de muestreo**, Monte Carlo y cuadratura, uno después
-del otro. Y un **control sin autogravedad** con todo lo demás idéntico, porque sin él
-no hay forma de atribuir nada: cualquier cosa que aparezca hay que poder compararla
-con lo que habría pasado sin la gravedad propia.
+**Resumen de lo que se establece abajo.**
+
+1. La energía se conserva a $1.7\times10^{-7}$. El $5\times10^{-4}$ que reportaban
+   las corridas viejas era un bug del diagnóstico (faltaba el $\tfrac12$ de la
+   autoenergía), corregido en `b0f3915`.
+2. El decaimiento es phase mixing (envolvente gaussiana), acelerado un 2.5% por la
+   autogravedad.
+3. $|h_1|$ se detiene en una meseta de $1.77\times10^{-3}h_0$ que ninguna
+   discretización mueve y que escala con $a_0$.
+4. La meseta no es un modo: su fase está congelada. Es, en lo esencial, el efecto de
+   calcular $(Q,J)$ con el mapa del isócrono cuando el potencial ya no es el
+   isócrono.
+5. Queda sin explicar una componente pequeña que gira a frecuencia orbital.
+   Las preguntas abiertas están en `PREGUNTAS_ABIERTAS.md`.
+
+Los mismos resultados, con más contexto, están en `docs/introduccion/vlasov_intro.tex`.
 """)
 
 code(r"""
-import os, numpy as np, h5py
+import os, sys, numpy as np, h5py
 import matplotlib.pyplot as plt
 plt.rcParams.update({'figure.dpi':120,'font.size':9,'axes.grid':True,'grid.alpha':.25})
 
 DATA = '../../exe/sg'
 assert os.path.isdir(DATA), os.path.abspath(DATA)
+sys.path.insert(0, '../scripts')
+from df0 import rp_to_QJ, omega
 
 def leer(d):
     a = np.loadtxt(os.path.join(DATA, d, 'hk1_complex.tl'))
-    t = a[:,0]
-    h = np.array([a[:,1+2*k] + 1j*a[:,2+2*k] for k in range(5)])
-    return t, h
+    return a[:,0], np.array([a[:,1+2*k] + 1j*a[:,2+2*k] for k in range(5)])
+
+def meseta(d, a=1600, b=2000):
+    t, h = leer(d)
+    m = (t >= a) & (t <= b)
+    return np.median(np.abs(h[1][m]))/h[0].real[0]
 
 RUNS = {'sin autogravedad':'quad_nosg', 'autogravedad, cuadratura':'quad',
         'autogravedad, Monte Carlo':'mc'}
+COL = {'sin autogravedad':'k', 'autogravedad, cuadratura':'tab:blue',
+       'autogravedad, Monte Carlo':'tab:red'}
 T, H = {}, {}
 for k, d in RUNS.items():
     T[k], H[k] = leer(d)
-print('Frecuencia orbital en el pico de la distribucion:')
 c = 0.5*(2 + np.sqrt(8)); Jp = 0.1
-om0 = 1/(Jp+c)**3; omp = -3/(Jp+c)**4
-print(f'   omega = {om0:.5f}   periodo = {2*np.pi/om0:.1f}   |domega/dJ| = {abs(omp):.5f}')
+print(f'omega(J=0.1) = {omega(Jp):.5f}   periodo = {2*np.pi/omega(Jp):.1f}')
 """)
 
 md(r"""
-## 1. Salud numérica antes de interpretar nada
+## 1. Salud numérica: energía y $h_0$
 
-Con el fondo fijo el integrador es simpléctico y la energía se conserva a precisión
-de máquina. Al encender la autogravedad eso deja de ser cierto: la fuerza sale de una
-densidad depositada en malla y no deriva exactamente de un hamiltoniano, así que el
-esquema **ya no es simpléctico**. Conviene saber a qué nivel, porque fija el suelo por
-debajo del cual no hay que creerse nada.
+**El bug.** `energy.f90` sumaba $\sum_j f_j(\tfrac12p_j^2+\Phi_{\rm total}(r_j))$. Con
+autogravedad eso no es la energía: la energía de interacción es
+$\tfrac12\sum_j f_j\Phi_{\rm self}(r_j)$, porque al sumar el potencial propio sobre
+todas las partículas cada par se cuenta desde ambos lados. La suma incorrecta
+cambia en $\tfrac12\Delta W_{\rm self}$ cuando el phase mixing redistribuye la masa.
+
+Se delató porque el error no se movía con ninguna discretización y escalaba con
+$a_0$. Las corridas `efix_*` son las mismas que `quad` y `quad_nosg`, repetidas con
+el código corregido: trayectorias idénticas bit a bit, energía distinta.
 """)
 
 code(r"""
-print(f"{'corrida':>26} {'deriva de E':>13} {'deriva de h_0':>15}")
-for k, d in RUNS.items():
+def energia(d):
     f = h5py.File(os.path.join(DATA, d, 'vlasov_output.h5'))
     st = sorted([s for s in f if s.startswith('step_')], key=lambda s:int(s.split('_')[1]))
-    e0 = float(f[st[0]].attrs['total_energy']); e1 = float(f[st[-1]].attrs['total_energy'])
-    h0 = H[k][0].real
-    print(f'{k:>26} {abs(e1/e0-1):>13.2e} {h0[-1]/h0[0]-1:>+15.3e}')
-""")
+    return f[st[-1]].attrs['total_energy']/f[st[0]].attrs['total_energy'] - 1
 
-md(r"""
-Dos cosas, y la segunda es el primer resultado físico:
-
-**La energía** se conserva a $7\times10^{-11}$ sin autogravedad y a $5\times10^{-4}$ con
-ella. Ese $5\times10^{-4}$ es el suelo de confianza de estas corridas.
-
-**$h_0$ deriva un $-1.6\%$**, treinta veces más que el error de energía, y *exactamente
-lo mismo en los dos esquemas de muestreo*. No es ruido ni error de integración: es
-física. $h_0$ mide $\langle b(J)\rangle$, y sólo es constante mientras $J$ lo sea. Al
-añadir el potencial propio, $\delta\Phi \sim a_0/r \sim 2\times10^{-4}$ frente a
-$|\Phi_{\rm iso}|\sim 0.086$, las energías orbitales se desplazan y con ellas las
-acciones. **La deriva de $h_0$ es la medida directa de cuánto deja de conservarse $J$.**
-
-Sin autogravedad la misma cantidad se conserva a $2\times10^{-10}$, que es el control
-que permite afirmar lo anterior.
-""")
-
-md(r"""
-## 2. ¿Phase mixing o Landau damping? Lo dice la forma de la envolvente
-
-Es la distinción que se puede zanjar con los datos, sin ambigüedad:
-
-- **Phase mixing puro.** $h_k(t)=C\int dJ\,g(J)\,e^{-ik\omega(J)t}$. Linealizando
-  $\omega\simeq\omega_0+\omega'(J-J_0)$ sobre una $g$ gaussiana de anchura $\sigma_J$,
-  la integral da $\;|h_k|\propto \exp[-(k\,|\omega'|\,\sigma_J\,t)^2/4]$: una
-  **gaussiana en $t$**. En escala logarítmica, una parábola.
-
-- **Landau damping.** El amortiguamiento colectivo de un modo es
-  $|h_k|\propto e^{-\gamma t}$: una **exponencial**. En escala logarítmica, una recta.
-
-Así que basta ajustar $\log|h_1|$ contra $t^2$ y contra $t$ y ver cuál de los dos
-describe los datos.
+print(f"{'':>28} {'antes del arreglo':>18} {'con el arreglo':>15}")
+print(f"{'dE/E con autogravedad':>28} {energia('quad'):>+18.4e} {energia('efix_quad'):>+15.4e}")
+print(f"{'dE/E sin autogravedad':>28} {energia('quad_nosg'):>+18.4e} {energia('efix_nosg'):>+15.4e}")
+fo = h5py.File(os.path.join(DATA, 'quad', 'vlasov_output.h5'))
+fn = h5py.File(os.path.join(DATA, 'efix_quad', 'vlasov_output.h5'))
+s = sorted([s for s in fo if s.startswith('step_')])[-1]
+print('\nposiciones a t=2000 idénticas bit a bit:',
+      np.array_equal(fo[s]['r_part'][:], fn[s]['r_part'][:]) and
+      np.array_equal(fo[s]['p_part'][:], fn[s]['p_part'][:]))
 """)
 
 code(r"""
-print(f"{'corrida':>26} {'R^2 frente a t^2':>17} {'R^2 frente a t':>16}   veredicto")
+print(f"{'corrida':>26} {'cambio de h_0':>15}")
+for k, d in RUNS.items():
+    h0 = H[k][0].real
+    print(f'{k:>26} {h0[-1]/h0[0]-1:>+15.4e}')
+fig, ax = plt.subplots(figsize=(6, 3))
+for k in RUNS:
+    ax.plot(T[k], H[k][0].real/H[k][0].real[0]-1, color=COL[k], lw=1, label=k)
+ax.set_xlabel('$t$'); ax.set_ylabel('$h_0(t)/h_0(0)-1$'); ax.legend(fontsize=7)
+fig.tight_layout()
+""")
+
+md(r"""
+**$h_0$ cambia un $1.6\%$**, igual a cuatro cifras en los dos esquemas de muestreo, y
+sin autogravedad se conserva a $2\times10^{-10}$. No es ruido: $h_0$ mide
+$\langle B(J_{\rm iso})\rangle$, y la acción *isócrona* deja de conservarse cuando el
+potencial ya no es el isócrono. El cambio ocurre durante la mezcla inicial
+($t\lesssim600$) y después $h_0$ queda constante: no es una deriva secular.
+""")
+
+md(r"""
+## 2. ¿Phase mixing o Landau damping? La forma de la envolvente
+
+- **Phase mixing:** $|h_k|\propto \exp[-(k\,|\omega'|\,\sigma\,t)^2/4]$, recta frente a $t^2$.
+- **Landau damping:** $|h_k|\propto e^{-\gamma t}$, recta frente a $t$.
+""")
+
+code(r"""
+print(f"{'corrida':>26} {'R^2 vs t^2':>11} {'R^2 vs t':>9} {'pendiente vs t^2':>17}")
 coef = {}
 for k in RUNS:
     t, h = T[k], np.abs(H[k][1])
-    m = (t > 0) & (t < 250) & (h > 0)          # tramo de decaimiento inicial
+    m = (t > 0) & (t < 250)
     y = np.log(h[m])
-    r2 = np.corrcoef(t[m]**2, y)[0,1]**2
-    r1 = np.corrcoef(t[m],    y)[0,1]**2
     coef[k] = np.polyfit(t[m]**2, y, 1)[0]
-    print(f'{k:>26} {r2:>17.5f} {r1:>16.5f}   '
-          f'{"gaussiana: phase mixing" if r2 > r1 else "exponencial: Landau"}')
-""")
+    print(f'{k:>26} {np.corrcoef(t[m]**2, y)[0,1]**2:>11.5f} '
+          f'{np.corrcoef(t[m], y)[0,1]**2:>9.3f} {coef[k]:>17.4e}')
+b0 = coef['sin autogravedad']
+for k in list(RUNS)[1:]:
+    print(f'   {k}: decae {coef[k]/b0-1:+.1%} más rápido que sin autogravedad')
 
-code(r"""
-fig, axes = plt.subplots(1, 2, figsize=(10.5, 4))
-col = {'sin autogravedad':'k', 'autogravedad, cuadratura':'tab:blue',
-       'autogravedad, Monte Carlo':'tab:red'}
-for k in RUNS:
-    t, h = T[k], np.abs(H[k][1])
-    axes[0].semilogy(t, h, lw=1, color=col[k], label=k)
-    m = t < 400
-    axes[1].plot(t[m]**2, np.log(h[m]), lw=1.2, color=col[k], label=k)
-axes[0].set_xlabel('$t$'); axes[0].set_ylabel('$|h_1|$')
-axes[0].set_title('decaimiento y rebote', fontsize=10); axes[0].legend(fontsize=7)
-axes[1].set_xlabel('$t^2$'); axes[1].set_ylabel(r'$\log|h_1|$')
-axes[1].set_title('recta aqui $\\Rightarrow$ envolvente gaussiana $\\Rightarrow$ phase mixing',
-                  fontsize=10)
-fig.tight_layout()
-""")
-
-md(r"""
-**El decaimiento inicial es phase mixing, no Landau damping.** El ajuste gaussiano da
-$R^2 = 1.00000$ sin autogravedad, y el exponencial $0.938$. En el panel derecho los
-datos caen sobre una recta frente a $t^2$, que es la firma de la mezcla de fases.
-
-Tiene sentido: con $a_0=10^{-3}$ la autogravedad es una perturbación del 0.1%, y el
-amortiguamiento de Landau es un efecto colectivo que necesita que el campo propio sea
-comparable al de fondo. Aquí no lo es. Lo que domina es cinemática pura: las órbitas
-tienen frecuencias distintas y la estructura angular se enrolla.
-""")
-
-code(r"""
-b0 = coef['sin autogravedad']; b1 = coef['autogravedad, cuadratura']
-b2 = coef['autogravedad, Monte Carlo']
-print('Coeficiente del ajuste  log|h_1| = A + B t^2   (B<0, mas negativo = decae antes)')
-print(f'   sin autogravedad            B = {b0:.4e}')
-print(f'   con autogravedad, cuad      B = {b1:.4e}   ({b1/b0-1:+.1%})')
-print(f'   con autogravedad, MC        B = {b2:.4e}   ({b2/b0-1:+.1%})')
-""")
-
-md(r"""
-Y aquí está la contribución colectiva, pequeña pero medible y **coherente entre los dos
-esquemas de muestreo**: la autogravedad hace que $h_1$ decaiga un ~2.5% más deprisa. Es
-lo que queda del amortiguamiento colectivo cuando la masa perturbadora es una milésima
-del total: no cambia la naturaleza del decaimiento, sólo lo acelera un poco.
-""")
-
-md(r"""
-## 3. El rebote tardío
-
-Lo llamativo del panel izquierdo es que con autogravedad $|h_1|$ **deja de decaer,
-toca un mínimo y vuelve a subir**, mientras que sin autogravedad baja monótonamente
-hasta el final.
-""")
-
-code(r"""
-print(f"{'corrida':>26} {'t del minimo':>13} {'|h1|/h_0 minimo':>17} {'meseta t>1600':>15}")
+fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.8))
 for k in RUNS:
     t, h = T[k], np.abs(H[k][1])/H[k][0].real[0]
-    m = t > 100
-    print(f'{k:>26} {t[m][np.argmin(h[m])]:>13.0f} {h[m].min():>17.3e} '
-          f'{np.median(h[t>1600]):>15.3e}')
-""")
-
-md(r"""
-Hay dos lecturas posibles y son incompatibles:
-
-- **Ruido de discretización realimentado.** La gravedad propia amplifica el ruido del
-  depósito en malla. Entonces el nivel debe depender de $N$, de la resolución de la
-  malla y del orden del B-spline.
-- **Respuesta colectiva.** El estado inicial es un equilibrio del isócrono *solo*, no
-  del potencial total; al encender la gravedad propia el sistema responde. Entonces el
-  nivel debe ser **independiente de la discretización** y escalar con la masa $a_0$.
-
-Predicen cosas distintas para cada barrido, así que se puede decidir.
-""")
-
-md(r"""
-### 3.1 Los barridos de discretización
-
-Cuatro resoluciones de malla con $\Delta t$ fijo (se compensa con el factor de Courant),
-tres órdenes del B-spline, y tres valores de $N$ con el esquema de cuadratura, que es
-el que menos ruido de muestreo tiene.
-""")
-
-code(r"""
-import glob
-def met(d):
-    a = np.loadtxt(os.path.join(DATA, d, 'hk1.tl'))
-    t, h0 = a[:,0], a[0,1]
-    return np.median(a[t>1600, 2])/h0, a[-1,1]/h0 - 1, t[t>100][np.argmin(a[t>100,2])]
-
-print('Malla: dr con dt = 0.1 fijo en las cuatro')
-print(f"{'dr':>7} {'Nr':>5} {'part/celda':>11} {'meseta |h1|/h0':>16}")
-for dr, d in [(0.2,'scan_dr_0.200'), (0.1,'quad'), (0.05,'scan_dr_0.050'), (0.025,'scan_dr_0.025')]:
-    m, _, _ = met(d)
-    print(f'{dr:>7} {int(20/dr)+1:>5} {10000/(11/dr):>11.0f} {m:>16.3e}')
-
-print('\nOrden del B-spline, dr = 0.1')
-for b, d in [(1,'quad'), (2,'scan_bspl_2'), (3,'scan_bspl_3')]:
-    m, _, _ = met(d); print(f'   orden {b}:  meseta {m:.3e}')
-
-print('\nNumero de particulas, con cuadratura')
-for n, d in [(1000,'scan_N_1000'), (10000,'quad'), (100000,'scan_N_100000')]:
-    m, _, _ = met(d); print(f'   N={n:>6}:  meseta {m:.3e}')
-""")
-
-md(r"""
-**Nada de esto lo mueve.** La meseta vale $1.77\times10^{-3}$ de $h_0$ con ocho veces
-más resolución de malla, con ocho veces menos partículas por celda, con B-splines
-cúbicos en vez de lineales, y con **cien veces más partículas**. Las cifras coinciden
-en tres dígitos.
-
-Eso liquida la hipótesis del ruido: ninguna discretización que se refine cambia el
-resultado.
-""")
-
-md(r"""
-### 3.2 El barrido en la masa
-
-Si es respuesta colectiva, tiene que escalar con la masa que la produce.
-""")
-
-code(r"""
-A, M, Dh, Tm = [], [], [], []
-for a0, d in [(1e-4,'scan_a0_1e-4'), (1e-3,'quad'), (1e-2,'scan_a0_1e-2')]:
-    m, dh, tm = met(d)
-    A.append(a0); M.append(m); Dh.append(abs(dh)); Tm.append(tm)
-    print(f'   a0={a0:.0e}:  meseta {m:.3e}   deriva h_0 {dh:+.3e}   t del minimo {tm:.0f}')
-print(f'\n   pendiente log-log de la meseta frente a a0: {np.polyfit(np.log(A),np.log(M),1)[0]:+.3f}')
-print(f'   pendiente log-log de la deriva de h_0:      {np.polyfit(np.log(A),np.log(Dh),1)[0]:+.3f}')
-print( '   una respuesta lineal predice +1.000 en ambas')
-""")
-
-code(r"""
-fig, axes = plt.subplots(1, 2, figsize=(10.5, 4))
-for a0, d, c in [(1e-4,'scan_a0_1e-4','tab:green'), (1e-3,'quad','tab:blue'),
-                 (1e-2,'scan_a0_1e-2','tab:red')]:
-    a = np.loadtxt(os.path.join(DATA, d, 'hk1.tl'))
-    axes[0].semilogy(a[:,0], a[:,2]/a[0,1], lw=1, color=c, label=f'$a_0={a0:.0e}$')
-a = np.loadtxt(os.path.join(DATA, 'quad_nosg', 'hk1.tl'))
-axes[0].semilogy(a[:,0], a[:,2]/a[0,1], 'k-', lw=1, label='sin autogravedad')
+    axes[0].semilogy(t, h, lw=1, color=COL[k], label=k)
+    m = t < 400
+    axes[1].plot(t[m]**2, np.log(h[m]), lw=1.2, color=COL[k])
 axes[0].set_xlabel('$t$'); axes[0].set_ylabel('$|h_1|/h_0$'); axes[0].legend(fontsize=7)
-axes[0].set_title('el rebote crece con la masa', fontsize=10)
-
-axes[1].loglog(A, M, 'o-', label='meseta de $|h_1|/h_0$')
-axes[1].loglog(A, Dh, 's-', label='deriva de $h_0$')
-axes[1].loglog(A, np.array(A)*M[1]/A[1], 'k:', lw=1, label=r'$\propto a_0$')
-axes[1].set_xlabel('$a_0$'); axes[1].legend(fontsize=8)
-axes[1].set_title('ambas escalan linealmente con $a_0$', fontsize=10)
+axes[1].set_xlabel('$t^2$'); axes[1].set_ylabel(r'$\ln|h_1/h_0|$')
 fig.tight_layout()
 """)
 
 md(r"""
-**Escala linealmente con $a_0$**: pendientes $+0.91$ para la meseta y $+0.97$ para la
-deriva de $h_0$, frente al $+1$ de una respuesta lineal. Y el mínimo se adelanta al
-subir la masa —$t=1414$, $1216$, $896$—, que es lo que hace una respuesta colectiva:
-cuanto más fuerte es el acoplamiento, antes domina sobre el decaimiento cinemático.
+Gaussiana en las tres ($R^2 = 1.00000$ sin autogravedad, $0.9986$ con ella, frente a
+$0.938$ para la exponencial). La autogravedad acelera el decaimiento un 2.5–3%,
+coherentemente en los dos esquemas: es lo que queda del efecto colectivo con
+$a_0=10^{-3}$.
 
-**El rebote es físico.** Es la respuesta colectiva del sistema autogravitante: el
-estado inicial es un equilibrio del isócrono solo, y al encender la gravedad propia el
-sistema se reajusta. Una vez que el phase mixing ha borrado la estructura angular
-impuesta, lo que queda es esa respuesta.
+Pero con autogravedad $|h_1|$ **deja de decaer** y queda en una meseta.
 """)
 
 md(r"""
-### 3.3 Por qué el Monte Carlo me había engañado
+## 3. La meseta frente a la discretización y a la masa
 
-En la primera pasada del análisis concluí lo contrario: que el rebote era ruido
-amplificado. Ese error merece quedar escrito, porque es instructivo.
+Si fuera ruido de discretización, cambiaría al refinar. Si es física, no cambia y
+escala con $a_0$.
+""")
 
-El argumento era el escalado en $N$ **del Monte Carlo**, que daba pendiente $-0.28$ y
-se ajustaba bien a *ruido más una componente independiente de $N$*. Pero el nivel
-físico es $1.77\times10^{-3}\,h_0 = 4.4\times10^{-9}$, y las mesetas del Monte Carlo a
-$N=10^3,10^4,10^5$ valían $5.9\times10^{-8}$, $2.4\times10^{-8}$ y $1.6\times10^{-8}$:
-**las tres por encima de la señal**. El Monte Carlo estaba dominado por su propio ruido
-en todo el rango, y lo que yo interpretaba como "una componente que $N$ no elimina" era
-sólo una extrapolación mala desde tres puntos que todavía no habían llegado al suelo.
+code(r"""
+BARRIDOS = [
+    ('malla dr',      [('0.2','scan_dr_0.200'), ('0.1','quad'), ('0.05','scan_dr_0.050'), ('0.025','scan_dr_0.025')]),
+    ('orden B-spline',[('1','quad'), ('2','scan_bspl_2'), ('3','scan_bspl_3')]),
+    ('nodos en Q',    [('25','quad'), ('100','scan_npc_100'), ('200','scan_npc_200')]),
+    ('partículas N',  [('1e3','scan_N_1000'), ('1e4','quad'), ('1e5','scan_N_100000')]),
+]
+for nombre, runs in BARRIDOS:
+    print(f'{nombre:>15}: ' + '   '.join(f'{lab}: {meseta(d):.4e}' for lab, d in runs))
 
-La cuadratura, con mucho menos ruido de muestreo, ya resuelve la señal con $N=10^3$.
-Correr **los dos esquemas** no era redundancia: era lo que permitía distinguirlos.
+print('\nmasa, corridas hasta t=20000:')
+A = [1e-4, 1e-3, 1e-2]
+for a, b in [(1600, 2000), (15000, 20000)]:
+    M = [meseta(f'long_a0_{x:.0e}'.replace('e-0', 'e-'), a, b) for x in A]
+    p = np.polyfit(np.log(A), np.log(M), 1)[0]
+    print(f'   t in [{a},{b}]: ' + '  '.join(f'{m:.4e}' for m in M) + f'   pendiente {p:+.3f}')
+""")
+
+code(r"""
+fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.8))
+for nombre, runs in BARRIDOS:
+    for lab, d in runs:
+        t, h = leer(d)
+        axes[0].semilogy(t, np.abs(h[1])/h[0].real[0], lw=.7)
+t, h = leer('quad_nosg')
+axes[0].semilogy(t, np.abs(h[1])/h[0].real[0], 'k-', lw=1, label='sin autogravedad')
+axes[0].set_title('los 11 barridos de discretización se superponen', fontsize=9)
+axes[0].set_xlabel('$t$'); axes[0].set_ylabel('$|h_1|/h_0$'); axes[0].legend(fontsize=7)
+for d, lab in [('mc_1000','MC N=1e3'), ('mc','MC N=1e4'), ('mc_100000','MC N=1e5'), ('quad','cuadratura N=1e4')]:
+    t, h = leer(d)
+    axes[1].semilogy(t, np.abs(h[1]), lw=.9 if d.startswith('mc') else 1.5, label=lab)
+axes[1].set_ylim(1e-9, 5e-6); axes[1].set_xlabel('$t$'); axes[1].set_ylabel('$|h_1|$')
+axes[1].set_title('el Monte Carlo no resuelve la meseta: queda sobre su ruido', fontsize=9)
+axes[1].legend(fontsize=7)
+fig.tight_layout()
 """)
 
 md(r"""
-## 4. Qué queda establecido
+**Nada de la discretización la mueve** (tres cifras iguales con ocho veces más
+malla, splines cúbicos, ocho veces más nodos angulares o cien veces más partículas) y
+**escala con la masa** (pendiente $+0.96$ en la ventana tardía).
 
-1. **La energía se conserva a $5\times10^{-4}$** con autogravedad, frente a
-   $7\times10^{-11}$ con fondo fijo: el depósito en malla rompe el carácter simpléctico.
-   Esa cifra es proporcional a $a_0$ y es el suelo de confianza de cada corrida.
+El Monte Carlo no sirve aquí: el nivel de la meseta ($4.4\times10^{-9}$) queda por
+debajo de su ruido en todo el rango de $N$ explorado. La primera versión de este
+análisis concluyó por eso que la meseta era ruido; era un error.
+""")
 
-2. **$h_0$ deriva linealmente con la masa**, un $1.6\%$ para $a_0=10^{-3}$. Es la medida
-   directa de cuánto deja de conservarse $J$ al añadir el potencial propio.
+md(r"""
+## 4. No es un modo: la fase
 
-3. **El decaimiento inicial es phase mixing, no Landau damping.** La envolvente es
-   gaussiana en $t$ ($R^2=1.00000$ en el control), no exponencial ($R^2=0.938$).
+Un modo oscila, $h_1\sim e^{-i\omega_r t}$. Se descompone $h_1 = S + R(t)$ en una
+parte estática $S$ (el promedio temporal) y una que fluctúa.
+""")
 
-4. **La autogravedad acelera ese decaimiento un $2.5\%$**, coherentemente en los dos
-   esquemas de muestreo.
+code(r"""
+print(f"{'a0':>6} {'ventana':>14} {'omega efectiva':>15} {'|S|/h0':>11} {'arg S':>7} {'gira/|S|':>9} {'a omega':>8}")
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.6))
+for a0 in A:
+    d = f'long_a0_{a0:.0e}'.replace('e-0', 'e-')
+    t, h = leer(d); z = h[1]/h[0].real[0]
+    fase = np.unwrap(np.angle(z))
+    axes[0].semilogy(t, np.abs(z), lw=.6, label=f'a0={a0:g}')
+    axes[1].plot(t, fase, lw=1, label=f'a0={a0:g}')
+    for a, b in [(2000, 15000), (15000, 20000)]:
+        m = (t >= a) & (t <= b)
+        S = z[m].mean(); giro = np.sqrt(2)*np.std(z[m].real)
+        sp = np.abs(np.fft.rfft(z[m].real - z[m].real.mean()))
+        wp = (np.fft.rfftfreq(m.sum(), t[1]-t[0])*2*np.pi)[np.argmax(sp)]
+        print(f'{a0:>6g} {f"[{a},{b}]":>14} {-np.polyfit(t[m], fase[m], 1)[0]:>+15.1e} '
+              f'{abs(S):>11.4e} {np.angle(S):>+7.3f} {giro/abs(S):>9.1%} {wp:>8.4f}')
+    if a0 >= 1e-3:
+        S0 = abs(z[(t >= 2000) & (t <= 15000)].mean())
+        m = t >= (2000 if a0 == 1e-3 else 15000)
+        axes[2].plot(z[m].real/S0, z[m].imag/S0, lw=.3, label=f'a0={a0:g}')
+axes[1].plot(t, -omega(0.1)*t, 'k--', lw=.8, label='un modo con omega orbital')
+axes[1].set_ylim(-260, 15)
+axes[2].plot(0, 0, 'k+'); axes[2].set_aspect('equal')
+for ax, tt in zip(axes, ['amplitud', 'fase desenrollada', 'plano complejo / S']):
+    ax.set_title(tt, fontsize=9); ax.legend(fontsize=6)
+fig.tight_layout()
+""")
 
-5. **El rebote tardío es la respuesta colectiva del sistema.** Es insensible a la
-   resolución de la malla, al orden del B-spline y al número de partículas —tres dígitos
-   iguales con cien veces más partículas— y escala linealmente con $a_0$. El solver de
-   Poisson se verificó aparte: fuera de la distribución reproduce $-M(r)/r^2$ con un
-   error del $0.7\%$, que es el de la propia comprobación.
+md(r"""
+Con $a_0=10^{-3}$ la parte estática es **real con fase 0.000** y su módulo es el mismo
+en las dos ventanas; la fase total recorre menos de 0.4 rad entre $t=2000$ y $15\,000$,
+cuando un modo a frecuencia orbital habría acumulado más de $10^3$. **No es un modo.**
 
-### Lo que sigue abierto
+Queda una componente que gira a $\omega\approx0.055$–$0.062$, dentro de la banda
+orbital: $1.4\%$ de $S$ con $a_0=10^{-4}$, $9$–$10\%$ con $10^{-3}$, y con $10^{-2}$
+crece de $18\%$ a $86\%$ hasta rodear el origen, lo que produce los saltos de fase.
+""")
 
-El rebote está caracterizado pero no explicado: sabemos que es colectivo y lineal en
-$a_0$, no qué modo es. Identificarlo pediría resolver el problema de autovalores del
-sistema linealizado, o al menos medir con cuidado su frecuencia y su ritmo de
-crecimiento en corridas más largas, con $t_{\max}$ muy por encima de los $2000$ de aquí.
+md(r"""
+## 5. La explicación: las coordenadas
 
-Y el régimen sigue siendo el de perturbación débil. Con $a_0=10^{-2}$ la deriva de $h_0$
-ya es del $14\%$, señal de que las variables ángulo-acción del isócrono empiezan a no
-describir las órbitas. Ir más arriba obliga a replantear el diagnóstico entero.
+El diagnóstico calcula $(Q,J)$ con el mapa del isócrono, pero las partículas se mueven
+en $\Phi_{\rm iso}+\delta\Phi$. Una distribución completamente mezclada en las
+variables verdaderas no sale uniforme en $Q_{\rm iso}$: escribiendo
+$J_{\rm iso}=J+\delta J(\theta)$ y $Q_{\rm iso}=\theta+\delta Q(\theta)$, con
+correcciones de orden $a_0$, el promedio de $e^{-iQ_{\rm iso}}B(J_{\rm iso})$ sobre
+$\theta$ uniforme conserva la componente $k=1$ de $\delta J$ y $\delta Q$: un término
+constante, proporcional a $a_0$.
+
+**Predicción:** la $J$ isócrona de cada partícula debe oscilar a su frecuencia orbital.
+""")
+
+code(r"""
+f = h5py.File(os.path.join(DATA, 'long_fino', 'vlasov_output.h5'))
+st = sorted([s for s in f if s.startswith('step_')], key=lambda s:int(s.split('_')[1]))
+t = np.array([f[s].attrs['time'] for s in st])
+idx = [4978, 7500, 9900]
+R = np.array([f[s]['r_part'][idx] for s in st]); P = np.array([f[s]['p_part'][idx] for s in st])
+_, J = rp_to_QJ(R, P)
+fig, ax = plt.subplots(figsize=(7, 3))
+m = t > 500
+for i in range(3):
+    x = J[:, i]; Jm = x.mean()
+    sp = np.abs(np.fft.rfft(x - Jm)); fr = np.fft.rfftfreq(len(x), t[1]-t[0])*2*np.pi
+    d1 = x[(t > 500) & (t <= 1250)].mean(); d2 = x[t > 1250].mean()
+    print(f'<J>={Jm:.4f}: pico a pico {100*np.ptp(x[m])/Jm:.2f}%  deriva {100*(d2-d1)/Jm:+.3f}%  '
+          f'omega oscilación {fr[np.argmax(sp)]:.4f}  orbital {omega(Jm):.4f}')
+    ax.plot(t, 100*(x/Jm - 1), lw=.8, label=f'<J>={Jm:.3f}')
+ax.set_xlabel('$t$'); ax.set_ylabel(r'$J_{\rm iso}/\langle J\rangle-1$ (%)'); ax.legend(fontsize=7)
+fig.tight_layout()
+""")
+
+md(r"""
+**Confirmado en partículas individuales:** $J_{\rm iso}$ oscila $\sim0.45\%$ pico a
+pico exactamente a la frecuencia orbital, sin deriva apreciable de la media.
+""")
+
+md(r"""
+## 6. Análisis por filas de acción
+
+Con cuadratura, cada fila de la rejilla tiene una sola acción inicial y, bajo phase
+mixing puro, rota rígida: su contribución $g_i(t)$ a $h_1$ no decae. Se ajusta
+$g_i(t)=S_i+A_i e^{-i\omega_i t}$ en $t\in[600,2000]$ para separar la parte estática
+de cada fila de su propia rotación (`paper_runs/scripts/filas_J.py`).
+""")
+
+code(r"""
+import filas_J
+_ = filas_J.analizar('long_fino_nosg')
+_ = filas_J.analizar('long_fino')
+""")
+
+md(r"""
+- **Sin autogravedad**, cada fila rota rígida a $\omega_{\rm iso}(J)$ (corrimiento
+  $\sim10^{-11}$), sin parte estática ni cambio de amplitud: el control funciona.
+- **Con autogravedad**, cada fila lleva una parte estática pequeña ($0.2$–$2\%$ de su
+  amplitud) y **todas en fase** ($\sum|S_i|/|\sum S_i|\approx1.2$), concentradas donde
+  pesa la función de prueba. Es lo que predice la explicación por coordenadas.
+- Hasta $t=2000$, la componente que gira del total es el continuo de filas que todavía
+  no termina de cancelarse; los residuos del ajuste están en la propia $\omega_i$ y en
+  $2\omega_i$ de cada fila y son **incoherentes entre filas**: no hay un modo con
+  frecuencia común.
+- Pero ese continuo, extrapolado, bajaría a $\sim0.1\%$ de $S$ hacia $t=20\,000$,
+  mientras que la medida es $\sim10\%$. Para ver por qué, se repitió la corrida hasta
+  $t=20\,000$ con instantáneas y se ajustó por ventanas.
+""")
+
+code(r"""
+_ = filas_J.por_ventanas('long20k_snap')
+""")
+
+md(r"""
+- **La parte estática no cambia** en 16\,000 unidades de tiempo (cuarta cifra).
+- **La componente que gira es, ventana por ventana, el continuo de filas**
+  (rms $C$ = rms $(h-S)$; residuos 3–10 veces menores): no hay oscilación coherente.
+- **Las filas no son rígidas**: su amplitud cae de 0.91 a 0.26 porque sus partículas
+  comparten $J$ isócrona pero no $J$ verdadera, y se desfasan entre sí. Por eso la
+  extrapolación desde $t\le2000$ fallaba.
+
+Por qué ese continuo no se cancela por debajo de $\sim10\%$ de $S$ sigue abierto; las
+hipótesis y las pruebas propuestas están en `PREGUNTAS_ABIERTAS.md`.
 """)
 
 nb={"cells":cells,"metadata":{"kernelspec":{"display_name":"Python 3","language":"python",
     "name":"python3"},"language_info":{"name":"python","version":"3"}},
     "nbformat":4,"nbformat_minor":5}
-out=os.path.join(os.path.dirname(__file__),'selfgrav_mixing.ipynb')
+out=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','notebooks','selfgrav_mixing.ipynb')
 json.dump(nb,open(out,'w'),ensure_ascii=False,indent=1)
-print('escrito',out,'-',len(cells),'celdas')
+print('escrito',os.path.abspath(out),'-',len(cells),'celdas')

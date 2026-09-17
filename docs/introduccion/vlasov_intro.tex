@@ -1495,6 +1495,13 @@ discretización: vale $8.3\times10^{-7}$, $1.7\times10^{-7}$, $7.9\times10^{-9}$
 $3.3\times10^{-9}$ para $\Delta r=0.2$, $0.1$, $0.05$ y $0.025$. Ese es el verdadero
 costo de calcular la fuerza en malla.
 
+El código ya está corregido: guarda el potencial propio de cada partícula antes de
+sumarle el fondo y la barrera centrífuga, y la energía usa la mitad. Repitiendo la
+corrida, el cambio de energía pasa de $-4.9595\times10^{-4}$ a
+$-1.6975\times10^{-7}$, el valor que había predicho la reconstrucción, mientras que
+las posiciones y los momentos a $t=2000$ salen idénticos bit a bit: la dinámica
+nunca estuvo afectada, solo la medida.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{salud}
@@ -1703,7 +1710,19 @@ la banda~\eqref{eq:banda} habría acumulado más de $10^3$.
 
 Hay además una componente pequeña que sí gira, con frecuencias entre $0.055$ y
 $0.062$, dentro de la banda orbital. Para $a_0=10^{-4}$ es el $1.4\%$ de la parte
-estática; para $a_0=10^{-3}$, el $9\%$. Su origen no está establecido.
+estática; para $a_0=10^{-3}$, el $9\%$.
+
+Para ver de dónde sale se descompuso $h_1$ por filas de la rejilla de cuadratura.
+Cada fila empieza con una sola acción y, sin autogravedad, rota rígidamente a
+$\omega(\Jr)$; en ese control el ajuste $g_i(t)=S_i+A_i\ee^{-\ii\omega_it}$ por fila
+deja un residuo de $5\times10^{-10}$. Con autogravedad y hasta $t=20\,000$ resultan
+tres cosas. La parte estática es la suma de contribuciones de fila casi todas en fase,
+y no cambia en la cuarta cifra entre ventanas sucesivas. La componente que gira es,
+ventana por ventana, la suma de las rotaciones propias de las filas: no hay una
+oscilación coherente a una frecuencia común. Y las filas no son rígidas: su amplitud
+cae de $0.91$ a $0.26$, porque sus partículas comparten acción \emph{isócrona} pero no
+acción verdadera y se desfasan entre sí. Por qué esa suma no termina de cancelarse
+sigue abierto.
 
 \textbf{No es un modo.} La meseta es, en lo esencial, un residuo \emph{estático}.
 
@@ -1937,22 +1956,29 @@ generalicen.
 
 \section{Trabajo pendiente}
 
-Lo que queda por hacer, en orden de dificultad:
+Las preguntas abiertas, con los números medidos y el siguiente paso concreto de
+cada una, se mantienen en el archivo \texttt{PREGUNTAS\_ABIERTAS.md} de la raíz del
+repositorio. En orden de dificultad:
 
 \begin{itemize}
-  \item Corregir el diagnóstico de energía del código para incluir el factor
-    $\tfrac12$ en la energía de interacción propia.
   \item Implementar el mapa ángulo--acción numérico de la
     sección~\ref{sec:mapanumerico} y comprobar que la parte estática de la meseta
     desaparece.
-  \item Con ese mapa, identificar la componente que gira a frecuencia orbital y que
-    crece con $a_0=10^{-2}$, y explorar $a_0\gtrsim10^{-2}$, donde el efecto colectivo
-    deja de ser una corrección de unos puntos porcentuales y puede llegar a dominar,
-    hasta el régimen de relajación violenta~\cite{lyndenbell1967}.
+  \item Explicar por qué la componente que gira a frecuencia orbital no se cancela
+    por debajo de $\sim10\%$ de la parte estática con $a_0=10^{-3}$, y por qué crece
+    con $a_0=10^{-2}$: piso de discreción de la rejilla, el mismo efecto de
+    coordenadas, o dinámica colectiva.
+  \item Construir un equilibrio autoconsistente con una perturbación pequeña y
+    separada. Con el montaje actual, el reajuste del equilibrio y la respuesta a la
+    perturbación quedan mezclados, y sin separarlos no tiene sentido medir un
+    amortiguamiento de Landau.
+  \item Explorar $a_0\gtrsim10^{-2}$, donde el efecto colectivo deja de ser una
+    corrección de unos puntos porcentuales y puede llegar a dominar, hasta el
+    régimen de relajación violenta~\cite{lyndenbell1967}.
   \item Buscar modos discretos genuinos: resolver el problema de autovalores
-    linealizado, o medir con cuidado $\omega_r$ y $\gamma$ en corridas largas, y
-    comprobar si caen dentro o fuera de la banda~\eqref{eq:banda}. Un modo dentro de
-    la banda es resonante y por lo tanto amortiguado por Landau; fuera, no.
+    linealizado y comprobar si caen dentro o fuera de la banda~\eqref{eq:banda}. Un
+    modo dentro de la banda es resonante y por lo tanto amortiguado por Landau;
+    fuera, no.
   \item Levantar la restricción de $L$ fijo, lo que reintroduce un segundo grado de
     libertad y con él resonancias entre las dos frecuencias.
 \end{itemize}
