@@ -28,9 +28,8 @@
     real(8) :: Jr, Qr, s, s1, s2, er1, er2, eta,argaux
 !   Auxiliary variables for the (Q3,J3) quadrature grid + Newton-Raphson
 !   inversion back to (r,p_r) -- see state "aa_quad" below.
-    real(8) :: Jgrid, Qgrid, Egrid, ecc, etaNR, gNR, gpNR, sgrid, rgrid, paux2
+    real(8) :: Jgrid, Qgrid, Egrid, ecc, etaNR, sgrid, rgrid, paux2
     real(8) :: Jminc, Jmaxc, dJc, dQc
-    integer :: iterNR
 
     smallpi = acos(-1.0d0)
 
@@ -202,12 +201,20 @@
           p_part((i-1)*Npc+j) = paux     
 
           energy = -1.0/(1.0D0+dsqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2) + 0.5D0*paux**2
-          er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-          er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+          er1 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
+          er2 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
           s1 = 1.d0 + sqrt(1.d0+er1**2)
           s2 = 1.d0 + sqrt(1.d0+er2**2)
           s  = 1.d0 + sqrt(1.d0+raux**2)
-          argaux = (s1+s2-2.0*s)/(s2-s1)
+!         On a circular orbit s1 = s2 and the phase is undefined (0/0 gave
+!         NaN); guards as in analysish (E13).
+          if (s2 > s1) then
+            argaux = (s1+s2-2.0*s)/(s2-s1)
+          else
+            argaux = 0.0d0
+          end if
 
           if (paux>=0.d0) then
             eta = dacos(sign(min(abs(argaux),1.0),argaux))
@@ -216,7 +223,7 @@
             eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
           end if
 
-          Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
+          Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(max(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy,0.0d0))/(-2.d0*energy)*sin(eta)
           Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
 
           f((i-1)*Npc+j) = df0(Qr,Jr)
@@ -270,12 +277,20 @@
           p_part((i-1)*Npc+j) = paux
 
           energy = -1.0/(1.0D0+dsqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2) + 0.5D0*paux**2
-          er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-          er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+          er1 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
+          er2 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
           s1 = 1.d0 + sqrt(1.d0+er1**2)
           s2 = 1.d0 + sqrt(1.d0+er2**2)
           s  = 1.d0 + sqrt(1.d0+raux**2)
-          argaux = (s1+s2-2.0*s)/(s2-s1)
+!         On a circular orbit s1 = s2 and the phase is undefined (0/0 gave
+!         NaN); guards as in analysish (E13).
+          if (s2 > s1) then
+            argaux = (s1+s2-2.0*s)/(s2-s1)
+          else
+            argaux = 0.0d0
+          end if
 
           if (paux>=0.d0) then
             eta = dacos(sign(min(abs(argaux),1.0),argaux))
@@ -283,7 +298,7 @@
             eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
           end if
 
-          Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*sin(eta)
+          Qr = eta - sqrt((-2.d0*energy)**3)*sqrt(max(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy,0.0d0))/(-2.d0*energy)*sin(eta)
           Jr = 1.d0/sqrt(-2.d0*energy)-0.5d0*(Lfix+sqrt(Lfix**2+4.d0))
 
           f((i-1)*Npc+j) = df0(Qr,Jr)
@@ -352,7 +367,7 @@
       dQc = 2.0d0*smallpi/dble(Npc)
 
       !$OMP PARALLEL DO COLLAPSE(2) SCHEDULE(GUIDED) &
-      !$OMP PRIVATE(j,Jgrid,Qgrid,Egrid,ecc,etaNR,gNR,gpNR,iterNR,sgrid,rgrid,paux2,raux,paux,er1,er2,s1,s2,argaux,Jr,Qr) &
+      !$OMP PRIVATE(j,Jgrid,Qgrid,Egrid,ecc,etaNR,sgrid,rgrid,paux2,raux,paux,er1,er2,s1,s2,argaux,Jr,Qr) &
       !$OMP SHARED(r_part,p_part,f)
       do i=1,Nrc          ! index over J3 (resolves the oscillation)
         do j=1,Npc        ! index over Q3 (periodic trapezoid)
@@ -363,21 +378,19 @@
 !         Invert Jr(E) for E at fixed L=Lfix:
           Egrid = -1.d0/(2.d0*(Jgrid+0.5d0*(Lfix+sqrt(Lfix**2+4.d0)))**2)
 
-          er1 = dsqrt((1.d0+Egrid*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2)))/(2.d0*Egrid**2))
-          er2 = dsqrt((1.d0+Egrid*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2)))/(2.d0*Egrid**2))
+!         Radicands guarded as in invert_QJ_to_rp (E13).
+          er1 = dsqrt(max((1.d0+Egrid*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2),0.0d0))) &
+                /(2.d0*Egrid**2),0.0d0))
+          er2 = dsqrt(max((1.d0+Egrid*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*Egrid*(2.d0+2.d0*Egrid+Lfix**2),0.0d0))) &
+                /(2.d0*Egrid**2),0.0d0))
           s1 = 1.d0 + sqrt(1.d0+er1**2)
           s2 = 1.d0 + sqrt(1.d0+er2**2)
 
-          ecc = sqrt((-2.d0*Egrid)**3)*sqrt(-Lfix**2-2.d0*Egrid-2.d0-0.5D0/Egrid)/(-2.d0*Egrid)
+          ecc = sqrt((-2.d0*Egrid)**3)*sqrt(max(-Lfix**2-2.d0*Egrid-2.d0-0.5D0/Egrid,0.0d0))/(-2.d0*Egrid)
 
-!         Newton-Raphson solve of Qgrid = etaNR - ecc*sin(etaNR).
-          etaNR = Qgrid
-          do iterNR=1,50
-            gNR  = etaNR - ecc*sin(etaNR) - Qgrid
-            gpNR = 1.d0 - ecc*cos(etaNR)
-            etaNR = etaNR - gNR/gpNR
-            if (abs(gNR) < 1.0d-13) exit
-          end do
+!         Solve Qgrid = etaNR - ecc*sin(etaNR): safeguarded Newton-Raphson,
+!         kepler_eta in utils.f90 (E12).
+          etaNR = kepler_eta(Qgrid,ecc,1.0d-13)
 
           argaux = cos(etaNR)
           sgrid = (s1+s2-argaux*(s2-s1))/2.0d0
@@ -446,13 +459,21 @@
         energy = -1.0/(1.0D0+dsqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2) + 0.5D0*paux**2
         if (energy < 0.0D0) then
 
-          er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-          er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+          er1 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
+          er2 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))) &
+                /(2.d0*energy**2),0.0d0))
           s1 = 1.d0 + sqrt(1.d0+er1**2)
           s2 = 1.d0 + sqrt(1.d0+er2**2)
           s  = 1.d0 + sqrt(1.d0+raux**2)
           !eta = dacos(sign(min(abs(2.d0/(s1-s2)*(s-(s1+s2)*0.5d0)),1.0),2.d0/(s1-s2)*(s-(s1+s2)*0.5d0)))
-          argaux = (s1+s2-2.0*s)/(s2-s1)
+!         On a circular orbit s1 = s2 and the phase is undefined (0/0 gave
+!         NaN); guards as in analysish (E13).
+          if (s2 > s1) then
+            argaux = (s1+s2-2.0*s)/(s2-s1)
+          else
+            argaux = 0.0d0
+          end if
 
           if (paux>=0.d0) then
             eta = dacos(sign(min(abs(argaux),1.0),argaux))
@@ -461,7 +482,7 @@
             eta = dacos(-sign(min(abs(argaux),1.0),argaux))+smallpi
           end if
 
-          Qr = eta - dsqrt((-2.d0*energy)**3)*dsqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*dsin(eta)
+          Qr = eta - dsqrt((-2.d0*energy)**3)*dsqrt(max(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy,0.0d0))/(-2.d0*energy)*dsin(eta)
           Jr = 1.d0/dsqrt(-2.d0*energy)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
            w = df0(Qr,Jr)
 

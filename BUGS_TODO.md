@@ -1566,7 +1566,10 @@ son bugs propios de este repo.
   pericentro: corregido el 2026-09-22** (E11): Δt ≤ courant r_p²/L0 con el pericentro de t = 0;
   se imprime r_p y Omega_p dt (el pico de energía en cada pericentro es ~0.03 (Omega_p dt)^p).
   Con autogravedad y un potencial que se hunde (colapso con L0 = 1e-4) no basta: haría falta
-  un paso variable, que no se implementó porque L0 >= 0.25 en el uso previsto. El resto sigue
+  un paso variable, que no se implementó porque L0 >= 0.25 en el uso previsto. **Kepler y
+  radicandos del mapa AA: corregido el 2026-09-22** (E12, E13): `kepler_eta` con salvaguarda
+  (antes divergía para e >~ 0.98) y radicandos acotados en todas las copias del mapa. Queda:
+  `aa_random` no tiene tope de intentos si F ~ 0 en la región muestreada. El resto sigue
   pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo

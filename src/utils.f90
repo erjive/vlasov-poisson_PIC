@@ -308,13 +308,76 @@ end subroutine construct_grid
   !! the physical range are clamped into the boundary cell: harmless,
   !! since the caller still applies the exact distance cutoff and
   !! will simply reject them.
+  !> Solve the Kepler-like equation Q = eta - ecc*sin(eta) for eta, with
+  !! 0 <= Q < 2 pi and 0 <= ecc <= 1.
+  !!
+  !! First the plain Newton-Raphson from eta = Q that the code always used
+  !! (the same operations, so the same result wherever it worked). It
+  !! diverged for ecc >~ 0.98 in 0.3-3 % of the angles, with residuals up to
+  !! 1e23, and returned a plausible but wrong eta without notice
+  !! (AUDITORIA_L0_2026-09-21.md, E12). So the result is checked, without
+  !! a new evaluation of the residual (the analytic integrator inverts every
+  !! particle at every step, and one more sine cost 5 %): it is accepted if
+  !! the iteration stopped because the residual g at eta_k fell below tol,
+  !! the last step |g/g'| was at most sqrt(tol), so that the residual at
+  !! eta_k+1 is below about |g/g'|**2/2 <= tol/2, and eta lies in
+  !! [Q - ecc, Q + ecc], where the root must be (|eta - Q| = ecc |sin(eta)|).
+  !! Otherwise the equation is solved again with a safeguarded Newton: the
+  !! left side minus Q grows
+  !! monotonically with eta, the bracket shrinks with the sign of the
+  !! residual at every iterate, and a step that would leave it is replaced
+  !! by a bisection.
+  elemental real(8) function kepler_eta(Q,ecc,tol) result(eta)
+
+    implicit none
+
+    real(8), intent(in) :: Q,ecc,tol
+
+    real(8) :: g,gp,lo,hi,eta_new
+    integer :: it
+    logical :: ok
+
+    ok  = .false.
+    eta = Q
+    do it=1,50
+      g  = eta - ecc*sin(eta) - Q
+      gp = 1.d0 - ecc*cos(eta)
+      eta = eta - g/gp
+      if (abs(g) < tol) then
+        ok = (abs(g/gp) <= sqrt(tol))
+        exit
+      end if
+    end do
+
+    if (ok .and. eta >= Q - ecc .and. eta <= Q + ecc) return
+
+    lo  = Q - ecc
+    hi  = Q + ecc
+    eta = Q
+    do it=1,200
+      g  = eta - ecc*sin(eta) - Q
+      if (g == 0.0d0) exit
+      if (g < 0.0d0) then
+        lo = max(lo,eta)
+      else
+        hi = min(hi,eta)
+      end if
+      gp = 1.d0 - ecc*cos(eta)
+      eta_new = eta - g/gp
+      if (.not. (eta_new >= lo .and. eta_new <= hi)) eta_new = 0.5d0*(lo+hi)
+      eta = eta_new
+      if (abs(g) < tol .or. hi - lo <= 4.0d0*epsilon(1.0d0)*max(abs(eta),1.0d0)) exit
+    end do
+
+  end function kepler_eta
+
+
   !> Invert one (Q3,J3) pair back to (r,p_r) at fixed L=Lfix.
   !!
   !! Same Kepler-like inversion used by initial_data's "aa_quad" state:
   !! J3 fixes the energy, the energy fixes the turning points, and the
   !! angle Q3 is mapped to the eccentric-anomaly-like variable eta by
-  !! Newton-Raphson on Q3 = eta - ecc*sin(eta). Factored out here so the
-  !! analytic integrator and the initial data share one implementation.
+  !! kepler_eta. Used by the analytic integrator.
   subroutine invert_QJ_to_rp(Qv,Jv,rv,pv)
 
     implicit none
@@ -322,27 +385,22 @@ end subroutine construct_grid
     real(8), intent(in)  :: Qv,Jv
     real(8), intent(out) :: rv,pv
 
-    real(8) :: Eg,er1,er2,s1,s2,ecc,etaNR,gNR,gpNR,argaux,sg,pv2,smallpi
-    integer :: it
+    real(8) :: Eg,er1,er2,s1,s2,ecc,etaNR,argaux,sg,pv2,smallpi
 
     smallpi = acos(-1.0d0)
 
     Eg = -1.d0/(2.d0*(Jv+0.5d0*(Lfix+sqrt(Lfix**2+4.d0)))**2)
 
-    er1 = dsqrt((1.d0+Eg*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2)))/(2.d0*Eg**2))
-    er2 = dsqrt((1.d0+Eg*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2)))/(2.d0*Eg**2))
+!   The radicands vanish on circular orbits, where rounding can make them
+!   slightly negative (E13), as in analysish.
+    er1 = dsqrt(max((1.d0+Eg*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2),0.0d0)))/(2.d0*Eg**2),0.0d0))
+    er2 = dsqrt(max((1.d0+Eg*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*Eg*(2.d0+2.d0*Eg+Lfix**2),0.0d0)))/(2.d0*Eg**2),0.0d0))
     s1 = 1.d0 + sqrt(1.d0+er1**2)
     s2 = 1.d0 + sqrt(1.d0+er2**2)
 
-    ecc = sqrt((-2.d0*Eg)**3)*sqrt(-Lfix**2-2.d0*Eg-2.d0-0.5D0/Eg)/(-2.d0*Eg)
+    ecc = sqrt((-2.d0*Eg)**3)*sqrt(max(-Lfix**2-2.d0*Eg-2.d0-0.5D0/Eg,0.0d0))/(-2.d0*Eg)
 
-    etaNR = modulo(Qv,2.0d0*smallpi)
-    do it=1,50
-      gNR  = etaNR - ecc*sin(etaNR) - modulo(Qv,2.0d0*smallpi)
-      gpNR = 1.d0 - ecc*cos(etaNR)
-      etaNR = etaNR - gNR/gpNR
-      if (abs(gNR) < 1.0d-14) exit
-    end do
+    etaNR = kepler_eta(modulo(Qv,2.0d0*smallpi),ecc,1.0d-14)
 
     argaux = cos(etaNR)
     sg = (s1+s2-argaux*(s2-s1))/2.0d0
@@ -367,7 +425,7 @@ end subroutine construct_grid
 
     implicit none
 
-    integer :: i
+    integer :: i,nunbound
     real(8) :: en,er1,er2,s1,s2,ss,argaux,eta,smallpi
 
     smallpi = acos(-1.0d0)
@@ -375,11 +433,23 @@ end subroutine construct_grid
     allocate(q0_part(1:Npart))
     allocate(j0_part(1:Npart))
 
-    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(en,er1,er2,s1,s2,ss,argaux,eta)
+!   Unbound particles (E >= 0) have no angle-action variables: the map gave
+!   NaN for them. They stop the run. The radicands vanish on circular
+!   orbits, where rounding can make them slightly negative (E13; the same
+!   guards as in analysish and VlasovPoisson_PIC_sp).
+    nunbound = 0
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(en,er1,er2,s1,s2,ss,argaux,eta) REDUCTION(+:nunbound)
     do i=1,Npart
       en = -1.0/(1.0D0+dsqrt(1.0D0+r_part(i)**2)) + 0.5d0*Lfix**2/(r_part(i)**2) + 0.5D0*p_part(i)**2
-      er1 = dsqrt((1.d0+en*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2)))/(2.d0*en**2))
-      er2 = dsqrt((1.d0+en*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2)))/(2.d0*en**2))
+      if (en >= 0.0d0) then
+        nunbound = nunbound + 1
+        q0_part(i) = 0.0d0
+        j0_part(i) = 0.0d0
+        cycle
+      end if
+      er1 = dsqrt(max((1.d0+en*(2.d0+Lfix**2)-dsqrt(max(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2),0.0d0)))/(2.d0*en**2),0.0d0))
+      er2 = dsqrt(max((1.d0+en*(2.d0+Lfix**2)+dsqrt(max(1.d0+2.d0*en*(2.d0+2.d0*en+Lfix**2),0.0d0)))/(2.d0*en**2),0.0d0))
       s1 = 1.d0 + dsqrt(1.d0+er1**2)
       s2 = 1.d0 + dsqrt(1.d0+er2**2)
       ss = 1.d0 + dsqrt(1.d0+r_part(i)**2)
@@ -389,10 +459,19 @@ end subroutine construct_grid
       else
         eta = dacos(-sign(min(abs(argaux),1.0D0),argaux))+smallpi
       end if
-      q0_part(i) = eta - dsqrt((-2.d0*en)**3)*sqrt(-Lfix**2-2.d0*en-2.d0-0.5D0/en)/(-2.d0*en)*dsin(eta)
+      q0_part(i) = eta - dsqrt((-2.d0*en)**3)*sqrt(max(-Lfix**2-2.d0*en-2.d0-0.5D0/en,0.0d0))/(-2.d0*en)*dsin(eta)
       j0_part(i) = 1.d0/dsqrt(-2.d0*en)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
     end do
     !$OMP END PARALLEL DO
+
+    if (nunbound > 0) then
+      print *
+      print *, 'integrator="analytic": ',nunbound,' particles are unbound (E >= 0)'
+      print *, 'and have no angle-action variables.'
+      print *, 'Aborting ...'
+      print *
+      stop 1
+    end if
 
   end subroutine init_action_angle
 
