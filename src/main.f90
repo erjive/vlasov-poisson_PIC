@@ -453,6 +453,12 @@ program VP_PIC
 !     if (mod(l,time_output).eq.0) then
        call reduce_arrays
 
+!      reduce_arrays reallocates force_part without filling it, and the
+!      next step opens with a kick that uses it: recompute it at the
+!      current positions. When nothing was removed the recomputed values
+!      are the same, bit for bit (AUDITORIA_L0_2026-09-21.md, E6).
+       call grav_force()
+
      end if
 
 !    ***********************************

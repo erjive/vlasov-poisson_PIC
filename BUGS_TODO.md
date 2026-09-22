@@ -1534,7 +1534,8 @@ son bugs propios de este repo.
   r<0 no cambia el signo de la fuerza (`main.f90`) y `reduce_arrays` no recalcula la
   fuerza. **Reflexión: corregida el 2026-09-21** (AUDITORIA_L0_2026-09-21.md, E3): con
   L0 = 0 yoshida4 vuelve de orden 2 a orden 4 frente a RK4; las corridas con L0 = 2
-  (`dfstudy`, `sg__quad`, Landau) quedan idénticas bit a bit. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  (`dfstudy`, `sg__quad`, Landau) quedan idénticas bit a bit. **`reduce_arrays`: corregido el
+  2026-09-21** (E6): se recalcula la fuerza después de reducir. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
