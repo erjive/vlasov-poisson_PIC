@@ -1548,7 +1548,11 @@ son bugs propios de este repo.
   **Imágenes en el depósito: corregido el 2026-09-22** (E9): la masa de una partícula cerca del
   origen queda entera en la malla y el depósito es par en (r,p). Hallados al hacerlo: el volumen
   r²Δr + Δr³/12 sesga el primer nodo +25/50/75 % (E21, decisión pendiente) y `Sn(1)` cuenta
-  doble en las caras de celda (E22). El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  doble en las caras de celda (E22). **Poisson por masa encerrada: corregido el 2026-09-22**
+  (E8): el campo ve exactamente la masa depositada; el colapso frío baja de 8e-5 (piso de
+  malla) a 1e-6 con N = 800 y converge como 1/N². Landau cambia 2–4e-6 en h_k; en `sg__quad`
+  la conservación de la energía pasa de 1.7e-7 a 5.3e-7 (salto inicial; se revisa tras E10).
+  El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
