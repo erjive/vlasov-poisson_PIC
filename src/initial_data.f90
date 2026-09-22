@@ -53,34 +53,21 @@
     dpc = (pmaxc-pminc)/dble(Npc)
 
     print *, "(drc,dpc)=",drc,dpc
-    if(state.eq."gaussian1") then
+    if(state.eq."gaussian") then
 
-!      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j)
-!      do i=1,Nrc
-!        if (rminc == 0.d0) then
-!          raux = (dble(i)+0.5d0)*drc
-!          raux = (dble(i)-0.5d0)*dr
-
-!        else
-!          raux = rminc+(dble(i)+0.5)*drc
-!          raux = rminc+(dble(i)-0.5D0)*dr
-!        end if
-
-!        do j=1,Npc
-!          paux = pminc+dble(j)*dpc
-
-!          r_part((i-1)*Npc+j) = raux
-!          p_part((i-1)*Npc+j) = paux          
-!          f((i-1)*Npc+j)      = gaussian_fixedL(a0,r0,p0,Lfix,raux,paux,sr,sp)
-!        end do
-!      end do
-!      !$OMP END PARALLEL DO
+!     Nodes at the midpoints of the Nrc x Npc cells of the box
+!     [rminc,rmaxc] x [pminc,pmaxc], as in the other grid states. This
+!     branch used to be named "gaussian1" while read_parameters only accepts
+!     "gaussian" (also the default), so the state was never reached: every
+!     particle stayed at r = 0 with f = 0 and the run gave NaN. Its nodes were
+!     also shifted, r by a whole cell (the last one outside the box) and p to
+!     the right edge of each cell (AUDITORIA_L0_2026-09-21.md, E2 and E15).
 
       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
       do i=1,Nrc
         do j=1,Npc
-          raux = rminc+(dble(i)+0.5D0)*drc
-          paux = pminc+dble(j)*dpc
+          raux = rminc+(dble(i)-0.5D0)*drc
+          paux = pminc+(dble(j)-0.5D0)*dpc
 
           r_part((i-1)*Npc+j) = raux
           p_part((i-1)*Npc+j) = paux          
@@ -555,6 +542,18 @@
 
     else if(state.eq."other3") then !NO IMPLEMENTED
        f = 0.0d0       
+
+    else
+
+!      read_parameters only lets through the states it lists; this catches a
+!      state added there without its branch here, which is how "gaussian"
+!      went silently to NaN.
+       print *
+       print *, 'Unknown initial state: ',trim(state)
+       print *, 'Aborting ...'
+       print *
+       stop 1
+
     endif
 
   end subroutine initial_data
