@@ -29,8 +29,6 @@ subroutine grav_force
   integer i
   real(8) :: smallpi
   real(8) :: sq,den       ! sqrt(1+r^2) and r^2+eps^2, evaluated once per particle
-  real(8) :: a,pb,fb      ! |r|, background potential and force of "sphere"
-  integer :: k
   smallpi = acos(-1.0d0)
 
 ! Self-gravitating case.  In this case we need to
@@ -70,48 +68,12 @@ subroutine grav_force
 
 !       No background.
 
-     else if (BGtype == "sphere") then
+     else if (BGtype == "sphere" .or. BGtype == "iso" .or. BGtype == "isotrun" .or. &
+              BGtype == "nfw" .or. BGtype == "burkert") then
 
-!      Constant density star of mass 1 and radius 1, evaluated at |r| with the
-!      force odd in r: a particle may be at r < 0 within a step, and taking
-!      the inner branch for every r < 1 got r < -1 wrong. With self-gravity
-!      the background is added to the field poisson_rk has just interpolated;
-!      it used to be assigned, which threw the self-gravity away (E5). For
-!      r >= 0 the expressions are the same as before.
+!      Backgrounds given by closed formulas (bgpot and bgforce, below).
 
-       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(a,pb,fb)
-       do i=1,Npart
-            a = abs(r_part(i))
-            if (a<1.d0) then
-               pb =  0.5d0*(r_part(i)**2 - 3.d0)
-               fb = - r_part(i)
-            else
-               pb = - 1.d0/a
-               fb = - sign(1.d0,r_part(i))/r_part(i)**2
-            end if
-            if (autointeraction) then
-               pot_part(i)   = pot_part(i)   + pb
-               force_part(i) = force_part(i) + fb
-            else
-               pot_part(i)   = pb
-               force_part(i) = fb
-            end if
-       end do
-       !$OMP END PARALLEL DO
-
-!      The grid carries the total field too, as for the isochrone.
-       if (autointeraction) then
-          do k=lbound(r,1),ubound(r,1)
-             a = abs(r(k))
-             if (a<1.d0) then
-                pot(k)   = pot(k)   + 0.5d0*(r(k)**2 - 3.d0)
-                force(k) = force(k) - r(k)
-             else
-                pot(k)   = pot(k)   - 1.d0/a
-                force(k) = force(k) - sign(1.d0,r(k))/r(k)**2
-             end if
-          end do
-       end if
+       call add_background
 
      else if (BGtype == "Isochrone") then
 
@@ -147,26 +109,6 @@ subroutine grav_force
          !$OMP END PARALLEL DO
 
        end if
-
-     else if (BGtype == "iso") then
-
-        pot   = 3.0d0*log(r)
-        force =-3.0d0/r
-
-     else if (BGtype == "isotrun") then
-
-        pot   = (10.0d0/6.0d0)*( 2.0d0*atan(r)/r + log(r**2+1) )
-        force = -(10.0d0/3.0d0)*( r-atan(r) )/r**2
-
-     else if (BGtype == "nfw") then
-
-        pot   = -16.0d0*log( 1.0d0+r )/r
-        force = -16.0d0*( log(1.0d0+r)-r/(1.0d0+r) )/r**2
-
-     else if (BGtype == "burkert") then
-
-        pot =    ( 10.0d0/(3.0d0*r) )*( 2.0d0*(1.0d0+r)*atan(r) -2.0d0*(1.0d0+r)*log(1.0d0+r) -(1.0d0-r)*log(1.0d0+r**2) )
-        force = -( 10.0d0/(3.0d0*r*r) )*( log( (1.0d0+r**2)*(1.0d0+r)**2 ) - 2.0d0*atan(r) )
 
      else
 
@@ -212,5 +154,110 @@ subroutine grav_force
 
   !filename = 'vlasov_comparepotential'
   !call save1Ddata(directory,filename,Nr,t,r,pot)
+
+contains
+
+! Particles always feel the background. With self-gravity it is added to
+! the potential and force poisson_rk has just set, on the particles and on
+! the grid (which is only written out in that case); without it, it is the
+! whole field. "iso", "isotrun", "nfw" and "burkert" used to be written on
+! the grid only, so particles never felt them, and with self-gravity they
+! overwrote the self potential there; "sphere" was assigned on the
+! particles, which threw the self-gravity away (AUDITORIA_L0_2026-09-21.md,
+! E4 and E5).
+
+  subroutine add_background
+
+    integer :: j
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED)
+    do j=1,Npart
+       if (autointeraction) then
+          pot_part(j)   = pot_part(j)   + bgpot(r_part(j))
+          force_part(j) = force_part(j) + bgforce(r_part(j))
+       else
+          pot_part(j)   = bgpot(r_part(j))
+          force_part(j) = bgforce(r_part(j))
+       end if
+    end do
+    !$OMP END PARALLEL DO
+
+    if (autointeraction) then
+       pot   = pot   + bgpot(r)
+       force = force + bgforce(r)
+    end if
+
+  end subroutine add_background
+
+! The closed forms are evaluated at |r|, and the force carries the sign of r.
+! A particle may step to r < 0 inside a time step (main.f90 reflects it only
+! afterwards) and the grid has ghost points at negative radii, so the
+! background has to be even in r and its force odd. Written in terms of r
+! itself, "nfw" and "burkert" are neither, "sphere" took its inner branch
+! for every r < 1 including r < -1, and "iso" is not defined for r < 0.
+! For r > 0 the expressions are the ones used before. Same forms as in
+! VlasovPoisson_PIC_sp (force = -dpot/dr checked there symbolically).
+
+  elemental real(8) function bgpot(x)
+
+    real(8), intent(in) :: x
+    real(8) :: a
+
+    a = abs(x)
+
+    select case (BGtype)
+    case ("sphere")
+!      Constant density star of mass 1 and radius 1.
+       if (a<1.d0) then
+          bgpot = 0.5d0*(a**2 - 3.d0)
+       else
+          bgpot = - 1.d0/a
+       end if
+    case ("iso")
+       bgpot = 3.0d0*log(a)
+    case ("isotrun")
+       bgpot = (10.0d0/6.0d0)*( 2.0d0*atan(a)/a + log(a**2+1) )
+    case ("nfw")
+       bgpot = -16.0d0*log( 1.0d0+a )/a
+    case ("burkert")
+       bgpot = ( 10.0d0/(3.0d0*a) )*( 2.0d0*(1.0d0+a)*atan(a) -2.0d0*(1.0d0+a)*log(1.0d0+a) &
+               -(1.0d0-a)*log(1.0d0+a**2) )
+    case default
+       bgpot = 0.0d0
+    end select
+
+  end function bgpot
+
+  elemental real(8) function bgforce(x)
+
+    real(8), intent(in) :: x
+    real(8) :: a
+
+    a = abs(x)
+
+    select case (BGtype)
+    case ("sphere")
+       if (a<1.d0) then
+          bgforce = - a
+       else
+          bgforce = - 1.d0/a**2
+       end if
+    case ("iso")
+       bgforce = -3.0d0/a
+    case ("isotrun")
+       bgforce = -(10.0d0/3.0d0)*( a-atan(a) )/a**2
+    case ("nfw")
+       bgforce = -16.0d0*( log(1.0d0+a)-a/(1.0d0+a) )/a**2
+    case ("burkert")
+       bgforce = -( 10.0d0/(3.0d0*a*a) )*( log( (1.0d0+a**2)*(1.0d0+a)**2 ) - 2.0d0*atan(a) )
+    case default
+       bgforce = 0.0d0
+    end select
+
+!   Odd extension to r < 0.
+
+    if (x < 0.0d0) bgforce = - bgforce
+
+  end function bgforce
 
 end subroutine grav_force

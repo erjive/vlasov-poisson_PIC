@@ -1541,7 +1541,11 @@ son bugs propios de este repo.
   descartan siempre los nodos marcados y `analysish` excluye E >= 0 y acota los
   radicandos. **Fondos `null` y `sphere`: corregido el 2026-09-21** (E5): sin autogravedad
   la fuerza se reinicia en cada llamada, y la esfera se suma a la autogravedad en vez de
-  reemplazarla. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  reemplazarla. **Fondos `iso`, `isotrun`, `nfw` y `burkert`: corregido el 2026-09-22** (E4): actúan
+  sobre las partículas, se suman a la autogravedad y son pares en r. Con L0 = 0, las órbitas que
+  cruzan el origen en `nfw` convergen solo con orden 1 (la fuerza salta en r = 0), y en `sphere`
+  las que cruzan r = 1 dan órdenes erráticos: es el método de paso fijo, no el código. El resto
+  sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
