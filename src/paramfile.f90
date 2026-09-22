@@ -381,6 +381,22 @@ module paramfile
     if (dr <= 0.0d0)   call fail('dr must be positive.')
     if (Nrc <= 0 .or. Npc <= 0) call fail('Nrc and Npc must be positive.')
     if (courant <= 0.0d0) call fail('courant must be positive.')
+
+!   L0 = 0 is not supported yet (AUDITORIA_L0_2026-09-21.md, E1). With
+!   f = F delta(L-L0) the phase-space measure carries a factor 8 pi^2 L0,
+!   M = 8 pi^2 L0 Int F dr dp, and the code handles it with three different
+!   conventions when L0 = 0: the initial states normalise F dividing by L0
+!   (the initial mass comes out NaN), analysish multiplies h_k by L0 (h_k
+!   vanishes), and density and energy switch to factor = 1. The fix, to be
+!   done later, is to work throughout with the mass per unit dr dp,
+!   FF = 8 pi^2 L0 F, which has a finite limit as L0 -> 0 (radial orbits):
+!   the initial states would normalise FF, density, energy and analysish
+!   would use it with no explicit L0, and the Lfix == 0 branches of
+!   initial_data, density and energy would go. Until then a run with
+!   L0 = 0 stops here. A small L0 > 0 works, although the centrifugal
+!   barrier then needs a small time step (E11).
+    if (Lfix == 0.0d0) &
+       call fail('Lfix = 0 is not supported yet (AUDITORIA_L0_2026-09-21.md, E1); use a small Lfix > 0.')
     if (spatial_output <= 0 .or. time_output <= 0 .or. field_output <= 0) &
        call fail('time_output, spatial_output and field_output must be positive.')
 

@@ -39,6 +39,7 @@ subroutine energy
 
 
 ! Zero Angular Momentum
+! Unreachable for now: validate (paramfile.f90) stops a run with Lfix = 0 (E1).
   if (Lfix == 0.0d0) then
 
      factor = 1.0d0

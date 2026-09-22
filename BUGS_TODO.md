@@ -1557,7 +1557,9 @@ son bugs propios de este repo.
   cerca del origen pasa de 31–47 veces la exacta a 6e-3 (n = 1) y fuera de la malla es
   -M/r²; `sg__quad` y Landau quedan idénticas bit a bit. Con esto el bloque del acoplamiento
   (E8–E10) está completo; las cifras de la meseta y de Landau cambian 1e-5 y 3e-6 relativo
-  (E8). El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  (E8). **L0 = 0: la corrida aborta desde el 2026-09-22** (E1, decisión del usuario); queda
+  pendiente trabajar con FF = 8 pi^2 L0 F en todo el código (plan en `paramfile.f90`,
+  `validate`). El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la

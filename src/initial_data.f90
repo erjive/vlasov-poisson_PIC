@@ -86,6 +86,7 @@
 ! makes the normalization analytic, so that the normalization factor 
 ! "N0" now corresponds directly to the total initial number of particles.
 
+!      Unreachable for now: validate (paramfile.f90) stops a run with Lfix = 0 (E1).
        if (Lfix == 0.0d0) then ! Zero Angular Momentum
           f_max = Npart/(smallpi*sr*sp)
        else ! Include Angular Momentum
