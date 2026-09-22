@@ -515,6 +515,84 @@ end subroutine construct_grid
 
   end subroutine build_cell_list
 
+! The closed forms are evaluated at |r|, and the force carries the sign of r.
+! A particle may step to r < 0 inside a time step (main.f90 reflects it only
+! afterwards) and the grid has ghost points at negative radii, so the
+! background has to be even in r and its force odd. Written in terms of r
+! itself, "nfw" and "burkert" are neither, "sphere" took its inner branch
+! for every r < 1 including r < -1, and "iso" is not defined for r < 0.
+! For r > 0 the expressions are the ones used before. Same forms as in
+! VlasovPoisson_PIC_sp (force = -dpot/dr checked there symbolically).
+
+  elemental real(8) function bgpot(x)
+
+    real(8), intent(in) :: x
+    real(8) :: a
+
+    a = abs(x)
+
+    select case (BGtype)
+    case ("Isochrone")
+!      grav_force has its own fused loop for the isochrone; this case is for
+!      set_timestep.
+       bgpot = -1.0d0/(1.0d0+sqrt(1.0d0+a**2))
+    case ("sphere")
+!      Constant density star of mass 1 and radius 1.
+       if (a<1.d0) then
+          bgpot = 0.5d0*(a**2 - 3.d0)
+       else
+          bgpot = - 1.d0/a
+       end if
+    case ("iso")
+       bgpot = 3.0d0*log(a)
+    case ("isotrun")
+       bgpot = (10.0d0/6.0d0)*( 2.0d0*atan(a)/a + log(a**2+1) )
+    case ("nfw")
+       bgpot = -16.0d0*log( 1.0d0+a )/a
+    case ("burkert")
+       bgpot = ( 10.0d0/(3.0d0*a) )*( 2.0d0*(1.0d0+a)*atan(a) -2.0d0*(1.0d0+a)*log(1.0d0+a) &
+               -(1.0d0-a)*log(1.0d0+a**2) )
+    case default
+       bgpot = 0.0d0
+    end select
+
+  end function bgpot
+
+  elemental real(8) function bgforce(x)
+
+    real(8), intent(in) :: x
+    real(8) :: a
+
+    a = abs(x)
+
+    select case (BGtype)
+    case ("Isochrone")
+       bgforce = -a/(sqrt(1.0d0+a**2)*(1.0d0+sqrt(1.0d0+a**2))**2)
+    case ("sphere")
+       if (a<1.d0) then
+          bgforce = - a
+       else
+          bgforce = - 1.d0/a**2
+       end if
+    case ("iso")
+       bgforce = -3.0d0/a
+    case ("isotrun")
+       bgforce = -(10.0d0/3.0d0)*( a-atan(a) )/a**2
+    case ("nfw")
+       bgforce = -16.0d0*( log(1.0d0+a)-a/(1.0d0+a) )/a**2
+    case ("burkert")
+       bgforce = -( 10.0d0/(3.0d0*a*a) )*( log( (1.0d0+a**2)*(1.0d0+a)**2 ) - 2.0d0*atan(a) )
+    case default
+       bgforce = 0.0d0
+    end select
+
+!   Odd extension to r < 0.
+
+    if (x < 0.0d0) bgforce = - bgforce
+
+  end function bgforce
+
+
   !> Set the time step.
   !! Here we find the time step using information from the
   !! Courant factor and the maximum value of the momentum.
@@ -532,6 +610,7 @@ end subroutine construct_grid
 
   integer i
   real(8) dtr,dtp       ! Auxiliary variables.
+  real(8) rpmin,dtl
 !  real(8) pmax_aux,Fmax_aux
   
 !  pmax_aux = MAXVAL(abs(p_part))
@@ -566,7 +645,124 @@ end subroutine construct_grid
     dt = dtr
   end if
 
+! Third bound, from the pericentre. Near it the length scale of the orbit is
+! not dr but r_p, and the particle moves at v_p = L0/r_p, so the Courant
+! condition with that scale is
+!
+!   dtl = courant * r_p/v_p = courant * r_p**2/L0,
+!
+! with r_p the smallest pericentre of the particles. Neither bound above sees
+! it: with L0 = 1e-3 and dt = 0.01 an isochrone orbit had |dE/E| = 3.5
+! (leapfrog) and 4e7 (yoshida4). The energy error of a single orbit goes as
+! |dE/E| ~ 0.03 (Omega_p dt)**p, Omega_p = L0/r_p**2 and p the order of the
+! integrator (AUDITORIA_L0_2026-09-21.md, E11). For L0 of order one the
+! bound is not the smallest of the three.
+
+! The bound is computed once, in the field at t = 0. With self-gravity that
+! field can change: in a cold collapse with L0 = 1e-4 the potential at the
+! centre deepened from -1.5 to -44 at the bounce, the pericentres shrank
+! from 1e-4 to 1e-5, and no fixed step estimated at t = 0 resolves them.
+! Recomputing the bound every step is cheap with the closed lower bound
+! r_p >= L0/sqrt(2 (E_max - Phi_min)) (+2-3 % per step; the bisection
+! below costs +1000-3400 %), but a variable step is no longer symplectic,
+! and for L0 >= 0.25, the smallest value in use, the centrifugal barrier
+! stops the collapse and the bound stays well above dt.
+!
+! The smallest pericentre and Omega_p*dt are always reported, since the
+! accuracy, unlike the stability, is left to courant.
+
+  call pericentre_min(rpmin)
+  dtl = courant*rpmin**2/Lfix
+  if (dtl < dt) then
+    dt = dtl
+    print *
+    print *, 'Time step set by the pericentre, courant*r_p**2/L0.'
+  end if
+  print *
+  print *, 'Smallest pericentre r_p = ',rpmin
+  print *, 'Omega_p*dt = L0*dt/r_p**2 = ',Lfix*dt/rpmin**2, &
+           ' (energy error at each pericentre ~ 0.03 (Omega_p*dt)**p, p = order)'
+
   end subroutine set_timestep
+
+
+  !> Smallest pericentre of the particles in the field at the time of the
+  !! call (the one set by the last grav_force), from
+  !!
+  !!   p**2/2 + L0**2/(2 r**2) + Phi(r) = E,   r_p = smallest root in (0,|r|].
+  !!
+  !! Phi is the background (closed form) plus, with self-gravity, the self
+  !! potential of the grid: pot minus the background, linear between points,
+  !! constant inside r(1) (it is even and smooth at the origin) and
+  !! Phi(r_Nr) r_Nr/r beyond the grid. The energy uses the same Phi, so the
+  !! root always lies in (0,|r|]. The effective potential of a potential that
+  !! grows with r has a single minimum, so the root is unique and a bisection
+  !! (in log r, down to 1e-12 |r|) finds it. The softening eps is included
+  !! as in grav_force.
+  subroutine pericentre_min(rpmin)
+
+    real(8), intent(out) :: rpmin
+
+    real(8), allocatable :: ps(:)
+    real(8) :: x,E,lo,hi,mid
+    integer :: j,it
+    logical :: bg,sg
+
+    bg = (forcetype == "bg")
+    sg = autointeraction
+
+    if (sg) then
+       allocate(ps(1:Nr))
+       ps = pot(1:Nr)
+       if (bg) ps = ps - bgpot(r(1:Nr))
+    end if
+
+    rpmin = huge(1.0d0)
+
+    !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(x,E,lo,hi,mid,it) REDUCTION(min:rpmin)
+    do j=1,Npart
+       x  = abs(r_part(j))
+       E  = 0.5d0*p_part(j)**2 + veff(x)
+       lo = 1.0d-12*x
+       hi = x
+       if (veff(lo) > E) then
+          do it=1,64
+             mid = sqrt(lo*hi)
+             if (veff(mid) > E) then
+                lo = mid
+             else
+                hi = mid
+             end if
+          end do
+       end if
+       rpmin = min(rpmin,lo)
+    end do
+    !$OMP END PARALLEL DO
+
+    if (sg) deallocate(ps)
+
+  contains
+
+    real(8) function veff(y)
+      real(8), intent(in) :: y
+      integer :: k
+      real(8) :: w
+      veff = 0.5d0*Lfix**2/(y**2 + eps**2)
+      if (bg) veff = veff + bgpot(y)
+      if (sg) then
+         if (y <= r(1)) then
+            veff = veff + ps(1)
+         else if (y >= r(Nr)) then
+            veff = veff + ps(Nr)*r(Nr)/y
+         else
+            k = min(Nr-1,int(y/dr + 0.5d0))
+            w = (y - r(k))/dr
+            veff = veff + (1.0d0-w)*ps(k) + w*ps(k+1)
+         end if
+      end if
+    end function veff
+
+  end subroutine pericentre_min
 
 
 
