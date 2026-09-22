@@ -42,7 +42,8 @@
   real(8) rho0,pi
   real(8), allocatable :: rt(:)
   real(8) cutoff_interp,wgt
-  integer :: Wgrid,jc,jlo,jhi
+  integer :: Wgrid,jc,m
+  real(8) :: rj,pj,fj,rm,sgn
 
 ! *******************
 ! ***   NUMBERS   ***
@@ -180,42 +181,68 @@
   pot_part   = 0.0D0
   force_part = 0.0D0
 
-! Interpolate the grid potential and force back to the particles.
+! Interpolate the grid potential and force back to the particles, with the
+! same weight W_n used in the deposit, over every grid point j within its
+! support. The grid is uniform and staggered, r_j = (j - 1/2) dr, so the few
+! points within the support are found from the particle's radius instead of
+! scanning all Nr points. The field is known beyond the stored points:
 !
-! The grid is uniform, r(k) = r(1) + (k-1)*dr, so the few grid points
-! within the compact support of the interpolating weight are found by
-! inverting that relation instead of scanning all Nr points; no cell
-! list is needed here, unlike in density()/avg_density().
+!   j <= 0   the mirror of point 1-j (r_j = -r_(1-j)): the potential is even
+!            and the force odd, the symmetry f(r,p) = f(-r,-p) at the origin;
+!   beyond   a point past r(Nr), stored or mirrored, takes the exterior
+!            solution Phi = Phi(r_Nr) r_Nr/r and F = F(r_Nr) (r_Nr/r)**2 of
+!            the mass on the grid.
+!
+! So the weights of every particle add up to one at any radius. Only points
+! 1..Nr were used before: a particle closer to the origin than 1.5 dr felt a
+! force 30 to 50 times the exact one, and one beyond r(Nr) + dr no
+! self-gravity at all (AUDITORIA_L0_2026-09-21.md, E10). For a particle
+! whose support lies within 1..Nr nothing changes. Same scheme as
+! VlasovPoisson_PIC_sp (a81f4cf).
 !
 ! The parallel loop runs over particles only, never collapsed with the
 ! grid index: pot_part(i) and force_part(i) accumulate over j, so each
-! particle must stay with one thread to avoid a race.
+! particle must stay with one thread to avoid a race. The interpolation
+! weight depends only on the particle-grid distance, so it is formed once
+! into "wgt" and shared by the potential and the force.
 
-  cutoff_interp = (dble(bsplineorder)+1.0d0)*dr
-  Wgrid = ceiling(cutoff_interp/dr) + 1
+  Wgrid = (bsplineorder+2)/2
+  cutoff_interp = 0.5d0*dble(bsplineorder+1)*dr
 
-! The interpolation weight depends only on the particle-grid distance,
-! so it is formed once into "wgt" and shared by the potential and the
-! force.
-
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,jc,jlo,jhi,wgt)
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,jc,wgt,rj,pj,fj,m,rm,sgn)
 
   do i=1,Npart
 
     jc  = nint((r_part(i)-r(1))/dr) + 1
-    jlo = max(1,jc-Wgrid)
-    jhi = min(Nr,jc+Wgrid)
 
-    do j=jlo,jhi
-      if (abs(r_part(i)-r(j))<=cutoff_interp) then
+    do j=jc-Wgrid,jc+Wgrid
 
-        wgt = Wn(bsplineorder,(r_part(i)-r(j))/dr)
+!     The same expression as construct_grid, so r_j = r(j) for 1 <= j <= Nr.
+      rj = (dble(j)-0.5d0)*dr
+      if (abs(r_part(i)-rj) >= cutoff_interp) cycle
 
-        pot_part(i)   = pot_part(i) + pot(j)*wgt
-
-        force_part(i) = force_part(i) + force(j)*wgt
-
+      if (j <= 0) then
+        m = 1-j
+        sgn = -1.0d0
+      else
+        m = j
+        sgn = 1.0d0
       end if
+      if (m > Nr) then
+        rm = (dble(m)-0.5d0)*dr
+        pj = pot(Nr)*r(Nr)/rm
+        fj = sgn*force(Nr)*(r(Nr)/rm)**2
+      else
+        pj = pot(m)
+        fj = sgn*force(m)
+      end if
+
+      wgt = Wn(bsplineorder,(r_part(i)-rj)/dr)
+
+      pot_part(i)   = pot_part(i) + pj*wgt
+
+      force_part(i) = force_part(i) + fj*wgt
+
     end do
   end do
   !$OMP END PARALLEL DO
