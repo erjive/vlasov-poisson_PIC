@@ -1547,7 +1547,7 @@ son bugs propios de este repo.
   las que cruzan r = 1 dan órdenes erráticos: es el método de paso fijo, no el código.
   **Imágenes en el depósito: corregido el 2026-09-22** (E9): la masa de una partícula cerca del
   origen queda entera en la malla y el depósito es par en (r,p). Hallados al hacerlo: el volumen
-  r²Δr + Δr³/12 sesga el primer nodo +25/50/75 % (E21, decisión pendiente) y `Sn(1)` cuenta
+  r²Δr + Δr³/12 sesga el primer nodo +25/50/75 % (E21, corregido después) y `Sn(1)` cuenta
   doble en las caras de celda (E22). **Poisson por masa encerrada: corregido el 2026-09-22**
   (E8): el campo ve exactamente la masa depositada; el colapso frío baja de 8e-5 (piso de
   malla) a 1e-6 con N = 800 y converge como 1/N². Landau cambia 2–4e-6 en h_k; en `sg__quad`
@@ -1559,7 +1559,10 @@ son bugs propios de este repo.
   (E8–E10) está completo; las cifras de la meseta y de Landau cambian 1e-5 y 3e-6 relativo
   (E8). **L0 = 0: la corrida aborta desde el 2026-09-22** (E1, decisión del usuario); queda
   pendiente trabajar con FF = 8 pi^2 L0 F en todo el código (plan en `paramfile.f90`,
-  `validate`). El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  `validate`). **Volumen de la densidad de salida: corregido el 2026-09-22** (E21, decisión del
+  usuario): se usa el que cubre W_n, dr(r² + (n+1)dr²/12); una densidad uniforme sale exacta en
+  todos los nodos y el primer nodo converge. En el interior el error cambia según el perfil
+  (×1.75 con rho0(1-r²)³, ×0.9 con rho ∝ r²). La dinámica no cambia. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la

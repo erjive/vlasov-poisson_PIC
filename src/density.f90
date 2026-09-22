@@ -31,7 +31,7 @@ subroutine density
 
   integer i,j
   real(8) :: smallpi,factor,average_rho
-  real(8) :: cutoff_rho,cutoff_avg,sval,simg,wd,wi
+  real(8) :: cutoff_rho,cutoff_avg,sval,simg,wd,wi,vol
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
   logical :: images
@@ -93,12 +93,28 @@ subroutine density
 ! The shape function depends on r_part alone, so it is evaluated once
 ! into "sval" and reused by the density and the current.
 
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval,simg,wd,wi)
+! avg_rho is the mass deposited on grid point i over the volume the weight
+! covers,
+!
+!   V_i = Int W_n((r_i-r)/dr) 4 pi r**2 dr = 4 pi dr (r_i**2 + (n+1) dr**2/12),
+!
+! since W_n (bsplineorder = n) has unit area and second moment (n+1)/12 in
+! units of dr**2. With it a uniform density is reproduced exactly at every
+! point. The cell volume 4 pi (r_i**2 dr + dr**3/12) used before is right
+! for a cell but not for the region the weight spreads the mass over: the
+! density came out (r_i**2 + (n+1) dr**2/12)/(r_i**2 + dr**2/12) times the
+! true one, +25/50/75 % at the first point for n = 1, 2, 3 whatever dr
+! (AUDITORIA_L0_2026-09-21.md, E21). "vol" below is V_i/(4 pi r_i**2).
+! This density is only written out; poisson_rk takes its own from
+! avg_density.
+
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval,simg,wd,wi,vol)
 
   do i=1,Nr
 
     clo = max(1,i-Wcell)
     chi = min(Nr,i+Wcell)
+    vol = dr + dble(bsplineorder+1)*dr**3/(12.d0*r(i)**2)
 
     do c=clo,chi
       do pp=cell_start(c),cell_start(c+1)-1
@@ -120,7 +136,7 @@ subroutine density
         if (images .and. abs(r(i)+r_part(j))<=cutoff_avg) wi = Wn(bsplineorder,(r(i)+r_part(j))/dr)
 
         if (wd /= 0.0d0 .or. wi /= 0.0d0) then
-          avg_rho(i) = avg_rho(i) + f(j)/(dr+dr**3/(12.d0*r(i)**2))*(wd + wi)
+          avg_rho(i) = avg_rho(i) + f(j)/vol*(wd + wi)
         end if
 
       end do
@@ -171,7 +187,7 @@ end subroutine density
 
 
 
-subroutine avg_density
+subroutine avg_density(dens)
 
 ! In order to make the Poisson subroutine more efficient, 
 ! I will separate the subroutine that calculates 
@@ -186,6 +202,13 @@ subroutine avg_density
 !                /
 ! rho  =  1/r**2 | f dp 
 !                /
+!
+! It is the input of poisson_rk, and is returned in "dens" rather than in
+! avg_rho so that the density written out is always the one of density()
+! (at t = 0 poisson_rk runs between density() and the output). Here the
+! deposited mass is divided by the cell volume 4 pi (r**2 dr + dr**3/12);
+! poisson_rk only uses the mass, which it recovers from it, so the
+! convention of density() (E21) does not enter the field.
 
 ! Include modules.
 
@@ -203,6 +226,7 @@ subroutine avg_density
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
   logical :: images
+  real(8), intent(out) :: dens(1-ghost:Nr)
 
   smallpi = acos(-1.0d0)
 
@@ -220,7 +244,7 @@ subroutine avg_density
 
   endif  
 
-  avg_rho = 0.D0
+  dens = 0.D0
 
 ! Same cell-list deposit as in density() above, and likewise parallel
 ! over the grid index alone so each accumulator belongs to a single
@@ -237,7 +261,7 @@ subroutine avg_density
 
 ! Parallelizing only over "i" (no collapse) means each i is owned by
 ! exactly one thread for its whole inner loop, so the accumulation
-! into avg_rho(i) is race-free without needing !$OMP ATOMIC.
+! into dens(i) is race-free without needing !$OMP ATOMIC.
 
   !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,diff,contribution,wd,wi)
 
@@ -260,7 +284,7 @@ subroutine avg_density
         end if
         if (wd /= 0.0d0 .or. wi /= 0.0d0) then
             contribution = f(j) / (r(i)**2*dr+dr**3/12.d0) * (wd + wi)
-            avg_rho(i) = avg_rho(i) + contribution
+            dens(i) = dens(i) + contribution
         end if
       end do
     end do
@@ -270,12 +294,12 @@ subroutine avg_density
   deallocate(cell_start,particle_order)
 
 
-! Ghost points using the reflection symmetry avg_rho(-r) = avg_rho(r)
+! Ghost points using the reflection symmetry dens(-r) = dens(r)
 ! (see the matching note in subroutine density above).
   do i=1,ghost
-      avg_rho(1-i) = avg_rho(i)
+      dens(1-i) = dens(i)
   end do
 
-  avg_rho = factor*m0*avg_rho
+  dens = factor*m0*dens
 
 end subroutine avg_density

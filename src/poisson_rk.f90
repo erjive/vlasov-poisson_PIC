@@ -40,7 +40,7 @@
 
   real(8) ra,rb,slope,c0,c3,c4
   real(8) rho0,pi
-  real(8), allocatable :: rt(:)
+  real(8), allocatable :: rt(:),rhop(:)
   real(8) cutoff_interp,wgt
   integer :: Wgrid,jc,m
   real(8) :: rj,pj,fj,rm,sgn
@@ -73,24 +73,26 @@
 ! VlasovPoisson_PIC_sp (5c0e07f).
 
 ! First calculate the density
-  call avg_density
+  allocate(rhop(1-ghost:Nr))
+  call avg_density(rhop)
 
 ! Between two grid points the density is the straight line through its two
 ! values. avg_density divides the mass deposited on point k, m_k, by the cell
-! volume 4 pi (r_k**2 dr + dr**3/12) (the convention of the manuscript). The
+! volume 4 pi (r_k**2 dr + dr**3/12). The
 ! straight line through values rt_k holds 4 pi Sum_k rt_k dr (r_k**2 + dr**2/6),
 ! because the linear hat of width dr has second moment dr**2/6, so with
 !
 !   rt_k = m_k / (4 pi dr (r_k**2 + dr**2/6))
 !
 ! the field sees exactly the deposited mass, Sum_k m_k, for any bsplineorder
-! and at any radius, the first cell included (see below). rt only lives here:
-! the density written out keeps the cell volume.
+! and at any radius, the first cell included (see below). rt only lives here;
+! the density written out is the one of density(), with its own volume (E21).
 
   allocate(rt(1:Nr))
   do i=1,Nr
-     rt(i) = avg_rho(i)*(r(i)**2 + dr**2/12.d0)/(r(i)**2 + dr**2/6.d0)
+     rt(i) = rhop(i)*(r(i)**2 + dr**2/12.d0)/(r(i)**2 + dr**2/6.d0)
   end do
+  deallocate(rhop)
 
 ! Between the origin and r(1) the density is even, so the ghost point carries
 ! the same value as r(1) and rho is constant there:
