@@ -195,7 +195,11 @@
       do i=1,Nrc
         do j=1,Npc
           raux = rminc+(dble(i)-0.5D0)*drc
-          paux = pminc+dble(j)*dpc
+!         Midpoint of the cell in p, as in r. The node sat on the right edge,
+!         p_j = pminc + j dpc, so the grid ran from pminc+dpc to pmaxc and was
+!         not symmetric about p = 0 in a symmetric box
+!         (AUDITORIA_L0_2026-09-21.md, E15).
+          paux = pminc+(dble(j)-0.5D0)*dpc
 
           r_part((i-1)*Npc+j) = raux
           p_part((i-1)*Npc+j) = paux     
@@ -271,7 +275,10 @@
         do j=1,Npc
           indx = (i-1)*Npc+j
           raux = rminc+(dble(i)-0.5D0)*drc + (halton(indx,2)-0.5d0)*drc
-          paux = pminc+dble(j)*dpc         + (halton(indx,3)-0.5d0)*dpc
+!         Each point moves within its own cell, centred on the midpoint as in
+!         r; it was centred on the right edge, so the cells ran half a cell
+!         past pmaxc (E15).
+          paux = pminc+(dble(j)-0.5D0)*dpc + (halton(indx,3)-0.5d0)*dpc
 
           r_part((i-1)*Npc+j) = raux
           p_part((i-1)*Npc+j) = paux
