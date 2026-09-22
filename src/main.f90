@@ -306,6 +306,14 @@ program VP_PIC
 !   once per particle per step, and the remaining loop is parallel. When
 !   rmin > 0 the whole pass is skipped outright (it could never fire).
 
+!   The force is odd in r (background, centrifugal term and the grid field
+!   alike), so it changes sign with the particle: euler, leapfrog and the
+!   Yoshida compositions start the next step with a kick that uses it. Left
+!   unchanged, that kick had the wrong sign for every particle crossing the
+!   origin, and a radial orbit (L0 = 0) through the centre dropped yoshida4
+!   from fourth to second order (AUDITORIA_L0_2026-09-21.md, E3). The
+!   potential is even and stays.
+
     if (rmin == 0.0d0) then
 
       !$OMP PARALLEL DO SCHEDULE(STATIC)
@@ -313,6 +321,7 @@ program VP_PIC
         if (r_part(i)<0.d0) then
           r_part(i) = -r_part(i)
           p_part(i) = -p_part(i)
+          force_part(i) = -force_part(i)
         end if
       end do
       !$OMP END PARALLEL DO
