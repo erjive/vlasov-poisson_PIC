@@ -29,6 +29,8 @@ subroutine grav_force
   integer i
   real(8) :: smallpi
   real(8) :: sq,den       ! sqrt(1+r^2) and r^2+eps^2, evaluated once per particle
+  real(8) :: a,pb,fb      ! |r|, background potential and force of "sphere"
+  integer :: k
   smallpi = acos(-1.0d0)
 
 ! Self-gravitating case.  In this case we need to
@@ -52,28 +54,64 @@ subroutine grav_force
 
   end if 
 
+! Without self-gravity, when there is no background to write them ("null",
+! or forcetype = "self"), nothing sets pot_part and force_part in this call,
+! and the centrifugal term below was added on top of the previous call's
+! values, growing every step (AUDITORIA_L0_2026-09-21.md, E5).
+
+  if (.not. autointeraction .and. (forcetype /= "bg" .or. BGtype == "null")) then
+     pot_part   = 0.0d0
+     force_part = 0.0d0
+  end if
+
   if (forcetype=="bg") then
 
      if (BGtype == "null") then
-     
-        pot = pot 
-        force = force
-        pot_part = pot_part
-        force_part = force_part
+
+!       No background.
 
      else if (BGtype == "sphere") then
 
-       !$OMP PARALLEL DO SCHEDULE(GUIDED)
+!      Constant density star of mass 1 and radius 1, evaluated at |r| with the
+!      force odd in r: a particle may be at r < 0 within a step, and taking
+!      the inner branch for every r < 1 got r < -1 wrong. With self-gravity
+!      the background is added to the field poisson_rk has just interpolated;
+!      it used to be assigned, which threw the self-gravity away (E5). For
+!      r >= 0 the expressions are the same as before.
+
+       !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(a,pb,fb)
        do i=1,Npart
-            if (r_part(i)<1.d0) then
-               pot_part(i)   =  0.5d0*(r_part(i)**2 - 3.d0)
-               force_part(i) = - r_part(i)
+            a = abs(r_part(i))
+            if (a<1.d0) then
+               pb =  0.5d0*(r_part(i)**2 - 3.d0)
+               fb = - r_part(i)
             else
-               pot_part(i)   = - 1.d0/r_part(i)
-               force_part(i) = - 1.d0/r_part(i)**2
+               pb = - 1.d0/a
+               fb = - sign(1.d0,r_part(i))/r_part(i)**2
+            end if
+            if (autointeraction) then
+               pot_part(i)   = pot_part(i)   + pb
+               force_part(i) = force_part(i) + fb
+            else
+               pot_part(i)   = pb
+               force_part(i) = fb
             end if
        end do
        !$OMP END PARALLEL DO
+
+!      The grid carries the total field too, as for the isochrone.
+       if (autointeraction) then
+          do k=lbound(r,1),ubound(r,1)
+             a = abs(r(k))
+             if (a<1.d0) then
+                pot(k)   = pot(k)   + 0.5d0*(r(k)**2 - 3.d0)
+                force(k) = force(k) - r(k)
+             else
+                pot(k)   = pot(k)   - 1.d0/a
+                force(k) = force(k) - sign(1.d0,r(k))/r(k)**2
+             end if
+          end do
+       end if
 
      else if (BGtype == "Isochrone") then
 

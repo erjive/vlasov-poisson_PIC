@@ -1539,7 +1539,9 @@ son bugs propios de este repo.
   2026-09-21** (E2): la rama se llamaba `gaussian1` y nunca se alcanzaba; nodos en los puntos
   medios. **Nodos no ligados y h_k: corregido el 2026-09-21** (E7): los estados iniciales
   descartan siempre los nodos marcados y `analysish` excluye E >= 0 y acota los
-  radicandos. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  radicandos. **Fondos `null` y `sphere`: corregido el 2026-09-21** (E5): sin autogravedad
+  la fuerza se reinicia en cada llamada, y la esfera se suma a la autogravedad en vez de
+  reemplazarla. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
