@@ -31,9 +31,10 @@ subroutine density
 
   integer i,j
   real(8) :: smallpi,factor,average_rho
-  real(8) :: cutoff_rho,cutoff_avg,sval
+  real(8) :: cutoff_rho,cutoff_avg,sval,simg,wd,wi
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
+  logical :: images
 
   character(20) filename ! Name of outupt file.
 
@@ -70,6 +71,19 @@ subroutine density
   cutoff_avg = (dble(bsplineorder)+1.0d0)*dr
   Wcell = ceiling(max(cutoff_rho,cutoff_avg)/dr) + 1
 
+! Images. With rmin = 0 the distribution obeys f(r,p) = f(-r,-p), so every
+! particle has an image at (-r_j,-p_j), and near the origin its weight on
+! grid point i, W((r_i+r_j)/dr), is added (to the current with the opposite
+! sign, since p changes sign). Without it the part of a particle's weight
+! that falls on the ghost points was lost: up to half its mass at r_j = 0,
+! 32 % at r_j = dr/4 with bsplineorder = 3 (AUDITORIA_L0_2026-09-21.md, E9).
+! It also makes the deposit of a particle that is at r_j < 0 inside a time
+! step (main.f90 reflects it only at the end) the same as at -r_j. An image
+! only reaches the first points, whose cell range already includes the cells
+! near the origin, where build_cell_list files such particles.
+
+  images = (ghost > 0)
+
 ! The parallel loop runs over "i" only, never collapsed with "j":
 ! rho(i), curr(i) and avg_rho(i) accumulate over all particles, so one
 ! grid point must belong to a single thread for the whole inner loop
@@ -78,7 +92,7 @@ subroutine density
 ! The shape function depends on r_part alone, so it is evaluated once
 ! into "sval" and reused by the density and the current.
 
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval)
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval,simg,wd,wi)
 
   do i=1,Nr
 
@@ -89,17 +103,23 @@ subroutine density
       do pp=cell_start(c),cell_start(c+1)-1
         j = particle_order(pp)
 
-        if (abs(r(i)-r_part(j))<=cutoff_rho) then
+        sval = 0.0d0
+        simg = 0.0d0
+        if (abs(r(i)-r_part(j))<=cutoff_rho) sval = Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
+        if (images .and. abs(r(i)+r_part(j))<=cutoff_rho) simg = Sn(bsplineorder,(r(i)+r_part(j))/drc,drc)
 
-          sval = Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
-          rho(i) = rho(i) + f(j)*sval
-          curr(i) = curr(i)+f(j)*p_part(j)*sval
+        if (sval /= 0.0d0 .or. simg /= 0.0d0) then
+          rho(i) = rho(i) + f(j)*(sval + simg)
+          curr(i) = curr(i)+f(j)*p_part(j)*(sval - simg)
         end if
 
-        if (abs(r(i)-r_part(j))<=cutoff_avg) then
+        wd = 0.0d0
+        wi = 0.0d0
+        if (abs(r(i)-r_part(j))<=cutoff_avg) wd = Wn(bsplineorder,(r(i)-r_part(j))/dr)
+        if (images .and. abs(r(i)+r_part(j))<=cutoff_avg) wi = Wn(bsplineorder,(r(i)+r_part(j))/dr)
 
-          avg_rho(i) = avg_rho(i) + f(j)/(dr+dr**3/(12.d0*r(i)**2))*Wn(bsplineorder,(r(i)-r_part(j))/dr)
-
+        if (wd /= 0.0d0 .or. wi /= 0.0d0) then
+          avg_rho(i) = avg_rho(i) + f(j)/(dr+dr**3/(12.d0*r(i)**2))*(wd + wi)
         end if
 
       end do
@@ -178,9 +198,10 @@ subroutine avg_density
 
   integer i,j
   real(8) :: smallpi,factor,diff,contribution
-  real(8) :: cutoff_avg
+  real(8) :: cutoff_avg,wd,wi
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
+  logical :: images
 
   smallpi = acos(-1.0d0)
 
@@ -209,11 +230,14 @@ subroutine avg_density
   cutoff_avg = (dble(bsplineorder) + 1.0d0)*dr
   Wcell = ceiling(cutoff_avg/dr) + 1
 
+! Images at -r_j, as in density() above.
+  images = (ghost > 0)
+
 ! Parallelizing only over "i" (no collapse) means each i is owned by
 ! exactly one thread for its whole inner loop, so the accumulation
 ! into avg_rho(i) is race-free without needing !$OMP ATOMIC.
 
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,diff,contribution)
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,diff,contribution,wd,wi)
 
   do i = 1, Nr
 
@@ -224,9 +248,16 @@ subroutine avg_density
       do pp=cell_start(c),cell_start(c+1)-1
         j = particle_order(pp)
 
+        wd = 0.0d0
+        wi = 0.0d0
         diff = abs(r(i) - r_part(j))
-        if (diff <= cutoff_avg) then
-            contribution = f(j) / (r(i)**2*dr+dr**3/12.d0) * Wn(bsplineorder, diff / dr)
+        if (diff <= cutoff_avg) wd = Wn(bsplineorder, diff / dr)
+        if (images) then
+            diff = abs(r(i) + r_part(j))
+            if (diff <= cutoff_avg) wi = Wn(bsplineorder, diff / dr)
+        end if
+        if (wd /= 0.0d0 .or. wi /= 0.0d0) then
+            contribution = f(j) / (r(i)**2*dr+dr**3/12.d0) * (wd + wi)
             avg_rho(i) = avg_rho(i) + contribution
         end if
       end do
