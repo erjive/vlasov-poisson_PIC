@@ -27,7 +27,8 @@
     implicit none
 
     real(8),dimension(1:Npart) :: Qr,Jr      !Action angle arrays
-    real(8) :: energy,s, s1, s2, er1, er2,argaux
+    real(8) :: energy,s, s1, s2, er1, er2,argaux,disc
+    logical,dimension(1:Npart) :: bound     !E < 0: the particle has action-angle variables
     complex(8) :: ii                          !imaginary unit
     complex(8) :: expv                        !exp(-ii*Qr(j)) for the current particle
     complex(8),dimension(0:4) :: hk1,hk2           !h_k mode
@@ -53,15 +54,34 @@
     smallpi =  acos(-1.0d0)
 
 
-    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,energy,s,s1,s2,er1,er2,argaux,eta) SHARED(Qr,Jr)
+! Unbound particles (E >= 0) have no action-angle variables: the formulas
+! give NaN, and a single one turned every h_k into NaN. They are left out,
+! which is the continuous extension of the test functions (J -> infinity as
+! E -> 0-, and B(J) -> 0). Every radicand is clamped at zero: all of them
+! vanish on a circular orbit, where rounding alone can make them negative.
+! Where a radicand is positive the clamp returns it unchanged, bit for bit
+! (AUDITORIA_L0_2026-09-21.md, E7).
+
+    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(i,energy,s,s1,s2,er1,er2,argaux,eta,disc) SHARED(Qr,Jr,bound)
     do i = 1,Npart
       energy = -1.0/(1.0D0+dsqrt(1.0D0+r_part(i)**2)) + 0.5d0*Lfix**2/(r_part(i)**2) + 0.5D0*p_part(i)**2
-      er1 = dsqrt((1.d0+energy*(2.d0+Lfix**2)-dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
-      er2 = dsqrt((1.d0+energy*(2.d0+Lfix**2)+dsqrt(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2)))/(2.d0*energy**2))
+      bound(i) = (energy < 0.0d0)
+      if (.not. bound(i)) then
+        Qr(i) = 0.0d0
+        Jr(i) = 0.0d0
+        cycle
+      end if
+      disc = dsqrt(max(1.d0+2.d0*energy*(2.d0+2.d0*energy+Lfix**2),0.0d0))
+      er1 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)-disc)/(2.d0*energy**2),0.0d0))
+      er2 = dsqrt(max((1.d0+energy*(2.d0+Lfix**2)+disc)/(2.d0*energy**2),0.0d0))
       s1 = 1.d0 + dsqrt(1.d0+er1**2)
       s2 = 1.d0 + dsqrt(1.d0+er2**2)
       s  = 1.d0 + dsqrt(1.d0+r_part(i)**2)
-      argaux = (s1+s2-2.0*s)/(s2-s1)
+      if (s2 > s1) then
+        argaux = (s1+s2-2.0*s)/(s2-s1)
+      else
+        argaux = 0.0d0
+      end if
       Jr(i) = 1.d0/dsqrt(-2.d0*energy)-0.5d0*(Lfix+dsqrt(Lfix**2+4.d0))
 
   !  do i=1,Npart
@@ -73,7 +93,7 @@
             eta = dacos(-sign(min(abs(argaux),1.0D0),argaux))+smallpi
           end if
 
-          Qr(i) = eta - dsqrt((-2.d0*energy)**3)*sqrt(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy)/(-2.d0*energy)*dsin(eta)
+          Qr(i) = eta - dsqrt((-2.d0*energy)**3)*sqrt(max(-Lfix**2-2.d0*energy-2.d0-0.5D0/energy,0.0d0))/(-2.d0*energy)*dsin(eta)
 
     end do
     !$OMP END PARALLEL DO
@@ -139,6 +159,8 @@
 
     !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,i,bj1,bj2,expv) REDUCTION(+:hk1,hk2)
     do j=1,Npart
+
+      if (.not. bound(j)) cycle
 
 !     J-dependent factor of each test function; the Q-quadrature is the
 !     precomputed cq1/cq2.

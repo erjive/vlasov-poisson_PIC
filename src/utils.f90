@@ -1058,15 +1058,25 @@ end subroutine construct_grid
   end subroutine save_force_pot
 
 
-subroutine reduce_arrays
+subroutine reduce_arrays(always)
   use parameters
   use arrays
 
- 
+! always = .true. removes every particle beyond rmax, whatever their number.
+! The initial states need it: they send the nodes they discard (below the
+! cutoff, unbound or NaN) to r > rmax, and with fewer than 10% of them the
+! 90% rule below kept them in the run, at r = 1e4-1e5 and sometimes still
+! with f > 0 (AUDITORIA_L0_2026-09-21.md, E7).
+
+  logical, intent(in), optional :: always
+  logical :: remove_all
   integer i,j
   integer counter,Npart_aux
   real(8), allocatable, dimension (:) :: r_aux,p_aux,f_aux
 !  real(8), dimension (1:Npart) :: r_aux,p_aux,f_aux
+
+  remove_all = .false.
+  if (present(always)) remove_all = always
 
 
 ! Count How many particles are still in the grid
@@ -1082,7 +1092,7 @@ subroutine reduce_arrays
 ! Reduce the size of arrays if we have less than 90% 
 ! of the original number of particles.
 
-  if (dble(counter) < 0.9D0* Npart) then 
+  if (counter < Npart .and. (remove_all .or. dble(counter) < 0.9D0* Npart)) then 
   allocate(r_aux(1:Npart))
   allocate(p_aux(1:Npart))
   allocate(f_aux(1:Npart))

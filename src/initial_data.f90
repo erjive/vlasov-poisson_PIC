@@ -243,7 +243,7 @@
         end do
       end do 
       !$OMP END PARALLEL DO
-      call reduce_arrays
+      call reduce_arrays(always=.true.)
 
       print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
@@ -308,7 +308,7 @@
         end do
       end do
       !$OMP END PARALLEL DO
-      call reduce_arrays
+      call reduce_arrays(always=.true.)
 
       print *, a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
