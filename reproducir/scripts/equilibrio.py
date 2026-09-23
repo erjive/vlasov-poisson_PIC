@@ -21,34 +21,57 @@ import os, sys, argparse, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, phi_iso, L0
 
+# Valores por omisión: los de las corridas de 11_landau. sigma_J fija el ancho
+# del soporte en J y con él el ancho de la banda de frecuencias; J_MAX es el
+# corte de la malla de nodos y debe seguir al soporte (con sigma_J = 0.10,
+# F_eq ~ J^2 exp(-J^2/0.01) vale e^-36 en J = 0.6). L0 es el momento angular
+# fijo de la reducción. Se pasan por línea de comandos; los valores por
+# omisión reproducen exactamente las corridas anteriores.
 SIGMA_J = 0.10
-J_MAX = 0.60                       # F_eq ~ J^2 exp(-J^2/0.01): e^-36 fuera
+J_MAX = 0.60
 
 
-def F_forma(J):
-    return J**2*np.exp(-J**2/SIGMA_J**2)
+def F_forma(J, sigma=None):
+    return J**2*np.exp(-J**2/(SIGMA_J if sigma is None else sigma)**2)
 
 
-def amplitud(a0):
-    Jq = np.linspace(0, J_MAX, 200001)
-    return a0/(16*np.pi**3*L0*np.trapezoid(F_forma(Jq), Jq))
+def amplitud(a0, sigma=SIGMA_J, jmax=J_MAX, l0=L0):
+    Jq = np.linspace(0, jmax, 200001)
+    return a0/(16*np.pi**3*l0*np.trapezoid(F_forma(Jq, sigma), Jq))
+
+
+def g_angular(nombre):
+    """Perfil angular de la perturbación: media cero, para que no cambie la masa."""
+    if nombre == 'cos':
+        return lambda Q: np.cos(Q), 1.0
+    if nombre == 'suma3':
+        # Excita k = 1, 2 y 3 de entrada; su máximo es ~1.5, así que la
+        # positividad de F pide eps <= 1/1.5.
+        g = lambda Q: np.cos(Q) + np.cos(2*Q)/2 + np.cos(3*Q)/3
+        return g, float(np.max(g(np.linspace(0, 2*np.pi, 20001))))
+    raise SystemExit(f'perfil angular desconocido: {nombre}')
 
 
 class Equilibrio:
-    def __init__(self, a0, r_malla=np.arange(0.01, 25.0 + 1e-9, 0.01)):
+    def __init__(self, a0, r_malla=np.arange(0.01, 25.0 + 1e-9, 0.01),
+                 sigma=SIGMA_J, jmax=J_MAX, l0=L0):
         self.a0 = a0
-        self.A = amplitud(a0)
+        self.sigma, self.jmax, self.L0 = sigma, jmax, l0
+        self.A = amplitud(a0, sigma, jmax, l0)
         self.r = r_malla
         self.phi_self = np.zeros_like(r_malla)
 
+    def F(self, J):
+        return self.A*F_forma(J, self.sigma)
+
     def mapa(self):
-        return MapaAA(self.r, self.phi_self)
+        return MapaAA(self.r, self.phi_self, L=self.L0)
 
     def tabla_J_de_E(self, m, n=4000):
         """J(E) a L fijo: J solo depende de E. Se evalúa en el pericentro de
         órbitas que pasan por r_c con distintos p_r."""
         E0 = m.phi_ef(m.rc)
-        Emax = self.E_de_J_aprox(m, J_MAX*1.05)
+        Emax = self.E_de_J_aprox(m, self.jmax*1.05)
         E = np.linspace(E0, Emax, n)
         p = np.sqrt(2*np.maximum(E - E0, 0))
         _, J, _ = m(np.full_like(E, m.rc), p)
@@ -57,7 +80,7 @@ class Equilibrio:
 
     def E_de_J_aprox(self, m, J):
         # Isócrono como cota de partida; se amplía hasta que la tabla cubra J.
-        c = 0.5*(L0 + np.sqrt(L0**2 + 4))
+        c = 0.5*(self.L0 + np.sqrt(self.L0**2 + 4))
         E = -0.5/(J + c)**2
         for _ in range(20):
             _, Jt, _ = m(np.array([m.rc]), np.array([np.sqrt(2*max(E - m.phi_ef(m.rc), 0))]))
@@ -74,10 +97,10 @@ class Equilibrio:
         u = np.linspace(-1, 1, npm)
         P = pmax[:, None]*u[None, :]
         E = 0.5*P**2 + phief[:, None]
-        J = np.interp(E, E_t, J_t, right=J_MAX*10)
-        F = self.A*F_forma(J)
+        J = np.interp(E, E_t, J_t, right=self.jmax*10)
+        F = self.F(J)
         integral = np.trapezoid(F, u, axis=1)*pmax
-        return 8*np.pi**2*L0*integral/(4*np.pi*self.r**2)
+        return 8*np.pi**2*self.L0*integral/(4*np.pi*self.r**2)
 
     def poisson(self, rho):
         r = self.r
@@ -136,9 +159,10 @@ def invertir(m, E_t, J_t, Q, J, nb=60, ng=32):
     return r, np.where(ida, p, -p)
 
 
-def condicion_inicial(eq, eps, nrc, npc):
+def condicion_inicial(eq, eps, nrc, npc, gq='cos'):
     m = eq.mapa()
-    dJ = J_MAX/nrc; dQ = 2*np.pi/npc
+    g, _ = g_angular(gq)
+    dJ = eq.jmax/nrc; dQ = 2*np.pi/npc
     Jn = (np.arange(nrc) + 0.5)*dJ
     Qn = (np.arange(npc) + 0.5)*dQ
     JJ, QQ = np.meshgrid(Jn, Qn, indexing='ij')        # orden (i-1)*Npc+j del código
@@ -146,7 +170,7 @@ def condicion_inicial(eq, eps, nrc, npc):
     r = np.empty_like(JJ); p = np.empty_like(JJ)
     for s in range(0, len(JJ), 4000):
         r[s:s+4000], p[s:s+4000] = invertir(m, eq.E_t, eq.J_t, QQ[s:s+4000], JJ[s:s+4000])
-    F = eq.A*F_forma(JJ)*(1 + eps*np.cos(QQ))
+    F = eq.F(JJ)*(1 + eps*g(QQ))
     return r, p, F, QQ, JJ
 
 
@@ -156,11 +180,21 @@ if __name__ == '__main__':
     ap.add_argument('--eps', type=float, default=0.1)
     ap.add_argument('--nrc', type=int, default=400)
     ap.add_argument('--npc', type=int, default=25)
+    ap.add_argument('--sigma', type=float, default=SIGMA_J, help='ancho en J de F_eq')
+    ap.add_argument('--jmax', type=float, default=J_MAX, help='corte de la malla en J')
+    ap.add_argument('--l0', type=float, default=L0, help='momento angular fijo')
+    ap.add_argument('--gq', default='cos', choices=['cos', 'suma3'],
+                    help='perfil angular de la perturbación')
     ap.add_argument('--salida', required=True)
     arg = ap.parse_args()
-    print(f'equilibrio: a0={arg.a0:g}, F_eq = A J^2 exp(-J^2/{SIGMA_J}^2), L0={L0}')
-    eq = Equilibrio(arg.a0).iterar()
-    r, p, F, Q, J = condicion_inicial(eq, arg.eps, arg.nrc, arg.npc)
+    _, gmax = g_angular(arg.gq)
+    if arg.eps*gmax > 1.0:
+        raise SystemExit(f'eps = {arg.eps:g} con g = "{arg.gq}" (max {gmax:.3f}) da F < 0; '
+                         f'usa eps <= {1/gmax:.3f}')
+    print(f'equilibrio: a0={arg.a0:g}, F_eq = A J^2 exp(-J^2/{arg.sigma}^2), '
+          f'L0={arg.l0}, J_max={arg.jmax}, g(Q)="{arg.gq}"')
+    eq = Equilibrio(arg.a0, sigma=arg.sigma, jmax=arg.jmax, l0=arg.l0).iterar()
+    r, p, F, Q, J = condicion_inicial(eq, arg.eps, arg.nrc, arg.npc, arg.gq)
     m = eq.mapa()
     Qc, Jc, _ = m(r, p)
     dQ = np.abs(np.angle(np.exp(1j*(Qc - Q))))
@@ -172,5 +206,6 @@ if __name__ == '__main__':
     base = os.path.splitext(arg.salida)[0]
     np.savez(base + '_equilibrio.npz', r=eq.r, phi_self=eq.phi_self, rho=eq.rho,
              E_t=eq.E_t, J_t=eq.J_t, A=eq.A, a0=arg.a0, eps=arg.eps,
-             nrc=arg.nrc, npc=arg.npc, J_max=J_MAX, sigma_J=SIGMA_J)
+             nrc=arg.nrc, npc=arg.npc, J_max=eq.jmax, sigma_J=eq.sigma,
+             L0=eq.L0, gq=arg.gq)
     print(f'escrito {arg.salida} ({len(r)} partículas) y {base}_equilibrio.npz')

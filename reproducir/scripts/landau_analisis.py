@@ -17,13 +17,37 @@ import os, sys, numpy as np, h5py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, phi_iso
 
-J1, SJ1 = 0.10, 0.10
-B = lambda J: np.exp(-(J - J1)**2/SJ1**2)*J**2
+J1_OMISION, SJ1_OMISION = 0.10, 0.10   # los de las corridas de 11_landau
+
+
+def pesos_prueba(corrida):
+    """(j1, sj1) de la función de prueba Phi_1 con la que el código calcula h_k.
+
+    No son el ancho de F_eq: son parámetros de entrada que la corrida deja
+    escritos en params_usados.par. Se leen de ahí para que h_k medido aquí y
+    h_k del código sean la misma cantidad aunque cambie la configuración."""
+    p = os.path.join(corrida, 'params_usados.par')
+    j1, sj1 = J1_OMISION, SJ1_OMISION
+    if os.path.exists(p):
+        for l in open(p):
+            l = l.split('#')[0].split('!')[0]
+            if '=' in l:
+                k, v = l.split('=', 1)
+                if k.strip().lower() == 'j1':
+                    j1 = float(v)
+                elif k.strip().lower() == 'sj1':
+                    sj1 = float(v)
+    return j1, sj1
 
 
 def analizar(corrida, eqfile, ventana_r=(3.0, 15.0), verboso=True):
     eq = np.load(eqfile)
-    mapa = MapaAA(eq['r'], eq['phi_self'])
+    L = float(eq['L0']) if 'L0' in eq.files else 2.0
+    mapa = MapaAA(eq['r'], eq['phi_self'], L=L)
+    j1, sj1 = pesos_prueba(corrida)
+    B = lambda J: np.exp(-(J - j1)**2/sj1**2)*J**2
+    if verboso:
+        print(f'  L0 = {L:g}, función de prueba: j1 = {j1:g}, sj1 = {sj1:g}')
     f = h5py.File(os.path.join(corrida, 'vlasov_output.h5'), 'r')
     pasos = sorted([k for k in f if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
     t = np.array([f[k].attrs['time'] for k in pasos])
