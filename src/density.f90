@@ -163,21 +163,23 @@ subroutine density
   rho = factor*m0*rho/r**2
   avg_rho = factor*m0*avg_rho/r**2
 
+! Mean density in the shell r1 <= r <= r2, written to vlasov_rhomix.tl: the
+! mass of the particles inside, 8 pi**2 L0 drc dpc Sum f, over the volume
+! 4 pi (r2**3 - r1**3)/3. It used to add f/(4 pi (r2**2 - r1**2)), without
+! the measure 8 pi**2 L0 drc dpc and with an area instead of the volume, so
+! it was not a density (AUDITORIA_L0_2026-09-21.md, E14). Same form as
+! VlasovPoisson_PIC_sp (90ff2fa).
+
   average_rho = 0.D0
 
-! Integrate with the trapezoidal rule. Second order accurate.
+  do j=1,Npart
+    if (r_part(j)>=r1 .and. r_part(j)<= r2) then
+      average_rho = average_rho + f(j)
+    end if
+  end do
 
-!  do i=1,Nr
-    do j=1,Npart
-!      if (r1<=r(i) .and. r(i)<=r2) then
-      if (r_part(j)>=r1 .and. r_part(j)<= r2) then
-      
- !       average_rho = average_rho + 1.0D0/(r2**2-r1**2)*0.5D0*(avg_rho(i)*r(i)**2+avg_rho(i+1)*r(i+1)**2)*dr
-        average_rho = average_rho + 1.0D0/(r2**2-r1**2)*f(j)*0.25D0/smallpi
-
-      end if
-    end do
-!  end do
+  average_rho = 8.0D0*smallpi**2*Lfix*drc*dpc*average_rho &
+              / (4.0D0*smallpi*(r2**3-r1**3)/3.0D0)
 
   filename = 'vlasov_rhomix'
   call save0Ddata(directory,filename,t,average_rho)

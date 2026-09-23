@@ -1572,7 +1572,9 @@ son bugs propios de este repo.
   `aa_random` no tiene tope de intentos si F ~ 0 en la región muestreada. **Nodos de `aa` y
   `aa_halton` en el punto medio en p: corregido el 2026-09-22** (E15): sin momento radial neto
   espurio cuando la caja corta a F; las corridas de `paper_runs/` cambian al nivel del error
-  de cuadratura (1e-3 con N = 100, 7e-6 con N = 1e5 en h_k(0)). El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  de cuadratura (1e-3 con N = 100, 7e-6 con N = 1e5 en h_k(0)). **vlasov_rhomix: corregido el
+  2026-09-23** (E14): es la masa de la cáscara sobre su volumen; antes daba 38 veces más en
+  `sg__quad` con [5, 8]. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la
