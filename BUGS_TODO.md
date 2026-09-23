@@ -1579,7 +1579,8 @@ son bugs propios de este repo.
   corregido el 2026-09-23** (E22): una partícula sobre una cara depositaba 0, 1 o 2 veces su
   masa en `rho` según el redondeo; ahora 1 siempre. **Sumas deterministas: corregido el
   2026-09-23** (E17): `energy` y `analysish` acumulan por hilo; antes dos corridas iguales
-  diferían en 9 de 11 energías. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  diferían en 9 de 11 energías. **Estados muertos: quitados el 2026-09-23** (E19): 112 líneas
+  de `initial_data` que `paramfile` no admite. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la

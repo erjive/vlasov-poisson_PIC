@@ -79,115 +79,6 @@
       f = a0/(drc*dpc*8.0*smallpi**2*Lfix*sum(f))*f
       print *, "Initial total mass=",sum(f)*8.0*smallpi**2*Lfix*drc*dpc
     
-    else if(state.eq."gaussian2") then
-
-! For a gaussian distribution, the above choice 
-! makes the normalization analytic, so that the normalization factor 
-! "N0" now corresponds directly to the total initial number of particles.
-
-!      Unreachable for now: validate (paramfile.f90) stops a run with Lfix = 0 (E1).
-       if (Lfix == 0.0d0) then ! Zero Angular Momentum
-          f_max = Npart/(smallpi*sr*sp)
-       else ! Include Angular Momentum
-          f_max = Npart/(2.0d0*smallpi*Lfix*smallpi*sr*sp)
-       endif
-
-! Populate the phase space with particles.
-
-      i = 1
-
-      do while (i<=Npart)
-
-! The subroutine random_number creates a pseudo-random number in the interval (0,1],
-! we would like to include the zero, so here I just create a triad of three uniform 
-! random numbers in the interval [0,1]
-
-        call random_number(rand3)
-
-        x = 1.d0-rand3(1)
-        y = 1.d0-rand3(2)
-        z = 1.d0-rand3(3)
-  
-! Random position and momentum of the particle.
-
-        x = (rmaxc-rminc)*x + rminc
-        y = (pmaxc-pminc)*y + pminc
-        z = f_max*z 
-        w = gaussian_fixedL(a0,r0,p0,Lfix,x,y,sr,sp)
-        if (z <= w ) then
-        
-          r_part(i) = x
-          p_part(i) = y
-          f(i)      = w
-          i = i+1          
-        end if
-
-
-
-      end do
-
-    else if (state.eq."Plummer") then 
-
-      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux,energy)
-      do i=1,Nrc
-        do j=1,Npc
-          raux = rminc+(dble(i))*drc
-          paux = pminc+dble(j)*dpc
-
-          r_part((i-1)*Npc+j) = raux
-          p_part((i-1)*Npc+j) = paux
-
-          energy = -1.0/(1.0D0+sqrt(1.0D0+raux**2)) + 0.5d0*Lfix**2/(raux**2 + eps*eps) + 0.5D0*paux**2
-
-
-
-          if (energy<0.d0) then
-            f((i-1)*Npc+j) = (-energy)**3.5
-          else
-            f((i-1)*Npc+j) = 0.0D0
-          end if
-        end do
-      end do
-      !$OMP END PARALLEL DO
-    
-    else if(state == "compact") then
-
-      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
-      do i=1,Nrc
-        do j=1,Npc
-          raux = rminc+(dble(i)-0.5D0)*drc
-          paux = pminc+dble(j)*dpc
-
-          r_part((i-1)*Npc+j) = raux
-          p_part((i-1)*Npc+j) = paux          
-          f((i-1)*Npc+j)      = a0/(32.D0*smallpi**2*sr*sp)*(1.D0+dcos(smallpi/sr*(raux-r0))) * &
-                                                              (1.D0+dcos(smallpi/sp*(paux-p0))) 
-        end do
-      end do
-      !$OMP END PARALLEL DO
-
-      f = f*drc*dpc*8.D0*smallpi**2
-      print *, "Initial total mass=",sum(f)
-
-    else if(state == "compact2") then
-
-      !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,raux,paux)
-      do i=1,Nrc
-        do j=1,Npc
-          raux = rminc+(dble(i)-0.5D0)*drc
-          paux = pminc+dble(j)*dpc
-
-          r_part((i-1)*Npc+j) = raux
-          p_part((i-1)*Npc+j) = paux          
-          f((i-1)*Npc+j)      = 2.0D0*a0/(9.D0*smallpi**2*sr*sp)*(dcos(0.5D0*smallpi/sr*(raux-r0)))**4* &
-                                                            (dcos(0.5D0*smallpi/sp*(paux-p0)))**4 
-        end do
-      end do
-      !$OMP END PARALLEL DO
-
-      f = f*drc*dpc*8.D0*smallpi**2
-      print *, "Initial total mass=",sum(f)
-
     else if(state .eq."aa") then
 
       !$OMP PARALLEL DO SCHEDULE(GUIDED) SHARED(r_part,p_part,f) &
@@ -568,9 +459,6 @@
       f = a0/(drc*dpc*8.0d0*smallpi**2*Lfix*sum(f))*f
       print *, "Read",Npart," particles from ",trim(CheckPointfile)
       print *, "Initial total mass=",sum(f)*8.0d0*smallpi**2*Lfix*drc*dpc
-
-    else if(state.eq."other3") then !NO IMPLEMENTED
-       f = 0.0d0       
 
     else
 
