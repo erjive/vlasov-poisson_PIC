@@ -789,6 +789,12 @@ pero `analysish.f90:38` reconstruye $E$, $J_3$ y $Q_3$ con las formulas
 **sin suavizar** ($0.5L_0^2/r^2$). Las particulas se mueven en un
 Hamiltoniano y se analizan con otro.
 
+> **Corrección (2026-09-23, E20).** Lo que sigue describe el código hasta el
+> commit `23e03de`. Hoy `eps` es un parámetro de entrada con valor **0 por
+> omisión** (`parameters.f90:34`) y ya no se deriva de `pmax`; `paramfile`
+> avisa si se pide `eps /= 0` con `Lfix /= 0`. El resto del análisis sigue
+> valiendo para quien fije `eps` a mano.
+
 Y $\epsilon$ **no es chico**: `utils.f90:141` lo define como
 `eps = Lfix/(10*pmax)` donde `pmax` es un **default hardcodeado**
 (`parameters.f90:24`, `pmax=2.0`) que **nunca se lee del archivo de
@@ -1504,11 +1510,13 @@ son bugs propios de este repo.
 
 ## Fuera de alcance de este port (decisión pendiente, no arquitectura-independiente o ambigua)
 
-- **`eps` fijo/no fijo**: en este repo `eps = Lfix/(10*pmax)` está
-  **activo** (no es el bug — es exactamente el código que confirmó la
-  regresión en el otro repo). No tocar.
-- **Normalización de `hk1`/`hk2` en `analysish.f90`** (sin factor
-  $8\pi^2 L$): ver `VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/h0_normalization_check.md`
+- **`eps` fijo/no fijo**: ~~en este repo `eps = Lfix/(10*pmax)` está
+  **activo**~~. **Desactualizado (2026-09-23, E20):** desde `23e03de` `eps`
+  es un parámetro de entrada con valor 0 por omisión y no se deriva de
+  `pmax`.
+- **Normalización de `hk1`/`hk2` en `analysish.f90`** ~~(sin factor
+  $8\pi^2 L$)~~ **Desactualizado (2026-09-23, E20):** `analysish.f90` ya
+  multiplica por $8\pi^2 L_0$, la medida que deja la delta en L: ver `VlasovPoisson_PIC_sp/Vlasov_Poisson_evolutions/h0_normalization_check.md`
   — es la misma ambigüedad de interpretación del paper que ese
   documento dejó abierta, no un bug claro. No tocar sin decidir esto
   primero.
