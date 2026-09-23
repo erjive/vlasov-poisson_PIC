@@ -8,7 +8,7 @@ reproducir/
 ├── correr.sh          corre las simulaciones de un grupo, una detrás de otra
 ├── corridas/
 │   ├── base/          archivos base (base_dftest.par, base_selfgrav.par)
-│   ├── 08_verificacion/   66 corridas: estudio agnóstico y capturas (sección 8)
+│   ├── 08_verificacion/   67 corridas: estudio agnóstico y capturas (sección 8)
 │   ├── 09_autogravedad/   30 corridas: caso de estudio y mapa numérico (secciones 9-10)
 │   └── 11_landau/         10 corridas: equilibrio autoconsistente (sección 11)
 ├── scripts/           análisis, estados iniciales, teoría lineal
