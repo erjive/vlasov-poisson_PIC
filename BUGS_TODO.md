@@ -1575,7 +1575,9 @@ son bugs propios de este repo.
   de cuadratura (1e-3 con N = 100, 7e-6 con N = 1e5 en h_k(0)). **vlasov_rhomix: corregido el
   2026-09-23** (E14): es la masa de la cáscara sobre su volumen; antes daba 38 veces más en
   `sg__quad` con [5, 8]. **Tamaño de la malla: corregido el 2026-09-23** (E16): se redondea
-  (rmax-rmin)/dr; antes la malla llegaba a 20.05 con rmax = 20. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
+  (rmax-rmin)/dr; antes la malla llegaba a 20.05 con rmax = 20. **Caras de celda en `Sn(1)`:
+  corregido el 2026-09-23** (E22): una partícula sobre una cara depositaba 0, 1 o 2 veces su
+  masa en `rho` según el redondeo; ahora 1 siempre. El resto sigue pendiente. En `_sp` una esfera uniforme daba fuerza 3.7–5 veces la exacta en r=0.01 y
   densidad 1+dr²/12r² veces la verdadera. Aquí L0=2 mantiene las partículas en r≳2.6,
   así que el efecto esperado sobre la meseta y la medición de Landau es ~1e-4 relativo
   en la fuerza propia; no está medido. Portar las correcciones y repetir con ellas la

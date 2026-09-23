@@ -31,7 +31,7 @@ subroutine density
 
   integer i,j
   real(8) :: smallpi,factor,average_rho
-  real(8) :: cutoff_rho,cutoff_avg,sval,simg,wd,wi,vol
+  real(8) :: cutoff_rho,cutoff_avg,sval,simg,wd,wi,vol,yd,yi,tolS
   integer :: Wcell,c,clo,chi,pp
   integer, allocatable :: cell_start(:),particle_order(:)
   logical :: images
@@ -108,13 +108,19 @@ subroutine density
 ! This density is only written out; poisson_rk takes its own from
 ! avg_density.
 
-  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval,simg,wd,wi,vol)
+  !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(c,clo,chi,pp,j,sval,simg,wd,wi,vol,yd,yi,tolS)
 
   do i=1,Nr
 
     clo = max(1,i-Wcell)
     chi = min(Nr,i+Wcell)
     vol = dr + dble(bsplineorder+1)*dr**3/(12.d0*r(i)**2)
+!   A particle on the face between two cells has |y| = 1/2 give or take a
+!   few ulp, and the top hat of Sn(1) would then count it whole in one cell,
+!   in both or in neither, depending on the last bit (E22). Everything
+!   within tolS of the face is snapped to it, where tolS is the rounding of
+!   y = (r_i - r_j)/drc, which grows with r_i/drc.
+    tolS = 8.0d0*epsilon(1.0d0)*max(1.0d0,abs(r(i))/drc)
 
     do c=clo,chi
       do pp=cell_start(c),cell_start(c+1)-1
@@ -122,8 +128,16 @@ subroutine density
 
         sval = 0.0d0
         simg = 0.0d0
-        if (abs(r(i)-r_part(j))<=cutoff_rho) sval = Sn(bsplineorder,(r(i)-r_part(j))/drc,drc)
-        if (images .and. abs(r(i)+r_part(j))<=cutoff_rho) simg = Sn(bsplineorder,(r(i)+r_part(j))/drc,drc)
+        if (abs(r(i)-r_part(j))<=cutoff_rho) then
+          yd = (r(i)-r_part(j))/drc
+          if (abs(abs(yd)-0.5d0) <= tolS) yd = sign(0.5d0,yd)
+          sval = Sn(bsplineorder,yd,drc)
+        end if
+        if (images .and. abs(r(i)+r_part(j))<=cutoff_rho) then
+          yi = (r(i)+r_part(j))/drc
+          if (abs(abs(yi)-0.5d0) <= tolS) yi = sign(0.5d0,yi)
+          simg = Sn(bsplineorder,yi,drc)
+        end if
 
         if (sval /= 0.0d0 .or. simg /= 0.0d0) then
           rho(i) = rho(i) + f(j)*(sval + simg)

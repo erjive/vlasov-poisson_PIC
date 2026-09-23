@@ -22,8 +22,21 @@ module functions
 
     if (n==1) then
 
-      if (abs(y) <= 0.5d0) then
+!     Top hat. It was closed at both ends, |y| <= 1/2, so a particle sitting
+!     on the face between two cells counted whole in each of them, twice its
+!     mass, and with the images of density() the same happened at r = 0
+!     (AUDITORIA_L0_2026-09-21.md, E22). Half the weight at the face is the
+!     mean of the two one-sided limits and adds up to one.
+!
+!     A particle on a face lands at |y| = 1/2 give or take a few ulp, and
+!     which side of the test each of its two neighbours falls on would then
+!     be decided by the last bit, so the caller (density) snaps y to +-1/2
+!     there: it knows r_i, and the rounding of y grows with r_i/drc.
+
+      if (abs(y) < 0.5d0) then
         Sn = 1.d0
+      else if (abs(y) == 0.5d0) then
+        Sn = 0.5d0
       else
         Sn = 0.d0
       end if
