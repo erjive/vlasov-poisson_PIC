@@ -23,6 +23,7 @@
 
     use parameters
     use arrays
+!$  use omp_lib
 
     implicit none
 
@@ -32,6 +33,9 @@
     complex(8) :: ii                          !imaginary unit
     complex(8) :: expv                        !exp(-ii*Qr(j)) for the current particle
     complex(8),dimension(0:4) :: hk1,hk2           !h_k mode
+    complex(8),dimension(0:4) :: lh1,lh2           !Partial sums of one thread
+    complex(8),allocatable :: parth(:,:,:)
+    integer  :: nth,tid
     real(8),dimension(0:4) :: abs_hk1,abs_hk2       !Magnitude h_k mode
     integer  :: i,j,k                         !Counters
     integer  :: mode = 4                          !Number of modes
@@ -151,13 +155,25 @@
     hk1 = (0.d0,0.d0)
     hk2 = (0.d0,0.d0)
 
-! Accumulate the Monte Carlo sum. Contributions are independent and only
-! added, so the loop runs in parallel with a reduction on the two
-! five-element accumulators; no atomics are needed. The loop is split
-! over particles rather than over modes because there are only five
-! modes but 10^3-10^6 particles.
+! Accumulate the sum over particles. Each thread adds its share into local
+! accumulators, combined afterwards in thread order, with a static split so
+! every run gives each thread the same particles. An OpenMP reduction
+! combines the parts in the order the threads finish, which varies from run
+! to run and changed the last bits: two runs of the same binary differed by
+! ~1e-15 in h_k (AUDITORIA_L0_2026-09-21.md, E17). Same scheme as
+! VlasovPoisson_PIC_sp (e6d2011). The result still depends on the number of
+! threads. The loop is split over particles rather than over modes because
+! there are only five modes but 10^3-10^6 particles.
 
-    !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(j,i,bj1,bj2,expv) REDUCTION(+:hk1,hk2)
+    nth = 1
+!$  nth = omp_get_max_threads()
+    allocate(parth(0:mode,2,0:nth-1))
+    parth = (0.d0,0.d0)
+
+    !$OMP PARALLEL PRIVATE(j,i,bj1,bj2,expv,lh1,lh2,tid)
+    lh1 = (0.d0,0.d0)
+    lh2 = (0.d0,0.d0)
+    !$OMP DO SCHEDULE(STATIC)
     do j=1,Npart
 
       if (.not. bound(j)) cycle
@@ -167,17 +183,28 @@
       bj1 = exp(-(Jr(j)-j1)**2/sj1**2)*Jr(j)**2
       bj2 = exp(-(Jr(j)-j2)**2/sj2**2)*Jr(j)**2
 
-      hk1(0) = hk1(0) + f(j)*bj1*cq1(0)
-      hk2(0) = hk2(0) + f(j)*bj2*cq2(0)
+      lh1(0) = lh1(0) + f(j)*bj1*cq1(0)
+      lh2(0) = lh2(0) + f(j)*bj2*cq2(0)
 
       expv = exp(-ii*Qr(j))
       do i=1,mode
-        hk1(i) = hk1(i) + f(j)*bj1*cq1(i)*expv**i
-        hk2(i) = hk2(i) + f(j)*bj2*cq2(i)*expv**i
+        lh1(i) = lh1(i) + f(j)*bj1*cq1(i)*expv**i
+        lh2(i) = lh2(i) + f(j)*bj2*cq2(i)*expv**i
       end do
 
     end do
-    !$OMP END PARALLEL DO
+    !$OMP END DO
+    tid = 0
+!$  tid = omp_get_thread_num()
+    parth(:,1,tid) = lh1(0:mode)
+    parth(:,2,tid) = lh2(0:mode)
+    !$OMP END PARALLEL
+
+    do tid=0,nth-1
+      hk1(0:mode) = hk1(0:mode) + parth(:,1,tid)
+      hk2(0:mode) = hk2(0:mode) + parth(:,2,tid)
+    end do
+    deallocate(parth)
 
     hk1 = drc*dpc*hk1
     hk2 = drc*dpc*hk2
