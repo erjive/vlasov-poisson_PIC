@@ -37,9 +37,14 @@ from landau_libre import omega_de_J
 J1, SJ1 = 0.10, 0.10                 # función de prueba de 11_landau
 
 
-def prueba(j1, sj1):
-    """B(J) = J^2 exp(-(J - j1)^2/sj1^2), la función de prueba de h_1 (j1, sj1 del .par)."""
-    return lambda J: np.exp(-(J - j1)**2/sj1**2)*J**2
+def prueba(j1, sj1, pb=2.0):
+    """B(J) = J^pb exp(-(J - j1)^2/sj1^2), la función de prueba de h_1 (j1, sj1 del .par).
+
+    pb = 2 es la del código (analysish.f90). B(J) e^{-ikQ} es continua en la órbita
+    circular si pb >= k/2; pb = 2 cubre hasta k = 4."""
+    if pb == 2.0:
+        return lambda J: np.exp(-(J - j1)**2/sj1**2)*J**2
+    return lambda J: np.exp(-(J - j1)**2/sj1**2)*J**pb
 
 
 def params_eq(eqf):
@@ -90,8 +95,8 @@ def radios(eqf, nj, nq, cache):
 
 
 def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, verboso=True,
-             j1=J1, sj1=SJ1):
-    B = prueba(j1, sj1)
+             j1=J1, sj1=SJ1, pb=2.0):
+    B = prueba(j1, sj1, pb)
     eq = np.load(eqf)
     A = float(eq['A'])
     sigma, jmx, l0 = params_eq(eqf)
@@ -173,9 +178,10 @@ if __name__ == '__main__':
     ap.add_argument('--libre', action='store_true')
     ap.add_argument('--j1', type=float, default=J1, help='centro de la función de prueba B(J)')
     ap.add_argument('--sj1', type=float, default=SJ1, help='ancho de la función de prueba B(J)')
+    ap.add_argument('--pb', type=float, default=2.0, help='exponente de J en B(J) (2: el del código)')
     a = ap.parse_args()
     t, h1, h2, rmed, dphi = resolver(a.eq, a.nj, a.nq, a.dt, a.tmax, a.libre,
-                                     j1=a.j1, sj1=a.sj1)
+                                     j1=a.j1, sj1=a.sj1, pb=a.pb)
     np.savez(a.salida, t=t, h1=h1, h2=h2, r=rmed, dphi=dphi,
              nj=a.nj, nq=a.nq, dt=a.dt, libre=a.libre, j1=a.j1, sj1=a.sj1)
     print('escrito', a.salida)
