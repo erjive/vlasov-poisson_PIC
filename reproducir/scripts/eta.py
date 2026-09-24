@@ -25,67 +25,94 @@ Además reporta las dos escalas de tiempo que fijan cuánto hay que correr:
                                            en J: más allá, la meseta es un
                                            artefacto, y el límite baja con k
 
+Dos formas de F_eq (las de equilibrio.py):
+  gauss     J^2 exp(-J^2/sigma^2): soporte infinito; la banda se toma donde F
+            supera UMBRAL de su máximo, y depende de ese umbral.
+  politropo J^m (J_t - J)^k en [0, J_t): soporte compacto; la banda es
+            exacta, [Omega(J_t), Omega(0)], y no hay umbral.
+
 Uso:
     python3 eta.py --sigma 0.05 --a0 0.008 0.025 0.05 0.083 0.125
     python3 eta.py --sigma 0.03 --l0 1 --a0 0.01 0.04 --nrc 400
+    python3 eta.py --forma politropo --jt 0.138 --k 3 --m 2 --a0 0.02 0.05 0.1
 """
 import os, sys, argparse, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from equilibrio import Equilibrio, F_forma, SIGMA_J, J_MAX
+from equilibrio import Equilibrio, F_perfil, SIGMA_J, J_MAX
 from aa_numerico import L0 as L0_OMISION
 
-UMBRAL = 0.01          # soporte: donde F_eq supera esta fracción de su máximo
+UMBRAL = 0.01          # soporte (gauss): donde F_eq supera esta fracción de su máximo
 
 
-def banda(a0, sigma, jmax, l0, nj=4000, verboso=False):
+def banda(a0, sigma, jmax, l0, nj=4000, verboso=False, forma='gauss', jt=None, k=None, m=0.0):
     """Banda de Omega sobre el soporte de F_eq, en el equilibrio autoconsistente."""
-    eq = Equilibrio(a0, sigma=sigma, jmax=jmax, l0=l0)
+    eq = Equilibrio(a0, sigma=sigma, jmax=jmax, l0=l0, forma=forma, jt=jt, k=k, m=m)
     if a0 > 0:
         eq.iterar(tol=1e-10, maxit=25, verboso=verboso)
     else:                                   # a0 = 0: el isócrono desnudo
-        m = eq.mapa()
-        eq.E_t, eq.J_t = eq.tabla_J_de_E(m)
-    J = np.linspace(1e-4, jmax, nj)
+        mapa = eq.mapa()
+        eq.E_t, eq.J_t = eq.tabla_J_de_E(mapa)
+    if forma == 'politropo':
+        J = np.linspace(0.0, jt, nj)        # soporte exacto, bordes incluidos
+    else:
+        J = np.linspace(1e-4, jmax, nj)
     E = np.interp(J, eq.J_t, eq.E_t)
     Om = np.gradient(E, J)                  # Omega = dE/dJ
-    F = F_forma(J, sigma)
-    sop = F >= UMBRAL*F.max()
+    F = F_perfil(J, forma, sigma, jt, k, m)
+    sop = np.ones(nj, bool) if forma == 'politropo' else F >= UMBRAL*F.max()
     media = np.sum(F[sop]*Om[sop])/np.sum(F[sop])
-    dOm = np.gradient(Om, J)
-    return dict(J_lo=J[sop][0], J_hi=J[sop][-1], Om_min=Om[sop].min(),
-                Om_max=Om[sop].max(), Om_media=media,
-                dOmdJ=np.abs(np.interp(0.5*(J[sop][0] + J[sop][-1]), J, dOm)))
+    # |dOmega/dJ| como pendiente media sobre el soporte: derivar dos veces la
+    # tabla E(J), interpolada linealmente, da ruido de orden uno de un nodo al siguiente.
+    J_lo, J_hi = J[sop][0], J[sop][-1]
+    return dict(J_lo=J_lo, J_hi=J_hi, Om_min=Om[sop].min(), Om_max=Om[sop].max(),
+                Om_media=media, dOmdJ=(Om[sop].max() - Om[sop].min())/(J_hi - J_lo))
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--a0', type=float, nargs='+', required=True)
-    ap.add_argument('--sigma', type=float, default=SIGMA_J)
+    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo'])
+    ap.add_argument('--sigma', type=float, default=SIGMA_J, help='ancho en J (gauss)')
+    ap.add_argument('--jt', type=float, default=None, help='borde del soporte (politropo)')
+    ap.add_argument('--k', type=float, default=3.0, help='exponente del borde (politropo)')
+    ap.add_argument('--m', type=float, default=0.0, help='exponente en J = 0 (politropo)')
     ap.add_argument('--jmax', type=float, default=None,
-                    help='por omisión, 6 sigma (el soporte de J^2 exp(-J^2/sigma^2))')
+                    help='por omisión, 6 sigma (gauss) o J_t (politropo)')
     ap.add_argument('--l0', type=float, default=L0_OMISION)
     ap.add_argument('--nrc', type=int, default=400, help='nodos en J, para la recurrencia')
     ap.add_argument('--kmax', type=int, default=4, help='modo más alto que se quiere fiable')
     ap.add_argument('--npart', type=int, default=None,
                     help='partículas, para estimar el costo (por omisión nrc*25)')
     arg = ap.parse_args()
-    jmax = arg.jmax if arg.jmax is not None else 6*arg.sigma
+    if arg.forma == 'politropo':
+        if arg.jt is None:
+            raise SystemExit('la forma politropo necesita --jt')
+        jmax = arg.jmax if arg.jmax is not None else arg.jt
+    else:
+        jmax = arg.jmax if arg.jmax is not None else 6*arg.sigma
     npart = arg.npart if arg.npart is not None else 25*arg.nrc
+    kw = dict(forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m)
 
-    ref = banda(0.0, arg.sigma, jmax, arg.l0)
-    c = 0.5*(arg.l0 + np.sqrt(arg.l0**2 + 4))
-    print(f'L0 = {arg.l0:g}   sigma_J = {arg.sigma:g}   J_max = {jmax:g}   '
-          f'Nrc = {arg.nrc}   N = {npart}')
-    print(f'soporte (F > {UMBRAL:g} F_max): J en [{ref["J_lo"]:.4f}, {ref["J_hi"]:.4f}];  '
-          f'periodo radial 2 pi/Omega = {2*np.pi/ref["Om_media"]:.1f}')
+    ref = banda(0.0, arg.sigma, jmax, arg.l0, **kw)
+    if arg.forma == 'politropo':
+        pre = '' if arg.m == 0 else f'J^{arg.m:g} '
+        print(f'L0 = {arg.l0:g}   F_eq = {pre}(J_t - J)^{arg.k:g}, J_t = {arg.jt:g}   '
+              f'J_max = {jmax:g}   Nrc = {arg.nrc}   N = {npart}')
+        print(f'soporte exacto: J en [0, {arg.jt:g}];  '
+              f'periodo radial 2 pi/Omega = {2*np.pi/ref["Om_media"]:.1f}')
+    else:
+        print(f'L0 = {arg.l0:g}   sigma_J = {arg.sigma:g}   J_max = {jmax:g}   '
+              f'Nrc = {arg.nrc}   N = {npart}')
+        print(f'soporte (F > {UMBRAL:g} F_max): J en [{ref["J_lo"]:.4f}, {ref["J_hi"]:.4f}];  '
+              f'periodo radial 2 pi/Omega = {2*np.pi/ref["Om_media"]:.1f}')
     print()
     cab = (f'{"a0":>8} {"banda Omega":>21} {"ancho/media":>12} {"corrim.":>9} '
            f'{"eta":>7} {"tau_1":>8} {"t final":>9} {"T_rec(k=%d)" % arg.kmax:>11} '
            f'{"pasos":>9} {"costo 4 hilos":>14}')
     print(cab); print('-'*len(cab))
     for a0 in arg.a0:
-        b = banda(a0, arg.sigma, jmax, arg.l0)
+        b = banda(a0, arg.sigma, jmax, arg.l0, **kw)
         ancho = b['Om_max'] - b['Om_min']
         rel = ancho/b['Om_media']
         corr = abs(b['Om_media'] - ref['Om_media'])/ref['Om_media']

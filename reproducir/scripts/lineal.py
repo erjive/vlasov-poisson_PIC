@@ -19,20 +19,26 @@ Discretización:
     con m = 8 pi^2 L0 dF dQ dJ y la capa propia contada a medias. Los radios no
     cambian, así que el orden se calcula una vez.
 
-h_1(t) = sum dF B(J) e^{-iQ} / sum F_eq B(J), con dF(t=0) = F_eq cos Q: es
-directamente comparable con (h_1(eps) - h_1(0))/eps de las simulaciones.
+h_1(t) = sum dF B(J) e^{-iQ} / sum F_eq B(J), con dF(t=0) = F_eq s(J) cos Q y
+s = 1 o sqrt(J/J_max) según la perturbación del equilibrio ('pert', ver
+equilibrio.condicion_inicial): es directamente comparable con
+(h_1(eps) - h_1(0))/eps de las simulaciones.
 
 Uso:  python3 lineal.py <archivo _equilibrio.npz> <salida.npz> [--nj 1600] [--nq 32]
-      [--dt 0.5] [--tmax 3000] [--libre]
+      [--dt 0.5] [--tmax 3000] [--libre] [--j1 0.10] [--sj1 0.10]
 """
 import os, sys, argparse, time, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, L0
-from equilibrio import invertir, F_forma, J_MAX
+from equilibrio import invertir, F_forma, F_perfil, dF_perfil, J_MAX
 from landau_libre import omega_de_J
 
-J1, SJ1 = 0.10, 0.10
-B = lambda J: np.exp(-(J - J1)**2/SJ1**2)*J**2
+J1, SJ1 = 0.10, 0.10                 # función de prueba de 11_landau
+
+
+def prueba(j1, sj1):
+    """B(J) = J^2 exp(-(J - j1)^2/sj1^2), la función de prueba de h_1 (j1, sj1 del .par)."""
+    return lambda J: np.exp(-(J - j1)**2/sj1**2)*J**2
 
 
 def params_eq(eqf):
@@ -42,6 +48,17 @@ def params_eq(eqf):
     jmx = float(d['J_max']) if 'J_max' in d.files else J_MAX
     l0 = float(d['L0']) if 'L0' in d.files else L0
     return sig, jmx, l0
+
+
+def forma_eq(eqf):
+    """(forma, J_borde, k_borde, m_borde, pert) del equilibrio; los de 11_landau si el archivo es anterior."""
+    d = np.load(eqf)
+    forma = str(d['forma']) if 'forma' in d.files else 'gauss'
+    jt = float(d['J_borde']) if 'J_borde' in d.files else None
+    kb = float(d['k_borde']) if 'k_borde' in d.files else None
+    mb = float(d['m_borde']) if 'm_borde' in d.files else 0.0
+    pert = str(d['pert']) if 'pert' in d.files else 'plana'
+    return forma, jt, kb, mb, pert
 
 
 def dF_forma(J, sigma):
@@ -70,7 +87,9 @@ def radios(eqf, nj, nq, cache):
     return r
 
 
-def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, verboso=True):
+def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, verboso=True,
+             j1=J1, sj1=SJ1):
+    B = prueba(j1, sj1)
     eq = np.load(eqf)
     A = float(eq['A'])
     sigma, jmx, l0 = params_eq(eqf)
@@ -82,8 +101,13 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
     orden = np.argsort(r)
     rs = r[orden]
     om = omega_de_J(eq['E_t'], eq['J_t'])(Jn)
-    Feq = A*F_forma(Jn, sigma)
-    dFeq = A*dF_forma(Jn, sigma)
+    forma, jt, kb, mb, pert = forma_eq(eqf)
+    if forma == 'gauss':
+        Feq = A*F_forma(Jn, sigma)
+        dFeq = A*dF_forma(Jn, sigma)
+    else:
+        Feq = A*F_perfil(Jn, forma, sigma, jt, kb, mb)
+        dFeq = A*dF_perfil(Jn, forma, sigma, jt, kb, mb)
     k = np.fft.fftfreq(nq, 1.0/nq)                 # enteros 0..nq/2-1, -nq/2..-1
     fase = np.exp(-1j*np.outer(om, k)*dt)          # transporte exacto en Q
     peso = 8*np.pi**2*l0*dQ*dJ
@@ -102,7 +126,10 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
         dphidQ = np.real(np.fft.ifft(1j*k[None, :]*np.fft.fft(dPhi(dF), axis=1), axis=1))
         return dF + h*dFeq[:, None]*dphidQ
 
-    dF = Feq[:, None]*np.cos(Qn)[None, :]
+    if pert == 'plana':
+        dF = Feq[:, None]*np.cos(Qn)[None, :]
+    else:
+        dF = (Feq*np.sqrt(Jn/jmx))[:, None]*np.cos(Qn)[None, :]
     norma = np.sum(Feq*B(Jn))*nq
     eQ = np.exp(-1j*Qn)
     pasos = int(round(tmax/dt)); nsal = int(round(cada/dt))
@@ -135,8 +162,11 @@ if __name__ == '__main__':
     ap.add_argument('--dt', type=float, default=0.5)
     ap.add_argument('--tmax', type=float, default=3000.0)
     ap.add_argument('--libre', action='store_true')
+    ap.add_argument('--j1', type=float, default=J1, help='centro de la función de prueba B(J)')
+    ap.add_argument('--sj1', type=float, default=SJ1, help='ancho de la función de prueba B(J)')
     a = ap.parse_args()
-    t, h1, h2, rmed, dphi = resolver(a.eq, a.nj, a.nq, a.dt, a.tmax, a.libre)
+    t, h1, h2, rmed, dphi = resolver(a.eq, a.nj, a.nq, a.dt, a.tmax, a.libre,
+                                     j1=a.j1, sj1=a.sj1)
     np.savez(a.salida, t=t, h1=h1, h2=h2, r=rmed, dphi=dphi,
-             nj=a.nj, nq=a.nq, dt=a.dt, libre=a.libre)
+             nj=a.nj, nq=a.nq, dt=a.dt, libre=a.libre, j1=a.j1, sj1=a.sj1)
     print('escrito', a.salida)
