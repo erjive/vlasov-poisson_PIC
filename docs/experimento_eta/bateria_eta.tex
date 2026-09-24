@@ -286,37 +286,121 @@ batería: la mitad de la corrida para que termine la mezcla libre y la otra mita
 para ajustar lo que quede. Para $\delta\Phi$ la cuenta es otra, y es el tema del
 párrafo siguiente.
 
-\paragraph{La cola libre de $\delta\Phi$ y la forma de $F_{\rm eq}$ en $J=0$.}
-$h_1$ pesa con $B(J)$, que es suave y se anula como $J^2$. El observable principal
-del protocolo (sección~\ref{sec:protocolo}) es en cambio la perturbación del
-potencial en un radio fijo, que sin autogravedad también es una cuadratura
-exacta:
+\paragraph{Cualquier observable lineal.} Lo anterior se hizo para $h_1$, pero el
+argumento vale para cualquier cantidad lineal en la perturbación. Una cantidad así
+es la integral de $\delta F$ sobre el espacio fase, pesada por una función fija
+$a(Q,J)$ que define el observable,
+\[
+  O(t) = \iint dQ\,dJ\;a(Q,J)\,\delta F(Q,J,t),
+\]
+con $dQ\,dJ=dr\,dp_r$ porque el cambio a acción-ángulo es canónico. Sin
+autogravedad cada partícula conserva $J$ y su ángulo avanza con $\Omega(J)$, así que
+$\delta F(Q,J,t)=\varepsilon\,F_{\rm eq}(J)\,s(J)\cos\big(Q-\Omega(J)t\big)$. Al
+integrar primero en $Q$, con $\cos x=(e^{ix}+e^{-ix})/2$, solo sobreviven los
+coeficientes de Fourier $k=\pm1$ del peso a lo largo de cada órbita:
+\[
+  O(t) = \pi\varepsilon\int dJ\;F_{\rm eq}(J)\,s(J)\,
+  \Big[a_1(J)\,e^{-i\Omega(J)t}+a_{-1}(J)\,e^{i\Omega(J)t}\Big],
+\]
+\[
+  a_{\pm1}(J)=\frac{1}{2\pi}\int dQ\;a(Q,J)\,e^{\pm iQ}.
+\]
+Para un peso real, $a_{-1}=a_1^*$ y $O(t)=2\pi\varepsilon\,\mathrm{Re}\int dJ\,a_1F_{\rm eq}s\,e^{-i\Omega t}$.
+Toda la dependencia en el tiempo está en $e^{-i\Omega(J)t}$; el observable entra
+solo por $a_1(J)$, que dice cuánto pesa cada órbita en él. La regla de las colas
+se aplica entonces al producto $a_1F_{\rm eq}s$: cada punto $J_e$ donde se comporta
+como $|J-J_e|^\alpha$, sea un borde de la banda o un punto interior, aporta una
+cola $\propto t^{-(\alpha+1)}$ con frecuencia $\Omega(J_e)$, y donde el producto es
+suave el decaimiento es más rápido que cualquier potencia. Pasar de $J$ a $\Omega$
+no cambia el exponente, porque $d\Omega/dJ$ no se anula.
+
+\paragraph{$\delta\Phi$: la proyección sobre la función de Green.} El observable
+principal del protocolo (sección~\ref{sec:protocolo}), la perturbación del
+potencial en un radio fijo, es de este tipo y no involucra ninguna función de
+prueba. Por Poisson, $\delta\Phi(r)=\int G(r,r')\,\delta\rho(r')\,d^3r'$, con
+$G(r,r')=-1/\max(r,r')$ la función de Green de capas esféricas, y la densidad
+sale de integrar $\delta F$ con la medida $8\pi^2L_0$ de la reducción. En
+variables acción-ángulo el peso es la función de Green evaluada donde está la
+partícula, $a(Q,J)=8\pi^2L_0\,G\big(r,r(Q,J)\big)$, y
 \[
   \delta\Phi(r,t) = 8\pi^2L_0\,\varepsilon\;
   \mathrm{Re}\!\int dJ\;F_{\rm eq}(J)\,s(J)\,C(r,J)\,e^{-i\Omega(J)t},
   \qquad
-  C(r,J) = \int dQ\;e^{iQ}\,G\big(r,\,r(Q,J)\big),
+  C(r,J) = \int dQ\;e^{iQ}\,G\big(r,\,r(Q,J)\big).
 \]
-con $G(r,r')=-1/\max(r,r')$ la función de Green de capas esféricas y $s(J)$ el
-factor radial de la perturbación ($s=1$ en 11\_landau; sección~\ref{sec:perfil}).
-Dos propiedades de $C$ fijan la cola, por la regla de la sección anterior (un
-integrando que va como $x^a$ en un punto aporta $t^{-(a+1)}$):
+$s(J)$ es el factor radial de la perturbación ($s=1$ en 11\_landau;
+sección~\ref{sec:perfil}). Tres propiedades de $C$, que vienen solo de las órbitas
+y de Poisson, fijan la cola:
 \begin{itemize}
-\item Cerca de la órbita circular, $r(Q,J)\approx r_c+\sqrt{2J/\kappa}\,\cos Q$, así
-que $C\propto\sqrt J$. El extremo $J=0$ de la banda ($\Omega_{\max}$) aporta un
-integrando $\propto F_{\rm eq}\,s\,J^{1/2}$. Si $F_{\rm eq}(0)>0$, como en toda
-distribución monótona, la cola es $t^{-3/2}$ con $s=1$, $t^{-2}$ con
-$s=\sqrt{J/J_t}$ y $t^{-3}$ con $s=(J/J_t)^{3/2}$. Si $F_{\rm eq}\propto J^2$
-el integrando va como $J^{5/2}$, y la cola es $t^{-7/2}$.
-\item Donde un punto de retorno de la órbita cruza el radio $r$, la fracción de
-órbita más allá de $r$ crece como $(J-J_*)^{3/2}$, y $C$ hereda esa
-singularidad: una cola $t^{-5/2}$ con frecuencia $\Omega(J_*)$, dentro de la
-banda, \emph{para cualquier} $F_{\rm eq}$. $h_1$ no la tiene porque no mira un
-radio fijo.
+\item \textbf{Órbita circular.} Cerca de ella la órbita es un epiciclo,
+$r(Q,J)\approx r_c+\sqrt{2J/\kappa}\,\cos Q$; al desarrollar $G$ alrededor de $r_c$,
+lo que multiplica $\cos Q$ es proporcional a la amplitud, así que $C\propto\sqrt J$.
+El extremo $J=0$ de la banda ($\Omega_{\max}$) aporta un integrando
+$\propto F_{\rm eq}\,s\,J^{1/2}$. Si $F_{\rm eq}(0)>0$, como en toda distribución
+monótona, la cola es $t^{-3/2}$ con $s=1$, $t^{-2}$ con $s=\sqrt{J/J_t}$ y
+$t^{-3}$ con $s=(J/J_t)^{3/2}$; si $F_{\rm eq}\propto J^2$, $t^{-7/2}$.
+\item \textbf{Borde de vacío.} $C$ no se anula en $J_t$, así que si
+$F_{\rm eq}\propto(J_t-J)^k$ la cola es $t^{-(k+1)}$, en $\Omega_{\min}$.
+\item \textbf{Puntos de retorno.} $G$ tiene un quiebre en $r'=r$. Donde el
+pericentro o el apocentro de la órbita cruza el radio $r$, la fracción de órbita
+más allá de $r$ crece como $(J-J_*)^{3/2}$, y $C$ hereda esa singularidad: una cola
+$t^{-5/2}$ con frecuencia $\Omega(J_*)$, dentro de la banda, \emph{para cualquier}
+$F_{\rm eq}$.
 \end{itemize}
-Así que la parte libre de $\delta\Phi$ decae algebraicamente, aun con la
-gaussiana. La tabla~\ref{tab:colas} da los valores exactos para las familias de
-la sección~\ref{sec:familia}.
+Nada de esto depende de una función de prueba: la parte libre de $\delta\Phi$
+decae algebraicamente para toda distribución, aun para la gaussiana.
+
+\paragraph{$h_1$ y cualquier función de prueba.} $h_1$ es otro observable, con el
+peso elegido en el código, $a(Q,J)=B(J)\,e^{-iQ}$, de modo que $a_1=B$ y
+$a_{-1}=0$. Para una $B$ cualquiera que cerca de $J=0$ vaya como $J^p$ y no se
+anule en $J_t$, la misma regla da:
+\begin{itemize}
+\item en $J=0$ ($\Omega_{\max}$), una cola $t^{-(p+m+p_s+1)}$, con $F_{\rm eq}\sim J^m$ y
+$s\sim J^{p_s}$;
+\item en el borde de vacío, la misma $t^{-(k+1)}$ que $\delta\Phi$;
+\item y ninguna cola de puntos de retorno si $B$ es lisa en $J$, porque $h_1$ no
+mira un radio fijo.
+\end{itemize}
+El exponente $p$ no es del todo libre. En la órbita circular las coordenadas
+lisas son $x+iy\propto\sqrt J\,e^{iQ}$, así que un peso con dependencia $e^{-iQ}$
+es continuo allí solo si va como $\sqrt J$ por una función lisa de $J$: $p\ge1/2$.
+El caso genérico es $p=1/2$, y $\delta\Phi$ es genérico ($C\propto\sqrt J$). Un $p$
+mayor es una elección: la $B$ del código tiene $p=2$, y eso acelera en $3/2$
+potencias la cola del borde $\Omega_{\max}$ (tabla~\ref{tab:exponentes}).
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{L{5.6cm}ccc}
+\toprule
+contribución & $\delta\Phi$, o $h_1$ con $p=\tfrac12$ & $h_1$ con $B\sim J^p$ & $h_1$ del código, $p=2$\\
+\midrule
+$J=0$, $F_{\rm eq}(0)>0$, $s=1$ & $t^{-3/2}$ & $t^{-(p+1)}$ & $t^{-3}$\\
+$J=0$, $F_{\rm eq}(0)>0$, $s=\sqrt{J/J_t}$ & $t^{-2}$ & $t^{-(p+3/2)}$ & $t^{-7/2}$\\
+$J=0$, $F_{\rm eq}(0)>0$, $s=(J/J_t)^{3/2}$ & $t^{-3}$ & $t^{-(p+5/2)}$ & $t^{-9/2}$\\
+$J=0$, $F_{\rm eq}\propto J^2$, $s=1$ & $t^{-7/2}$ & $t^{-(p+3)}$ & $t^{-5}$\\
+borde de vacío, $F_{\rm eq}\propto(J_t-J)^k$ & $t^{-(k+1)}$ & $t^{-(k+1)}$ & $t^{-(k+1)}$\\
+puntos de retorno (solo a radio fijo) & $t^{-5/2}$ & no aparece & no aparece\\
+componente regenerada, $F_{\rm eq}'(0)\ne0$ & $t^{-2}$ & $t^{-(p+3/2)}$ & $t^{-7/2}$\\
+\bottomrule
+\end{tabular}
+\caption{Exponentes de las colas libres según el observable. La primera columna es
+la de cualquier observable genérico, $\delta\Phi$ incluido; las otras, las de $h_1$
+con una función de prueba que se anula como $J^p$. La última fila es la
+componente que regenera la autogravedad (tercera conclusión, más abajo).}
+\label{tab:exponentes}
+\end{table}
+
+Por eso lo que depende de $B$ no es la cola de $\delta\Phi$, sino cuánto de ella
+muestra $h_1$. Las órbitas casi circulares, que producen la cola de $\Omega_{\max}$,
+casi no pesan en $h_1$ con $p=2$; y $h_1$ no ve la de los puntos de retorno. Visto
+así, $\delta\Phi$ es él mismo una proyección sobre una ``función de prueba'', la
+función de Green, que nadie eligió y que tiene quiebres; $h_1$ es la proyección
+sobre una función lisa y elegida. La dinámica es la misma, y el polo de la
+respuesta autoconsistente tampoco depende del observable
+(sección~\ref{sec:lineal}): lo que el observable decide es qué se ve junto al polo.
+La tabla~\ref{tab:colas} da los valores exactos para las familias de la
+sección~\ref{sec:familia}.
 
 \begin{table}[!htbp]
 \centering
@@ -344,8 +428,9 @@ Wilson, $W_0=6$ & $(J/J_t)^{3/2}$ &
 \bottomrule
 \end{tabular}
 \caption{Decaimiento libre exacto (\texttt{colas\_\allowbreak libres.py}) con el
-ancho de A4, $\sigma_J=0.05$ o $J_t=0.138$: isócrono desnudo con $L_0=2$, $B(J)$
-con $j_1=s_{j1}=0.05$ y $\|\delta\Phi\|$ el valor rms en $r\in[3,15]$. ``Wilson''
+ancho de A4, $\sigma_J=0.05$ o $J_t=0.138$: isócrono desnudo con $L_0=2$ y
+$\|\delta\Phi\|$ el valor rms en $r\in[3,15]$. Las columnas de $\delta\Phi$ no usan
+ninguna función de prueba; la de $h_1$ usa la del código, $B=J^2e^{-(J-0.05)^2/0.05^2}$. ``Wilson''
 es la Maxwelliana rebajada con $g=2$ de la sección~\ref{sec:familia}. La
 pendiente es $d\ln\|\delta\Phi\|/d\ln t$ entre $20$ y $40\,\tau_1$ y confirma los
 exponentes predichos: $-3/2$, $-2$ y, con $s=(J/J_t)^{3/2}$, una cola del borde
@@ -368,8 +453,9 @@ perturbación lisa debe anularse; hay que compensarlo con $\varepsilon$ mayor
 (sección~\ref{sec:perfil}). Tercera: la condición inicial solo controla la parte
 \emph{libre}. La respuesta autoconsistente cerca de $J=0$ es
 $\delta F_1\propto F_{\rm eq}'(0)\,\delta\Phi_1(J)$, con $\delta\Phi_1\propto\sqrt J$:
-la autogravedad regenera una componente con la regularidad de $s=\sqrt{J/J_t}$ y
-cola $t^{-2}$ en $\Omega_{\max}$, con amplitud proporcional al acoplamiento. En
+la autogravedad regenera una componente con la regularidad de $s=\sqrt{J/J_t}$,
+con amplitud proporcional al acoplamiento, y cola $t^{-2}$ en $\Omega_{\max}$ en
+$\delta\Phi$ (y en cualquier observable genérico; en $h_1$ con $p=2$, $t^{-7/2}$). En
 una distribución que se anula como $J^2$, $F_{\rm eq}'(0)=0$ y esa componente no
 aparece. La teoría lineal lo confirma: en A1, extendida a $60\,\tau_1$, la señal
 tardía está en $\Omega_{\max}$ y decae con pendiente $-2.2$
