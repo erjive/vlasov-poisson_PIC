@@ -30,36 +30,44 @@ Dos formas de F_eq (las de equilibrio.py):
             supera UMBRAL de su máximo, y depende de ese umbral.
   politropo J^m (J_t - J)^k en [0, J_t): soporte compacto; la banda es
             exacta, [Omega(J_t), Omega(0)], y no hay umbral.
+  maxwell   Maxwelliana rebajada E_gamma(k, (E_t - E)/T), con E_t = E(J_t) y
+            T = (E_t - E_c)/W0 en el potencial autoconsistente: también de
+            soporte exacto [0, J_t].
 
 Uso:
     python3 eta.py --sigma 0.05 --a0 0.008 0.025 0.05 0.083 0.125
     python3 eta.py --sigma 0.03 --l0 1 --a0 0.01 0.04 --nrc 400
     python3 eta.py --forma politropo --jt 0.138 --k 3 --m 2 --a0 0.02 0.05 0.1
+    python3 eta.py --forma maxwell --jt 0.138 --k 3 --w0 3 --a0 0.02 0.05 0.1
 """
 import os, sys, argparse, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from equilibrio import Equilibrio, F_perfil, SIGMA_J, J_MAX
+from equilibrio import Equilibrio, F_perfil, F_maxwell, maxwell_borde, SIGMA_J, J_MAX
 from aa_numerico import L0 as L0_OMISION
 
 UMBRAL = 0.01          # soporte (gauss): donde F_eq supera esta fracción de su máximo
 
 
-def banda(a0, sigma, jmax, l0, nj=4000, verboso=False, forma='gauss', jt=None, k=None, m=0.0):
+def banda(a0, sigma, jmax, l0, nj=4000, verboso=False, forma='gauss', jt=None, k=None, m=0.0,
+          w0=None):
     """Banda de Omega sobre el soporte de F_eq, en el equilibrio autoconsistente."""
-    eq = Equilibrio(a0, sigma=sigma, jmax=jmax, l0=l0, forma=forma, jt=jt, k=k, m=m)
+    eq = Equilibrio(a0, sigma=sigma, jmax=jmax, l0=l0, forma=forma, jt=jt, k=k, m=m, w0=w0)
     if a0 > 0:
         eq.iterar(tol=1e-10, maxit=25, verboso=verboso)
     else:                                   # a0 = 0: el isócrono desnudo
         mapa = eq.mapa()
         eq.E_t, eq.J_t = eq.tabla_J_de_E(mapa)
-    if forma == 'politropo':
+    if forma in ('politropo', 'maxwell'):
         J = np.linspace(0.0, jt, nj)        # soporte exacto, bordes incluidos
     else:
         J = np.linspace(1e-4, jmax, nj)
     E = np.interp(J, eq.J_t, eq.E_t)
     Om = np.gradient(E, J)                  # Omega = dE/dJ
-    F = F_perfil(J, forma, sigma, jt, k, m)
-    sop = np.ones(nj, bool) if forma == 'politropo' else F >= UMBRAL*F.max()
+    if forma == 'maxwell':                  # la forma en J depende del potencial
+        F = F_maxwell(E, *maxwell_borde(eq.E_t, eq.J_t, jt, w0), k)
+    else:
+        F = F_perfil(J, forma, sigma, jt, k, m)
+    sop = np.ones(nj, bool) if forma in ('politropo', 'maxwell') else F >= UMBRAL*F.max()
     media = np.sum(F[sop]*Om[sop])/np.sum(F[sop])
     # |dOmega/dJ| como pendiente media sobre el soporte: derivar dos veces la
     # tabla E(J), interpolada linealmente, da ruido de orden uno de un nodo al siguiente.
@@ -72,30 +80,38 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--a0', type=float, nargs='+', required=True)
-    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo'])
+    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo', 'maxwell'])
     ap.add_argument('--sigma', type=float, default=SIGMA_J, help='ancho en J (gauss)')
-    ap.add_argument('--jt', type=float, default=None, help='borde del soporte (politropo)')
-    ap.add_argument('--k', type=float, default=3.0, help='exponente del borde (politropo)')
+    ap.add_argument('--jt', type=float, default=None, help='borde del soporte (politropo, maxwell)')
+    ap.add_argument('--k', type=float, default=3.0, help='exponente del borde (politropo, maxwell)')
     ap.add_argument('--m', type=float, default=0.0, help='exponente en J = 0 (politropo)')
+    ap.add_argument('--w0', type=float, default=None, help='profundidad (E_t - E_c)/T (maxwell)')
     ap.add_argument('--jmax', type=float, default=None,
-                    help='por omisión, 6 sigma (gauss) o J_t (politropo)')
+                    help='por omisión, 6 sigma (gauss) o J_t (politropo, maxwell)')
     ap.add_argument('--l0', type=float, default=L0_OMISION)
     ap.add_argument('--nrc', type=int, default=400, help='nodos en J, para la recurrencia')
     ap.add_argument('--kmax', type=int, default=4, help='modo más alto que se quiere fiable')
     ap.add_argument('--npart', type=int, default=None,
                     help='partículas, para estimar el costo (por omisión nrc*25)')
     arg = ap.parse_args()
-    if arg.forma == 'politropo':
+    if arg.forma in ('politropo', 'maxwell'):
         if arg.jt is None:
-            raise SystemExit('la forma politropo necesita --jt')
+            raise SystemExit(f'la forma {arg.forma} necesita --jt')
+        if arg.forma == 'maxwell' and arg.w0 is None:
+            raise SystemExit('la forma maxwell necesita --w0')
         jmax = arg.jmax if arg.jmax is not None else arg.jt
     else:
         jmax = arg.jmax if arg.jmax is not None else 6*arg.sigma
     npart = arg.npart if arg.npart is not None else 25*arg.nrc
-    kw = dict(forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m)
+    kw = dict(forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0)
 
     ref = banda(0.0, arg.sigma, jmax, arg.l0, **kw)
-    if arg.forma == 'politropo':
+    if arg.forma == 'maxwell':
+        print(f'L0 = {arg.l0:g}   F_eq = E_gamma({arg.k:g}, (E_t - E)/T), J_t = {arg.jt:g}, '
+              f'W0 = {arg.w0:g}   J_max = {jmax:g}   Nrc = {arg.nrc}   N = {npart}')
+        print(f'soporte exacto: J en [0, {arg.jt:g}];  '
+              f'periodo radial 2 pi/Omega = {2*np.pi/ref["Om_media"]:.1f}')
+    elif arg.forma == 'politropo':
         pre = '' if arg.m == 0 else f'J^{arg.m:g} '
         print(f'L0 = {arg.l0:g}   F_eq = {pre}(J_t - J)^{arg.k:g}, J_t = {arg.jt:g}   '
               f'J_max = {jmax:g}   Nrc = {arg.nrc}   N = {npart}')

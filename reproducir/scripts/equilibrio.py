@@ -17,7 +17,7 @@ La perturbación es F = F_eq(J) [1 + eps cos Q], que no cambia la masa.
 Uso:
     python3 equilibrio.py --a0 1e-2 --eps 0.1 --nrc 400 --npc 25 --salida exe/landau/ic.dat
 """
-import os, sys, argparse, numpy as np
+import os, sys, math, argparse, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, phi_iso, L0
 
@@ -53,6 +53,57 @@ def F_politropo(J, jt, k, m=0.0):
     J = np.asarray(J, float)
     F = np.where(J < jt, np.clip(jt - J, 0.0, None)**k, 0.0)
     return F if m == 0 else F*np.clip(J, 0.0, None)**m
+
+
+def E_gamma(g, x):
+    """E_gamma(g, x) = e^x P(g, x) = sum_n x^(g+n)/Gamma(g+n+1), para x >= 0.
+
+    P es la gamma incompleta inferior regularizada. g = 0 da e^x (Woolley),
+    g = 1 da e^x - 1 (King), g = 2 da e^x - 1 - x (Wilson). Cerca de x = 0 va como
+    x^g/Gamma(g+1); para x >> g tiende a e^x. La serie es de términos positivos:
+    no hay cancelación en el borde, al revés que en la forma cerrada."""
+    x = np.asarray(x, float)
+    t = x**g/math.gamma(g + 1)
+    suma = np.array(t, dtype=float, copy=True)
+    for n in range(1, 2000):
+        t = t*x/(g + n)
+        suma = suma + t
+        if np.all(t <= 1e-17*suma):
+            break
+    return suma
+
+
+def dE_gamma(g, x):
+    """d E_gamma(g, x)/dx = E_gamma(g, x) + x^(g-1)/Gamma(g)."""
+    x = np.asarray(x, float)
+    return E_gamma(g, x) + (x**(g - 1)/math.gamma(g) if g > 0 else 0.0)
+
+
+def maxwell_borde(E_tab, J_tab, jt, w0):
+    """(E_t, T) de la Maxwelliana rebajada en el potencial de la tabla J(E):
+    E_t = E(J_t) es la energía del borde y T = (E_t - E_c)/W0, con E_c = E(0) la
+    de la órbita circular."""
+    E_t = float(np.interp(jt, J_tab, E_tab))
+    return E_t, (E_t - float(E_tab[0]))/w0
+
+
+def F_maxwell(E, E_t, T, g):
+    """Maxwelliana rebajada (Gieles y Zocchi 2015): E_gamma(g, (E_t - E)/T) si E < E_t.
+
+    Es función de la energía, así que en cada radio da una distribución de p_r
+    exactamente gaussiana con dispersión sqrt(T), rebajada cerca de E_t: el
+    análogo de Maxwell-Boltzmann con truncación por marea. Monótona en E
+    (Antonov). g es el exponente del borde de vacío: el k de Hadžić y
+    colaboradores; g = 1 es King."""
+    E = np.asarray(E, float)
+    x = np.clip((E_t - E)/T, 0.0, None)
+    return np.where(E < E_t, E_gamma(g, x), 0.0)
+
+
+def dFdE_maxwell(E, E_t, T, g):
+    E = np.asarray(E, float)
+    x = np.clip((E_t - E)/T, 0.0, None)
+    return np.where(E < E_t, -dE_gamma(g, x)/T, 0.0)
 
 
 def F_perfil(J, forma='gauss', sigma=None, jt=None, k=None, m=0.0):
@@ -99,15 +150,33 @@ def g_angular(nombre):
 
 class Equilibrio:
     def __init__(self, a0, r_malla=np.arange(0.01, 25.0 + 1e-9, 0.01),
-                 sigma=SIGMA_J, jmax=J_MAX, l0=L0, forma='gauss', jt=None, k=None, m=0.0):
+                 sigma=SIGMA_J, jmax=J_MAX, l0=L0, forma='gauss', jt=None, k=None, m=0.0,
+                 w0=None):
         self.a0 = a0
         self.sigma, self.jmax, self.L0 = sigma, jmax, l0
-        self.forma, self.jt, self.k, self.m = forma, jt, k, m
-        self.A = amplitud(a0, sigma, jmax, l0, forma, jt, k, m)
+        self.forma, self.jt, self.k, self.m, self.w0 = forma, jt, k, m, w0
         self.r = r_malla
         self.phi_self = np.zeros_like(r_malla)
+        if forma == 'maxwell':
+            # La forma en J depende del potencial: A, E_t y T se fijan con la
+            # tabla J(E) de cada iteración (fijar_tabla).
+            self.A = None
+        else:
+            self.A = amplitud(a0, sigma, jmax, l0, forma, jt, k, m)
 
-    def F(self, J):
+    def fijar_tabla(self, E_tab, J_tab):
+        """Maxwelliana: borde, temperatura y amplitud en el potencial de la tabla."""
+        self.E_tab, self.J_tab = E_tab, J_tab
+        self.E_borde, self.T = maxwell_borde(E_tab, J_tab, self.jt, self.w0)
+        Jq = np.linspace(0, self.jt, 200001)
+        Fq = F_maxwell(np.interp(Jq, J_tab, E_tab), self.E_borde, self.T, self.k)
+        self.A = self.a0/(16*np.pi**3*self.L0*np.trapezoid(Fq, Jq))
+
+    def F(self, J, E=None):
+        if self.forma == 'maxwell':
+            if E is None:
+                E = np.interp(J, self.J_tab, self.E_tab)
+            return self.A*F_maxwell(E, self.E_borde, self.T, self.k)
         return self.A*F_perfil(J, self.forma, self.sigma, self.jt, self.k, self.m)
 
     def mapa(self):
@@ -144,7 +213,7 @@ class Equilibrio:
         P = pmax[:, None]*u[None, :]
         E = 0.5*P**2 + phief[:, None]
         J = np.interp(E, E_t, J_t, right=self.jmax*10)
-        F = self.F(J)
+        F = self.F(J, E) if self.forma == 'maxwell' else self.F(J)
         integral = np.trapezoid(F, u, axis=1)*pmax
         return 8*np.pi**2*self.L0*integral/(4*np.pi*self.r**2)
 
@@ -160,6 +229,8 @@ class Equilibrio:
         for it in range(maxit):
             m = self.mapa()
             E_t, J_t = self.tabla_J_de_E(m)
+            if self.forma == 'maxwell':
+                self.fijar_tabla(E_t, J_t)
             rho = self.densidad(m, E_t, J_t)
             nuevo, M = self.poisson(rho)
             cambio = np.max(np.abs(nuevo - self.phi_self))
@@ -213,7 +284,10 @@ def condicion_inicial(eq, eps, nrc, npc, gq='cos', pert='plana'):
     cerca de la órbita circular Q es el ángulo polar de unas coordenadas lisas
     (x, y) con J ~ (x^2 + y^2)/2, así que F_eq(0) cos Q = F_eq(0) x/|x| es
     discontinua en J = 0, mientras que sqrt(J) cos Q ~ x es lisa. Con la gaussiana
-    (F_eq ~ J^2) no hay discontinuidad y 'plana' sirve."""
+    (F_eq ~ J^2) no hay discontinuidad y 'plana' sirve.
+    pert = 'suave3': s = (J/J_max)^{3/2}, también lisa (J^{3/2} cos Q ~ J x). Con
+    F_eq(0) > 0 baja la cola libre de dPhi del borde Omega(0) de t^-2 a t^-3, por
+    debajo de la de los puntos de retorno (t^-5/2)."""
     m = eq.mapa()
     g, _ = g_angular(gq)
     dJ = eq.jmax/nrc; dQ = 2*np.pi/npc
@@ -228,6 +302,8 @@ def condicion_inicial(eq, eps, nrc, npc, gq='cos', pert='plana'):
         F = eq.F(JJ)*(1 + eps*g(QQ))
     elif pert == 'suave':
         F = eq.F(JJ)*(1 + eps*np.sqrt(JJ/eq.jmax)*g(QQ))
+    elif pert == 'suave3':
+        F = eq.F(JJ)*(1 + eps*(JJ/eq.jmax)**1.5*g(QQ))
     else:
         raise SystemExit(f'perturbación desconocida: {pert}')
     return r, p, F, QQ, JJ
@@ -239,24 +315,29 @@ if __name__ == '__main__':
     ap.add_argument('--eps', type=float, default=0.1)
     ap.add_argument('--nrc', type=int, default=400)
     ap.add_argument('--npc', type=int, default=25)
-    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo'],
+    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo', 'maxwell'],
                     help='gauss: A J^2 exp(-J^2/sigma^2); politropo: A (J_t - J)^k')
     ap.add_argument('--sigma', type=float, default=SIGMA_J, help='ancho en J (forma gauss)')
     ap.add_argument('--jt', type=float, default=None, help='borde del soporte (forma politropo)')
     ap.add_argument('--k', type=float, default=3.0, help='exponente del borde (forma politropo)')
     ap.add_argument('--m', type=float, default=0.0, help='exponente en J = 0 (forma politropo)')
+    ap.add_argument('--w0', type=float, default=None,
+                    help='profundidad (E_t - E_c)/T de la Maxwelliana rebajada (forma maxwell)')
     ap.add_argument('--jmax', type=float, default=None,
                     help='corte de la malla en J; por omisión 0.6 (gauss) o J_t (politropo)')
     ap.add_argument('--l0', type=float, default=L0, help='momento angular fijo')
     ap.add_argument('--gq', default='cos', choices=['cos', 'suma3'],
                     help='perfil angular de la perturbación')
-    ap.add_argument('--pert', default='plana', choices=['plana', 'suave'],
-                    help="factor radial de la perturbación: 1 o sqrt(J/J_max) (ver condicion_inicial)")
+    ap.add_argument('--pert', default='plana', choices=['plana', 'suave', 'suave3'],
+                    help="factor radial de la perturbación: 1, sqrt(J/J_max) o (J/J_max)^1.5 "
+                         "(ver condicion_inicial)")
     ap.add_argument('--salida', required=True)
     arg = ap.parse_args()
-    if arg.forma == 'politropo':
+    if arg.forma in ('politropo', 'maxwell'):
         if arg.jt is None:
-            raise SystemExit('la forma politropo necesita --jt')
+            raise SystemExit(f'la forma {arg.forma} necesita --jt')
+        if arg.forma == 'maxwell' and arg.w0 is None:
+            raise SystemExit('la forma maxwell necesita --w0')
         if arg.jmax is None:
             arg.jmax = arg.jt          # los nodos cubren justo el soporte
     elif arg.jmax is None:
@@ -267,13 +348,15 @@ if __name__ == '__main__':
                          f'usa eps <= {1/gmax:.3f}')
     if arg.forma == 'gauss':
         desc = f'A J^2 exp(-J^2/{arg.sigma}^2)'
+    elif arg.forma == 'maxwell':
+        desc = f'A E_gamma({arg.k:g}, (E_t - E)/T), E_t = E(J_t = {arg.jt}), W0 = {arg.w0:g}'
     else:
         desc = f'A ({arg.jt} - J)^{arg.k:g}' if arg.m == 0 else \
                f'A J^{arg.m:g} ({arg.jt} - J)^{arg.k:g}'
     print(f'equilibrio: a0={arg.a0:g}, F_eq = {desc}, '
           f'L0={arg.l0}, J_max={arg.jmax}, g(Q)="{arg.gq}", pert={arg.pert}')
     eq = Equilibrio(arg.a0, sigma=arg.sigma, jmax=arg.jmax, l0=arg.l0,
-                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m).iterar()
+                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0).iterar()
     r, p, F, Q, J = condicion_inicial(eq, arg.eps, arg.nrc, arg.npc, arg.gq, arg.pert)
     m = eq.mapa()
     Qc, Jc, _ = m(r, p)
@@ -288,5 +371,6 @@ if __name__ == '__main__':
              E_t=eq.E_t, J_t=eq.J_t, A=eq.A, a0=arg.a0, eps=arg.eps,
              nrc=arg.nrc, npc=arg.npc, J_max=eq.jmax, sigma_J=eq.sigma,
              L0=eq.L0, gq=arg.gq, forma=arg.forma,
-             J_borde=(-1.0 if arg.jt is None else arg.jt), k_borde=arg.k, m_borde=arg.m, pert=arg.pert)
+             J_borde=(-1.0 if arg.jt is None else arg.jt), k_borde=arg.k, m_borde=arg.m,
+             w0=(-1.0 if arg.w0 is None else arg.w0), pert=arg.pert)
     print(f'escrito {arg.salida} ({len(r)} partículas) y {base}_equilibrio.npz')

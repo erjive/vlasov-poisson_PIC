@@ -20,7 +20,7 @@ Discretización:
     cambian, así que el orden se calcula una vez.
 
 h_1(t) = sum dF B(J) e^{-iQ} / sum F_eq B(J), con dF(t=0) = F_eq s(J) cos Q y
-s = 1 o sqrt(J/J_max) según la perturbación del equilibrio ('pert', ver
+s = 1, sqrt(J/J_max) o (J/J_max)^{3/2} según la perturbación del equilibrio ('pert', ver
 equilibrio.condicion_inicial): es directamente comparable con
 (h_1(eps) - h_1(0))/eps de las simulaciones.
 
@@ -30,7 +30,8 @@ Uso:  python3 lineal.py <archivo _equilibrio.npz> <salida.npz> [--nj 1600] [--nq
 import os, sys, argparse, time, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, L0
-from equilibrio import invertir, F_forma, F_perfil, dF_perfil, J_MAX
+from equilibrio import (invertir, F_forma, F_perfil, dF_perfil, J_MAX,
+                        F_maxwell, dFdE_maxwell, maxwell_borde)
 from landau_libre import omega_de_J
 
 J1, SJ1 = 0.10, 0.10                 # función de prueba de 11_landau
@@ -51,14 +52,15 @@ def params_eq(eqf):
 
 
 def forma_eq(eqf):
-    """(forma, J_borde, k_borde, m_borde, pert) del equilibrio; los de 11_landau si el archivo es anterior."""
+    """(forma, J_borde, k_borde, m_borde, W0, pert) del equilibrio; los de 11_landau si el archivo es anterior."""
     d = np.load(eqf)
     forma = str(d['forma']) if 'forma' in d.files else 'gauss'
     jt = float(d['J_borde']) if 'J_borde' in d.files else None
     kb = float(d['k_borde']) if 'k_borde' in d.files else None
     mb = float(d['m_borde']) if 'm_borde' in d.files else 0.0
+    w0 = float(d['w0']) if 'w0' in d.files else None
     pert = str(d['pert']) if 'pert' in d.files else 'plana'
-    return forma, jt, kb, mb, pert
+    return forma, jt, kb, mb, w0, pert
 
 
 def dF_forma(J, sigma):
@@ -101,10 +103,15 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
     orden = np.argsort(r)
     rs = r[orden]
     om = omega_de_J(eq['E_t'], eq['J_t'])(Jn)
-    forma, jt, kb, mb, pert = forma_eq(eqf)
+    forma, jt, kb, mb, w0, pert = forma_eq(eqf)
     if forma == 'gauss':
         Feq = A*F_forma(Jn, sigma)
         dFeq = A*dF_forma(Jn, sigma)
+    elif forma == 'maxwell':                       # F(E): dF/dJ = F'(E) Omega(J)
+        En = np.interp(Jn, eq['J_t'], eq['E_t'])
+        Eb, T = maxwell_borde(eq['E_t'], eq['J_t'], jt, w0)
+        Feq = A*F_maxwell(En, Eb, T, kb)
+        dFeq = A*dFdE_maxwell(En, Eb, T, kb)*om
     else:
         Feq = A*F_perfil(Jn, forma, sigma, jt, kb, mb)
         dFeq = A*dF_perfil(Jn, forma, sigma, jt, kb, mb)
@@ -128,8 +135,10 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
 
     if pert == 'plana':
         dF = Feq[:, None]*np.cos(Qn)[None, :]
-    else:
+    elif pert == 'suave':
         dF = (Feq*np.sqrt(Jn/jmx))[:, None]*np.cos(Qn)[None, :]
+    else:
+        dF = (Feq*(Jn/jmx)**1.5)[:, None]*np.cos(Qn)[None, :]
     norma = np.sum(Feq*B(Jn))*nq
     eQ = np.exp(-1j*Qn)
     pasos = int(round(tmax/dt)); nsal = int(round(cada/dt))
