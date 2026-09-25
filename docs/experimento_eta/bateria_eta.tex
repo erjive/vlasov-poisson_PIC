@@ -35,6 +35,7 @@
 \begin{document}
 \maketitle
 
+
 \begin{abstract}
 Se estudia si, en la reducción de momento angular fijo
 $f=F(r,p_r)\,\delta(L-L_0)$ con fondo isócrono, la autogravedad de una componente
@@ -55,86 +56,225 @@ calculadas con los guiones del repositorio, no estimadas.
 \end{abstract}
 
 \section{Resumen ejecutivo}
+\label{sec:resumen}
 
 \begin{nota}
 \textbf{La pregunta.} Si la autogravedad de una componente de masa pequeña puede
 sostener una oscilación sin amortiguar, y qué pasa cerca de la transición entre
 amortiguamiento y oscilación.
 
+\textbf{El parámetro de diseño.} Las órbitas de la componente giran con
+frecuencias que ocupan una banda. La autogravedad corre esas frecuencias; $\eta$
+es el cociente entre ese corrimiento y el ancho de la banda
+(definición precisa en la sección~\ref{sec:eta}). Con $\eta\ll1$ el acoplamiento es
+débil frente a la dispersión de frecuencias y todo se amortigua; con
+$\eta\gtrsim1$ puede sacar un modo de la banda.
+
 \textbf{Lo que ya responde la teoría lineal (bloque~L, calculado).} La transición
-existe. Con la Maxwelliana de Wilson y $J_t=0.138$, al crecer $\eta$ el polo baja
-hacia el borde inferior de la banda y $\gamma$ cae diez veces entre $\eta=0.45$ y
-$1$; entre $\eta=1.0$ y $1.24$ sale de la banda y queda un modo discreto sin
-amortiguar. $\eta$ ordena la transición, y cambiar $L_0$ no la mueve, pero el
-umbral depende del ancho del soporte, de la forma de la distribución y del
-exponente del borde de vacío: con borde abrupto ($g\le1$, King incluido) el modo
-discreto ya está en $\eta=1$, y la respuesta en el borde persiste aun en
-$\eta=0.1$, en la dirección de la dicotomía de Hadžić y colaboradores.
+existe. Con la Maxwelliana de Wilson y el ancho de referencia, al crecer $\eta$
+el modo se acerca al borde inferior de la banda y su tasa de amortiguamiento cae
+diez veces entre $\eta=0.45$ y $1$; entre $\eta=1.0$ y $1.24$ sale de la banda y
+queda un modo discreto sin amortiguar. $\eta$ ordena la transición, y cambiar
+$L_0$ no la mueve, pero el umbral depende del ancho del soporte, de la forma de
+la distribución y del exponente del borde de vacío: con borde abrupto (King
+incluido) el modo discreto ya está en $\eta=1$, y la respuesta en el borde
+persiste aun en $\eta=0.1$, en la dirección de la dicotomía de Hadžić y
+colaboradores.
 
-\textbf{Por qué hace falta la PIC.} El dato inicial $F_{\rm eq}(1+\varepsilon g)$
-parece perturbativo, pero lo que decide la linealidad no es $\varepsilon$ sino
-$\nu=\omega_b/\gamma$. Cerca de la transición $\gamma\to0$ y $\nu\gg1$ con cualquier
-amplitud: en $\eta=1$ basta $\varepsilon\approx0.008$ para $\nu=1$. La teoría lineal
-dice dónde está la transición; no dice qué pasa cerca de ella a tiempos largos
-(sección~\ref{sec:objecion}).
+\textbf{Por qué hace falta la PIC.} El dato inicial es un equilibrio más una
+perturbación de amplitud $\varepsilon$, y parece perturbativo. Pero lo que decide
+la linealidad no es $\varepsilon$ sino $\nu=\omega_b/\gamma$, el cociente entre la
+frecuencia de rebote de las partículas que la onda atrapa y la tasa con que la
+onda se amortigua (sección~\ref{sec:objecion}). Cerca de la transición $\gamma\to0$
+y $\nu\gg1$ con cualquier amplitud: en $\eta=1$ basta $\varepsilon\approx0.008$
+para $\nu=1$. La teoría lineal dice dónde está la transición; no dice qué pasa
+cerca de ella a tiempos largos.
 
-\textbf{Qué mide la PIC.} El mapa $(\eta,\nu)$ del lado amortiguado (bloque~N), la
-supervivencia del modo discreto a amplitud finita, y si el resultado depende de
-$L_0$, del ancho o de la forma (bloque~G), con la solución lineal del mismo
-equilibrio como referencia en cada punto y la convergencia en cada parámetro
-numérico (bloque~B).
+\textbf{Qué mide la PIC.} El mapa $(\eta,\nu)$ del lado amortiguado y la
+supervivencia del modo discreto a amplitud finita (bloque~N), si el resultado
+depende de $L_0$, del ancho o de la forma (bloque~V), con la solución lineal del
+mismo equilibrio como referencia en cada punto y la convergencia en cada
+parámetro numérico (bloque~B).
 \end{nota}
 
-La tabla~\ref{tab:costo} resume bloques y costos.
+\paragraph{Cómo está organizado.} La sección~\ref{sec:notacion} reúne la notación
+y el catálogo de casos. Las secciones~\ref{sec:modelo} a~\ref{sec:observables}
+definen el modelo, el dato inicial y lo que se mide. Las
+secciones~\ref{sec:mezcla} y~\ref{sec:autogravedad} construyen la física lineal
+en orden: la banda de frecuencias, la mezcla de fases, el efecto de la
+autogravedad, el modo colectivo y el criterio $\eta$. La
+sección~\ref{sec:familia} justifica la distribución elegida y la
+sección~\ref{sec:objecion}, por qué la teoría lineal no basta. La
+sección~\ref{sec:lineal} da los resultados lineales, y las
+secciones~\ref{sec:numerico} a~\ref{sec:riesgos} el diseño numérico, la batería
+PIC, el protocolo y los riesgos. Al final hay un resumen de las aproximaciones,
+las herramientas y el alcance. Cada símbolo se define antes de usarse; la
+tabla~\ref{tab:simbolos} dice dónde.
 
-\section{Marco físico}
+\section{Notación y casos}
+\label{sec:notacion}
 
-Esta sección construye, paso a paso, las tres cantidades que organizan la
-batería: la banda de frecuencias orbitales, el corrimiento que produce en ella
-la autogravedad y la amplitud de la perturbación del potencial. Cada paso usa
-una aproximación; para cada una se dice cuál es, por qué es razonable y cómo se
-comprobó con cálculos o corridas reales. La tabla~\ref{tab:aprox} al final de la
-sección~\ref{sec:objecion} las resume.
+\paragraph{Unidades.} $G=1$; el fondo es un isócrono de masa y escala unidad, de
+modo que las masas se miden en unidades de la del fondo y los tiempos en
+unidades de $(b^3/GM_{\rm iso})^{1/2}$. $a_0$ es la masa de la componente
+autogravitante: $a_0=0.1$ es un décimo de la masa total del fondo.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{L{3.3cm}L{9.6cm}l}
+\toprule
+símbolo & significado & sección\\
+\midrule
+$f$, $F(r,p_r)$ & distribución completa y reducida a momento angular fijo & \ref{sec:reduccion}\\
+$L_0$ & momento angular común de todas las partículas & \ref{sec:reduccion}\\
+$\Phi_{\rm iso}$, $\Phi_{\rm self}$, $\Phi_{\rm ef}$ & potencial del fondo, propio y efectivo (con la barrera centrífuga) & \ref{sec:reduccion}\\
+$(Q,J)$ & ángulo y acción radiales & \ref{sec:aa}\\
+$\Omega(J)$, $T_r(J)$ & frecuencia y periodo radiales & \ref{sec:aa}\\
+$c$ & constante del isócrono, $c=\tfrac12(L_0+\sqrt{L_0^2+4})$ & \ref{sec:aa}\\
+$r_c$, $\kappa$, $E_c$ & radio, frecuencia epicíclica y energía de la órbita circular & \ref{sec:circular}\\
+$R_e(J)$ & radio del epiciclo, $\sqrt{2J/\kappa}$ & \ref{sec:circular}\\
+$F_{\rm eq}(J)$, $A$ & equilibrio y su amplitud & \ref{sec:equilibrio}\\
+$a_0$ & masa de la componente autogravitante & \ref{sec:equilibrio}\\
+$\sigma_J$ & ancho de la distribución gaussiana & \ref{sec:familias}\\
+$J_t$ & borde del soporte en acción & \ref{sec:familias}\\
+$g$ & exponente del borde de vacío, $F_{\rm eq}\propto(J_t-J)^g$ (el $k$ de Hadžić) & \ref{sec:familias}\\
+$E_t$, $T$, $W_0$ & energía de marea, temperatura y profundidad de la Maxwelliana rebajada & \ref{sec:familias}\\
+$\varepsilon$, $\chi(Q)$, $s(J)$ & amplitud, perfil angular y factor radial de la perturbación & \ref{sec:perturbacion}\\
+$N_{rc}$, $N_{pc}$, $N$ & nodos en $J$, nodos en $Q$ y número de partículas & \ref{sec:discreto}\\
+\midrule
+$\delta F$, $\delta\Phi$ & perturbación de la distribución y del potencial & \ref{sec:dphi}\\
+$\|\delta\Phi\|$ & valor rms de $\delta\Phi$ en $r\in[3,15]$ & \ref{sec:dphi}\\
+$h_k$, $B(J)$, $j_1$, $s_{j1}$ & armónico $k$ de la distribución y su función de prueba & \ref{sec:hk}\\
+$\beta(Q,J)$, $\beta_{\pm1}(J)$ & peso de un observable lineal y sus coeficientes $k=\pm1$ & \ref{sec:obslineal}\\
+$\Omega_{\min}$, $\Omega_{\max}$, $\Delta\Omega$ & bordes y ancho de la banda de frecuencias & \ref{sec:banda}\\
+$\bar\Omega$ & frecuencia media pesada por la masa & \ref{sec:banda}\\
+$\tau_k$ & tiempo de mezcla del armónico $k$, $2\pi/(k\,\Delta\Omega)$ & \ref{sec:banda}\\
+$w(\Omega)$ & distribución de frecuencias que ve un observable & \ref{sec:libre}\\
+$\rho_\Phi$ & $\delta\Phi(0)$ por unidad de masa y de $\varepsilon$, relativo a la gaussiana & \ref{sec:colasvalores}\\
+$\omega$, $\gamma$ & frecuencia y tasa de amortiguamiento del modo colectivo & \ref{sec:respuesta}\\
+$x$ & posición del modo en la banda, $(\omega-\Omega_{\min})/\Delta\Omega$ & \ref{sec:respuesta}\\
+$\delta\Omega$, $\eta$ & corrimiento relativo de $\bar\Omega$ y criterio de diseño & \ref{sec:eta}\\
+$\omega_b$, $\Delta J_{\rm atr}$ & frecuencia de rebote y semiancho de la isla de atrapamiento & \ref{sec:atrapamiento}\\
+$\mu$, $\nu$ & $\omega_b/\Delta\Omega$ y $\omega_b/\gamma$ & \ref{sec:atrapamiento}\\
+$\eta_c$ & valor de $\eta$ en la transición & \ref{sec:barrido}\\
+$T_{\rm rec}(k)$ & tiempo de recurrencia de la malla en $J$ & \ref{sec:recurrencia}\\
+$t_{\rm fin}$ & duración de una corrida & \ref{sec:recurrencia}\\
+\bottomrule
+\end{tabular}
+\caption{Símbolos del documento y sección donde se definen. $k$ es siempre un
+índice de Fourier en $Q$; el exponente del borde se llama $g$ en todas las
+familias, aunque Hadžić y colaboradores lo llamen $k$.}
+\label{tab:simbolos}
+\end{table}
+
+\subsection{Los casos}
+\label{sec:casos}
+
+Cada equilibrio estudiado tiene un nombre, el mismo que usa
+\texttt{barrido\_\allowbreak lineal.py}. La tabla~\ref{tab:casos} los reúne; las
+familias se definen en la sección~\ref{sec:familias} y $\eta$ en la
+sección~\ref{sec:eta}. Salvo donde se indica, la familia es la Maxwelliana de
+Wilson ($g=2$, $W_0=3$), $J_t=0.138$ y $L_0=2$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{L{2.2cm}L{3.5cm}L{2.9cm}L{1.5cm}L{3.6cm}}
+\toprule
+caso & equilibrio & $a_0$ & $\eta$ & papel\\
+\midrule
+L1, A1, L2, A2  & referencia & 0.0030, 0.0065, 0.013, 0.020 & 0.05--0.30 & barrido en $\eta$\\
+L3, A3, L4, A4  & referencia & 0.031, 0.042, 0.058, 0.075 & 0.45--1.00 & barrido en $\eta$\\
+L5, A5, L6  & referencia & 0.097, 0.121, 0.170 & 1.24--2.00 & barrido en $\eta$\\
+A6, A7 & $J_t=0.276$ & 0.044, 0.148 & 0.30, 1.00 & degeneración: ancho\\
+A8, A9 & $J_t=0.083$ & 0.0109, 0.044 & 0.30, 1.00 & degeneración: ancho\\
+D1, D2 & $L_0=1$, $J_t=0.094$ & 0.018, 0.069 & 0.29, 1.00 & degeneración: $L_0$\\
+E1 & hueca $J^2(J_t-J)^2$ & 0.075 & 1.00 & familia\\
+E2 & gaussiana, $\sigma_J=0.05$ & 0.069 & 0.97 & familia; puente con 11\_landau\\
+E3 & Wilson, $W_0=6$ & 0.073 & 1.00 & familia: límite térmico\\
+H9, H3 & hueca, $J_t=0.083$ & 0.041, 0.100 & 0.99, 3.1 & familia\\
+G075, G1, G15, G3 & Wilson con $g=0.75$, $1$, $1.5$, $3$ & 0.0775--0.0739 & 1.00 & exponente del borde\\
+G075a, G075b & Wilson con $g=0.75$ & 0.0070, 0.0215 & 0.10, 0.30 & borde abrupto, acoplamiento débil\\
+G1a, G1b & Wilson con $g=1$ (King) & 0.0069, 0.0212 & 0.10, 0.30 & borde abrupto, acoplamiento débil\\
+landau & gaussiana, $\sigma_J=0.10$ & 0.010 & 0.05 & validación: 11\_landau\\
+\bottomrule
+\end{tabular}
+\caption{Los equilibrios del documento. Los nombres con L son puntos
+intermedios del barrido; los con A, D y E, los de diseño; G, el exponente del
+borde (con $g=2$ el caso es A4). Las corridas PIC (sección~\ref{sec:bateria})
+tienen su propia numeración: bloques N, V, Z y B.}
+\label{tab:casos}
+\end{table}
+
+\paragraph{Las corridas de Landau (11\_landau).} Son las corridas de la
+sección~11 de las notas, que se usan como referencia validada: gaussiana con
+$\sigma_J=0.10$ y $J_{\max}=0.6$, $a_0=0.01$, $L_0=2$, perturbación
+$\varepsilon=0.1$ con $\chi=\cos Q$, $N_{rc}\times N_{pc}=400\times25$ ($N=10^4$),
+malla $r\in[0,20]$ con $\Delta r=0.1$, $\Delta t=0.05$, integrador yoshida4 y
+función de prueba $j_1=s_{j1}=0.10$. Su $\eta$ es $0.05$: muy adentro del régimen
+amortiguado. Lo que dicen se resume en la sección~\ref{sec:landau}.
+
+\section{El modelo}
+\label{sec:modelo}
 
 \subsection{La reducción a momento angular fijo}
+\label{sec:reduccion}
 
-En simetría esférica, la distribución depende de $(r,p_r,L)$. La reducción que
-resuelve el código es
+En simetría esférica, la distribución depende de la posición y la velocidad solo
+a través del radio $r$, la velocidad radial $p_r$ y el módulo del momento angular
+$L$. La reducción que resuelve el código es
 \[
   f(r,p_r,L) = F(r,p_r)\,\delta(L-L_0),
 \]
-es decir, todas las partículas tienen el mismo momento angular. El movimiento
-radial de cada una es entonces unidimensional, con hamiltoniano
+es decir, todas las partículas tienen el mismo momento angular $L_0$. El
+movimiento radial de cada una es entonces unidimensional, con hamiltoniano
 \[
   H = \tfrac12 p_r^2 + \Phi_{\rm ef}(r), \qquad
   \Phi_{\rm ef}(r) = \Phi(r) + \frac{L_0^2}{2r^2},
 \]
 donde $\Phi = \Phi_{\rm iso} + \Phi_{\rm self}$ es el potencial total: el del
-fondo isócrono, $\Phi_{\rm iso} = -1/(1+\sqrt{1+r^2})$ con masa y escala unidad,
-más el de la propia distribución. La medida del espacio fase que deja la delta
-es $8\pi^2 L_0\,dr\,dp_r$, de modo que la masa es
-$M = 8\pi^2L_0\int F\,dr\,dp_r$.
+fondo isócrono, $\Phi_{\rm iso} = -1/(1+\sqrt{1+r^2})$, más el de la propia
+distribución. El término $L_0^2/2r^2$ es la barrera centrífuga.
+
+\paragraph{La medida $8\pi^2L_0$.} En simetría esférica el elemento de volumen del
+espacio fase se escribe con $r$, $p_r$ y $L$. La posición aporta $4\pi r^2dr$. La
+velocidad tiene una componente radial $p_r$ y una tangencial $v_t$, que puede
+apuntar en cualquier dirección del plano perpendicular a $\hat r$:
+$d^3v=2\pi v_t\,dv_t\,dp_r$. Como $L=rv_t$, $v_t\,dv_t=L\,dL/r^2$, y
+\[
+  d^3x\,d^3v = 4\pi r^2\,dr\cdot\frac{2\pi L\,dL}{r^2}\,dp_r = 8\pi^2L\,dL\,dr\,dp_r .
+\]
+La delta en $L$ colapsa $dL$ y deja $8\pi^2L_0\,dr\,dp_r$: la masa de la
+componente es $M=8\pi^2L_0\int\!\!\int F\,dr\,dp_r$.
 
 Esta reducción no es una aproximación \emph{dentro} del modelo, pero sí es un
 modelo extremadamente anisótropo. Todo lo que sigue vale para él, y la
-comparación con resultados de sistemas isótropos (como el de Hadžić y
+comparación con resultados de sistemas isótropos (como los de Hadžić y
 colaboradores) debe hacerse con ese cuidado.
 
-\subsection{Variables acción-ángulo y frecuencias}
+\subsection{Variables acción-ángulo}
+\label{sec:aa}
 
-Como $H$ no depende del tiempo y el movimiento es acotado, existen variables
-acción-ángulo. La acción radial es el área de la órbita en el plano
-$(r,p_r)$ dividida por $2\pi$,
+Como $H$ no depende del tiempo y el movimiento radial es acotado entre dos radios
+de retorno $r_-<r_+$, cada órbita es una curva cerrada en el plano $(r,p_r)$ y
+existen variables acción-ángulo. La \emph{acción} radial es el área que encierra la
+órbita dividida por $2\pi$,
 \[
-  J = \frac{1}{\pi}\int_{r_-}^{r_+} \sqrt{2\,(E-\Phi_{\rm ef}(r))}\;dr ,
+  J = \frac{1}{2\pi}\oint p_r\,dr
+    = \frac{1}{\pi}\int_{r_-}^{r_+} \sqrt{2\,(E-\Phi_{\rm ef}(r))}\;dr ,
 \]
-con $r_\pm$ los radios de retorno, y el ángulo $Q$ avanza uniformemente,
-$\dot Q = \Omega(J)$, con
+y el \emph{ángulo} $Q$ es la fase a lo largo de la órbita, normalizada para que
+avance uniformemente de $0$ a $2\pi$ en una vuelta. El cambio
+$(r,p_r)\to(Q,J)$ es canónico, así que conserva el área: $dr\,dp_r=dQ\,dJ$. Como
+$H$ depende solo de $J$, las ecuaciones de Hamilton son $\dot J=0$ y
+$\dot Q=\partial H/\partial J$:
 \[
-  \Omega(J) = \frac{dE}{dJ} = \frac{2\pi}{T(J)}, \qquad
-  T = 2\int_{r_-}^{r_+}\frac{dr}{\sqrt{2(E-\Phi_{\rm ef})}} .
+  \Omega(J) = \frac{dE}{dJ} = \frac{2\pi}{T_r(J)}, \qquad
+  T_r = 2\int_{r_-}^{r_+}\frac{dr}{\sqrt{2(E-\Phi_{\rm ef})}} ,
 \]
-Solo el isócrono tiene forma cerrada:
+con $T_r$ el periodo radial. Solo el isócrono tiene forma cerrada:
 \[
   E(J) = -\frac{1}{2\,(J+c)^2}, \qquad
   \Omega(J) = \frac{1}{(J+c)^3}, \qquad
@@ -143,44 +283,313 @@ Solo el isócrono tiene forma cerrada:
 \]
 Dos consecuencias se usan en todo el documento. La frecuencia \emph{decrece}
 con la acción: las órbitas casi circulares ($J\to0$) son las más rápidas, y
-$\Omega_{\max} = \Omega(0) = c^{-3}$. Y la derivada no se anula, así que el mapa
-$J\mapsto\Omega$ es invertible sobre todo el soporte.
+$\Omega(0) = c^{-3}$ es la frecuencia más alta. Y la derivada no se anula, así que
+a cada frecuencia le corresponde una sola acción.
 
 Con autogravedad no hay forma cerrada. El mapa se calcula numéricamente
-(\texttt{aa\_\allowbreak numerico.py}): para cada energía se buscan los radios de retorno por
-bisección y las integrales se hacen con el cambio $r = r_m + r_a\sin\theta$, que
-elimina la singularidad de raíz cuadrada en los puntos de retorno, y cuadratura
-de Gauss--Legendre. $E(J)$ queda tabulada y $\Omega = dE/dJ$ se obtiene por
-diferencias finitas. Así calcula \texttt{eta.py} todas las bandas de este
-documento.
+(\texttt{aa\_\allowbreak numerico.py}): para cada energía se buscan los radios de
+retorno por bisección y las integrales se hacen con el cambio
+$r = r_m + r_a\sin\theta$, que elimina la singularidad de raíz cuadrada en los
+puntos de retorno, y cuadratura de Gauss--Legendre. $E(J)$ queda tabulada y
+$\Omega = dE/dJ$ se obtiene por diferencias finitas.
 
-\subsection{La banda de frecuencias}
+\subsection{La órbita circular y los epiciclos}
+\label{sec:circular}
 
-El soporte de $F_{\rm eq}(J)$ ocupa un intervalo de acciones y, a través de
-$\Omega(J)$, una banda de frecuencias $[\Omega_{\min},\Omega_{\max}]$. Esa banda es
-el \emph{espectro esencial} del problema linealizado: el conjunto de
-frecuencias con las que las partículas pueden resonar. Su ancho y su posición
-son los protagonistas del resto del documento.
+La órbita de acción $J=0$ es la circular: está en el mínimo de $\Phi_{\rm ef}$, en el
+radio $r_c$ donde $\Phi_{\rm ef}'(r_c)=0$, o sea $\Phi'(r_c)=L_0^2/r_c^3$, y tiene
+energía $E_c=\Phi_{\rm ef}(r_c)$. Con $L_0=2$ y sin masa propia, $r_c=5.742$.
 
-\paragraph{Aproximación 1: dónde termina el soporte.} Las distribuciones de la
-batería (sección~\ref{sec:familia}) tienen soporte compacto $[0,J_t]$: la banda
-es exactamente $[\Omega(J_t),\,\Omega(0)]$ y no hay nada que elegir. La
-gaussiana $J^2e^{-J^2/\sigma_J^2}$ de las corridas de Landau y de la corrida puente
-E3 no tiene borde, así que hay que fijar un umbral: su soporte es donde
-$F_{\rm eq}\ge 10^{-2}\,F_{\max}$. Es una convención: con otro umbral cambian los
-bordes y, con ellos, el valor absoluto de $\eta$. El borde de la familia
-compacta se eligió en el extremo superior de ese soporte, $J_t = 2.763\,\sigma_J$,
-para que las dos familias tengan la misma banda.
+\paragraph{Aproximación 1: el epiciclo.} Cerca del mínimo, $\Phi_{\rm ef}$ es una
+parábola y el movimiento radial es un oscilador armónico:
+\[
+  H \approx E_c + \tfrac12 p_r^2 + \tfrac12\kappa^2(r-r_c)^2, \qquad
+  \kappa^2 = \Phi_{\rm ef}''(r_c) = \Phi''(r_c)+\frac{3L_0^2}{r_c^4} .
+\]
+$\kappa$ es la \emph{frecuencia epicíclica}. La acción de un oscilador es su energía
+dividida por su frecuencia, así que $E\approx E_c+\kappa J$ y $\Omega(0)=\kappa$. La
+órbita es
+\[
+  r - r_c = R_e(J)\cos Q, \qquad p_r = -\kappa R_e(J)\sin Q, \qquad
+  R_e(J) = \sqrt{2J/\kappa},
+\]
+con $R_e$ el radio del epiciclo: el semiancho radial de la órbita. En el
+isócrono con $L_0=2$, $\kappa=\Omega(0)=c^{-3}=0.0711$ (la
+sección~\ref{sec:corrimiento} lo comprueba con la densidad del fondo).
 
-\paragraph{Aproximación 2: el ancho relativo a primer orden.} Si el intervalo de
-acciones $\Delta J$ es chico frente a $J+c$, un desarrollo de Taylor da
+\paragraph{Las coordenadas lisas cerca de la órbita circular.} Si se definen
+$x=\sqrt\kappa\,(r-r_c)$ e $y=-p_r/\sqrt\kappa$, la órbita es
+\[
+  x+iy = \sqrt{2J}\,e^{iQ}, \qquad J=\tfrac12(x^2+y^2):
+\]
+$\sqrt{2J}$ es un radio y $Q$ un ángulo polar en el plano $(x,y)$, y la órbita
+circular es el origen. Esto tiene una consecuencia que se usa varias veces. $x$ e
+$y$ son funciones lisas de $(r,p_r)$, y también lo es $J$, pero $Q$ no está definido
+en el origen. Una función de la forma $a(J)\,e^{\pm iQ}$ es lisa en la órbita
+circular solo si $a(J)=\sqrt J\times(\text{función lisa de }J)$, porque
+$\sqrt J\,e^{iQ}\propto x+iy$ es lisa y $e^{iQ}=(x+iy)/\sqrt{x^2+y^2}$ no lo es. En
+general, $e^{\pm ikQ}$ necesita un factor $J^{k/2}$.
+
+\section{El equilibrio y el dato inicial}
+\label{sec:dato}
+
+\subsection{El equilibrio autoconsistente}
+\label{sec:equilibrio}
+
+En variables acción-ángulo la ecuación de Vlasov, con un hamiltoniano que
+depende solo de $J$, es $\partial_tF+\Omega(J)\,\partial_QF=0$. Cualquier $F$ que
+dependa solo de $J$ es entonces estacionaria. Pero $J$ se define en el potencial
+total, y el potencial depende de $F$: el equilibrio tiene que ser
+\emph{autoconsistente}. \texttt{equilibrio.py} lo construye iterando
+\[
+  \Phi_{\rm self}\;\to\;\text{mapa }(r,p_r)\to(Q,J)\;\to\;F_{\rm eq}(J)\;\to\;\rho(r)\;
+  \to\;\text{Poisson}\;\to\;\Phi_{\rm self},
+\]
+partiendo de $\Phi_{\rm self}=0$, hasta que el potencial cambia menos de
+$10^{-13}$ entre iteraciones.
+
+\paragraph{Por qué solo de $J$.} Si la distribución dependiera de $Q$, se
+enrollaría desde $t=0$ por mezcla de fases, y ese decaimiento sería
+indistinguible del que se quiere medir como respuesta. Además, sin un equilibrio
+bien definido no existe el marco fijo respecto del cual se mide $\delta\Phi$, y ni
+la tasa de amortiguamiento ni la frecuencia del modo tendrían significado.
+
+\paragraph{La normalización.} Se escribe $F_{\rm eq}=A\,\tilde F(J)$, con $\tilde F$
+la forma y $A$ la amplitud. Como $dr\,dp_r=dQ\,dJ$ y $\int dQ=2\pi$, la masa es
+\[
+  a_0 = 8\pi^2L_0\iint F_{\rm eq}\,dQ\,dJ = 16\pi^3L_0\,A\int\tilde F(J)\,dJ ,
+\]
+de donde sale $A$. Si la forma se escribe en la energía, como en la Maxwelliana
+rebajada, $\tilde F$ como función de $J$ cambia con el potencial, y $A$ se recalcula
+en cada iteración.
+
+\paragraph{La malla en $J$.} El dato inicial usa nodos en $[0,J_{\max}]$
+(sección~\ref{sec:discreto}). Con soporte compacto $J_{\max}=J_t$, el borde del
+soporte; con la gaussiana, $J_{\max}=6\sigma_J$.
+
+\subsection{Las tres familias}
+\label{sec:familias}
+
+Se consideran tres formas, las tres funciones solo de $J$ (o de $E$). La elección
+entre ellas, y la de sus parámetros, se justifica en la sección~\ref{sec:familia}.
+
+\paragraph{La gaussiana.} $\tilde F=J^2e^{-J^2/\sigma_J^2}$, la de las corridas de
+Landau. Su única escala de acción es $\sigma_J$: con $u=J/\sigma_J$,
+$\tilde F=\sigma_J^2\,u^2e^{-u^2}$, y cambiar $\sigma_J$ solo estira la curva. No tiene
+borde, así que el soporte se define con un umbral: donde $\tilde F$ supera el
+\SI{1}{\%} de su máximo, que es $e^{-1}$ en $u=1$. Resolver $u^2e^{-u^2}=0.01\,e^{-1}$
+da $u=0.061$ y $u=2.763$, así que el soporte es $[0.061,\,2.763]\,\sigma_J$ y su
+ancho, $\Delta J\approx2.70\,\sigma_J$.
+
+\paragraph{La familia hueca.} $\tilde F=J^m(J_t-J)^g$ en $[0,J_t)$ y cero fuera
+(\texttt{--forma politropo}). Tiene soporte compacto $[0,J_t]$, se anula como
+$J^m$ en la órbita circular y como $(J_t-J)^g$ en el borde de vacío, y su máximo
+está en $J=mJ_t/(m+g)$. Aquí se usa $m=g=2$, $J^2(J_t-J)^2$, máxima en $J_t/2$. Con
+$m=0$ es el politropo en la acción.
+
+\paragraph{La Maxwelliana rebajada.} (\texttt{--forma maxwell}.) Se escribe en la
+energía:
+\[
+  F_{\rm eq} = A\,E_\gamma\!\left(g,\,x\right),\quad x=\frac{E_t-E}{T}\ \ \text{si }E<E_t;
+  \qquad
+  E_\gamma(g,x) = e^x\,P(g,x) = \sum_{n\ge0}\frac{x^{g+n}}{\Gamma(g+n+1)},
+\]
+con $P(g,x)$ la función gamma incompleta inferior regularizada. $E_\gamma$ tiene dos
+límites que explican su uso: cerca del borde, $x\to0$ y $E_\gamma\approx
+x^g/\Gamma(g+1)$, así que $F$ se anula como $(E_t-E)^g$ con exponente $g$; lejos del
+borde, $x\gg g$ y $E_\gamma\to e^x\propto e^{-E/T}$, una distribución de
+Maxwell--Boltzmann. $g=1$ es el modelo de King, $e^x-1$, y $g=2$ el de Wilson,
+$e^x-1-x$. Los parámetros se fijan así: $E_t=E(J_t)$, la energía de la órbita de
+acción $J_t$, y $T=(E_t-E_c)/W_0$, con $W_0$ la profundidad del pozo en unidades
+de la temperatura. $E_t$, $T$ y $A$ se recalculan en el potencial de cada
+iteración, de modo que el soporte es siempre $[0,J_t]$ y la masa $a_0$. Como
+$E\approx E_c+\kappa J$ cerca de la órbita circular, $x\approx W_0\,(1-J/J_t)$ en
+primera aproximación. La serie de $E_\gamma$ es de términos positivos: se evalúa sin
+cancelaciones, también en el borde.
+
+\paragraph{La equivalencia entre anchos.} El borde de las familias compactas se
+elige en el extremo superior del soporte de la gaussiana, $J_t=2.763\,\sigma_J$,
+para que sin masa todas tengan la misma banda de frecuencias. El ancho de
+referencia es $\sigma_J=0.05$, o $J_t=0.138$.
+
+\subsection{La perturbación}
+\label{sec:perturbacion}
+
+El dato inicial es el equilibrio más una perturbación en el ángulo:
+\[
+  F = F_{\rm eq}(J)\,\big[1+\varepsilon\,s(J)\,\chi(Q)\big].
+\]
+
+\paragraph{El perfil angular $\chi(Q)$.} Debe ser periódico y de media cero: así la
+integral de $F$ en $Q$ no cambia, la masa tampoco, y no hay que reconstruir el
+equilibrio. Se usan dos (\texttt{--gq}):
+\begin{itemize}
+\item \texttt{cos}: $\chi=\cos Q$. Excita únicamente $k=1$. En régimen lineal cada
+armónico evoluciona independiente, así que excitar uno solo da la medición más
+limpia. Es el que se usa salvo donde se indique.
+\item \texttt{suma3}: $\chi=\cos Q+\tfrac12\cos2Q+\tfrac13\cos3Q$. Excita $k=1,2,3$ y
+sirve para la prueba de \emph{frecuencia común}, la firma de un modo genuino
+(sección~\ref{sec:protocolo}).
+\end{itemize}
+
+\paragraph{El factor radial $s(J)$.} Se usan tres (\texttt{--pert}): $s=1$
+(\texttt{plana}), $s=\sqrt{J/J_{\max}}$ (\texttt{suave}) y $s=(J/J_{\max})^{3/2}$
+(\texttt{suave3}). La elección la fija la regularidad en la órbita circular
+(sección~\ref{sec:circular}):
+\begin{itemize}
+\item Si $F_{\rm eq}(0)>0$, como en la Maxwelliana, la perturbación plana es
+discontinua: $F_{\rm eq}(0)\cos Q=F_{\rm eq}(0)\,x/\sqrt{x^2+y^2}$ salta en el origen.
+Con $s=\sqrt{J/J_t}$ queda $\propto x$, lisa; con $s=(J/J_t)^{3/2}$ queda
+$\propto Jx$, lisa y más pequeña cerca de la órbita circular.
+\item Si $F_{\rm eq}\propto J^2$ cerca de $J=0$, como en la gaussiana y la hueca,
+$F_{\rm eq}\cos Q\propto J^{3/2}x$ ya es continua, y basta la plana.
+\end{itemize}
+La Maxwelliana usa \texttt{suave3}, y la hueca y la gaussiana, \texttt{plana}; por
+qué \texttt{suave3} y no \texttt{suave} lo muestran las colas de la
+sección~\ref{sec:colasvalores}.
+
+\paragraph{La positividad.} Como $s\le1$, $F\ge0$ exige
+$\varepsilon\,\max|\chi|\le1$: $\varepsilon\le1$ con \texttt{cos} y $\varepsilon\le0.67$
+con \texttt{suma3}, cuyo máximo es $\approx1.5$. El generador lo verifica y aborta
+si no se cumple.
+
+\subsection{El dato inicial discreto}
+\label{sec:discreto}
+
+Las partículas se colocan en una malla regular de las variables acción-ángulo
+verdaderas del equilibrio:
+\[
+  J_i = \big(i-\tfrac12\big)\frac{J_{\max}}{N_{rc}},\quad i=1\ldots N_{rc};\qquad
+  Q_j = \big(j-\tfrac12\big)\frac{2\pi}{N_{pc}},\quad j=1\ldots N_{pc}.
+\]
+Cada nodo es una partícula de peso $8\pi^2L_0\,F(Q_j,J_i)\,\Delta Q\,\Delta J$, y su
+posición $(r,p_r)$ se obtiene invirtiendo el mapa del equilibrio. Hay
+$N=N_{rc}N_{pc}$ partículas. Es una ``partida silenciosa'': no hay ruido de
+muestreo aleatorio, y el ruido que queda viene de la discretización. La misma
+malla en $J$ fija el techo de recurrencia (sección~\ref{sec:recurrencia}).
+
+\section{Los observables}
+\label{sec:observables}
+
+\subsection{La perturbación del potencial}
+\label{sec:dphi}
+
+Se escribe $F=F_{\rm eq}+\delta F$ y $\Phi=\Phi_{\rm eq}+\delta\Phi$. La perturbación
+del potencial en la malla radial del código es
+\[
+  \delta\Phi(r,t) = \Phi(r,t) - \Phi_{\rm iso}(r) - \Phi_{\rm self,eq}(r),
+\]
+que calcula \texttt{landau\_\allowbreak analisis.py}. No depende de ningún mapa
+acción-ángulo, es lo que entra en las ecuaciones de movimiento y es lo que los
+teoremas dicen que decae o no. Su tamaño se resume con
+$\|\delta\Phi\|(t)$, el valor rms en $r\in[3,15]$, la zona donde vive la componente
+con $L_0=2$. Como en 11\_landau, la parte debida a la perturbación se aísla
+restando una corrida con $\varepsilon=0$ del mismo equilibrio: $[\delta\Phi(\varepsilon)-\delta\Phi(0)]/\varepsilon$.
+
+\subsection{Los armónicos $h_k$}
+\label{sec:hk}
+
+Los armónicos de la distribución en el ángulo, pesados por una función de prueba
+en la acción, son
+\[
+  h_k(t) = \frac{\sum_j f_j\,B(J_j)\,e^{-ikQ_j}}{\big[\sum_j f_j\,B(J_j)\big]_{t=0}},
+  \qquad
+  B(J)=J^2\,e^{-(J-j_1)^2/s_{j1}^2},
+\]
+con la suma sobre las partículas, $f_j$ sus pesos y $(Q_j,J_j)$ del mapa del
+potencial de equilibrio (\texttt{landau\_\allowbreak analisis.py}). Se registran
+$k=0\ldots4$; $h_0$ se conserva por construcción y sirve de normalización. Para
+comparar con la teoría lineal se usa $[h_k(\varepsilon)-h_k(0)]/\varepsilon$, y
+\texttt{lineal.py} da su análogo lineal, $\sum\delta F\,B\,e^{-ikQ}/\sum F_{\rm eq}B$.
+
+\paragraph{La función de prueba.} $B(J)$ es una elección del código
+(\texttt{analysish.f90}). Su centro y su ancho siguen al soporte:
+$j_1=s_{j1}=J_t/2.763$, la misma proporción que en 11\_landau ($0.10$ sobre un
+soporte que termina en $0.276$). Se fijan en el \texttt{.par} de cada corrida, de
+donde los leen \texttt{landau\_\allowbreak analisis.py} y, con \texttt{--j1 --sj1},
+\texttt{lineal.py}. El factor $J^2$ la anula en la órbita circular; qué consecuencias
+tiene eso se ve en la sección~\ref{sec:colash}.
+
+\paragraph{El $h_k$ del código Fortran.} \texttt{analysish.f90} calcula también un
+$h_k$, con un factor en $Q$ adicional, $e^{-\sin^2(Q/2)/s_Q^2}$, que solo multiplica
+cada armónico por una constante, y con el mapa del isócrono \emph{desnudo}. Con
+$a_0>0$ las $(Q,J)$ de ese mapa no son las verdaderas, así que la batería usa el
+$h_k$ de \texttt{landau\_\allowbreak analisis.py}.
+
+\subsection{Observables lineales en general}
+\label{sec:obslineal}
+
+$\delta\Phi$ y $h_k$ son dos casos de lo mismo. Cualquier cantidad lineal en la
+perturbación es la integral de $\delta F$ sobre el espacio fase, pesada por una
+función fija $\beta(Q,J)$ que define el observable,
+\[
+  O(t) = \iint dQ\,dJ\;\beta(Q,J)\,\delta F(Q,J,t),
+\]
+y todo lo que importa de $\beta$ para el armónico $k=1$ son sus coeficientes de
+Fourier en el ángulo, a lo largo de cada órbita:
+\[
+  \beta_{\pm1}(J)=\frac{1}{2\pi}\int dQ\;\beta(Q,J)\,e^{\pm iQ}.
+\]
+\begin{itemize}
+\item \textbf{$\delta\Phi$ en el radio $r$.} Por Poisson, en simetría esférica,
+$\delta\Phi(r)=\int G(r,r')\,\delta\rho(r')\,d^3r'$, con
+$G(r,r')=-1/\max(r,r')$ la función de Green de capas esféricas: una capa en $r'$
+aporta $-1/r'$ dentro de ella y $-1/r$ fuera. La densidad sale de integrar $\delta F$
+con la medida de la sección~\ref{sec:reduccion}, y en variables acción-ángulo el
+peso es la función de Green evaluada donde está la partícula:
+$\beta(Q,J)=8\pi^2L_0\,G\big(r,r(Q,J)\big)$. No hay ninguna función de prueba.
+\item \textbf{$h_1$.} $\beta=B(J)\,e^{-iQ}$ dividido por la normalización, así que
+$\beta_1=B$ (más la constante) y $\beta_{-1}=0$.
+\end{itemize}
+Por lo visto en la sección~\ref{sec:circular}, un peso continuo en la órbita
+circular tiene $\beta_{\pm1}\propto\sqrt J$ por una función lisa: $\beta_{\pm1}\sim J^{1/2}$
+es el caso genérico, y $\delta\Phi$ lo cumple (sección~\ref{sec:colasdphi}). Un
+$\beta_1$ que se anula más rápido, como el $J^2$ de $B$, es una elección.
+
+\section{La banda de frecuencias y la mezcla de fases}
+\label{sec:mezcla}
+
+Esta sección trata la dinámica \emph{sin} autogravedad: cada partícula gira en el
+potencial del equilibrio con su propia frecuencia. Es la base de todo lo demás,
+porque la autogravedad se mide como una desviación respecto de ella.
+
+\subsection{La banda}
+\label{sec:banda}
+
+El soporte de $F_{\rm eq}$ ocupa un intervalo de acciones $[J_{\rm lo},J_{\rm hi}]$ y, a
+través de $\Omega(J)$, una banda de frecuencias. Como $\Omega$ decrece con $J$,
+\[
+  \Omega_{\min}=\Omega(J_{\rm hi}),\qquad \Omega_{\max}=\Omega(J_{\rm lo}),\qquad
+  \Delta\Omega=\Omega_{\max}-\Omega_{\min}.
+\]
+Con soporte compacto la banda es exactamente $[\Omega(J_t),\Omega(0)]$. Es el
+conjunto de frecuencias con las que alguna partícula puede resonar, y en el
+problema linealizado es el \emph{espectro esencial} (sección~\ref{sec:antonov}):
+un modo con frecuencia dentro de la banda intercambia energía con las partículas
+resonantes y se amortigua; uno con frecuencia fuera, no. Se usa además la
+frecuencia media pesada por la masa,
+\[
+  \bar\Omega = \frac{\int F_{\rm eq}(J)\,\Omega(J)\,dJ}{\int F_{\rm eq}(J)\,dJ},
+\]
+porque la masa entre $J$ y $J+dJ$ es proporcional a $F_{\rm eq}(J)\,dJ$ (la medida es
+$dQ\,dJ$).
+
+\paragraph{Aproximación 2: dónde termina el soporte.} Con soporte compacto no hay
+nada que elegir. Con la gaussiana, el soporte es el del umbral del \SI{1}{\%}
+(sección~\ref{sec:familias}). Es una convención: con otro umbral cambian los
+bordes y, con ellos, el valor absoluto de $\eta$; las comparaciones entre casos no
+cambian.
+
+\paragraph{Aproximación 3: el ancho relativo a primer orden.} Si el intervalo de
+acciones $\Delta J$ es chico frente a $J+c$, un desarrollo de Taylor de
+$\Omega=(J+c)^{-3}$ da
 \[
   \frac{\Delta\Omega}{\Omega} \;\approx\; \frac{|d\Omega/dJ|\,\Delta J}{\Omega}
   \;=\; \frac{3\,\Delta J}{J+c}.
 \]
-Esta fórmula explica de un vistazo las dos perillas: el ancho crece con
-$\sigma_J$ (que fija $\Delta J$) y decrece con $L_0$ (que fija $c$). Se comprobó
-contra el cálculo exacto del isócrono:
+Esta fórmula explica las dos perillas del ancho: crece con el ancho del soporte
+en acción ($\Delta J\approx2.70\,\sigma_J$, o $J_t$) y decrece con $L_0$, que fija $c$.
+La tabla~\ref{tab:bandas} la compara con el cálculo exacto.
 
 \begin{table}[!htbp]
 \centering
@@ -199,66 +608,128 @@ compacto  & $J_t=0.276$ & $[0,\,0.276]$ & $[0.0514,\,0.0711]$ & 0.322 & 0.324\\
           & $J_t=0.083$ & $[0,\,0.083]$ & $[0.0642,\,0.0711]$ & 0.101 & 0.101\\
 \bottomrule
 \end{tabular}
-\caption{Bandas del isócrono con $L_0=2$ ($c=2.414$), sin autogravedad;
-$\Omega$ es el centro de la banda. La aproximación lineal acierta a menos del
-\SI{1}{\%}; el error crece, como debe, con el ancho del intervalo. Sin masa, la
-banda de soporte compacto es la misma para todas las familias; llega hasta
-$\Omega(0)=c^{-3}$ porque no hay umbral que recorte las órbitas casi
-circulares.}
+\caption{Bandas del isócrono con $L_0=2$ ($c=2.414$), sin autogravedad; en
+$\Delta\Omega/\Omega$, $\Omega$ es el centro de la banda y $J$ el del intervalo. La
+aproximación lineal acierta a menos del \SI{1}{\%}, y el error crece con el ancho,
+como debe. Sin masa la banda de soporte compacto es la misma para todas las
+familias, y llega hasta $\Omega(0)=c^{-3}$ porque no hay umbral que recorte las
+órbitas casi circulares.}
 \label{tab:bandas}
 \end{table}
 
-\subsection{Mezcla de fases: por qué decae $h_k$ aun sin autogravedad}
+\paragraph{El tiempo de mezcla.} Dos partículas en los extremos de la banda
+acumulan una diferencia de fase $k\,\Delta\Omega\,t$ en el armónico $k$. Cuando esa
+diferencia llega a $2\pi$, las fases del armónico cubren toda la vuelta. Eso define
+\[
+  \tau_k=\frac{2\pi}{k\,\Delta\Omega},
+\]
+el tiempo en que la mezcla de fases del armónico $k$ se completa. La duración de
+las corridas lineales es $t_{\rm fin}=10\,\tau_1$.
 
-Sin autogravedad (o despreciándola), la evolución en variables acción-ángulo es
-trivial: cada punto conserva su acción y su ángulo gira,
+\subsection{La solución libre}
+\label{sec:libre}
+
+Sin autogravedad, la ecuación $\partial_tF+\Omega(J)\,\partial_QF=0$ se resuelve por
+características: cada punto conserva su acción y su ángulo avanza
+uniformemente,
 \[
   F(Q,J,t) = F\big(Q-\Omega(J)\,t,\;J,\;0\big).
 \]
-Con el dato inicial $F = F_{\rm eq}(J)\,[1+\varepsilon\cos Q]$, el coeficiente de
-Fourier $k=1$ es $\tfrac{\varepsilon}{2}F_{\rm eq}(J)\,e^{-i\Omega(J)t}$, y el
-observable, pesado por la función de prueba $B(J)$, vale
+Aplicada a la perturbación de la sección~\ref{sec:perturbacion} con $\chi=\cos Q$,
 \[
-  h_1(t) \;\propto\; \int dJ\;B(J)\,F_{\rm eq}(J)\,e^{-i\Omega(J)t}
-  \;=\; \int d\Omega\; w(\Omega)\,e^{-i\Omega t},
-  \qquad
-  w(\Omega) = \frac{B\,F_{\rm eq}}{|d\Omega/dJ|}.
+  \delta F(Q,J,t)=\varepsilon\,F_{\rm eq}(J)\,s(J)\cos\big(Q-\Omega(J)t\big).
 \]
-El segundo paso es solo el cambio de variable $J\to\Omega$, legítimo porque
-$\Omega(J)$ es monótona. Resultado: \textbf{$h_1(t)$ es la transformada de Fourier
-de la distribución de frecuencias $w(\Omega)$}. Por el lema de
-Riemann--Lebesgue tiende a cero, y la \emph{forma} en que lo hace la dicta la
-regularidad de $w$:
+Se sustituye en un observable lineal (sección~\ref{sec:obslineal}) y se integra
+primero en $Q$, escribiendo $\cos x=(e^{ix}+e^{-ix})/2$. La integral en $Q$ solo
+recoge los coeficientes $\beta_{\pm1}$:
+\[
+  O(t) = \pi\varepsilon\int dJ\;F_{\rm eq}(J)\,s(J)\,
+  \Big[\beta_1(J)\,e^{-i\Omega(J)t}+\beta_{-1}(J)\,e^{i\Omega(J)t}\Big].
+\]
+Para un peso real, $\beta_{-1}=\beta_1^*$ y $O=2\pi\varepsilon\,\mathrm{Re}\int
+dJ\,\beta_1F_{\rm eq}s\,e^{-i\Omega t}$. Para $h_1$, $\beta_1=B$ y
+\[
+  h_1(t) = \frac{\varepsilon}{2}\,\frac{\int dJ\,B\,F_{\rm eq}\,s\,e^{-i\Omega(J)t}}{\int dJ\,B\,F_{\rm eq}} .
+\]
+Toda la dependencia en el tiempo está en $e^{-i\Omega(J)t}$; el observable entra
+solo por $\beta_1(J)$, que dice cuánto pesa cada órbita en él.
+
+\paragraph{La distribución de frecuencias.} Como $\Omega(J)$ es monótona, se puede
+cambiar de variable, $dJ=d\Omega/|d\Omega/dJ|$:
+\[
+  O(t)\;\propto\;\int d\Omega\;w(\Omega)\,e^{-i\Omega t},\qquad
+  w(\Omega)=\frac{\beta_1\,F_{\rm eq}\,s}{|d\Omega/dJ|}\Big|_{J(\Omega)} .
+\]
+$w(\Omega)\,d\Omega$ es cuánto pesan, en ese observable, las órbitas con frecuencia
+entre $\Omega$ y $\Omega+d\Omega$. \textbf{El observable es la transformada de Fourier
+de $w$}, y la pregunta ``¿cómo decae?'' se vuelve ``¿cómo decae la transformada
+de Fourier de $w$?''.
+
+\paragraph{Por qué decae.} $O(t)$ es una suma de fasores $e^{-i\Omega t}$, uno por
+órbita, pesados por $w$. En $t=0$ todos apuntan igual. Con el tiempo cada uno gira
+a su velocidad, las fases se reparten en un rango $\Delta\Omega\,t$, y cuando ese
+rango supera mucho $2\pi$ los fasores de frecuencias vecinas se cancelan. Es el
+lema de Riemann--Lebesgue: si $w$ es integrable, su transformada tiende a cero. Es
+la \emph{mezcla de fases}, y ocurre sin disipación: la información no se pierde,
+se va a escalas cada vez más finas en $J$.
+
+\subsection{La regularidad de $w$ y la forma del decaimiento}
+\label{sec:regularidad}
+
+La cancelación es perfecta donde $w$ es suave, porque cada fasor tiene vecinos casi
+iguales a ambos lados. Lo que sobrevive viene de los puntos donde $w$ no es suave.
 
 \begin{itemize}
-\item Si $w$ es suave y localizada, el decaimiento es más rápido que cualquier
-potencia. Para una $w$ aproximadamente gaussiana de desviación $\sigma_\Omega$,
-$|h_1(t)|\approx|h_1(0)|\,e^{-\sigma_\Omega^2t^2/2}$: decaimiento gaussiano en el
-tiempo.
-\item Si $w$ tiene un borde donde se anula como $(\Omega-\Omega_{\min})^k$, ese
-borde aporta una cola algebraica $\propto t^{-(k+1)}$ (la asintótica estándar de
-un extremo de integración). Cuanto más brusco el borde, más lenta la cola. Esta
-es la conexión intuitiva con la sección~\ref{sec:borde}.
+\item \textbf{$w$ suave, que se anula con todas sus derivadas en los extremos.}
+Cada integración por partes gana un factor $1/t$, así que la transformada decae
+más rápido que cualquier potencia. Si $w$ es aproximadamente gaussiana de
+desviación $\sigma_\Omega$, su transformada es
+$|O(t)|\approx|O(0)|\,e^{-\sigma_\Omega^2t^2/2}$: decaimiento gaussiano en el tiempo.
+\item \textbf{Un borde.} Si cerca de $\Omega_{\min}$, con $u=\Omega-\Omega_{\min}\ge0$,
+$w\approx c\,u^\alpha$ y $w=0$ por debajo, el cambio $v=ut$ da
+\[
+  \int_0^\infty u^\alpha e^{-iut}\,du = t^{-(\alpha+1)}\int_0^\infty v^\alpha e^{-iv}\,dv
+  = \Gamma(\alpha+1)\,e^{-i\pi(\alpha+1)/2}\;t^{-(\alpha+1)},
+\]
+así que el borde aporta una cola $c\,\Gamma(\alpha+1)\,e^{-i\Omega_{\min}t}\,(it)^{-(\alpha+1)}$.
+Oscila en la frecuencia del borde y decae como una potencia. La intuición: en el
+tiempo $t$ solo se cancelan entre sí fasores separados en más de $\sim1/t$; los que
+están a menos de $1/t$ del borde no tienen pareja de un lado, y pesan
+$\int_0^{1/t}u^\alpha du\propto t^{-(\alpha+1)}$. Cuanto más brusco el borde, más
+lenta la cola: un salto ($\alpha=0$) deja $1/t$.
+\item \textbf{Un punto interior} donde $w\sim|\Omega-\Omega_*|^\alpha$, o donde cambia
+de forma bruscamente, aporta del mismo modo una cola $t^{-(\alpha+1)}$ con frecuencia
+$\Omega_*$.
 \end{itemize}
 
-La escala de tiempo es la inversa del ancho. Definimos
-\[
-  \tau_k = \frac{2\pi}{k\,\Delta\Omega},
-\]
-con $\Delta\Omega$ el ancho del soporte de la tabla~\ref{tab:bandas}.
+\paragraph{De $J$ a $\Omega$.} Cerca de cualquier punto,
+$\Omega-\Omega_e\approx\Omega'(J_e)\,(J-J_e)$ con $\Omega'\ne0$, así que una potencia en $J$ es
+la misma potencia en $\Omega$; $|\Omega'|$ solo entra en la amplitud. (Si $\Omega'$ se
+anulara en algún punto, una frecuencia estacionaria, habría una contribución de
+fase estacionaria $\propto t^{-1/2}$; en el isócrono no pasa.) La regla que se usa en
+todo el documento es entonces:
 
-\paragraph{Aproximación 3: $\tau_k$ es una escala, no una ley.} El decaimiento
-real no es exponencial con tasa $1/\tau_k$. Lo que $\tau_k$ da es el orden de
-magnitud del tiempo en que la mezcla es completa. La relación con la
-desviación $\sigma_\Omega$ depende del umbral del soporte: para un perfil
-gaussiano, el punto donde cae al \SI{1}{\%} está a $3.03\,\sigma$ del centro, así
-que $\Delta\Omega\approx 6.1\,\sigma_\Omega$.
+\begin{nota}
+\textbf{Regla de las colas.} Cada punto $J_e$ donde el integrando
+$\beta_1F_{\rm eq}s$ se comporta como $|J-J_e|^\alpha$, sea un borde de la banda o un punto
+interior, aporta una cola $\propto t^{-(\alpha+1)}$ con frecuencia $\Omega(J_e)$. Donde el
+integrando es suave, el decaimiento es más rápido que cualquier potencia. Domina
+el punto de menor $\alpha$.
+\end{nota}
 
-\paragraph{Comprobación con las corridas de Landau.} La corrida
-\texttt{landau\_\allowbreak libre} evoluciona la perturbación sin autogravedad en el
-potencial del equilibrio con $\sigma_J=0.10$. Si el decaimiento es gaussiano,
-$\ln(|h_1(0)|/|h_1(t)|) = \sigma_\Omega^2t^2/2$ con $\sigma_\Omega$ constante.
-Los datos dan
+\subsection{La escala $\tau_k$ y la comprobación con Landau}
+\label{sec:tau}
+
+\paragraph{Aproximación 4: $\tau_k$ es una escala, no una ley.} El decaimiento real
+no es exponencial con tasa $1/\tau_k$: su forma la da la regla anterior. $\tau_k$ da el
+orden de magnitud del tiempo en que la mezcla es completa. Para la gaussiana, $w$
+es aproximadamente gaussiana y el umbral del \SI{1}{\%} está donde
+$e^{-u^2/2}=0.01$, es decir a $3.03\,\sigma$ del centro: $\Delta\Omega\approx6.1\,\sigma_\Omega$.
+
+\paragraph{Comprobación.} La corrida \texttt{landau\_\allowbreak libre} evoluciona la
+perturbación de 11\_landau sin autogravedad, en el potencial del equilibrio. Si
+el decaimiento de $h_1$ es gaussiano, $\ln(|h_1(0)|/|h_1(t)|)=\sigma_\Omega^2t^2/2$ con
+$\sigma_\Omega$ constante. Los datos dan la tabla~\ref{tab:libre}.
 
 \begin{table}[!htbp]
 \centering
@@ -273,100 +744,74 @@ $t$ & $|h_1|/|h_1(0)|$ & $\sigma_\Omega$ inferido & $\Delta\Omega/\sigma_\Omega$
 1400 & $9.9\times10^{-5}$ & $3.07\times10^{-3}$ & 6.23\\
 \bottomrule
 \end{tabular}
-\caption{Decaimiento libre medido. $\sigma_\Omega$ varía solo un \SI{12}{\%} mientras
-$|h_1|$ cae cuatro órdenes de magnitud: el decaimiento es casi exactamente
-gaussiano, como predice la transformada de Fourier de una $w$ suave. El ligero
-aumento tardío es la cola no gaussiana de $w$. El cociente
-$\Delta\Omega/\sigma_\Omega\approx 6.2$--$7.0$ coincide con el $6.1$ esperado.}
+\caption{Decaimiento libre de 11\_landau. $\sigma_\Omega$ varía solo un \SI{12}{\%}
+mientras $|h_1|$ cae cuatro órdenes de magnitud: el decaimiento es casi
+exactamente gaussiano, como predice la transformada de una $w$ suave. El ligero
+aumento tardío es la parte no gaussiana de $w$. El cociente
+$\Delta\Omega/\sigma_\Omega\approx6.2$--$7.0$ coincide con el $6.1$ esperado.}
+\label{tab:libre}
 \end{table}
 
 Una consecuencia práctica: la parte libre de $h_1$ alcanza el piso numérico
-hacia $t\approx 5\,\tau_1$. De ahí la duración $t_{\rm fin}=10\,\tau_1$ de la
-batería: la mitad de la corrida para que termine la mezcla libre y la otra mitad
-para ajustar lo que quede. Para $\delta\Phi$ la cuenta es otra, y es el tema del
-párrafo siguiente.
+hacia $t\approx5\,\tau_1$. De ahí $t_{\rm fin}=10\,\tau_1$ para las corridas lineales:
+la mitad para que termine la mezcla libre y la otra mitad para ajustar lo que
+quede. Para $\delta\Phi$ la cuenta es otra.
 
-\paragraph{Cualquier observable lineal.} Lo anterior se hizo para $h_1$, pero el
-argumento vale para cualquier cantidad lineal en la perturbación. Una cantidad así
-es la integral de $\delta F$ sobre el espacio fase, pesada por una función fija
-$a(Q,J)$ que define el observable,
-\[
-  O(t) = \iint dQ\,dJ\;a(Q,J)\,\delta F(Q,J,t),
-\]
-con $dQ\,dJ=dr\,dp_r$ porque el cambio a acción-ángulo es canónico. Sin
-autogravedad cada partícula conserva $J$ y su ángulo avanza con $\Omega(J)$, así que
-$\delta F(Q,J,t)=\varepsilon\,F_{\rm eq}(J)\,s(J)\cos\big(Q-\Omega(J)t\big)$. Al
-integrar primero en $Q$, con $\cos x=(e^{ix}+e^{-ix})/2$, solo sobreviven los
-coeficientes de Fourier $k=\pm1$ del peso a lo largo de cada órbita:
-\[
-  O(t) = \pi\varepsilon\int dJ\;F_{\rm eq}(J)\,s(J)\,
-  \Big[a_1(J)\,e^{-i\Omega(J)t}+a_{-1}(J)\,e^{i\Omega(J)t}\Big],
-\]
-\[
-  a_{\pm1}(J)=\frac{1}{2\pi}\int dQ\;a(Q,J)\,e^{\pm iQ}.
-\]
-Para un peso real, $a_{-1}=a_1^*$ y $O(t)=2\pi\varepsilon\,\mathrm{Re}\int dJ\,a_1F_{\rm eq}s\,e^{-i\Omega t}$.
-Toda la dependencia en el tiempo está en $e^{-i\Omega(J)t}$; el observable entra
-solo por $a_1(J)$, que dice cuánto pesa cada órbita en él. La regla de las colas
-se aplica entonces al producto $a_1F_{\rm eq}s$: cada punto $J_e$ donde se comporta
-como $|J-J_e|^\alpha$, sea un borde de la banda o un punto interior, aporta una
-cola $\propto t^{-(\alpha+1)}$ con frecuencia $\Omega(J_e)$, y donde el producto es
-suave el decaimiento es más rápido que cualquier potencia. Pasar de $J$ a $\Omega$
-no cambia el exponente, porque $d\Omega/dJ$ no se anula.
+\subsection{Las colas de $\delta\Phi$}
+\label{sec:colasdphi}
 
-\paragraph{$\delta\Phi$: la proyección sobre la función de Green.} El observable
-principal del protocolo (sección~\ref{sec:protocolo}), la perturbación del
-potencial en un radio fijo, es de este tipo y no involucra ninguna función de
-prueba. Por Poisson, $\delta\Phi(r)=\int G(r,r')\,\delta\rho(r')\,d^3r'$, con
-$G(r,r')=-1/\max(r,r')$ la función de Green de capas esféricas, y la densidad
-sale de integrar $\delta F$ con la medida $8\pi^2L_0$ de la reducción. En
-variables acción-ángulo el peso es la función de Green evaluada donde está la
-partícula, $a(Q,J)=8\pi^2L_0\,G\big(r,r(Q,J)\big)$, y
+Para $\delta\Phi$, el peso es $\beta=8\pi^2L_0\,G(r,r(Q,J))$, y la fórmula de la
+sección~\ref{sec:libre} da
 \[
   \delta\Phi(r,t) = 8\pi^2L_0\,\varepsilon\;
   \mathrm{Re}\!\int dJ\;F_{\rm eq}(J)\,s(J)\,C(r,J)\,e^{-i\Omega(J)t},
   \qquad
   C(r,J) = \int dQ\;e^{iQ}\,G\big(r,\,r(Q,J)\big).
 \]
-$s(J)$ es el factor radial de la perturbación ($s=1$ en 11\_landau;
-sección~\ref{sec:perfil}). Tres propiedades de $C$, que vienen solo de las órbitas
-y de Poisson, fijan la cola:
+$C(r,J)$ dice cuánto contribuye el armónico $k=1$ de la órbita $J$ al potencial en
+$r$. Tres propiedades, que vienen solo de las órbitas y de Poisson, fijan la
+cola:
 \begin{itemize}
 \item \textbf{Órbita circular.} Cerca de ella la órbita es un epiciclo,
-$r(Q,J)\approx r_c+\sqrt{2J/\kappa}\,\cos Q$; al desarrollar $G$ alrededor de $r_c$,
-lo que multiplica $\cos Q$ es proporcional a la amplitud, así que $C\propto\sqrt J$.
-El extremo $J=0$ de la banda ($\Omega_{\max}$) aporta un integrando
-$\propto F_{\rm eq}\,s\,J^{1/2}$. Si $F_{\rm eq}(0)>0$, como en toda distribución
-monótona, la cola es $t^{-3/2}$ con $s=1$, $t^{-2}$ con $s=\sqrt{J/J_t}$ y
-$t^{-3}$ con $s=(J/J_t)^{3/2}$; si $F_{\rm eq}\propto J^2$, $t^{-7/2}$.
+$r(Q,J)\approx r_c+R_e(J)\cos Q$ (sección~\ref{sec:circular}). Desarrollando $G$
+alrededor de $r_c$, $G(r,r_c+R_e\cos Q)\approx G(r,r_c)+\partial_{r'}G\,R_e\cos Q$, y
+la integral en $Q$ del término constante se anula, así que
+$C\approx\pi\,\partial_{r'}G\,R_e\propto\sqrt J$. El extremo $J=0$ de la banda
+($\Omega_{\max}$) aporta un integrando $\propto F_{\rm eq}\,s\,J^{1/2}$. Si
+$F_{\rm eq}(0)>0$, como en toda distribución monótona, la cola es $t^{-3/2}$ con
+$s=1$, $t^{-2}$ con $s=\sqrt{J/J_t}$ y $t^{-3}$ con $s=(J/J_t)^{3/2}$; si
+$F_{\rm eq}\propto J^2$, $t^{-7/2}$.
 \item \textbf{Borde de vacío.} $C$ no se anula en $J_t$, así que si
-$F_{\rm eq}\propto(J_t-J)^k$ la cola es $t^{-(k+1)}$, en $\Omega_{\min}$.
-\item \textbf{Puntos de retorno.} $G$ tiene un quiebre en $r'=r$. Donde el
-pericentro o el apocentro de la órbita cruza el radio $r$, la fracción de órbita
-más allá de $r$ crece como $(J-J_*)^{3/2}$, y $C$ hereda esa singularidad: una cola
-$t^{-5/2}$ con frecuencia $\Omega(J_*)$, dentro de la banda, \emph{para cualquier}
-$F_{\rm eq}$.
+$F_{\rm eq}\propto(J_t-J)^g$ la cola es $t^{-(g+1)}$, en $\Omega_{\min}$.
+\item \textbf{Puntos de retorno.} $G(r,r')$ tiene un quiebre en $r'=r$: vale $-1/r$
+para $r'<r$ y $-1/r'$ para $r'>r$. Si el apocentro $r_+(J)$ de la órbita está
+apenas por encima de $r$, el arco de órbita más allá de $r$ tiene un semiancho en
+$Q$ proporcional a $\sqrt{r_+-r}$ (cerca del apocentro, $r_+-r(Q)$ crece como el
+cuadrado de la distancia en $Q$), y en él $G$ difiere de $-1/r$ en
+$\approx(r'-r)/r^2\propto r_+-r$. La contribución es $\propto(r_+-r)^{3/2}$, y como
+$r_+-r\propto J-J_*$, $C$ tiene una singularidad $(J-J_*)^{3/2}$: una cola $t^{-5/2}$
+con frecuencia $\Omega(J_*)$, dentro de la banda, \emph{para cualquier} $F_{\rm eq}$. Lo
+mismo en el pericentro.
 \end{itemize}
 Nada de esto depende de una función de prueba: la parte libre de $\delta\Phi$
 decae algebraicamente para toda distribución, aun para la gaussiana.
 
-\paragraph{$h_1$ y cualquier función de prueba.} $h_1$ es otro observable, con el
-peso elegido en el código, $a(Q,J)=B(J)\,e^{-iQ}$, de modo que $a_1=B$ y
-$a_{-1}=0$. Para una $B$ cualquiera que cerca de $J=0$ vaya como $J^p$ y no se
-anule en $J_t$, la misma regla da:
+\subsection{Las colas de $h_1$ y de cualquier función de prueba}
+\label{sec:colash}
+
+Para $h_1$ el integrando es $B\,F_{\rm eq}\,s$. Si $B$ va como $J^p$ cerca de $J=0$ y no
+se anula en $J_t$, la regla de las colas da, con $F_{\rm eq}\sim J^m$ y $s\sim J^{p_s}$:
 \begin{itemize}
-\item en $J=0$ ($\Omega_{\max}$), una cola $t^{-(p+m+p_s+1)}$, con $F_{\rm eq}\sim J^m$ y
-$s\sim J^{p_s}$;
-\item en el borde de vacío, la misma $t^{-(k+1)}$ que $\delta\Phi$;
-\item y ninguna cola de puntos de retorno si $B$ es lisa en $J$, porque $h_1$ no
-mira un radio fijo.
+\item en $J=0$ ($\Omega_{\max}$), una cola $t^{-(p+m+p_s+1)}$;
+\item en el borde de vacío, la misma $t^{-(g+1)}$ que $\delta\Phi$;
+\item ninguna cola de puntos de retorno si $B$ es lisa en $J$, porque $h_1$ no mira
+un radio fijo.
 \end{itemize}
-El exponente $p$ no es del todo libre. En la órbita circular las coordenadas
-lisas son $x+iy\propto\sqrt J\,e^{iQ}$, así que un peso con dependencia $e^{-iQ}$
-es continuo allí solo si va como $\sqrt J$ por una función lisa de $J$: $p\ge1/2$.
-El caso genérico es $p=1/2$, y $\delta\Phi$ es genérico ($C\propto\sqrt J$). Un $p$
-mayor es una elección: la $B$ del código tiene $p=2$, y eso acelera en $3/2$
-potencias la cola del borde $\Omega_{\max}$ (tabla~\ref{tab:exponentes}).
+El exponente $p$ no es del todo libre: un peso continuo en la órbita circular
+exige $p\ge1/2$ (sección~\ref{sec:obslineal}). El caso genérico es $p=1/2$, y
+$\delta\Phi$ es genérico ($C\propto\sqrt J$). La $B$ del código tiene $p=2$, y eso
+acelera en $3/2$ potencias la cola del borde $\Omega_{\max}$
+(tabla~\ref{tab:exponentes}).
 
 \begin{table}[!htbp]
 \centering
@@ -379,28 +824,48 @@ $J=0$, $F_{\rm eq}(0)>0$, $s=1$ & $t^{-3/2}$ & $t^{-(p+1)}$ & $t^{-3}$\\
 $J=0$, $F_{\rm eq}(0)>0$, $s=\sqrt{J/J_t}$ & $t^{-2}$ & $t^{-(p+3/2)}$ & $t^{-7/2}$\\
 $J=0$, $F_{\rm eq}(0)>0$, $s=(J/J_t)^{3/2}$ & $t^{-3}$ & $t^{-(p+5/2)}$ & $t^{-9/2}$\\
 $J=0$, $F_{\rm eq}\propto J^2$, $s=1$ & $t^{-7/2}$ & $t^{-(p+3)}$ & $t^{-5}$\\
-borde de vacío, $F_{\rm eq}\propto(J_t-J)^k$ & $t^{-(k+1)}$ & $t^{-(k+1)}$ & $t^{-(k+1)}$\\
+borde de vacío, $F_{\rm eq}\propto(J_t-J)^g$ & $t^{-(g+1)}$ & $t^{-(g+1)}$ & $t^{-(g+1)}$\\
 puntos de retorno (solo a radio fijo) & $t^{-5/2}$ & no aparece & no aparece\\
 componente regenerada, $F_{\rm eq}'(0)\ne0$ & $t^{-2}$ & $t^{-(p+3/2)}$ & $t^{-7/2}$\\
 \bottomrule
 \end{tabular}
 \caption{Exponentes de las colas libres según el observable. La primera columna es
-la de cualquier observable genérico, $\delta\Phi$ incluido; las otras, las de $h_1$
-con una función de prueba que se anula como $J^p$. La última fila es la
-componente que regenera la autogravedad (tercera conclusión, más abajo).}
+la de cualquier observable genérico, $\delta\Phi$ incluido; las otras, las de $h_1$ con
+una función de prueba que se anula como $J^p$. La última fila es la componente que
+regenera la autogravedad (sección~\ref{sec:regenerada}).}
 \label{tab:exponentes}
 \end{table}
 
 Por eso lo que depende de $B$ no es la cola de $\delta\Phi$, sino cuánto de ella
 muestra $h_1$. Las órbitas casi circulares, que producen la cola de $\Omega_{\max}$,
-casi no pesan en $h_1$ con $p=2$; y $h_1$ no ve la de los puntos de retorno. Visto
+casi no pesan en $h_1$ con $p=2$, y $h_1$ no ve la de los puntos de retorno. Visto
 así, $\delta\Phi$ es él mismo una proyección sobre una ``función de prueba'', la
 función de Green, que nadie eligió y que tiene quiebres; $h_1$ es la proyección
-sobre una función lisa y elegida. La dinámica es la misma, y el polo de la
-respuesta autoconsistente tampoco depende del observable
-(sección~\ref{sec:lineal}): lo que el observable decide es qué se ve junto al polo.
-La tabla~\ref{tab:colas} da los valores exactos para las familias de la
-sección~\ref{sec:familia}.
+sobre una función lisa y elegida. La dinámica es la misma, y el modo colectivo de
+la sección~\ref{sec:respuesta} tampoco depende del observable: lo que el
+observable decide es qué se ve junto a él.
+
+\subsection{Los valores}
+\label{sec:colasvalores}
+
+\paragraph{Aproximación 5: colas en el isócrono desnudo.} Los valores de la
+tabla~\ref{tab:colas} se calcularon con \texttt{colas\_\allowbreak libres.py}, que
+evalúa las integrales de la sección~\ref{sec:libre} por cuadratura, sin evolución
+temporal, en el isócrono sin masa propia ($a_0\to0$): la cola es propiedad de la
+forma de $F_{\rm eq}$. La cuadratura reproduce a dos cifras el decaimiento de
+\texttt{landau\_\allowbreak libre} (la suma sobre las partículas de 11\_landau) en
+$t=400$--$1400$, y cambia menos de $3\times10^{-4}$ con media malla en $J$ hasta
+$40\,\tau_1$.
+
+\paragraph{Cuánto potencial produce una perturbación.} La última columna de la
+tabla es
+\[
+  \rho_\Phi=\frac{\big[\|\delta\Phi(0)\|/(a_0\,\varepsilon)\big]_{\rm familia}}
+               {\big[\|\delta\Phi(0)\|/(a_0\,\varepsilon)\big]_{\rm gaussiana}} ,
+\]
+el $\delta\Phi$ inicial por unidad de masa y de amplitud, relativo a la gaussiana con
+$\sigma_J=0.05$ y perturbación plana. Se usa para comparar amplitudes entre familias
+(sección~\ref{sec:atrapamiento}).
 
 \begin{table}[!htbp]
 \centering
@@ -410,7 +875,7 @@ sección~\ref{sec:familia}.
 \toprule
 $F_{\rm eq}$ & $s(J)$ & $|h_1|/|h_1(0)|$ &
   \multicolumn{3}{c}{$\|\delta\Phi\|/\|\delta\Phi(0)\|$} & pendiente &
-  $\|\delta\Phi(0)\|/M$\\
+  $\rho_\Phi$\\
  & & $10\tau_1$ & $2\tau_1$ & $5\tau_1$ & $10\tau_1$ & $20$--$40\,\tau_1$ & \\
 \midrule
 gaussiana & 1 &
@@ -427,60 +892,55 @@ Wilson, $W_0=6$ & $(J/J_t)^{3/2}$ &
   $3.6\times10^{-5}$ & $1.0\times10^{-1}$ & $7.7\times10^{-3}$ & $1.0\times10^{-3}$ & $-2.9$ & 0.06\\
 \bottomrule
 \end{tabular}
-\caption{Decaimiento libre exacto (\texttt{colas\_\allowbreak libres.py}) con el
-ancho de A4, $\sigma_J=0.05$ o $J_t=0.138$: isócrono desnudo con $L_0=2$ y
-$\|\delta\Phi\|$ el valor rms en $r\in[3,15]$. Las columnas de $\delta\Phi$ no usan
-ninguna función de prueba; la de $h_1$ usa la del código, $B=J^2e^{-(J-0.05)^2/0.05^2}$. ``Wilson''
-es la Maxwelliana rebajada con $g=2$ de la sección~\ref{sec:familia}. La
+\caption{Decaimiento libre exacto con el ancho de referencia ($\sigma_J=0.05$ o
+$J_t=0.138$), isócrono desnudo con $L_0=2$. Las columnas de $\delta\Phi$ no usan
+ninguna función de prueba; la de $h_1$ usa la del código,
+$B=J^2e^{-(J-0.05)^2/0.05^2}$. ``Wilson'' es la Maxwelliana rebajada con $g=2$. La
 pendiente es $d\ln\|\delta\Phi\|/d\ln t$ entre $20$ y $40\,\tau_1$ y confirma los
-exponentes predichos: $-3/2$, $-2$ y, con $s=(J/J_t)^{3/2}$, una cola del borde
-$J=0$ más rápida que la de los puntos de retorno ($-5/2$). La última columna es
-$\delta\Phi(0)$ por unidad de masa y de $\varepsilon$, relativa a la gaussiana:
-cuánto potencial produce la perturbación. La cuadratura reproduce a dos cifras
-el decaimiento de \texttt{landau\_\allowbreak libre} (la suma sobre las
-partículas de 11\_landau) en $t=400$--$1400$, y cambia menos de
-$3\times10^{-4}$ (relativo) con media malla en $J$ hasta $40\,\tau_1$.}
+exponentes de la tabla~\ref{tab:exponentes}: $-3/2$ y $-2$, y con
+$s=(J/J_t)^{3/2}$ una cola del borde $J=0$ más rápida que la de los puntos de
+retorno ($-5/2$).}
 \label{tab:colas}
 \end{table}
 
-Cuatro conclusiones. Primera: una distribución con $F_{\rm eq}(0)>0$ y
-perturbación $s=1$ deja en $\delta\Phi$ una cola 150 veces mayor que la
-gaussiana en $t_{\rm fin}$, en la frecuencia $\Omega_{\max}$; con
-$s=(J/J_t)^{3/2}$ baja al nivel de la gaussiana. Segunda: esa perturbación lisa
-produce poco potencial ($0.11$ de la gaussiana por unidad de masa), porque la
-masa térmica está en órbitas casi circulares, de epiciclo chico, donde toda
-perturbación lisa debe anularse; hay que compensarlo con $\varepsilon$ mayor
-(sección~\ref{sec:perfil}). Tercera: la condición inicial solo controla la parte
-\emph{libre}. La respuesta autoconsistente cerca de $J=0$ es
-$\delta F_1\propto F_{\rm eq}'(0)\,\delta\Phi_1(J)$, con $\delta\Phi_1\propto\sqrt J$:
-la autogravedad regenera una componente con la regularidad de $s=\sqrt{J/J_t}$,
-con amplitud proporcional al acoplamiento, y cola $t^{-2}$ en $\Omega_{\max}$ en
-$\delta\Phi$ (y en cualquier observable genérico; en $h_1$ con $p=2$, $t^{-7/2}$). En
-una distribución que se anula como $J^2$, $F_{\rm eq}'(0)=0$ y esa componente no
-aparece. La teoría lineal lo confirma: en A1, extendida a $60\,\tau_1$, la señal
-tardía está en $\Omega_{\max}$ y decae con pendiente $-2.2$
-(sección~\ref{sec:borde_lineal}); su amplitud en cada corrida la da
-\texttt{lineal.py} (sección~\ref{sec:protocolo}). Cuarta:
-con cualquier familia la parte libre de $\delta\Phi$ vale todavía
-$\sim10^{-4}$ de su valor inicial en $10\,\tau_1$, el orden del piso de ruido:
-$\gamma$ se ajusta contra esa referencia, no suponiendo que la mezcla libre ya
-terminó.
+Tres conclusiones:
+\begin{enumerate}
+\item Una distribución con $F_{\rm eq}(0)>0$ y perturbación $s=1$ deja en $\delta\Phi$
+una cola 150 veces mayor que la gaussiana en $10\,\tau_1$, en la frecuencia
+$\Omega_{\max}$. Con $s=(J/J_t)^{3/2}$ baja al nivel de la gaussiana. Por eso la
+Maxwelliana usa \texttt{suave3}.
+\item Esa perturbación lisa produce poco potencial, $\rho_\Phi=0.11$: la masa de una
+distribución térmica está en órbitas casi circulares, de epiciclo chico, donde
+toda perturbación lisa debe anularse. Hay que compensarlo con un $\varepsilon$
+mayor (sección~\ref{sec:bateria}).
+\item Con cualquier familia la parte libre de $\delta\Phi$ vale todavía
+$\sim10^{-4}$ de su valor inicial en $10\,\tau_1$, el orden del piso de ruido: la tasa
+de amortiguamiento se ajusta contra esa referencia libre, no suponiendo que la
+mezcla ya terminó.
+\end{enumerate}
 
-\subsection{El corrimiento de frecuencias por autogravedad}
+\section{La autogravedad: corrimiento, modo colectivo y el criterio $\eta$}
+\label{sec:autogravedad}
 
-La autogravedad hunde el potencial y acelera todas las órbitas: la banda entera
-sube. Para entender cuánto, conviene mirar la órbita casi circular, que fija
-$\Omega_{\max}$.
+La autogravedad hace dos cosas. Cambia el equilibrio: hunde el potencial y
+corre las frecuencias orbitales (sección~\ref{sec:corrimiento}). Y acopla la
+perturbación consigo misma: la $\delta F$ produce un $\delta\Phi$ que actúa de vuelta
+sobre las partículas, y ese acoplamiento puede sostener un modo colectivo
+(secciones~\ref{sec:respuesta} a~\ref{sec:regenerada}). El criterio $\eta$ usa lo
+primero como medida de lo segundo (sección~\ref{sec:eta}).
 
-\paragraph{Aproximación 4: la frecuencia epicíclica.} Para una órbita cercana a la
-circular de radio $r_c$ (definido por $\Phi'(r_c)=L_0^2/r_c^3$), la frecuencia
-radial es la epicíclica,
-\[
-  \kappa^2 = \Phi_{\rm ef}''(r_c) = \Phi''(r_c) + \frac{3L_0^2}{r_c^4}
-           = \Phi'' + \frac{3\Phi'}{r_c}.
-\]
-Usando la ecuación de Poisson en simetría esférica,
-$\Phi''+2\Phi'/r = 4\pi G\rho$, se elimina $\Phi''$:
+\subsection{El corrimiento de frecuencias}
+\label{sec:corrimiento}
+
+La autogravedad hunde el potencial y acelera las órbitas: la banda entera sube.
+Para entender cuánto conviene mirar la órbita casi circular, cuya frecuencia es
+$\kappa$ (sección~\ref{sec:circular}).
+
+\paragraph{La frecuencia epicíclica y la densidad local.} Como
+$\Phi'(r_c)=L_0^2/r_c^3$, la definición de $\kappa$ se puede escribir
+$\kappa^2=\Phi''+3L_0^2/r_c^4=\Phi''+3\Phi'/r_c$. La ecuación de Poisson en simetría
+esférica, $\Phi''+2\Phi'/r=4\pi G\rho$, permite eliminar $\Phi''$, y con
+$\Phi'=GM(<r)/r^2$:
 \[
   \boxed{\;\kappa^2 = 4\pi G\,\rho(r_c) + \frac{G\,M(<r_c)}{r_c^3}\;}
 \]
@@ -491,24 +951,23 @@ La frecuencia radial depende de dos cosas: la masa encerrada, como en Kepler, y
 del isócrono de masa y escala unidad es
 $\rho = [3(1+a)a^2 - r^2(1+3a)]/[4\pi(1+a)^3a^3]$ con $a=\sqrt{1+r^2}$; en $r_c$
 vale $1.09\times10^{-4}$, y la masa encerrada es $0.696$. Entonces
-$4\pi\rho = 1.37\times10^{-3}$, $M/r_c^3 = 3.68\times10^{-3}$, y
-$\kappa = 0.0711$, que coincide con $\Omega(0) = c^{-3} = 0.0711$. La fórmula
-epicíclica es exacta en el límite circular, como debe.
+$4\pi\rho = 1.37\times10^{-3}$, $M/r_c^3 = 3.68\times10^{-3}$ y
+$\kappa = 0.0711$, que coincide con $\Omega(0) = c^{-3} = 0.0711$: la
+aproximación epicíclica es exacta en el límite circular, como debe.
 
-\paragraph{La contribución propia.} La componente autogravitante de masa $a_0$
-vive en una cáscara alrededor de $r_c$. El semiancho de la órbita con acción $J$
-es la amplitud epicíclica, $A=\sqrt{2J/\kappa}$; tomando $J=\sigma_J$ (el máximo de
-$J^2e^{-J^2/\sigma_J^2}$), $A=0.92$, $1.19$ y $1.68$ para $\sigma_J=0.03$, $0.05$
-y $0.10$. El máximo de $J^2(J_t-J)^2$ está en $J_t/2=1.4\,\sigma_J$: una cáscara
-parecida. La Maxwelliana de Wilson, en cambio, es máxima en $J=0$ y su acción
-media es $0.20\,J_t=0.027$ para $J_t=0.138$: $A=0.87$ contra $1.19$, una cáscara
-más angosta y más densa.
+\paragraph{La contribución propia.} La componente de masa $a_0$ vive en una
+cáscara alrededor de $r_c$, de semiancho igual al radio del epiciclo típico. Para
+la gaussiana, tomando $J=\sigma_J$ (el máximo de $J^2e^{-J^2/\sigma_J^2}$),
+$R_e=0.92$, $1.19$ y $1.68$ para $\sigma_J=0.03$, $0.05$ y $0.10$. El máximo de
+$J^2(J_t-J)^2$ está en $J_t/2=1.4\,\sigma_J$: una cáscara parecida. La Maxwelliana de
+Wilson, en cambio, es máxima en $J=0$ y su acción media es $0.20\,J_t=0.027$ para
+$J_t=0.138$: $R_e=0.87$ contra $1.19$, una cáscara más angosta y más densa.
 
-\paragraph{Aproximación 5: cáscara uniforme.} Si la masa se reparte uniforme en
-$[r_c-A,\,r_c+A]$, su densidad es $\rho_{\rm self}\approx a_0/(4\pi r_c^2\,2A)$, y
-la mitad de la masa queda dentro de $r_c$. El cambio de $\kappa^2$ es
+\paragraph{Aproximación 6: cáscara uniforme.} Si la masa se reparte uniforme en
+$[r_c-R_e,\,r_c+R_e]$, su densidad es $\rho_{\rm self}\approx a_0/(4\pi r_c^2\,2R_e)$,
+y la mitad de la masa queda dentro de $r_c$. Con la fórmula anterior,
 \[
-  \delta\kappa^2 \approx \frac{a_0}{2A\,r_c^2} + \frac{a_0/2}{r_c^3},
+  \delta\kappa^2 \approx \frac{a_0}{2R_e\,r_c^2} + \frac{a_0/2}{r_c^3},
   \qquad
   \frac{\delta\kappa}{\kappa} = \frac{\delta\kappa^2}{2\kappa^2}.
 \]
@@ -525,245 +984,457 @@ $\sigma_J$ & $4\pi\rho_{\rm self}/a_0$ & $M_{\rm self}/(r_c^3a_0)$ &
 0.03 & $1.65\times10^{-2}$ & $2.6\times10^{-3}$ & 1.89 & 2.19\\
 \bottomrule
 \end{tabular}
-\caption{El corrimiento por unidad de masa. La estimación epicíclica con cáscara
+\caption{El corrimiento por unidad de masa, gaussiana. La estimación con cáscara
 uniforme reproduce el orden de magnitud, la tendencia (más corrimiento cuanto
-más angosta la cáscara) y entre el \SI{74}{\%} y el \SI{86}{\%} del valor
-medido; acierta más cuanto más angosta la cáscara, donde la hipótesis de
-órbitas casi circulares es mejor. Subestima porque la distribución $J^2e^{-J^2/\sigma^2}$ tiene muchas
-órbitas de amplitud chica y concentra la masa cerca de $r_c$ más que una cáscara
-uniforme.}
+más angosta la cáscara) y entre el \SI{74}{\%} y el \SI{86}{\%} del valor medido;
+acierta más cuanto más angosta la cáscara, donde la hipótesis de órbitas casi
+circulares es mejor. Subestima porque la gaussiana tiene muchas órbitas de
+amplitud chica y concentra la masa cerca de $r_c$ más que una cáscara uniforme.
+El valor medido es el $\delta\Omega$ de la sección~\ref{sec:eta}.}
+\label{tab:corrimiento}
 \end{table}
 
-Tres conclusiones de este cálculo, todas usadas en el diseño:
-
+Cuatro conclusiones de este cálculo, todas usadas en el diseño:
 \begin{enumerate}
 \item \textbf{El término de densidad local domina}: con $\sigma_J=0.05$ aporta el
 \SI{83}{\%} de $\delta\kappa^2$. Por eso el corrimiento es más de dos veces lo que
 predice la estimación ingenua por masa encerrada,
-$\delta\Omega/\Omega\approx\tfrac12 a_0/M_{\rm iso}(r_c) = 0.72\,a_0$: la masa
-propia está justo donde viven las órbitas.
-\item \textbf{Angostar $\sigma_J$ ayuda dos veces}: la banda se estrecha
-\emph{y} el corrimiento por unidad de masa crece (1.55, 1.87 y 2.19 para
-$\sigma_J=0.10$, $0.05$ y $0.03$). Por eso $\eta$ crece más rápido que $1/\sigma_J$.
-\item \textbf{El corrimiento es lineal en $a_0$} en todo el rango de la batería:
-los valores calculados con \texttt{eta.py} dan coeficientes constantes al
-\SI{5}{\%} entre $a_0=0.008$ y $0.125$.
+$\delta\Omega/\Omega\approx\tfrac12 a_0/M_{\rm iso}(r_c) = 0.72\,a_0$: la masa propia está
+justo donde viven las órbitas.
+\item \textbf{Angostar el soporte ayuda dos veces}: la banda se estrecha \emph{y} el
+corrimiento por unidad de masa crece (1.55, 1.87 y 2.19 para $\sigma_J=0.10$, $0.05$
+y $0.03$).
+\item \textbf{El corrimiento es lineal en $a_0$} en todo el rango de los casos:
+los coeficientes calculados con \texttt{eta.py} son constantes al \SI{5}{\%} entre
+$a_0=0.008$ y $0.125$.
 \item \textbf{La forma de $F_{\rm eq}$ importa por la densidad local.} Con
-$J^2(J_t-J)^2$ el coeficiente es $1.81$ y $2.08$ para $J_t=0.138$ y $0.083$,
-cerca de la gaussiana. La Maxwelliana de Wilson, que concentra la masa en $r_c$,
-da $2.15$, $2.58$ y $3.0$ para $J_t=0.276$, $0.138$ y $0.083$, y además
-\emph{ensancha} la banda: el término $4\pi G\rho(r_c)$ sube $\Omega(0)=\kappa(r_c)$
-mucho más que $\Omega(J_t)$, que corresponde a órbitas excéntricas que pasan
-poco tiempo en la cáscara. Con $J_t=0.138$ el ancho relativo pasa de $0.162$ a
-$0.194$ en $\eta=1$; en las familias huecas baja de $0.166$ a $0.136$. El mismo
-$\eta$ corresponde así a geometrías distintas, y esa diferencia es lo que pone a
-prueba el caso E1 del bloque~L (sección~\ref{sec:lineal}).
+$J^2(J_t-J)^2$ el coeficiente es $1.81$ y $2.08$ para $J_t=0.138$ y $0.083$, cerca de
+la gaussiana. La Maxwelliana, que concentra la masa en $r_c$, da $2.15$, $2.58$ y
+$3.0$ para $J_t=0.276$, $0.138$ y $0.083$, y además \emph{ensancha} la banda: el
+término $4\pi G\rho(r_c)$ sube $\Omega(0)=\kappa(r_c)$ mucho más que $\Omega(J_t)$, que
+corresponde a órbitas excéntricas que pasan poco tiempo en la cáscara. Con
+$J_t=0.138$ el ancho relativo pasa de $0.162$ a $0.194$ en $\eta=1$; en las familias
+huecas baja de $0.166$ a $0.136$. El mismo $\eta$ corresponde así a geometrías
+distintas.
 \end{enumerate}
 
-\subsection{El modo colectivo y el criterio $\eta$}
+\subsection{La respuesta lineal y el modo colectivo}
+\label{sec:respuesta}
 
-\paragraph{La respuesta lineal.} Se escribe la distribución como equilibrio más
-perturbación, $F = F_{\rm eq}(J) + \delta F(Q,J,t)$, y el potencial igual,
-$\Phi = \Phi_{\rm eq} + \delta\Phi$. A primer orden, la ecuación de Vlasov en
-variables acción-ángulo es
+\paragraph{La ecuación linealizada.} La ecuación de Vlasov es
+$\partial_tF+\{F,H\}=0$, con el corchete de Poisson en variables acción-ángulo
+$\{F,H\}=\partial_QF\,\partial_JH-\partial_JF\,\partial_QH$. Con
+$F=F_{\rm eq}(J)+\delta F$ y $H=H_0(J)+\delta\Phi(Q,J,t)$, donde $H_0$ es el hamiltoniano del
+equilibrio y $\partial_JH_0=\Omega$, los términos de primer orden son
 \[
   \partial_t\,\delta F + \Omega(J)\,\partial_Q\,\delta F
-  - \partial_Q\,\delta\Phi\;\frac{dF_{\rm eq}}{dJ} = 0 .
+  - F_{\rm eq}'(J)\,\partial_Q\,\delta\Phi = 0 .
 \]
-Para un modo $\propto e^{i(kQ-\omega t)}$ se despeja
+El segundo término es el transporte libre de la sección~\ref{sec:libre}; el
+tercero, el campo propio de la perturbación actuando sobre el equilibrio.
+$\delta\Phi$ es a su vez el potencial de $\delta F$, por Poisson: el sistema es cerrado.
+\texttt{lineal.py} resuelve exactamente esto (sección~\ref{sec:lineal}).
+
+\paragraph{Modos.} Para una solución $\propto e^{i(kQ-\omega t)}$, la ecuación da
 \[
-  \delta F_k(J) = \frac{k\,F_{\rm eq}'(J)}{k\,\Omega(J)-\omega}\;\delta\Phi_k(J).
+  \delta F_k(J) = \frac{k\,F_{\rm eq}'(J)}{k\,\Omega(J)-\omega}\;\delta\Phi_k(J),
 \]
-El denominador se anula donde $k\Omega(J)=\omega$: son las partículas
-\emph{resonantes}. La perturbación de la distribución produce una perturbación
-de densidad, y esta, vía Poisson, un $\delta\Phi$; exigir que ese $\delta\Phi$ sea
-el mismo que se supuso da una ecuación de autoconsistencia cuyas soluciones son
-los modos. Esquemáticamente,
+con $\delta\Phi_k(J)$ el coeficiente $k$ del potencial a lo largo de la órbita $J$. El
+denominador se anula donde $k\Omega(J)=\omega$: son las partículas \emph{resonantes}.
+La $\delta F_k$ produce una densidad y, por Poisson, un $\delta\Phi$; exigir que sea el
+mismo que se supuso da una ecuación de autoconsistencia cuyas soluciones son los
+modos. Esquemáticamente,
 \[
-  \varepsilon(\omega) = 1 - (\text{acoplamiento}\propto G\,a_0)\int dJ\;
+  \epsilon(\omega) = 1 - (\text{acoplamiento}\propto G\,a_0)\int dJ\;
   \frac{k\,F_{\rm eq}'(J)\,|\Psi(J)|^2}{k\,\Omega(J)-\omega} = 0 ,
 \]
-con $\Psi$ la forma radial del modo. En el caso real el acoplamiento es una
-matriz en una base de funciones radiales (el método de Kalnajs), no un escalar;
-la forma escalar basta para el argumento.
+con $\Psi$ la forma radial del modo. En el caso real el acoplamiento es una matriz
+en una base de funciones radiales (el método de Kalnajs), no un escalar; la forma
+escalar basta para el argumento.
 
 \paragraph{Dónde puede vivir el modo.} Si $\omega$ cae dentro de la banda, la
-integral tiene un polo real: la raíz se desplaza al plano complejo con parte
-imaginaria negativa y el modo se amortigua (amortiguamiento de Landau). Si
-$\omega$ cae fuera, no hay polo, la raíz es real y el modo oscila sin
-amortiguarse.
+integral tiene un polo real y la raíz se desplaza al plano complejo, con parte
+imaginaria negativa: el modo se amortigua (amortiguamiento de Landau). Si $\omega$
+cae fuera, no hay polo, la raíz es real y el modo oscila sin amortiguarse. Se
+escribe la raíz como $\omega-i\gamma$, de modo que el modo va como
+$e^{-\gamma t}\cos(\omega t+\dots)$:
+\begin{itemize}
+\item $\omega$ es la \emph{frecuencia} del modo y $\gamma\ge0$ su \emph{tasa de
+amortiguamiento};
+\item $x=(\omega-\Omega_{\min})/\Delta\Omega$ es su \emph{posición en la banda}: $0<x<1$ es
+dentro (resonante, amortiguado) y $x<0$ por debajo (modo discreto, $\gamma=0$).
+\end{itemize}
+
+\subsection{La forma de Antonov}
+\label{sec:antonov}
 
 Para perturbaciones radiales de un sistema esférico hay una forma más precisa,
-la de Antonov: la ecuación linealizada se escribe
-$\partial_t^2\psi = -\mathcal A\psi$ con $\mathcal A$ autoadjunto y positivo, cuyo
-espectro esencial es $\{k^2\Omega(J)^2\}$. El término gravitatorio de $\mathcal A$
-es \emph{atractivo}, así que tiende a bajar los autovalores: un modo discreto,
-si existe, aparece \emph{por debajo} de $\Omega_{\min}^2$, o en un hueco entre las
-bandas de $k$ consecutivos. Esos huecos existen cuando
-$\Omega_{\max}/\Omega_{\min}<2$, y aquí vale $1.37$ para $\sigma_J=0.10$.
+la de Antonov: la ecuación linealizada se puede escribir
+$\partial_t^2\psi=-\mathcal A\psi$ con $\mathcal A$ un operador autoadjunto. Dos
+propiedades se usan en el documento:
+\begin{itemize}
+\item \textbf{Estabilidad.} Si $\partial F_{\rm eq}/\partial E<0$ en todo el soporte (la
+distribución es \emph{monótona}), $\mathcal A$ es positivo y $\omega^2>0$: no hay
+modos radiales crecientes. Una oscilación que no decae en una distribución
+monótona es un modo neutro genuino, no una inestabilidad. En la línea de trabajos
+de Hadžić y colaboradores el operador se define en un espacio con peso
+$1/|\partial F/\partial E|$, lo que exige esa monotonía; conviene confirmarlo en la
+sección de hipótesis del artículo de referencia.
+\item \textbf{Dónde aparece el modo.} El espectro esencial de $\mathcal A$ es
+$\{k^2\Omega(J)^2\}$, la banda de la sección~\ref{sec:banda}. El término
+gravitatorio de $\mathcal A$ es \emph{atractivo} y tiende a bajar los autovalores:
+un modo discreto, si existe, aparece \emph{por debajo} de $\Omega_{\min}^2$, o en un
+hueco entre las bandas de $k$ consecutivos. Esos huecos existen cuando
+$\Omega_{\max}/\Omega_{\min}<2$, y con el ancho de las corridas de Landau vale $1.37$.
+\end{itemize}
 
-\paragraph{Aproximación 6: $\delta\Omega$ como medida del acoplamiento.} El corrimiento
-de la frecuencia media del equilibrio \emph{no es} la distancia que recorre el
-modo; es un efecto del mismo acoplamiento sobre el estado de fondo. Lo usamos
-como medida de la intensidad del acoplamiento porque ambos son del mismo orden:
-los dos salen de términos $\sim 4\pi G\rho_{\rm self}$, como mostró la fórmula
-epicíclica. La pregunta ``¿alcanza el acoplamiento para sacar el modo del
-continuo?'' se convierte así en
+\subsection{La componente regenerada en $\Omega_{\max}$}
+\label{sec:regenerada}
+
+\paragraph{Aproximación 7.} La fórmula de $\delta F_k$ dice qué genera la
+autogravedad cerca de la órbita circular. Ahí $\delta\Phi_1(J)$, el coeficiente del
+potencial a lo largo de la órbita, es proporcional a $R_e\propto\sqrt J$, por el mismo
+argumento que da $C\propto\sqrt J$ (sección~\ref{sec:colasdphi}). Entonces
+$\delta F_1\propto F_{\rm eq}'(0)\,\sqrt J$ cerca de $J=0$: la autogravedad genera una
+componente con la regularidad de $s=\sqrt{J/J_t}$, con amplitud proporcional al
+acoplamiento, \emph{independiente de la condición inicial}. Su cola es $t^{-2}$ en
+$\Omega_{\max}$ en cualquier observable genérico, $\delta\Phi$ incluido, y $t^{-7/2}$ en
+$h_1$ con $p=2$ (tabla~\ref{tab:exponentes}).
+
+En una distribución monótona $F_{\rm eq}'(0)\ne0$ (en la Maxwelliana,
+$F_{\rm eq}'=-F_{\rm eq}\,\Omega/T$ lejos del borde), así que la componente siempre está.
+En una que se anula como $J^2$, $F_{\rm eq}'(0)=0$ y no aparece. No es un defecto de
+la distribución sino del modelo de $L$ fijo: con $L$ distribuido, $\kappa(L)$ varía y
+difumina el borde $\Omega_{\max}$. Se confirma en la sección~\ref{sec:borde_lineal}.
+
+\subsection{El criterio $\eta$}
+\label{sec:eta}
+
+\paragraph{Aproximación 8: el corrimiento como medida del acoplamiento.} El
+corrimiento de la frecuencia media del equilibrio \emph{no es} la distancia que
+recorre el modo: es un efecto del mismo acoplamiento sobre el estado de fondo. Se
+usa como medida de la intensidad del acoplamiento porque los dos son del mismo
+orden: ambos salen de términos $\sim4\pi G\rho_{\rm self}$, como muestra la fórmula
+de $\kappa^2$. La pregunta ``¿alcanza el acoplamiento para sacar el modo de la
+banda?'' se convierte en comparar ese corrimiento con el ancho.
+
+\paragraph{La definición.} Con $\bar\Omega$ la frecuencia media pesada por la masa
+(sección~\ref{sec:banda}), calculada en el equilibrio autoconsistente de masa
+$a_0$, y $\bar\Omega_0$ la misma con la misma forma $\tilde F$ en el isócrono sin
+masa propia,
 \[
-  \boxed{\;\eta = \frac{\delta\Omega}{\Delta\Omega}\;\gtrsim\;1\;?}
+  \delta\Omega = \frac{\bar\Omega-\bar\Omega_0}{\bar\Omega_0}, \qquad
+  \boxed{\;\eta = \frac{\delta\Omega}{\Delta\Omega/\bar\Omega}\;}
 \]
+con $\Delta\Omega$ el ancho de la banda con masa: el corrimiento relativo dividido
+por el ancho relativo. Así lo calcula \texttt{eta.py}, y así están dados todos los
+$\eta$ del documento.
 
 \begin{nota}
 \textbf{Lo que $\eta$ es y lo que no.} Es un criterio de diseño con fundamento
 físico, no un teorema. El enunciado riguroso es dónde cae el autovalor de
-$\mathcal A$ respecto del espectro esencial, y eso depende también de la
-densidad de estados cerca del borde de la banda (sección~\ref{sec:borde}). Lo
-que $\eta$ garantiza es que la batería explora el rango donde la transición
-\emph{puede} ocurrir, en vez de quedarse entera de un solo lado. Quien decide es
-el cálculo: la sección~\ref{sec:lineal} muestra que $\eta$ ordena la
-transición pero no la fija sola.
+$\mathcal A$ respecto del espectro esencial, y eso depende también de la densidad
+de estados cerca del borde de la banda (sección~\ref{sec:borde}). Lo que $\eta$
+garantiza es que los casos exploran el rango donde la transición \emph{puede}
+ocurrir, en vez de quedarse enteros de un solo lado. Quien decide es el cálculo:
+la sección~\ref{sec:lineal} muestra que $\eta$ ordena la transición pero no la fija
+sola.
 \end{nota}
 
-\subsection{Lo que ya dicen las corridas de Landau}
+\subsection{Lo que dicen las corridas de Landau}
 \label{sec:landau}
 
-Las corridas regeneradas de la sección~11 de las notas tienen $a_0=10^{-2}$ y
-$\sigma_J=0.10$, es decir $\eta\approx0.05$: muy adentro del continuo. Sus
-resultados ilustran el marco y fijan la predicción para la batería.
-
+11\_landau (sección~\ref{sec:casos}) tiene $\eta\approx0.05$: muy adentro del
+régimen amortiguado. Sus resultados ilustran el marco:
 \begin{itemize}
 \item \textbf{La cola se amortigua, como corresponde a $\eta\ll1$.} El ajuste de la
 cola da $\omega = 0.0570$ y $\gamma = 5.1\times10^{-3}$, estables en tres ventanas
 temporales, con tres órdenes del ajuste y entre $N_{rc}=400$ y $800$.
 \item \textbf{La frecuencia está dentro de la banda, cerca del borde inferior.} Con
-$a_0=10^{-2}$ la banda es $[0.0522,\,0.0714]$: $\omega$ queda al \SI{25}{\%} de su
-ancho desde abajo. Es lo que predice la forma de Antonov: el acoplamiento
-atractivo empuja el polo hacia $\Omega_{\min}$, pero no alcanza para sacarlo.
-\item \textbf{La autogravedad ya cambia la \emph{forma} del decaimiento.} Sin ella el
-decaimiento es gaussiano (tabla anterior); con ella la cola es exponencial con
-tasa $\gamma$. A tiempos largos la exponencial le gana a la gaussiana: el cociente
-entre la señal con y sin autogravedad pasa de $1$ a $\sim30$ hacia $t=1600$.
+$a_0=10^{-2}$ la banda es $[0.0522,\,0.0714]$ y $x=0.25$. Es lo que predice la
+forma de Antonov: el acoplamiento atractivo empuja el polo hacia $\Omega_{\min}$,
+pero no alcanza para sacarlo.
+\item \textbf{La autogravedad cambia la \emph{forma} del decaimiento.} Sin ella el
+decaimiento de $h_1$ es gaussiano (tabla~\ref{tab:libre}); con ella la cola es
+exponencial con tasa $\gamma$, y a tiempos largos la exponencial le gana a la
+gaussiana: el cociente entre la señal con y sin autogravedad pasa de $1$ a
+$\sim30$ hacia $t=1600$.
 \item \textbf{El régimen es lineal.} La corrida PIC coincide con la teoría lineal en
 cuatro cifras ($0.41998$ contra $0.41994$ en $t=200$).
 \item \textbf{El piso numérico limita la cola.} La corrida con $\varepsilon=0$ da el
 nivel de ruido, $\approx10^{-4}$ en las mismas unidades. La cola se puede seguir
-desde $t\approx1000$ hasta $t\approx1600$: unas tres $e$-foldings de $\gamma$. Es la
-razón de ser de la corrida B5 con $N=5\times10^4$.
+desde $t\approx1000$ hasta $t\approx1600$: unas tres $e$-foldings de $\gamma$.
 \end{itemize}
 
 \begin{nota}
-\textbf{Predicción cuantitativa.} Al crecer $\eta$, la frecuencia de la cola $\omega$
-debe bajar hacia $\Omega_{\min}$ y la tasa $\gamma$ debe disminuir; cuando $\omega$
-quede por debajo de $\Omega_{\min}$, $\gamma$ debe ser cero dentro del error. La
-teoría lineal lo confirma (sección~\ref{sec:lineal}).
+\textbf{Predicción.} Al crecer $\eta$, el modo debe bajar hacia $\Omega_{\min}$ ($x\to0$)
+y $\gamma$ debe disminuir; cuando quede por debajo de la banda ($x<0$), $\gamma$ debe
+ser cero dentro del error. La teoría lineal lo confirma
+(sección~\ref{sec:lineal}).
 \end{nota}
 
-\subsection{El eje del borde}
+\subsection{El borde de vacío y la dicotomía de Hadžić}
 \label{sec:borde}
 
 Hadžić, Rein, Schrecker y Straub (ARMA 2025, \texttt{arXiv:2301.07662}) prueban,
 para equilibrios autogravitantes en el campo de una masa puntual central, una
-dicotomía afilada: con $f\propto(E_0-E)^k$ en el borde del soporte, si $k>1$ las
-perturbaciones lineales se amortiguan y si $1/2<k\le1$ no. La clave técnica de
-la prueba es la ausencia de autovalores embebidos en el espectro esencial.
+dicotomía afilada: con $f\propto(E_0-E)^g$ en el borde del soporte (ellos lo llaman
+$k$), si $g>1$ las perturbaciones lineales se amortiguan y si $1/2<g\le1$ no. La
+clave técnica de la prueba es la ausencia de autovalores embebidos en el espectro
+esencial.
 
-La sección de mezcla de fases da una intuición de por qué el borde importa: un
-borde que se anula como $(\Omega-\Omega_{\min})^k$ produce en la respuesta libre una
-cola algebraica $\propto t^{-(k+1)}$, más lenta cuanto menor es $k$. Con
-autogravedad, una respuesta libre que decae despacio cerca del borde deja más
-margen para que el acoplamiento sostenga una oscilación. Es una heurística, no
-la prueba.
+La regla de las colas da una intuición de por qué el borde importa: un borde que
+se anula como $(\Omega-\Omega_{\min})^g$ produce en la respuesta libre una cola
+$\propto t^{-(g+1)}$, más lenta cuanto menor es $g$. Con autogravedad, una respuesta
+libre que se demora cerca del borde deja más tiempo para que el acoplamiento la
+retroalimente y sostenga una oscilación. Es una heurística, no la prueba.
 
-Hay que precisar qué bordes tiene la distribución de esta batería, la
-Maxwelliana de Wilson. En $J=J_t$ (el extremo de baja frecuencia, $\Omega_{\min}$,
-hacia donde el acoplamiento atractivo empuja al modo) tiene un borde de vacío
-genuino, $F\propto(E_t-E)^2$, con exponente $k=g=2$: del lado ``amortigua'' de la
-dicotomía y lejos del caso marginal $k=1$, que es King. En $J=0$ (el extremo de
-alta frecuencia, $\Omega_{\max}$) es máxima, como toda distribución monótona y
-como los equilibrios de ese trabajo. El mecanismo del borde no queda apagado
-sino fijo en una clase conocida: cualquier oscilación que sobreviva debe
-atribuirse a $\eta$. La ventaja frente a la gaussiana, que no tiene borde en
-$\Omega_{\min}$, es que el experimento del borde es cambiar un solo número, $g$, a
-$\eta$ fijo. Como es una pregunta lineal, está en el bloque~L
-(sección~\ref{sec:borde_lineal}).
+Los bordes de las familias:
+\begin{itemize}
+\item \textbf{La gaussiana} no tiene borde en $\Omega_{\min}$: se apaga sola.
+\item \textbf{La hueca} tiene un borde de vacío en $J_t$ con exponente $g=2$, y se anula
+como $J^2$ en la órbita circular.
+\item \textbf{La Maxwelliana de Wilson} tiene un borde de vacío genuino en $J_t$, el
+extremo de baja frecuencia hacia donde el acoplamiento empuja al modo:
+$F\propto(E_t-E)^2$, con $g=2$, del lado ``amortigua'' y lejos del caso marginal
+$g=1$, que es King. En $J=0$ es máxima, como toda distribución monótona y como los
+equilibrios de ese trabajo.
+\end{itemize}
+Con la Maxwelliana el mecanismo del borde no queda apagado sino fijo en una clase
+conocida, y el experimento del borde es cambiar un solo número, $g$, a $\eta$ fijo.
+Como es una pregunta lineal, está en el bloque~L (sección~\ref{sec:borde_lineal}).
 
+\section{La elección de la distribución}
+\label{sec:familia}
+
+La familia principal es la Maxwelliana rebajada de Wilson
+(sección~\ref{sec:familias}) con $g=2$ y $W_0=3$, y la perturbación
+\texttt{suave3}. Esta sección explica por qué, frente a la gaussiana de las
+corridas de Landau y a la familia hueca.
+
+\paragraph{Por qué no la gaussiana.} La gaussiana $J^2e^{-J^2/\sigma_J^2}$ se
+propuso por su parecido con Maxwell--Boltzmann, pero no es una Maxwelliana. En la
+distribución de rapideces de Maxwell, $4\pi v^2e^{-v^2/2\sigma^2}$, el $v^2$ es el
+jacobiano de la cáscara de velocidades; la función de distribución misma es
+$e^{-v^2/2\sigma^2}$, máxima en $v=0$. Aquí la medida ya es plana,
+$dr\,dp_r=dQ\,dJ$, así que el $J^2$ de $F$ no es un jacobiano sino un vaciado real
+del espacio fase alrededor de la órbita circular. En $r=r_c$, donde
+$J\approx p_r^2/2\kappa$ (sección~\ref{sec:circular}), da una distribución de $p_r$
+proporcional a $p_r^4e^{-p_r^4/4\kappa^2\sigma_J^2}$: nula en $p_r=0$ y con dos
+máximos, dos haces radiales que se cruzan. Y tiene inversión de población,
+$\partial F/\partial E>0$ en $J<\sigma_J$, así que Antonov no garantiza su estabilidad.
+
+\paragraph{El análogo correcto.} $F\propto e^{-E/T}$. Como $E=p_r^2/2+\Phi_{\rm ef}(r)$,
+en cada radio da \emph{exactamente} una gaussiana en $p_r$ con dispersión $\sqrt T$ y
+una densidad de Boltzmann $e^{-\Phi_{\rm ef}/T}$, y como $E=E(J)$ es un equilibrio
+exacto. Cerca de la órbita circular, $E\approx E_c+\kappa J$ y queda
+$F\propto e^{-\kappa J/\sigma_R^2}$, la distribución cuasi-isoterma de Binney (2010,
+MNRAS 401, 2318), estándar para discos tibios en variables de acción. El ancho
+tiene lectura física: $J_0=\sigma_R^2/\kappa$, con $\sigma_R=\sqrt T$ la dispersión de
+velocidades radiales; con $W_0=3$ y $J_t=0.138$, $\sigma_R/v_c=0.16$ respecto de la
+velocidad circular $v_c=L_0/r_c$: una cáscara tibia.
+
+\paragraph{El soporte compacto, por marea.} Un cúmulo en un campo externo pierde
+las estrellas con $E>E_t$. La familia de isotermas rebajadas de Gieles y Zocchi
+(2015, MNRAS 454, 576), que es $E_\gamma(g,x)$, describe ese corte: King (1966) con
+$g=1$, Wilson (1975) con $g=2$. Su exponente $g$ es el de la dicotomía de Hadžić,
+y la familia contiene como límites el politropo, $(E_t-E)^g$, cuando $W_0\to0$, y la
+isoterma cuando $W_0\to\infty$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{L{4.4cm}L{2.9cm}L{2.9cm}L{2.9cm}}
+\toprule
+ & gaussiana & hueca & Wilson\\
+ & $J^2e^{-J^2/\sigma_J^2}$ & $J^2(J_t-J)^2$ & $E_\gamma(2,(E_t-E)/T)$\\
+\midrule
+soporte compacto & no & sí & sí, por marea\\
+banda & umbral del \SI{1}{\%} & exacta & exacta\\
+distribución de $p_r$ en $r_c$ & bimodal & bimodal & gaussiana (rebajada)\\
+en $J=0$ & $\propto J^2$ & $\propto J^2$ & máximo\\
+monótona en $E$ (Antonov) & no & no & sí\\
+perturbación lisa & $s=1$ & $s=1$ & $s=(J/J_t)^{3/2}$\\
+cola libre de $\delta\Phi$ en $10\tau_1$ & $1.2\times10^{-4}$ & $4.2\times10^{-4}$ & $3.0\times10^{-4}$\\
+$\rho_\Phi$ & 1.00 & 1.09 & 0.11\\
+$a_0$ para $\eta=1$ & 0.069 & 0.075 & 0.075\\
+$\delta\Omega/(\Omega a_0)$ & 1.87 & 1.81 & 2.58\\
+banda al agregar masa & se angosta & se angosta & se ensancha\\
+\bottomrule
+\end{tabular}
+\caption{Las tres familias con el ancho de referencia ($\sigma_J=0.05$,
+$J_t=0.138$, $L_0=2$). Colas y $\rho_\Phi$ de la tabla~\ref{tab:colas}; masas y
+coeficientes de corrimiento de \texttt{eta.py}.}
+\label{tab:familias}
+\end{table}
+
+Las razones de la elección, en orden de importancia:
+\begin{enumerate}
+\item \textbf{Es monótona}, $\partial F/\partial E<0$: por Antonov no tiene modos radiales
+crecientes (sección~\ref{sec:antonov}), y una oscilación que no decae es un modo
+neutro genuino, sin la ambigüedad de una inestabilidad. Además está dentro de la
+hipótesis de monotonía con que se formula la teoría de Hadžić y colaboradores; las
+dos familias huecas, no.
+\item \textbf{Su interior es térmico}: en cada radio la distribución de $p_r$ es
+gaussiana, rebajada cerca de $E_t$. Con $W_0=3$ el máximo vale el \SI{80}{\%} del de
+la isoterma sin truncar, $P(2,3)=0.80$. Sus parámetros tienen sentido físico:
+temperatura, energía de marea y forma del borde.
+\item \textbf{Su soporte compacto tiene causa física}, la marea, y deja la banda
+exacta: el espectro esencial y $\eta$ son propiedades del equilibrio, no de un
+umbral.
+\item \textbf{Su borde es el de Hadžić y es ajustable}: $g=2$ está en la clase
+``amortigua'', y el experimento del borde es la misma distribución con otro $g$,
+incluido King ($g=1$), el caso marginal.
+\end{enumerate}
+
+\paragraph{Por qué $g=2$ y $W_0=3$.} Se exploró $g\in\{2,3\}$ y
+$W_0\in\{1,\ldots,8\}$ con $J_t=0.138$ (tabla~\ref{tab:barrido}). Todas dan
+$\eta=1$ con $a_0$ entre $0.066$ y $0.074$; lo que cambia es la forma. Subir $W_0$
+hace más térmico el núcleo, pero deja el borde sin peso y debilita la perturbación
+lisa; con el mismo $W_0$, $g=2$ tiene el núcleo más térmico, la cola más baja y más
+potencial que $g=3$. $W_0=3$ es el compromiso: núcleo al \SI{80}{\%} de la isoterma
+y \SI{7}{\%} de la masa en la mitad exterior del soporte, que es donde vive el
+borde. $W_0=6$, el límite casi térmico, entra como caso E3 y corrida V2.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llcccccc}
+\toprule
+$g$ & $W_0$ & $P(g,W_0)$ & $\langle J\rangle/J_t$ & masa en $J>J_t/2$ &
+  $\sigma_R/v_c$ & cola libre $10\tau_1$ & $\rho_\Phi$\\
+\midrule
+2 & \textbf{3} & \textbf{0.80} & 0.20 & 0.068 & 0.157 & $3.0\times10^{-4}$ & 0.11\\
+2 & 6 & 0.98 & 0.15 & 0.028 & 0.111 & $1.0\times10^{-3}$ & 0.06\\
+3 & 3 & 0.58 & 0.17 & 0.037 & 0.157 & $6.8\times10^{-4}$ & 0.08\\
+3 & 5 & 0.88 & 0.15 & 0.024 & 0.122 & $1.0\times10^{-3}$ & 0.06\\
+\bottomrule
+\end{tabular}
+\caption{Candidatas de la familia de Wilson, con $J_t=0.138$, $L_0=2$ y
+$s=(J/J_t)^{3/2}$. $P(g,W_0)=E_\gamma(g,W_0)/e^{W_0}$ es el cociente entre el máximo y
+el de la isoterma sin truncar. El barrido completo en $W_0$ ($1$, $2$, $3$, $5$, $8$)
+muestra la misma tendencia: $\langle J\rangle/J_t$ baja de $0.23$ a $0.12$ y la masa
+exterior del \SI{10}{\%} al \SI{1}{\%}.}
+\label{tab:barrido}
+\end{table}
+
+\paragraph{El costo: el borde en $\Omega_{\max}$.} Toda distribución monótona es
+máxima en $J=0$, así que el borde superior de la banda, $\Omega_{\max}=\kappa(r_c)$,
+tiene peso. Tres consecuencias:
+\begin{enumerate}
+\item[(a)] La perturbación plana es discontinua en la órbita circular
+(sección~\ref{sec:perturbacion}) y deja en $\delta\Phi$ una cola $t^{-3/2}$ en
+$\Omega_{\max}$, 150 veces por encima de la gaussiana en $10\,\tau_1$. Con
+$s=(J/J_t)^{3/2}$ la cola baja al nivel de la gaussiana (tabla~\ref{tab:colas}).
+\item[(b)] Esa perturbación lisa produce poco potencial, $\rho_\Phi=0.11$: para un
+mismo $\delta\Phi$ hace falta un $\varepsilon$ nueve veces mayor que con la gaussiana. No
+limita el estudio no lineal, porque cerca de la transición el parámetro que manda
+es $\nu=\omega_b/\gamma$, que se alcanza con $\varepsilon\ll1$
+(sección~\ref{sec:objecion}).
+\item[(c)] La autogravedad regenera una componente en $\Omega_{\max}$ con cola $t^{-2}$
+(sección~\ref{sec:regenerada}) que ninguna condición inicial elimina. Se ajusta
+como componente aparte, con frecuencia y exponente conocidos, y su amplitud se
+calcula antes con \texttt{lineal.py}.
+\end{enumerate}
+Además la banda se ensancha con la masa (sección~\ref{sec:corrimiento}), y el
+mismo $\eta$ describe otra geometría que en las familias huecas: el caso E1 mide
+si eso importa, y sí importa (sección~\ref{sec:lineal}).
+
+\paragraph{Por qué no el politropo puro.} $(E_t-E)^g$ es el límite $W_0\to0$ de esta
+familia: conserva los tres costos anteriores y pierde el interior térmico.
 
 \section{Lo que responde la teoría lineal y lo que no}
 \label{sec:objecion}
 
 \subsection{La objeción perturbativa}
 
-Un dato inicial de la forma $F=F_{\rm eq}(J)\,[1+\varepsilon\,g(Q)]$ sugiere una
-perturbación, y con ella una objeción previsible: si el problema es lineal, lo
-resuelve la teoría lineal (la respuesta de Kalnajs, o el solver lineal de este
-mismo repositorio) y la simulación de partículas no aporta nada.
+Un dato inicial $F=F_{\rm eq}\,[1+\varepsilon\,s\,\chi(Q)]$ sugiere una perturbación, y con
+ella una objeción previsible: si el problema es lineal, lo resuelve la teoría
+lineal (la respuesta de Kalnajs, o el solver lineal de este mismo repositorio) y
+la simulación de partículas no aporta nada.
 
 La objeción tiene una parte correcta, y el diseño la acepta. Todo lo que es una
-pregunta lineal (si existe un modo discreto, cuánto valen $\gamma$ y $\omega$,
-cómo dependen de $\eta$ y del borde) se responde aquí con \texttt{lineal.py}, sin
+pregunta lineal (si existe un modo discreto, cuánto valen $\gamma$ y $\omega$, cómo
+dependen de $\eta$ y del borde) se responde aquí con \texttt{lineal.py}, sin
 partículas: es barato, preciso y es la comparación natural con los teoremas de
-Hadžić y colaboradores, que son lineales (sección~\ref{sec:lineal}). Las
-corridas PIC en régimen lineal quedan como validación, no como resultado. Pero
-la conclusión, que el código es innecesario, no se sigue, por las tres razones
-de esta sección.
+Hadžić y colaboradores, que son lineales (sección~\ref{sec:lineal}). Las corridas
+PIC en régimen lineal quedan como validación, no como resultado. Pero la
+conclusión, que el código es innecesario, no se sigue, por las razones de esta
+sección.
 
 \subsection{El parámetro no es $\varepsilon$}
 
-En un potencial fijo la ecuación de Vlasov es \emph{exactamente lineal} en $F$:
-la solución de la sección de mezcla de fases vale para cualquier $\varepsilon$.
-La no linealidad aparece solo a través de $\delta\Phi$, que es proporcional a la
-masa, a la amplitud y a cuánto potencial produce la forma de la perturbación,
-$\delta\Phi\propto a_0\,\varepsilon\,\rho_\Phi$ (tabla~\ref{tab:colas}). Con
-$\varepsilon=1$, $\delta F/F$ es de orden uno y el problema puede seguir siendo
-lineal si la masa es chica; al revés, un $\varepsilon$ chico puede volverse no
-lineal, por lo que sigue. Que el dato inicial ``parezca'' una perturbación no
-dice nada: lo que decide es el tamaño de $\delta\Phi$ frente a dos ritmos.
+En un potencial fijo la ecuación de Vlasov es \emph{exactamente lineal} en $F$: la
+solución libre de la sección~\ref{sec:libre} vale para cualquier $\varepsilon$. La no
+linealidad aparece solo a través de $\delta\Phi$, que es proporcional a la masa, a
+la amplitud y a cuánto potencial produce la forma de la perturbación,
+$\delta\Phi\propto a_0\,\varepsilon\,\rho_\Phi$. Con $\varepsilon=1$, $\delta F/F$ es de orden uno y el
+problema puede seguir siendo lineal si la masa es chica; al revés, un $\varepsilon$
+chico puede volverse no lineal, por lo que sigue. Que el dato inicial ``parezca''
+una perturbación no dice nada: lo que decide es el tamaño de $\delta\Phi$ frente a
+dos ritmos.
 
 \subsection{Dos escalas de no linealidad}
 \label{sec:atrapamiento}
 
-\paragraph{Aproximación 7: el péndulo.} Cerca de una resonancia $k\Omega(J_r)=\omega$,
-el hamiltoniano $H_0(J)+|\delta\Phi_k|\cos(kQ-\omega t)$ se reduce, en el sistema
-que gira con la onda, a un péndulo: desarrollando $H_0$ a segundo orden en
-$J-J_r$ se obtiene la frecuencia de rebote y el semiancho de la isla,
+\paragraph{Aproximación 9: el péndulo.} Cerca de una resonancia $k\Omega(J_r)=\omega$,
+una partícula siente el hamiltoniano $H=H_0(J)+|\delta\Phi_k|\cos(kQ-\omega t)$. En el
+sistema que gira con la onda, con el ángulo $\psi=kQ-\omega t$ y su momento conjugado
+$I=J/k$, el hamiltoniano es $K=H_0(kI)-\omega I+|\delta\Phi_k|\cos\psi$. Desarrollando
+alrededor de la resonancia, $H_0(J)\approx H_0(J_r)+\Omega(J_r)(J-J_r)+
+\tfrac12\Omega'(J_r)(J-J_r)^2$, el término lineal se cancela con $-\omega I$ y queda
+\[
+  K \approx \tfrac12\,k^2\Omega'(J_r)\,(I-I_r)^2 + |\delta\Phi_k|\cos\psi ,
+\]
+un péndulo. Sus oscilaciones pequeñas tienen la \emph{frecuencia de rebote}, y su
+separatriz el semiancho de la \emph{isla de atrapamiento}:
 \[
   \omega_b = k\,\sqrt{|\Omega'(J_r)|\,|\delta\Phi_k|}, \qquad
   \Delta J_{\rm atr} = 2\sqrt{|\delta\Phi_k|/|\Omega'(J_r)|}.
 \]
-Supone una resonancia aislada y una amplitud que cambia poco durante un periodo
-de rebote. $\omega_b$ se compara con dos ritmos, y cada comparación es una escala
-de no linealidad distinta:
+Las partículas dentro de la isla quedan atrapadas por la onda y oscilan alrededor
+de su fase. Supone una resonancia aislada y una amplitud que cambia poco durante
+un periodo de rebote.
+
+\paragraph{Las dos comparaciones.} $\omega_b$ se compara con dos ritmos, y cada
+comparación es una escala de no linealidad distinta:
 \begin{itemize}
 \item $\mu=\omega_b/\Delta\Omega$: atrapamiento frente a mezcla de fases del
 \emph{continuo}. Si $\mu\ll1$ las partículas se desfasan antes de sentir el pozo;
 si $\mu\gtrsim1$ se forman islas en todo el ancho de la banda.
-\item $\nu=\omega_b/\gamma$: atrapamiento frente a amortiguamiento del
-\emph{modo}. Es el parámetro de O'Neil (1965, Phys.\ Fluids 8, 2255) para el
-amortiguamiento de Landau en plasmas. Si $\nu\ll1$ la onda se amortigua antes de
-atrapar y la teoría lineal vale para todo $t$. Si $\nu\gtrsim1$, a partir de
-$t\sim2\pi/\omega_b$ las partículas resonantes quedan atrapadas, el
-amortiguamiento se detiene, la amplitud oscila con frecuencia $\sim\omega_b$ y
-satura: el estado final, con una meseta de $F$ alrededor de $J_r$, no lo predice
-la teoría lineal, que solo vale hasta $t\lesssim1/\omega_b$.
+\item $\nu=\omega_b/\gamma$: atrapamiento frente a amortiguamiento del \emph{modo}. Es
+el parámetro de O'Neil (1965, Phys.\ Fluids 8, 2255) para el amortiguamiento de
+Landau en plasmas. Si $\nu\ll1$ la onda se amortigua antes de atrapar y la teoría
+lineal vale para todo $t$. Si $\nu\gtrsim1$, a partir de $t\sim2\pi/\omega_b$ las
+partículas resonantes quedan atrapadas, el amortiguamiento se detiene, la
+amplitud oscila con frecuencia $\sim\omega_b$ y satura: el estado final, con una
+meseta de $F$ alrededor de $J_r$, no lo predice la teoría lineal, que solo vale
+hasta $t\lesssim1/\omega_b$.
 \end{itemize}
 
-\paragraph{La amplitud de $\delta\Phi$.} La estimación ingenua,
-$|\delta\Phi|\sim\varepsilon\,|\Phi_{\rm self}|$, es incorrecta por un factor
-grande. Una perturbación $\cos Q$ agrupa las partículas en fase: no cambia la
-masa de la cáscara, solo la \emph{desplaza} radialmente en una fracción
-$\sim\varepsilon A$ de su radio, y el potencial de una cáscara desplazada difiere
-del original en $\sim\varepsilon\,(A/r_c)\,|\Phi_{\rm self}|$. La corrida de
-Landau lo mide: con $a_0=10^{-2}$ y $\varepsilon=0.1$,
-$|\delta\Phi|_{\max}=2.3\times10^{-5}$, unas quince veces menos que la estimación
-ingenua. Aquí no hace falta estimarla: la solución lineal de cada caso da
-$\delta\Phi(r,t)$ con $\varepsilon=1$, y $\omega_b$ se calcula de ella con
-$|\Omega'|\approx\Delta\Omega/J_t$ (sección~\ref{sec:lineal}). Con otro
-$\varepsilon$, $\omega_b$ escala como $\sqrt\varepsilon$.
+\paragraph{Aproximación 10: la amplitud de $\delta\Phi$.} La estimación ingenua,
+$|\delta\Phi|\sim\varepsilon\,|\Phi_{\rm self}|$, es incorrecta por un factor grande. Una
+perturbación $\cos Q$ agrupa las partículas en fase: no cambia la masa de la
+cáscara, solo la \emph{desplaza} radialmente en una fracción $\sim\varepsilon R_e$ de su
+radio, y el potencial de una cáscara desplazada difiere del original en
+$\sim\varepsilon\,(R_e/r_c)\,|\Phi_{\rm self}|$. La corrida de Landau lo mide: con
+$a_0=10^{-2}$ y $\varepsilon=0.1$, $|\delta\Phi|_{\max}=2.3\times10^{-5}$, unas quince veces
+menos que la estimación ingenua. Aquí no hace falta estimarla: la solución lineal
+de cada caso da $\delta\Phi(r,t)$ con $\varepsilon=1$, y
+\[
+  \omega_b \approx \sqrt{|\Omega'|\,\max_r|\delta\Phi(r,0)|},\qquad |\Omega'|\approx\Delta\Omega/J_t ,
+\]
+con $k=1$ y la pendiente media de $\Omega(J)$ en lugar de su valor en la resonancia.
+Con otro $\varepsilon$, $\omega_b$ escala como $\sqrt\varepsilon$.
 
 \subsection{La transición es no lineal}
 
-El bloque~L (sección~\ref{sec:lineal}) da los números. En la corrida de Landau,
-$\omega_b=1.3\times10^{-3}$ con $\varepsilon=0.1$ y $\gamma=5.0\times10^{-3}$: $\nu=0.25$, y
+\paragraph{Aproximación 11: el criterio de O'Neil.} Es un resultado de plasmas (una
+onda, una dimensión) y aquí se usa como escala, no como predicción cuantitativa:
+es lo que la PIC pone a prueba.
+
+La teoría lineal (sección~\ref{sec:lineal}) da los números. En la corrida de
+Landau, $\omega_b=1.3\times10^{-3}$ con $\varepsilon=0.1$ y $\gamma=5.0\times10^{-3}$: $\nu=0.25$, y
 por eso la PIC coincidió con la teoría lineal en cuatro cifras. En la familia
 principal con $J_t=0.138$, al acercarse a la transición $\gamma$ cae a
 $2.4\times10^{-3}$, $1.1\times10^{-3}$ y $3.7\times10^{-4}$ en $\eta=0.6$, $0.8$ y $1.0$,
@@ -772,14 +1443,14 @@ $4.0\times10^{-3}$):
 \[
   \nu(\varepsilon)\approx1.2\sqrt\varepsilon,\qquad 3.2\sqrt\varepsilon,\qquad 11\sqrt\varepsilon .
 \]
-En $\eta=1$ basta $\varepsilon\approx0.008$ para llegar a $\nu=1$
-(tabla~\ref{tab:escalas}). Cuando $\eta\to\eta_c$, $\gamma\to0$ y $\nu\to\infty$ con
-cualquier amplitud: \textbf{la teoría lineal predice dónde está la transición,
-pero cerca de ella no describe los tiempos largos para ninguna amplitud finita.}
-Es justamente el régimen que se quiere estudiar, y es donde el código es
-indispensable. Del otro lado ($\eta>\eta_c$) el modo es discreto y no resuena con
-ninguna partícula: el mecanismo de O'Neil no actúa, y la pregunta no lineal es
-otra, si el modo sobrevive a amplitud finita.
+En $\eta=1$ basta $\varepsilon\approx0.008$ para llegar a $\nu=1$ (tabla~\ref{tab:escalas}).
+Cuando $\eta\to\eta_c$, $\gamma\to0$ y $\nu\to\infty$ con cualquier amplitud: \textbf{la
+teoría lineal predice dónde está la transición, pero cerca de ella no describe los
+tiempos largos para ninguna amplitud finita.} Es justamente el régimen que se
+quiere estudiar, y es donde el código es indispensable. Del otro lado
+($\eta>\eta_c$) el modo es discreto y no resuena con ninguna partícula: el mecanismo
+de O'Neil no actúa, y la pregunta no lineal es otra, si el modo sobrevive a
+amplitud finita.
 
 \begin{table}[!htbp]
 \centering
@@ -788,7 +1459,7 @@ otra, si el modo sobrevive a amplitud finita.
 \toprule
 caso & & $\eta$ & $\gamma$ & $\omega_b$ con $\varepsilon=1$ & $\nu$ con $\varepsilon=1$ & $\varepsilon$ para $\nu=1$\\
 \midrule
-Landau & gaussiana, $\sigma_J=0.10$ & 0.05 & $5.0\times10^{-3}$ & $4.0\times10^{-3}$ & 0.8 & --\\
+landau & gaussiana, $\sigma_J=0.10$ & 0.05 & $5.0\times10^{-3}$ & $4.0\times10^{-3}$ & 0.8 & --\\
 A3 & Wilson & 0.59 & $2.4\times10^{-3}$ & $2.8\times10^{-3}$ & 1.2 & 0.73\\
 L4 & Wilson & 0.80 & $1.1\times10^{-3}$ & $3.4\times10^{-3}$ & 3.2 & 0.098\\
 A4 & Wilson & 1.00 & $3.7\times10^{-4}$ & $4.0\times10^{-3}$ & 11 & 0.0084\\
@@ -798,25 +1469,23 @@ D2 & Wilson, $L_0=1$ & 1.00 & $1.2\times10^{-3}$ & $2.2\times10^{-3}$ & 1.9 & 0.
 \bottomrule
 \end{tabular}
 \caption{Las dos escalas del criterio de O'Neil en los casos amortiguados.
-$\omega_b=\sqrt{|\Omega'|\max_r|\delta\Phi|}$ con $|\Omega'|\approx\Delta\Omega/J_t$ y $\delta\Phi$
-de la solución lineal en $t=0$; al comienzo de la ventana del polo vale
-$\sim0.55$ de eso (A4), de modo que $\nu$ lleva un factor $\sim2$ de
-incertidumbre. En Landau, con $\varepsilon=0.1$, $\nu=0.25$.}
+$\omega_b$ según la aproximación~10, con $\delta\Phi$ en $t=0$; al comienzo de la ventana
+del ajuste del modo vale $\sim0.55$ de eso (A4), de modo que $\nu$ lleva un factor
+$\sim2$ de incertidumbre. En Landau, con $\varepsilon=0.1$, $\nu=0.25$.}
 \label{tab:escalas}
 \end{table}
-
 
 \subsection{El estado de la teoría}
 
 Los resultados de Hadžić, Rein, Schrecker y Straub son sobre el problema
-\emph{linealizado}: dicen cuándo decae $\delta\Phi$ y cuándo hay oscilaciones
-puras, para la dinámica lineal alrededor del equilibrio. Hasta donde sé, si ese
+\emph{linealizado}: dicen cuándo decae $\delta\Phi$ y cuándo hay oscilaciones puras,
+para la dinámica lineal alrededor del equilibrio. Hasta donde sé, si ese
 amortiguamiento persiste en el problema no lineal gravitatorio es una pregunta
 abierta. En plasmas está el teorema de Mouhot y Villani (2011), para
-perturbaciones pequeñas y muy regulares; en gravedad no conozco un equivalente,
-y el razonamiento de O'Neil muestra por qué la pregunta es delicada justamente
-cerca de la transición. Esa es la pregunta que el código puede atacar y la
-teoría lineal no.
+perturbaciones pequeñas y muy regulares; en gravedad no conozco un equivalente, y
+el razonamiento de O'Neil muestra por qué la pregunta es delicada justamente
+cerca de la transición. Esa es la pregunta que el código puede atacar y la teoría
+lineal no.
 
 \subsection{Consecuencia para el diseño}
 
@@ -826,54 +1495,12 @@ teoría lineal no.
 \item La PIC se concentra donde $\nu\gtrsim1$, con la solución lineal del mismo
 equilibrio como referencia en cada punto: lo que se mide es la
 \emph{desviación} respecto de ella, en función de $\nu$ y del tiempo.
-\item La forma perturbativa del dato inicial pasa a ser una virtud. Una frase
-para el artículo: \emph{usamos $F=F_{\rm eq}(1+\varepsilon g)$ no porque supongamos
+\item La forma perturbativa del dato inicial pasa a ser una virtud. Una frase para
+el artículo: \emph{usamos $F=F_{\rm eq}(1+\varepsilon s\chi)$ no porque supongamos
 linealidad, sino porque es una familia controlada en la que la predicción lineal
 se calcula exactamente, de modo que la desviación no lineal se mide sin
 ambigüedad.}
 \end{enumerate}
-
-\subsection{Resumen de aproximaciones}
-
-\begin{table}[!htbp]
-\centering
-\small
-\begin{tabular}{p{0.7cm}p{4.4cm}p{3.3cm}p{5.2cm}}
-\toprule
-\# & Aproximación & Dónde se usa & Validación\\
-\midrule
-1 & Soporte $[0,J_t]$; umbral $10^{-2}F_{\max}$ solo en la gaussiana & bordes de banda, $\eta$ &
-  exacto en el soporte compacto; convención común en la gaussiana\\
-2 & $\Delta\Omega/\Omega\approx3\Delta J/(J+c)$ & lectura de la banda &
-  error $<\SI{1}{\%}$ contra el isócrono exacto\\
-3 & $\tau_k=2\pi/(k\Delta\Omega)$ como escala & duración de las corridas &
-  decaimiento libre medido: gaussiano, $\Delta\Omega/\sigma_\Omega\approx6.2$--$7.0$\\
-4 & Frecuencia epicíclica & origen del corrimiento &
-  exacta en el límite circular: $\kappa=\Omega(0)=0.0711$\\
-5 & Cáscara uniforme & estimación de $\delta\Omega$ &
-  reproduce tendencia y \SI{74}{\%}--\SI{86}{\%} del valor; se usa el calculado\\
-6 & $\delta\Omega$ mide el acoplamiento & definición de $\eta$ &
-  heurística; la teoría lineal la pone a prueba (sección~\ref{sec:lineal})\\
-7 & Péndulo (resonancia aislada) & $\omega_b$, $\mu$, $\nu$ &
-  estándar en dinámica no lineal; vale si la resonancia está aislada\\
-8 & $\omega_b\approx\sqrt{|\Omega'|\max_r|\delta\Phi|}$, $|\Omega'|\approx\Delta\Omega/J_t$ & mapa no lineal &
-  $\delta\Phi$ de la solución lineal de cada caso; $|\Omega'|$ medio, factor $\sim1.5$\\
-9 & Criterio de O'Neil, $\nu=\omega_b/\gamma$ & frontera lineal/no lineal &
-  resultado de plasmas (una onda, 1D); aquí es la escala que la PIC pone a prueba\\
-10 & Polo dominante por matrix pencil & $\gamma$, $\omega$ del bloque~L &
-  reproduce el polo de 11\_landau; discrepancia entre ventanas reportada\\
-11 & Colas libres en el isócrono desnudo ($a_0\to0$) & elección de $F_{\rm eq}$ &
-  cuadratura exacta; reproduce \texttt{landau\_\allowbreak libre}; exponentes confirmados\\
-12 & Cola regenerada en $\Omega_{\max}$, $t^{-2}$ & lectura de la cola (Wilson) &
-  confirmada en teoría lineal: pendiente $-2.2$ a $-2.3$ en A1 hasta $60\,\tau_1$\\
-13 & Costo lineal en $N$ y en pasos & tiempos &
-  calibrado con $N=10^4$; optimista para $N=10^5$ si escala peor en paralelo\\
-\bottomrule
-\end{tabular}
-\caption{Aproximaciones del marco físico y del diseño, con cómo se comprobó
-cada una.}
-\label{tab:aprox}
-\end{table}
 
 \section{Resultados de la teoría lineal (bloque L)}
 \label{sec:lineal}
@@ -883,12 +1510,17 @@ cada una.}
 Para cada caso, \texttt{barrido\_\allowbreak lineal.py} construye el equilibrio
 autoconsistente, resuelve el Vlasov--Poisson linealizado con \texttt{lineal.py}
 ($N_J\times N_Q=1600\times32$ nodos, $\Delta t=0.5$, hasta $10\,\tau_1$) y ajusta la
-cola de $h_1$ con matrix pencil, el mismo ajuste de 11\_landau, en ventanas
-$[a,2a]\,\tau_1$ desde $a=1$. Se reporta el par de ventanas consecutivas más tardío
-que coincide (discrepancia menor que \SI{20}{\%}), que es el comportamiento
-asintótico; si ninguno coincide, el caso se marca ``sin polo dominante''. La
-posición del polo se da como $x=(\omega-\Omega_{\min})/\Delta\Omega$: $0<x<1$ es
-dentro de la banda (resonante, amortiguado) y $x<0$ por debajo (modo discreto).
+cola de $h_1$ (sección~\ref{sec:hk}) con la función de prueba del código.
+
+\paragraph{Aproximación 12: el polo dominante.} El ajuste es el de 11\_landau,
+\emph{matrix pencil}: en una ventana de tiempo, la señal se aproxima por una suma de
+tres exponenciales complejas $\sum_ma_me^{s_mt}$, y el término de mayor amplitud
+da el modo, con $\omega=-\mathrm{Im}\,s$ y $\gamma=-\mathrm{Re}\,s$. Se usan ventanas
+$[a,2a]\,\tau_1$ desde $a=1$ (antes domina el transitorio de la mezcla de fases, que no
+es un polo), y se reporta el par de ventanas consecutivas más tardío que coincide
+(discrepancia menor que \SI{20}{\%}), que es el comportamiento asintótico. Si ninguno
+coincide, la cola no es una sola exponencial y el caso se marca ``sin polo
+dominante''. La posición del polo se da con $x$ (sección~\ref{sec:respuesta}).
 Cada caso cuesta un par de minutos. Las soluciones quedan en
 \texttt{exe/eta\_\allowbreak lineal/} (fuera del control de versiones); rehacer la tabla
 desde ellas toma segundos.
@@ -906,19 +1538,21 @@ $|\gamma|\lesssim10^{-5}$ con signo cualquiera, también con $\Delta t$ a la mit
 es el piso del ajuste, no un crecimiento (la familia principal no puede crecer,
 por Antonov).
 
-\paragraph{El polo no depende de la función de prueba.} $B(J)=J^2e^{-(J-j_1)^2/s_{j1}^2}$
-es una elección del código (\texttt{analysish.f90}); lo físico es que un peso
-$B(J)\,e^{-ikQ}$ solo es continuo en la órbita circular si $B$ se anula al menos
-como $J^{k/2}$, y $J^2$ cumple hasta $k=4$. Repetir A4 y L5 con
+\paragraph{El polo no depende de la función de prueba.} $B(J)$ es una elección
+del código (sección~\ref{sec:hk}); un peso $B(J)\,e^{-ikQ}$ solo tiene que ser
+continuo en la órbita circular, lo que pide que $B$ se anule al menos como
+$J^{k/2}$, y $J^2$ cumple hasta $k=4$. Repetir A4 y L5 con
 $B\propto\sqrt J\,e^{-(J-0.6J_t)^2/(0.6J_t)^2}$ da el mismo $\omega$ en cuatro cifras y
 $\gamma$ a \SI{9}{\%} en A4 ($3.34$ contra $3.66\times10^{-4}$); el ajuste de
 $\delta\Phi$, que no usa $B$, da $3.14\times10^{-4}$. $\gamma$ lleva entonces una
 incertidumbre de $\sim$\SI{10}{\%}. El ajuste de $\delta\Phi$ solo sirve donde el polo
 domina: a radio fijo, $\delta\Phi$ arrastra las colas algebraicas de los puntos de
-retorno y del borde, que una suma de exponenciales no representa, y $h_1$ no las
-tiene justamente porque $B$ es suave y se anula en $J=0$.
+retorno y del borde (sección~\ref{sec:colasdphi}), que una suma de exponenciales
+no representa, y $h_1$ no las tiene justamente porque $B$ es suave y se anula en
+$J=0$.
 
 \subsection{El barrido en $\eta$}
+\label{sec:barrido}
 
 \begin{table}[!htbp]
 \centering
@@ -1049,8 +1683,8 @@ indica.}
 \subsection{El exponente del borde}
 \label{sec:borde_lineal}
 
-El exponente $g$ del borde de vacío es el $k$ de la dicotomía de Hadžić y
-colaboradores, y en teoría lineal se barre directamente: se busca la masa que da
+El exponente $g$ del borde de vacío es el de la dicotomía de Hadžić y
+colaboradores (sección~\ref{sec:borde}), y en teoría lineal se barre directamente: se busca la masa que da
 $\eta=1$ para cada $g$, con $J_t=0.138$ y $W_0=3$, y se resuelve
 (tabla~\ref{tab:borde}).
 
@@ -1074,7 +1708,7 @@ más suave.}
 \label{tab:borde}
 \end{table}
 
-Es la dirección de la dicotomía de Hadžić y colaboradores: borde abrupto,
+Es la dirección de la dicotomía de la sección~\ref{sec:borde}: borde abrupto,
 oscilaciones; borde suave, amortiguamiento. Una interpretación, que el cálculo
 sostiene pero no prueba: la relación de dispersión contiene
 $\int F_{\rm eq}'(J)\,(\ldots)/(\Omega(J)-\omega)\,dJ$, y cerca del borde
@@ -1090,7 +1724,7 @@ extendieron a $60\,\tau_1$ (tabla~\ref{tab:borde_largo}). Con $g\le1$ la señal 
 oscila exactamente en $\Omega_{\min}$ ($x\to-0.001$) y su decaimiento se
 \emph{frena}; con $g=2$ la componente del borde se apaga antes de $20\,\tau_1$ y lo
 que queda es la componente regenerada en $\Omega_{\max}$, con la pendiente $-2$
-predicha en la sección de mezcla de fases.
+predicha en la sección~\ref{sec:regenerada}.
 
 \begin{table}[!htbp]
 \centering
@@ -1138,204 +1772,12 @@ finita: su frecuencia se corre con la amplitud, y un modo pegado al borde
 (A5, $x=-0.07$) no debería sufrir.
 \end{enumerate}
 
-\section{Decisiones de diseño y su justificación}
 
-\subsection{La función de distribución}
-\label{sec:familia}
-
-Se usa la Maxwelliana rebajada de Wilson, escrita en la energía:
-\[
-  F_{\rm eq} = A\,E_\gamma\!\left(g,\,\frac{E_t-E}{T}\right) \ \ \text{si } E<E_t,
-  \qquad
-  E_\gamma(g,x) = e^x\,P(g,x) = \sum_{n\ge0}\frac{x^{g+n}}{\Gamma(g+n+1)},
-\]
-con $P$ la función gamma incompleta regularizada, $g=2$, $E_t=E(J_t)$ la energía
-de la órbita de acción $J_t$ y $T=(E_t-E_c)/W_0$ con $E_c=E(0)$ la de la órbita
-circular y $W_0=3$. $E_t$, $T$ y $A$ se recalculan en el potencial autoconsistente
-de cada iteración, de modo que el soporte es siempre $[0,J_t]$ y la masa $a_0$. La
-perturbación es $F=F_{\rm eq}[1+\varepsilon\,s(J)\,g(Q)]$ con $s=(J/J_t)^{3/2}$ y
-$\varepsilon=1$ (sección~\ref{sec:perfil}).
-
-\paragraph{Por qué no la gaussiana.} La gaussiana $J^2e^{-J^2/\sigma_J^2}$ se
-propuso por su parecido con Maxwell--Boltzmann, pero no es una Maxwelliana. En la
-distribución de rapideces de Maxwell, $4\pi v^2e^{-v^2/2\sigma^2}$, el $v^2$ es el
-jacobiano de la cáscara de velocidades; la función de distribución misma es
-$e^{-v^2/2\sigma^2}$, máxima en $v=0$. Aquí la medida ya es plana,
-$dr\,dp_r=dQ\,dJ$, así que el $J^2$ de $F$ no es un jacobiano sino un vaciado
-real del espacio fase alrededor de la órbita circular. En $r=r_c$, donde
-$J\approx p_r^2/2\kappa$, da una distribución de $p_r$ proporcional a
-$p_r^4e^{-p_r^4/4\kappa^2\sigma_J^2}$: nula en $p_r=0$ y con dos máximos, dos haces
-radiales que se cruzan. Y tiene inversión de población, $\partial F/\partial E>0$
-en $J<\sigma_J$.
-
-\paragraph{El análogo correcto.} $F\propto e^{-E/T}$. Como
-$E=p_r^2/2+\Phi_{\rm ef}(r)$, en cada radio da \emph{exactamente} una gaussiana en
-$p_r$ con dispersión $\sqrt T$ y una densidad de Boltzmann
-$e^{-\Phi_{\rm ef}/T}$, y como $E=E(J)$ es un equilibrio exacto. Cerca de la
-órbita circular, $E\approx E_c+\kappa J$ y queda $F\propto e^{-\kappa J/\sigma_R^2}$,
-la distribución cuasi-isoterma de Binney (2010, MNRAS 401, 2318), estándar para
-discos tibios en variables de acción. El ancho tiene lectura física:
-$J_0=\sigma_R^2/\kappa$, con $\sigma_R$ la dispersión de velocidades radiales; con
-$W_0=3$ y $J_t=0.138$ resulta $\sigma_R/v_c=0.16$, una cáscara tibia.
-
-\paragraph{El soporte compacto, por marea.} Un cúmulo en un campo externo pierde
-las estrellas con $E>E_t$. La familia de isotermas rebajadas de Gieles y Zocchi
-(2015, MNRAS 454, 576) describe ese corte: $g=1$ es King (1966), $e^x-1$; $g=2$ es
-Wilson (1975), $e^x-1-x$. Cerca del borde $F\propto x^g/\Gamma(g+1)$: \textbf{$g$
-es el exponente $k$ de Hadžić y colaboradores}; lejos del borde, $F\to e^x$. La
-familia contiene como límites el politropo, $(E_t-E)^g$, con $W_0\to0$, y la
-isoterma con $W_0\to\infty$.
-
-\begin{table}[!htbp]
-\centering
-\small
-\begin{tabular}{L{4.4cm}L{2.9cm}L{2.9cm}L{2.9cm}}
-\toprule
- & gaussiana & hueca & Wilson\\
- & $J^2e^{-J^2/\sigma_J^2}$ & $J^2(J_t-J)^2$ & $E_\gamma(2,(E_t-E)/T)$\\
-\midrule
-soporte compacto & no & sí & sí, por marea\\
-banda & umbral del \SI{1}{\%} & exacta & exacta\\
-distribución de $p_r$ en $r_c$ & bimodal & bimodal & gaussiana (rebajada)\\
-en $J=0$ & $\propto J^2$ & $\propto J^2$ & máximo\\
-monótona en $E$ (Antonov) & no & no & sí\\
-perturbación lisa & $s=1$ & $s=1$ & $s=(J/J_t)^{3/2}$\\
-cola libre de $\delta\Phi$ en $10\tau_1$ & $1.2\times10^{-4}$ & $4.2\times10^{-4}$ & $3.0\times10^{-4}$\\
-$\delta\Phi(0)$ por unidad de masa, $\rho_\Phi$ & 1.00 & 1.09 & 0.11\\
-$a_0$ para $\eta=1$ (ancho $0.138$) & 0.069 & 0.075 & 0.075\\
-$\delta\Omega/(\Omega a_0)$ & 1.87 & 1.81 & 2.58\\
-banda al agregar masa & se angosta & se angosta & se ensancha\\
-\bottomrule
-\end{tabular}
-\caption{Las tres familias con el ancho de A4 ($\sigma_J=0.05$, $J_t=0.138$,
-$L_0=2$). Colas y $\rho_\Phi$ de la tabla~\ref{tab:colas}; masas y coeficientes
-de corrimiento de \texttt{eta.py}.}
-\label{tab:familias}
-\end{table}
-
-Las razones de la elección, en orden de importancia:
-
-\begin{enumerate}
-\item \textbf{Es función solo de la energía, y por tanto de $J$}: un equilibrio
-exacto del potencial total, que \texttt{equilibrio.py} construye iterando Poisson
-hasta autoconsistencia. Si dependiera de $Q$ se enrollaría desde $t=0$, y ese
-decaimiento sería indistinguible del que se quiere medir; sin equilibrio bien
-definido no existe el marco en que se resta $\delta\Phi$.
-\item \textbf{Es monótona}: $\partial F/\partial E<0$, así que por el teorema de
-Antonov no tiene modos radiales crecientes. Una oscilación que no decae sería un
-modo neutro genuino, sin la ambigüedad de una inestabilidad. Además, en la línea
-de trabajos de Hadžić, Rein, Straub y colaboradores el operador linealizado se
-define en un espacio con peso $1/|\varphi'(E)|$, lo que exige $\varphi'<0$ en todo
-el soporte; si esto se confirma en la sección de hipótesis del artículo de
-referencia, las dos familias huecas quedan fuera del teorema con que se quiere
-comparar, y esta dentro.
-\item \textbf{Su interior es térmico}: en cada radio la distribución de $p_r$ es
-gaussiana, rebajada cerca de $E_t$; con $W_0=3$ el máximo vale \SI{80}{\%} del de
-la isoterma sin truncar, $P(2,3)=0.80$. Sus parámetros tienen sentido físico:
-temperatura, energía de marea y forma del borde.
-\item \textbf{Su soporte compacto tiene causa física}, la marea, y deja la banda
-exacta: el espectro esencial y $\eta$ son propiedades del equilibrio, no de un
-umbral.
-\item \textbf{Su borde es el de Hadžić y es ajustable}: $g=2$ está en la clase
-``amortigua'', y el experimento del borde es esta misma batería con otro $g$,
-incluido King ($g=1$), el caso marginal.
-\end{enumerate}
-
-\paragraph{Por qué $g=2$ y $W_0=3$.} Se exploró $g\in\{2,3\}$ y
-$W_0\in\{1,\ldots,8\}$ con $J_t=0.138$ (tabla~\ref{tab:barrido}). Todas dan
-$\eta=1$ con $a_0$ entre $0.066$ y $0.074$; lo que cambia es la forma. Subir $W_0$
-hace más térmico el núcleo pero deja el borde sin peso y debilita la
-perturbación lisa; con el mismo $W_0$, $g=2$ tiene el núcleo más térmico, la cola
-más baja y más potencial que $g=3$. $W_0=3$ es el compromiso: núcleo al
-\SI{80}{\%} de la isoterma y \SI{7}{\%} de la masa en la mitad exterior del
-soporte, que es donde vive el borde. $W_0=6$, el límite casi térmico, entra como
-caso E3 del bloque~L y corrida G2.
-
-\begin{table}[!htbp]
-\centering
-\small
-\begin{tabular}{llcccccc}
-\toprule
-$g$ & $W_0$ & $P(g,W_0)$ & $\langle J\rangle/J_t$ & masa en $J>J_t/2$ &
-  $\sigma_R/v_c$ & cola libre $10\tau_1$ & $\rho_\Phi$\\
-\midrule
-2 & \textbf{3} & \textbf{0.80} & 0.20 & 0.068 & 0.157 & $3.0\times10^{-4}$ & 0.11\\
-2 & 6 & 0.98 & 0.15 & 0.028 & 0.111 & $1.0\times10^{-3}$ & 0.06\\
-3 & 3 & 0.58 & 0.17 & 0.037 & 0.157 & $6.8\times10^{-4}$ & 0.08\\
-3 & 5 & 0.88 & 0.15 & 0.024 & 0.122 & $1.0\times10^{-3}$ & 0.06\\
-\bottomrule
-\end{tabular}
-\caption{Candidatas de la familia de Wilson, con $J_t=0.138$, $L_0=2$ y
-$s=(J/J_t)^{3/2}$. $P(g,W_0)$ es el cociente entre el máximo y el de la isoterma
-sin truncar. El barrido completo en $W_0$ ($1$, $2$, $3$, $5$, $8$) muestra la misma
-tendencia: $\langle J\rangle/J_t$ baja de $0.23$ a $0.12$ y la masa exterior de
-\SI{10}{\%} a \SI{1}{\%}.}
-\label{tab:barrido}
-\end{table}
-
-\paragraph{El costo: el borde en $\Omega_{\max}$.} Toda distribución monótona es
-máxima en $J=0$, así que el borde superior de la banda, $\Omega_{\max}=\kappa(r_c)$,
-tiene peso. Tres consecuencias, las tres medidas o calculadas:
-\begin{enumerate}
-\item[(a)] La perturbación $F_{\rm eq}(J)\cos Q$ es discontinua en la órbita
-circular: allí $Q$ es el ángulo polar de unas coordenadas lisas $(x,y)$ con
-$J\approx(x^2+y^2)/2$, y $F_{\rm eq}(0)\cos Q=F_{\rm eq}(0)\,x/|x|$. Su cola libre
-en $\Omega_{\max}$ decae como $t^{-3/2}$, 150 veces por encima de la gaussiana en
-$t_{\rm fin}$. Con $s=(J/J_t)^{3/2}$, que es lisa ($J^{3/2}\cos Q\propto Jx$), la
-cola baja al nivel de la gaussiana (tabla~\ref{tab:colas}).
-\item[(b)] Esa perturbación lisa produce poco potencial, $\rho_\Phi=0.11$: para un
-mismo $\delta\Phi$ hace falta un $\varepsilon$ nueve veces mayor que con la
-gaussiana. No limita el estudio no lineal, porque cerca de la transición el
-parámetro que manda es $\nu=\omega_b/\gamma$, que se alcanza con $\varepsilon\ll1$
-(sección~\ref{sec:objecion}). Lo que no alcanza es $\mu\gtrsim1$, el atrapamiento
-de todo el continuo, que tampoco hace falta ($\mu\le0.3$ en el bloque~N).
-\item[(c)] La autogravedad regenera una componente en $\Omega_{\max}$ con cola
-$t^{-2}$ y amplitud proporcional al acoplamiento (sección de mezcla de fases),
-que ninguna condición inicial elimina. No es un defecto de la distribución sino
-del modelo de $L$ fijo: con $L$ distribuido, $\kappa(L)$ varía y difumina el borde.
-Se ajusta como componente aparte, con frecuencia y exponente conocidos, y su
-amplitud se calcula antes con \texttt{lineal.py}.
-\end{enumerate}
-Además la banda se ensancha con la masa (sección del corrimiento), y el mismo
-$\eta$ describe otra geometría que en las familias huecas: el caso E1 del
-bloque~L mide si eso importa, y sí importa (sección~\ref{sec:lineal}).
-
-\paragraph{Por qué no el politropo puro.} $(E_t-E)^g$ es el límite $W_0\to0$ de esta
-familia: conserva los tres costos anteriores y pierde el interior térmico.
-
-\paragraph{La función de prueba.} $B(J)=J^2e^{-(J-j_1)^2/s_{j1}^2}$ sigue al
-soporte: $j_1=s_{j1}=J_t/2.763$, la misma proporción que en 11\_landau ($0.10$
-sobre un soporte que termina en $0.276$). Se fija en el \texttt{.par} de cada
-corrida, de donde la leen \texttt{landau\_\allowbreak analisis.py} y, con
-\texttt{--j1 --sj1}, \texttt{lineal.py}.
-
-\subsection{El perfil angular de la perturbación}
-\label{sec:perfil}
-
-$g(Q)$ debe ser periódica y de media cero, que es lo único que se necesita para
-que la masa no cambie y no haya que reconstruir el equilibrio. El generador
-admite además un factor radial, $F=F_{\rm eq}\,[1+\varepsilon\,s(J)\,g(Q)]$:
-$s=1$ (\texttt{--pert plana}), $s=\sqrt{J/J_{\max}}$ (\texttt{suave}) o
-$s=(J/J_{\max})^{3/2}$ (\texttt{suave3}). Con $F_{\rm eq}(0)>0$ solo las dos últimas
-son lisas en la órbita circular, y \texttt{suave3} es la que no deja cola en
-$\Omega_{\max}$ (costo (a) de la sección~\ref{sec:familia}): es la de la familia
-principal, con la amplitud $\varepsilon$ de cada punto elegida por $\nu$
-(sección~\ref{sec:bateria}). La familia hueca y la gaussiana, que se anulan como
-$J^2$, usan \texttt{plana}. Como
-$s\le1$, la cota de positividad es la misma.
-
-\begin{itemize}
-\item \texttt{cos}: $g=\cos Q$. Excita únicamente $k=1$. En régimen lineal cada
-armónico evoluciona independiente, así que excitar uno solo da la medición más
-limpia de $\gamma$ y $\omega$. Es el que se usa en toda la batería salvo donde
-se indique.
-\item \texttt{suma3}: $g=\cos Q+\tfrac12\cos 2Q+\tfrac13\cos 3Q$. Excita $k=1,2,3$
-de entrada y sirve para la prueba de \emph{frecuencia común}, que es la firma de
-un modo genuino. Su máximo es $\approx 1.5$, así que la positividad de $F$ exige
-$\varepsilon\le 0.67$; el generador lo verifica y aborta si no se cumple.
-\end{itemize}
+\section{Decisiones numéricas}
+\label{sec:numerico}
 
 \subsection{El momento angular $L_0$}
+\label{sec:L0}
 
 $L_0$ decide dónde vive el sistema dentro del isócrono, y con ello cuánta
 autogravedad se obtiene por unidad de masa.
@@ -1363,8 +1805,8 @@ cubrir el mismo número de tiempos de mezcla va como $T_r/r_c$, que vale $15.3$,
 $11.0$ y $11.3$ para $L_0=2$, $1$ y $0.25$.
 
 \textbf{Decisión:} $L_0=2$ como referencia, por continuidad con las corridas,
-los equilibrios y los análisis ya validados; y dos corridas de control con
-$L_0=1$. Si el resultado colapsa en $\eta$ con dos $L_0$, la afirmación deja de
+los equilibrios y los análisis ya validados; y como control con $L_0=1$, los casos
+lineales D1 y D2 y la corrida PIC V1. Si el resultado colapsa en $\eta$ con dos $L_0$, la afirmación deja de
 depender de esa elección: $L_0$ cambia a la vez la masa de fondo encerrada, el
 radio, el periodo y la forma de $\Omega(J)$.
 
@@ -1376,6 +1818,7 @@ sistema vive en $r\sim 1.5$--$4$, así que $\Delta r=0.05$ y $r_{\max}=8$ dan la
 misma resolución relativa que $\Delta r=0.1$ y $r_{\max}=20$ con $L_0=2$.
 
 \subsection{Por qué variar el ancho y no solo la masa}
+\label{sec:ancho}
 
 Con el ancho de las corridas de Landau ($J_t=0.276$, o $\sigma_J=0.10$) el
 corrimiento es lineal en la masa, $\delta\Omega/\Omega\approx 2.1\,a_0$ con la
@@ -1398,36 +1841,42 @@ autogravitante es comparable a la masa de fondo encerrada; y (iii) aumenta el
 riesgo de inestabilidad (sección~\ref{sec:riesgos}).
 
 \subsection{Duración de las corridas y el techo de recurrencia}
+\label{sec:recurrencia}
 
-Dos escalas mandan. La primera es la mezcla de fases: hace falta
-$t_{\rm fin}\approx 10\,\tau_1$ para que la cola sea interpretable. La segunda
-es la \emph{recurrencia} por aliasing de la malla de nodos en $J$, el artefacto
-de Birdsall y Langdon visto desde el otro lado:
+Dos escalas mandan. La primera es la mezcla de fases: las corridas lineales
+duran $t_{\rm fin}=10\,\tau_1$ (sección~\ref{sec:tau}), y las no lineales además varios
+periodos de rebote (sección~\ref{sec:bateria}).
+
+La segunda es la \emph{recurrencia}, un artefacto de la malla regular en $J$. Dos
+nodos vecinos, separados por $\Delta J=J_{\max}/N_{rc}$, tienen frecuencias que
+difieren en $|d\Omega/dJ|\,\Delta J$, y su armónico $k$ acumula una diferencia de fase
+$k\,|d\Omega/dJ|\,\Delta J\,t$. Cuando esa diferencia llega a $2\pi$, todos los pares de
+vecinos vuelven a estar en fase: la malla no puede representar estructura más
+fina que $\Delta J$, y la mezcla de fases se deshace. Eso ocurre en
 \[
-  T_{\rm rec}(k) \;=\; \frac{2\pi}{k\,|d\Omega/dJ|\,\Delta J},
-  \qquad \Delta J = \frac{J_{\max}}{N_{rc}} .
+  T_{\rm rec}(k) \;=\; \frac{2\pi}{k\,|d\Omega/dJ|\,\Delta J} .
 \]
 Más allá de $T_{\rm rec}$ la meseta que se mida es un artefacto, y el límite es
-\emph{distinto para cada $k$}: baja como $1/k$.
+\emph{distinto para cada $k$}: baja como $1/k$. Es el efecto de Birdsall y Langdon
+visto desde el otro lado.
 
-Con soporte compacto y $J_{\max}=J_t$ la cuenta se simplifica: $|d\Omega/dJ|\approx
-\Delta\Omega/J_t$ y $\Delta J=J_t/N_{rc}$, así que
+Con soporte compacto y $J_{\max}=J_t$ la cuenta se simplifica: la pendiente media es
+$|d\Omega/dJ|\approx\Delta\Omega/J_t$ y $\Delta J=J_t/N_{rc}$, así que
 \[
   T_{\rm rec}(k) = \frac{N_{rc}}{k}\,\tau_1 ,
 \]
 independiente del ancho y de la masa. Con $N_{rc}=400$, $T_{\rm rec}(1)=400\,\tau_1$, que
 en A4 son $1.6\times10^5$: por encima de la corrida más larga ($5.2\times10^4$). Para
-$k=4$ el techo baja a $100\,\tau_1\approx4\times10^4$, y en N6 y en su referencia
-con $\varepsilon=0$ hay que decir hasta dónde vale $h_4$. Las corridas no lineales
-duran además varios periodos de rebote (sección~\ref{sec:bateria}). Con la
-gaussiana (caso E2),
-$J_{\max}=6\sigma_J$ cubre 2.17 veces el soporte y el margen baja a
-$4.5\,t_{\rm fin}$; por eso $J_{\max}$ debe seguir al soporte y no quedarse en su
-valor histórico de $0.6$, que con $\sigma_J=0.03$ desperdiciaría la mayoría de
-los nodos donde $F\approx0$. El generador usa por omisión $J_{\max}=J_t$ en la
-familia compacta y $6\sigma_J$ en la gaussiana.
+$k=4$ el techo baja a $100\,\tau_1\approx4\times10^4$, y en N6 y en su referencia con
+$\varepsilon=0$ hay que decir hasta dónde vale $h_4$. Con la gaussiana (caso E2),
+$J_{\max}=6\sigma_J$ cubre 2.17 veces el soporte y el margen se reduce en ese factor;
+por eso $J_{\max}$ debe seguir al soporte y no quedarse en su valor histórico de
+$0.6$, que con $\sigma_J=0.03$ desperdiciaría la mayoría de los nodos donde
+$F\approx0$. El generador usa por omisión $J_{\max}=J_t$ en las familias compactas y
+$6\sigma_J$ en la gaussiana.
 
 \subsection{Resolución}
+\label{sec:resolucion}
 
 Son cuatro fuentes de error independientes, y no se sustituyen entre sí:
 
@@ -1451,11 +1900,11 @@ desviación respecto de ella.
 Configuración común salvo donde se indique: la familia principal (Wilson,
 $g=2$, $W_0=3$) con $J_{\max}=J_t$, $L_0=2$, malla $r\in[0,20]$ con $\Delta r=0.1$,
 \texttt{courant}\,$=1$ ($\Delta t=0.05$), yoshida4, $N_{rc}=400$, $N_{pc}=25$ ($N=10^4$),
-$g(Q)=\cos Q$, perturbación \texttt{suave3} y función de prueba
+$\chi(Q)=\cos Q$, perturbación \texttt{suave3} y función de prueba
 $j_1=s_{j1}=J_t/2.763$. La amplitud $\varepsilon$ de cada punto se elige para un $\nu$
 dado: como $\omega_b\propto\sqrt\varepsilon$,
 $\varepsilon=(\nu\gamma/\omega_b^{(1)})^2$, con $\gamma$ y $\omega_b^{(1)}$ (el de
-$\varepsilon=1$) del bloque~L. Las corridas con $\nu\ge1$ duran al menos tres
+$\varepsilon=1$) del bloque~L (tabla~\ref{tab:escalas}). Las corridas con $\nu\ge1$ duran al menos tres
 periodos de rebote, $3\cdot2\pi/\omega_b$; las de $\nu<1$ y las de modo discreto,
 $10$ y $20\,\tau_1$.
 
@@ -1504,7 +1953,7 @@ $\nu\gg1$, apenas decae, y la envolvente oscila con frecuencia $\sim\omega_b$. E
 tiempo de separación $t_{\rm nl}$ debe escalar como $\varepsilon^{-1/2}$ (N5, N6, N7,
 N8 a $\eta$ fijo).
 
-\subsection{Bloque G: ¿de qué depende el comportamiento no lineal?}
+\subsection{Bloque V: ¿de qué depende el comportamiento no lineal?}
 
 Cuatro corridas con el mismo $\nu$ que un punto del bloque~N, sobre otro
 equilibrio, para saber si el estado final lo fijan $(\eta,\nu)$ o también el
@@ -1517,16 +1966,16 @@ ancho, $L_0$ y la forma de la distribución.
 \toprule
 \# & base & $\nu$ & $\varepsilon$ & $2\pi/\omega_b$ & $t_{\rm fin}$ & costo & compara con\\
 \midrule
-G1 & D2 ($L_0=1$, igual a A4 en lineal) & 1 & 0.27 & 5400 & 16300 & \SI{17.0}{min} & N6\\
-G2 & E3 (Wilson, $W_0=6$) & 3 & 0.56 & 2600 & 7800 & \SI{4.5}{min} & N7\\
-G3 & A7 ($J_t=0.276$) & 1 & 0.24 & 2100 & 6400 & \SI{3.4}{min} & N6, N2\\
-G4 & E1 (hueca, modo discreto) & -- & 1.0 & 600 & 12400 & \SI{7.0}{min} & N10\\
+V1 & D2 ($L_0=1$, igual a A4 en lineal) & 1 & 0.27 & 5400 & 16300 & \SI{17.0}{min} & N6\\
+V2 & E3 (Wilson, $W_0=6$) & 3 & 0.56 & 2600 & 7800 & \SI{4.5}{min} & N7\\
+V3 & A7 ($J_t=0.276$) & 1 & 0.24 & 2100 & 6400 & \SI{3.4}{min} & N6, N2\\
+V4 & E1 (hueca, modo discreto) & -- & 1.0 & 600 & 12400 & \SI{7.0}{min} & N10\\
 \bottomrule
 \end{tabular}
-\caption{G1 aísla $L_0$: en teoría lineal D2 y A4 son iguales en unidades de la
-banda. G2 y G3 cambian la forma y el ancho con $\nu$ fijo. G4 es el modo discreto
+\caption{V1 aísla $L_0$: en teoría lineal D2 y A4 son iguales en unidades de la
+banda. V2 y V3 cambian la forma y el ancho con $\nu$ fijo. V4 es el modo discreto
 de una familia no monótona a amplitud grande ($\mu\approx1$): si crece, es
-inestabilidad (Antonov no la excluye allí). G1 cuesta más porque con $L_0=1$ la
+inestabilidad (Antonov no la excluye allí). V1 cuesta más porque con $L_0=1$ la
 malla es más fina ($\Delta r=0.05$, $r_{\max}=8$) y $\Delta t$ se reduce a la mitad.}
 \end{table}
 
@@ -1574,7 +2023,7 @@ Bloque & Propósito & Corridas & Costo\\
 \midrule
 L & Teoría lineal (calculado) & 31 + 12 & hecho\\
 N & Mapa no lineal en $(\eta,\nu)$ y modo discreto & 12 & \SI{79}{min}\\
-G & Generalidad: $L_0$, forma, ancho, familia hueca & 4 & \SI{32}{min}\\
+V & Variaciones: $L_0$, forma, ancho, familia hueca & 4 & \SI{32}{min}\\
 Z & Referencias con $\varepsilon=0$ & 9 & \SI{83}{min}\\
 B & Convergencia y piso & 5 & \SI{78}{min}\\
 \midrule
@@ -1615,7 +2064,7 @@ amplitud tomada de la referencia lineal.
 alrededor de $J_r$, con $\Omega(J_r)=\omega$, debe aplanarse en un ancho
 $\sim\Delta J_{\rm atr}$. Es la firma directa del atrapamiento, y requiere pasar
 las partículas al marco acción-ángulo del equilibrio (\texttt{aa\_\allowbreak numerico.py}).
-\item \textbf{$h_k(t)$ para $k=0\ldots4$}: una frecuencia común a todos los $k$
+\item \textbf{$h_k(t)$ para $k=0\ldots4$} (sección~\ref{sec:hk}): una frecuencia común a todos los $k$
 es la firma de un modo; la generación de $k=2$ con amplitud $\propto\varepsilon^2$
 es la de la no linealidad.
 \item \textbf{Deriva de $J$ y conservación de la energía}, que acotan la ventana
@@ -1650,8 +2099,8 @@ gaussiana sí crecen entre $J=0$ y su máximo ($\partial F/\partial E>0$ ahí): 
 ellas un crecimiento se reporta como inestabilidad, no como ``no amortigua''.
 \item \textbf{Piso de discretización.} Los puntos de $\nu\approx1$ usan
 $\varepsilon$ chico y señal chica. El piso debe estar claramente por debajo de la
-amplitud observada durante varios periodos de rebote; es el papel de las
-corridas con $N=10^5$ del bloque~B.
+amplitud observada durante varios periodos de rebote; es el papel de la corrida
+B5, con $N=5\times10^4$ sobre el punto de menor señal.
 \item \textbf{Resolución de la isla.} El semiancho
 $\Delta J_{\rm atr}=2\omega_b/|\Omega'|$ debe cubrir muchos nodos en $J$: la
 tabla~\ref{tab:mapa} da el cociente $\Delta J_{\rm atr}/\Delta J$ de cada punto.
@@ -1672,7 +2121,51 @@ con un amortiguamiento lento. Se ajusta aparte, con frecuencia fija en el borde 
 amplitud de la referencia lineal.
 \end{enumerate}
 
+\section{Resumen de aproximaciones}
+\label{sec:aproximaciones}
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{p{0.6cm}p{4.3cm}p{3.1cm}p{5.6cm}}
+\toprule
+\# & Aproximación & Dónde se usa & Validación\\
+\midrule
+1 & Epiciclo cerca de la órbita circular (\ref{sec:circular}) & regularidad en $J=0$, $C\propto\sqrt J$, $R_e$ &
+  exacta en el límite circular: $\kappa=\Omega(0)=0.0711$\\
+2 & Umbral del \SI{1}{\%} en la gaussiana (\ref{sec:banda}) & bordes de banda, $\eta$ &
+  innecesario con soporte compacto; convención común a los casos gaussianos\\
+3 & $\Delta\Omega/\Omega\approx3\Delta J/(J+c)$ (\ref{sec:banda}) & lectura de la banda &
+  error $<\SI{1}{\%}$ contra el isócrono exacto\\
+4 & $\tau_k$ como escala (\ref{sec:tau}) & duración de las corridas &
+  decaimiento libre medido: gaussiano, $\Delta\Omega/\sigma_\Omega\approx6.2$--$7.0$\\
+5 & Colas en el isócrono desnudo (\ref{sec:colasvalores}) & elección de $F_{\rm eq}$ y de $s$ &
+  cuadratura exacta; reproduce \texttt{landau\_\allowbreak libre}; exponentes confirmados\\
+6 & Cáscara uniforme (\ref{sec:corrimiento}) & estimación del corrimiento &
+  reproduce la tendencia y \SI{74}{\%}--\SI{86}{\%} del valor; se usa el calculado\\
+7 & Componente regenerada en $\Omega_{\max}$ (\ref{sec:regenerada}) & lectura de la cola &
+  confirmada en teoría lineal: pendiente $-2.2$ a $-2.3$ en A1 hasta $60\,\tau_1$\\
+8 & El corrimiento mide el acoplamiento (\ref{sec:eta}) & definición de $\eta$ &
+  heurística; la teoría lineal muestra que ordena la transición pero no la fija sola\\
+9 & Péndulo, resonancia aislada (\ref{sec:atrapamiento}) & $\omega_b$, $\Delta J_{\rm atr}$, $\mu$, $\nu$ &
+  estándar en dinámica no lineal\\
+10 & $\omega_b\approx\sqrt{|\Omega'|\max_r|\delta\Phi|}$, $|\Omega'|\approx\Delta\Omega/J_t$ (\ref{sec:atrapamiento}) & mapa no lineal &
+  $\delta\Phi$ de la solución lineal de cada caso; $\nu$ con un factor $\sim2$\\
+11 & Criterio de O'Neil (\ref{sec:atrapamiento}) & frontera lineal/no lineal &
+  resultado de plasmas (una onda, 1D); es lo que la PIC pone a prueba\\
+12 & Polo dominante por matrix pencil (\ref{sec:lineal}) & $\omega$, $\gamma$, $x$ del bloque~L &
+  reproduce el polo de 11\_landau; no depende de $B$ a \SI{10}{\%}\\
+13 & Costo lineal en $N$ y en pasos (\ref{sec:bateria}) & tiempos &
+  calibrado con $N=10^4$; optimista para $N=5\times10^4$ si escala peor en paralelo\\
+\bottomrule
+\end{tabular}
+\caption{Las aproximaciones del documento, en el orden en que aparecen, con la
+sección donde se introducen y cómo se comprobó cada una.}
+\label{tab:aprox}
+\end{table}
+
 \section{Herramientas}
+\label{sec:herramientas}
 
 Los cambios están en el repositorio y son neutrales: con los valores por omisión
 reproducen bit a bit lo anterior (estado inicial de Landau, corrida lineal
@@ -1732,3 +2225,4 @@ físico legítimo pero distinto.
 \end{itemize}
 
 \end{document}
+
