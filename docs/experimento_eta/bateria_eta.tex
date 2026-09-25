@@ -105,7 +105,8 @@ en orden: la banda de frecuencias, la mezcla de fases, el efecto de la
 autogravedad, el modo colectivo y el criterio $\eta$. La
 sección~\ref{sec:familia} justifica la distribución elegida y la
 sección~\ref{sec:objecion}, por qué la teoría lineal no basta. La
-sección~\ref{sec:lineal} da los resultados lineales, y las
+sección~\ref{sec:metodo_lineal} explica cómo se resuelve el problema lineal y cómo se
+extrae el modo, y la sección~\ref{sec:lineal} da los resultados; las
 secciones~\ref{sec:numerico} a~\ref{sec:riesgos} el diseño numérico, la batería
 PIC, el protocolo y los riesgos. Al final hay un resumen de las aproximaciones,
 las herramientas y el alcance. Cada símbolo se define antes de usarse; la
@@ -149,6 +150,7 @@ $h_k$, $B(J)$, $j_1$, $s_{j1}$ & armónico $k$ de la distribución y su función
 $\beta(Q,J)$, $\beta_{\pm1}(J)$ & peso de un observable lineal y sus coeficientes $k=\pm1$ & \ref{sec:obslineal}\\
 $\Omega_{\min}$, $\Omega_{\max}$, $\Delta\Omega$ & bordes y ancho de la banda de frecuencias & \ref{sec:banda}\\
 $\bar\Omega$ & frecuencia media pesada por la masa & \ref{sec:banda}\\
+$\bar\Omega_{\rm iso}$ & la misma, con la misma distribución pero sin masa propia ($a_0\to0$) & \ref{sec:eta}\\
 $\tau_k$ & tiempo de mezcla del armónico $k$, $2\pi/(k\,\Delta\Omega)$ & \ref{sec:banda}\\
 $w(\Omega)$ & distribución de frecuencias que ve un observable & \ref{sec:libre}\\
 $\rho_\Phi$ & $\delta\Phi(0)$ por unidad de masa y de $\varepsilon$, relativo a la gaussiana & \ref{sec:colasvalores}\\
@@ -1033,7 +1035,7 @@ equilibrio y $\partial_JH_0=\Omega$, los términos de primer orden son
 El segundo término es el transporte libre de la sección~\ref{sec:libre}; el
 tercero, el campo propio de la perturbación actuando sobre el equilibrio.
 $\delta\Phi$ es a su vez el potencial de $\delta F$, por Poisson: el sistema es cerrado.
-\texttt{lineal.py} resuelve exactamente esto (sección~\ref{sec:lineal}).
+\texttt{lineal.py} resuelve exactamente esto (sección~\ref{sec:metodo_lineal}).
 
 \paragraph{Modos.} Para una solución $\propto e^{i(kQ-\omega t)}$, la ecuación da
 \[
@@ -1118,17 +1120,39 @@ orden: ambos salen de términos $\sim4\pi G\rho_{\rm self}$, como muestra la fó
 de $\kappa^2$. La pregunta ``¿alcanza el acoplamiento para sacar el modo de la
 banda?'' se convierte en comparar ese corrimiento con el ancho.
 
-\paragraph{La definición.} Con $\bar\Omega$ la frecuencia media pesada por la masa
-(sección~\ref{sec:banda}), calculada en el equilibrio autoconsistente de masa
-$a_0$, y $\bar\Omega_0$ la misma con la misma forma $\tilde F$ en el isócrono sin
-masa propia,
+\paragraph{Las dos frecuencias medias.} El corrimiento se mide comparando dos
+promedios de la misma cantidad, la frecuencia media pesada por la masa de la
+sección~\ref{sec:banda}:
+\begin{itemize}
+\item $\bar\Omega$, calculada en el equilibrio autoconsistente, con la masa $a_0$
+incluida en el potencial;
+\item $\bar\Omega_{\rm iso}$, la misma para la misma distribución de órbitas (la
+misma forma $\tilde F$: el mismo $J_t$, $g$ y $W_0$), pero calculada en el isócrono
+solo, como si la componente no tuviera masa ($a_0\to0$). Es la frecuencia media que
+tendrían esas órbitas sin autogravedad.
+\end{itemize}
+La diferencia entre las dos es lo que hace la autogravedad.
+
+\paragraph{La definición.}
 \[
-  \delta\Omega = \frac{\bar\Omega-\bar\Omega_0}{\bar\Omega_0}, \qquad
+  \delta\Omega = \frac{\bar\Omega-\bar\Omega_{\rm iso}}{\bar\Omega_{\rm iso}}, \qquad
   \boxed{\;\eta = \frac{\delta\Omega}{\Delta\Omega/\bar\Omega}\;}
 \]
-con $\Delta\Omega$ el ancho de la banda con masa: el corrimiento relativo dividido
-por el ancho relativo. Así lo calcula \texttt{eta.py}, y así están dados todos los
-$\eta$ del documento.
+$\delta\Omega$ es cuánto sube, en fracción, la frecuencia media por la
+autogravedad, y $\Delta\Omega/\bar\Omega$ es el ancho relativo de la banda con masa: $\eta$
+es el corrimiento relativo dividido por el ancho relativo, un número sin
+dimensiones. Así lo calcula \texttt{eta.py}, y así están dados todos los $\eta$ del
+documento.
+
+\paragraph{Un ejemplo.} En A4 (Wilson, $J_t=0.138$, $a_0=0.075$), sin masa propia la
+frecuencia media es $\bar\Omega_{\rm iso}=0.0687$, un periodo radial medio de $91.4$.
+Con la masa, $\bar\Omega=0.0820$, así que $\delta\Omega=0.193$: la autogravedad acelera
+las órbitas un \SI{19}{\%}. La banda con masa es $[0.0698,\,0.0857]$, su ancho
+relativo es $\Delta\Omega/\bar\Omega=0.194$, y $\eta=0.193/0.194=1.00$.
+
+\paragraph{No confundir.} $\bar\Omega_{\rm iso}$ no es $\Omega(0)$. $\Omega(0)=\kappa$ es la
+frecuencia de una sola órbita, la circular, la más rápida de la banda; $\bar\Omega$ y
+$\bar\Omega_{\rm iso}$ son promedios sobre todas las órbitas de la distribución.
 
 \begin{nota}
 \textbf{Lo que $\eta$ es y lo que no.} Es un criterio de diseño con fundamento
@@ -1502,28 +1526,200 @@ se calcula exactamente, de modo que la desviación no lineal se mide sin
 ambigüedad.}
 \end{enumerate}
 
-\section{Resultados de la teoría lineal (bloque L)}
-\label{sec:lineal}
+\section{El análisis lineal: ecuaciones y método}
+\label{sec:metodo_lineal}
 
-\subsection{Método}
+El bloque~L tiene dos pasos. Primero se resuelve la evolución temporal del
+problema linealizado alrededor de cada equilibrio, sin partículas
+(\texttt{lineal.py}). Después se extrae de la señal el modo colectivo: su frecuencia,
+su tasa de amortiguamiento y su posición en la banda (\texttt{barrido\_\allowbreak
+lineal.py}). Esta sección explica los dos.
 
-Para cada caso, \texttt{barrido\_\allowbreak lineal.py} construye el equilibrio
-autoconsistente, resuelve el Vlasov--Poisson linealizado con \texttt{lineal.py}
-($N_J\times N_Q=1600\times32$ nodos, $\Delta t=0.5$, hasta $10\,\tau_1$) y ajusta la
-cola de $h_1$ (sección~\ref{sec:hk}) con la función de prueba del código.
+\subsection{El problema que se resuelve}
 
-\paragraph{Aproximación 12: el polo dominante.} El ajuste es el de 11\_landau,
-\emph{matrix pencil}: en una ventana de tiempo, la señal se aproxima por una suma de
-tres exponenciales complejas $\sum_ma_me^{s_mt}$, y el término de mayor amplitud
-da el modo, con $\omega=-\mathrm{Im}\,s$ y $\gamma=-\mathrm{Re}\,s$. Se usan ventanas
-$[a,2a]\,\tau_1$ desde $a=1$ (antes domina el transitorio de la mezcla de fases, que no
-es un polo), y se reporta el par de ventanas consecutivas más tardío que coincide
-(discrepancia menor que \SI{20}{\%}), que es el comportamiento asintótico. Si ninguno
-coincide, la cola no es una sola exponencial y el caso se marca ``sin polo
-dominante''. La posición del polo se da con $x$ (sección~\ref{sec:respuesta}).
-Cada caso cuesta un par de minutos. Las soluciones quedan en
-\texttt{exe/eta\_\allowbreak lineal/} (fuera del control de versiones); rehacer la tabla
-desde ellas toma segundos.
+Es el Vlasov--Poisson linealizado de la sección~\ref{sec:respuesta}, escrito en las
+variables acción-ángulo del equilibrio:
+\begin{align}
+  &\partial_t\,\delta F + \Omega(J)\,\partial_Q\,\delta F
+     = F_{\rm eq}'(J)\,\partial_Q\,\delta\Phi(Q,J,t), \label{eq:vlasov_lin}\\[2pt]
+  &\delta\Phi(Q,J,t) = \delta\Phi\big(r(Q,J),t\big),\qquad
+   \delta\Phi(r,t) = 8\pi^2L_0\iint dQ'\,dJ'\;G\big(r,r(Q',J')\big)\,\delta F(Q',J',t).
+   \label{eq:poisson_lin}
+\end{align}
+La primera es la evolución de la perturbación: transporte libre a la izquierda y el
+empuje del campo propio sobre el equilibrio a la derecha. La segunda es Poisson:
+el potencial de la perturbación es la suma de lo que aporta cada punto del
+espacio fase, con la función de Green de capas $G(r,r')=-1/\max(r,r')$
+(sección~\ref{sec:obslineal}). $r(Q,J)$ es el radio del punto $(Q,J)$ en el
+equilibrio. En teoría lineal ese mapa está fijo: los cambios de las órbitas
+producidos por $\delta\Phi$ son de segundo orden, y entran solo a través del
+término de la derecha.
+
+\paragraph{El dato inicial.} $\delta F(Q,J,0)=F_{\rm eq}(J)\,s(J)\cos Q$: la
+perturbación de la sección~\ref{sec:perturbacion} con $\varepsilon=1$. Como el problema
+es lineal, la respuesta a otro $\varepsilon$ es $\varepsilon$ veces esta, y todas las
+magnitudes que se reportan ($h_1$, $\delta\Phi$, $\omega_b$ con $\varepsilon=1$) se escalan
+así.
+
+\paragraph{Por qué evolución temporal y no autovalores.} Un modo amortiguado por
+Landau \emph{no es} un autovector del operador lineal: su espectro en el eje real
+es la banda continua más, si existen, los modos discretos por debajo de ella. El
+modo amortiguado es un polo de la continuación analítica de la respuesta, y
+calcularlo como autovalor (el método matricial de Kalnajs) requiere esa
+continuación. En la evolución temporal aparece solo, como un término
+$e^{-\gamma t}$ en la señal tardía, junto a las colas algebraicas del continuo
+(sección~\ref{sec:regularidad}); un modo discreto aparece como una oscilación de
+amplitud constante. Resolver la evolución y ajustar la cola da las dos cosas sin
+continuación analítica, y además es directamente comparable con la corrida PIC.
+
+\subsection{La discretización}
+
+Se usa la misma malla regular del dato inicial PIC (sección~\ref{sec:discreto}),
+más fina:
+\[
+  J_i=\big(i-\tfrac12\big)\frac{J_{\max}}{N_J},\quad
+  Q_j=\big(j-\tfrac12\big)\frac{2\pi}{N_Q},\qquad N_J\times N_Q=1600\times32 .
+\]
+La incógnita es $\delta F_{ij}(t)=\delta F(Q_j,J_i,t)$. Lo que el método necesita del
+equilibrio se calcula una sola vez:
+\begin{itemize}
+\item \textbf{Los radios} $r_{ij}=r(Q_j,J_i)$, invirtiendo el mapa acción-ángulo del
+equilibrio (\texttt{equilibrio.\allowbreak invertir}): $51\,200$ inversiones, unos \SI{16}{s},
+guardadas en un archivo.
+\item \textbf{Las frecuencias} $\Omega_i=\Omega(J_i)=dE/dJ$, de la tabla $E(J)$ del
+equilibrio por diferencias centradas; reproduce $\Omega=(J+c)^{-3}$ del isócrono a
+$10^{-4}$.
+\item \textbf{La derivada} $F_{\rm eq}'(J_i)$, analítica: la de la fórmula para la
+gaussiana y la hueca, y $F_{\rm eq}'=(dF_{\rm eq}/dE)\,\Omega(J)$ para la Maxwelliana, que
+está escrita en la energía.
+\end{itemize}
+
+\subsection{El paso de tiempo}
+
+La ecuación~\eqref{eq:vlasov_lin} tiene dos términos, y cada uno por separado se
+resuelve fácil.
+
+\paragraph{El transporte, exacto.} Sin el término de la derecha, la solución es
+$\delta F(Q,J,t+\Delta t)=\delta F(Q-\Omega(J)\Delta t,J,t)$: cada fila de $J$ fijo gira en
+$Q$ sin deformarse. En Fourier es una fase: con
+$\widehat{\delta F}_{ik}=\frac{1}{N_Q}\sum_j\delta F_{ij}\,e^{-ikQ_j}$ (la transformada rápida
+a lo largo de $Q$ para cada $J_i$),
+\[
+  \widehat{\delta F}_{ik}(t+\Delta t) = e^{-ik\Omega_i\Delta t}\;\widehat{\delta F}_{ik}(t).
+\]
+Es exacta para cualquier $\Delta t$: no hay condición de estabilidad ni dispersión
+numérica. Los únicos errores vienen de tener un número finito de armónicos,
+$|k|<N_Q/2$, y un número finito de filas en $J$, que fija el techo de recurrencia
+$T_{\rm rec}(k)=N_J\tau_1/k$ (sección~\ref{sec:recurrencia}): con $N_J=1600$, $1600\,\tau_1$
+para $k=1$, muy por encima de las corridas.
+
+\paragraph{El golpe del campo.} Sin el transporte, la ecuación es
+$\partial_t\delta F=F_{\rm eq}'(J)\,\partial_Q\delta\Phi$. En un intervalo corto $h$, con $\delta\Phi$
+fijo,
+\[
+  \delta F_{ij} \;\leftarrow\; \delta F_{ij} + h\,F_{\rm eq}'(J_i)\,\partial_Q\delta\Phi(Q_j,J_i),
+\]
+con la derivada en $Q$ calculada también en Fourier: transformada a lo largo de
+$Q$, multiplicar por $ik$ y volver.
+
+\paragraph{Poisson en los nodos.} Cada nodo representa una cáscara esférica de
+masa $m_{ij}=8\pi^2L_0\,\delta F_{ij}\,\Delta Q\,\Delta J$ en el radio $r_{ij}$: el conjunto de
+partículas en ese radio con todas las orientaciones posibles del momento
+angular. El potencial de un conjunto de cáscaras es exacto con la función de
+Green de capas: en el radio de un nodo $l$,
+\[
+  \delta\Phi(r_l) = -\frac{1}{r_l}\sum_{r_n<r_l}m_n \;-\; \sum_{r_n>r_l}\frac{m_n}{r_n}
+  \;-\;\frac{m_l}{r_l},
+\]
+donde el primer término es la masa encerrada, el segundo las cáscaras exteriores
+y el tercero la propia cáscara. $G$ es continua en $r'=r$ (vale $-1/r$ de los dos
+lados; lo que tiene un quiebre es su derivada), así que el aporte de la propia
+cáscara no es ambiguo; el código la reparte mitad en cada suma, lo que da lo mismo
+y trata de forma simétrica los nodos de radio repetido. Las masas pueden ser
+negativas, porque $\delta F$ es una perturbación. Como los radios no cambian, el orden de los nodos por radio
+se calcula una vez, y cada evaluación de $\delta\Phi$ son dos sumas acumuladas sobre
+los $N_JN_Q$ nodos. Ese $\delta\Phi$ en cada nodo es el que entra en el golpe; para
+la salida se interpola además en 121 radios de $r\in[3,15]$.
+
+\paragraph{El paso completo.} Se alternan los dos con la separación de Strang:
+medio golpe, transporte completo, medio golpe,
+\[
+  \delta F(t+\Delta t) = \mathcal K_{\Delta t/2}\,\mathcal T_{\Delta t}\,\mathcal K_{\Delta t/2}\;\delta F(t),
+\]
+que es de segundo orden en $\Delta t$: el error por paso viene de que el transporte y
+el golpe no conmutan, y es del orden del cuadrado del producto de $\Delta t$ por la
+escala del acoplamiento. Con $\Delta t=0.5$ es despreciable; se comprobó partiendo
+$\Delta t$ a la mitad. Con la opción
+\texttt{--libre} se omiten los golpes y queda la mezcla de fases libre exacta, que es
+la referencia de la sección~\ref{sec:mezcla}. Un caso de $10\,\tau_1$ son entre unos 2\,000
+y 22\,000 pasos, según $\tau_1$, y cuesta de uno a tres minutos.
+
+\subsection{Lo que se registra}
+
+Cada dos unidades de tiempo se guardan:
+\begin{itemize}
+\item $h_1(t)=\sum_{ij}\delta F_{ij}\,B(J_i)\,e^{-iQ_j}\big/\big(N_Q\sum_iF_{\rm eq}(J_i)\,B(J_i)\big)$, con la
+función de prueba de la sección~\ref{sec:hk}, y $h_2$ con $e^{-2iQ_j}$. Con la
+perturbación plana $h_1(0)=\tfrac12$. Es exactamente el análogo de
+$[h_1(\varepsilon)-h_1(0)]/\varepsilon$ de la PIC: el mismo marco, la misma $B$ y la misma
+normalización. Por eso en 11\_landau las dos coinciden en cuatro cifras.
+\item $\delta\Phi(r,t)$ en los 121 radios, con la amplitud de $\varepsilon=1$.
+\end{itemize}
+
+\subsection{Del registro al modo}
+
+\paragraph{Aproximación 12: el polo dominante.} De la señal tardía se extrae el
+modo con \emph{matrix pencil}, el mismo ajuste de 11\_landau. Se toman $N$ muestras
+de $h_1$ en una ventana, $y_n=h_1(t_0+n\Delta)$, y se busca representarlas como una
+suma de $M$ exponenciales,
+\[
+  y_n \approx \sum_{m=1}^{M} a_m\,z_m^n,\qquad z_m=e^{s_m\Delta}.
+\]
+Con las muestras se arma la matriz de Hankel $Y_{il}=y_{i+l}$, con
+$i=0\ldots N-L-1$ y $l=0\ldots L$, $L=N/2$. Si el modelo fuera exacto, cada fila
+sería una combinación de los $M$ vectores $(1,z_m,z_m^2,\ldots,z_m^L)$, y $Y$ tendría
+rango $M$. La descomposición en valores singulares $Y=U\Sigma V^H$ da ese
+subespacio: las $M$ primeras columnas de $V$. Llamando $V_1$ a esas columnas sin
+su última fila y $V_2$ sin la primera, desplazar un lugar equivale a multiplicar
+por los $z_m$, y los $z_m$ son los autovalores de $V_1^+V_2$ ($V_1^+$ es la
+pseudoinversa). De ahí $s_m=\ln z_m/\Delta$, y las amplitudes $a_m$ salen por mínimos
+cuadrados. El modo es el término de mayor amplitud, con
+\[
+  \omega=-\mathrm{Im}\,s,\qquad \gamma=-\mathrm{Re}\,s ,
+\]
+porque la señal va como $e^{-i\omega t-\gamma t}$. Se usa $M=3$: un término para el modo
+y dos para absorber lo que queda del continuo.
+
+\paragraph{Las ventanas.} El ajuste se repite en ventanas $[a,2a]\,\tau_1$ con
+$a=1$, $2$, $3$, $5$, $10$, $20$ y $30$, las que cubra la corrida, submuestreadas a lo
+sumo a 1000 puntos (la matriz de Hankel crece como $N^2$; con $\omega\approx0.08$ el
+muestreo resultante sigue muy por debajo del límite de Nyquist). Antes de
+$t=\tau_1$ domina el transitorio de la mezcla de fases, que no es un polo. Dos
+ventanas consecutivas \emph{coinciden} si su discrepancia,
+\[
+  \max\!\left(\frac{|\omega_1-\omega_2|}{\Delta\Omega},\;
+  \frac{|\gamma_1-\gamma_2|}{\max(\bar\gamma,\,2\times10^{-3}\Delta\Omega)}\right),
+\]
+es menor que $0.2$; el piso $2\times10^{-3}\Delta\Omega$ evita dividir por un $\gamma\approx0$ en
+los modos discretos. Se reporta el par más tardío que coincide, porque es el
+comportamiento asintótico, y el valor es el promedio del par. Si ninguno coincide,
+la cola no es una sola exponencial (mezcla de fases algebraica, o dos
+componentes comparables) y el caso se marca ``sin polo dominante''. Con $\omega$ y
+$\gamma$ se dan $x=(\omega-\Omega_{\min})/\Delta\Omega$ y $\gamma/\Delta\Omega$, con la banda del equilibrio.
+
+\paragraph{La frecuencia de rebote.} Del $\delta\Phi(r,t)$ lineal sale
+$\omega_b=\sqrt{|\Omega'|\,\max_r|\delta\Phi|}$ con $|\Omega'|\approx\Delta\Omega/J_t$ (la
+aproximación~10, sección~\ref{sec:atrapamiento}), en $t=0$ y al comienzo de la ventana
+del ajuste. Con $\gamma$, da $\nu=\omega_b/\gamma$ para cualquier $\varepsilon$, porque
+$\omega_b\propto\sqrt\varepsilon$.
+
+\paragraph{El ajuste de $\delta\Phi$, como control.} El mismo procedimiento se aplica a
+$\delta\Phi(r,t)$, que no usa ninguna función de prueba. En cada ventana se toma la
+serie temporal dominante de la descomposición en valores singulares de la matriz
+$\delta\Phi(r_n,t_m)$, y se le aplica matrix pencil con $M=4$; como la señal es real, los
+polos vienen en pares conjugados, y se toma el de $\omega>0$ con mayor amplitud.
+
+\subsection{Comprobaciones}
 
 \paragraph{Validación.} El caso de 11\_landau reproduce \emph{bit a bit} la
 solución lineal guardada y da $\omega=0.0570$, $\gamma=5.0\times10^{-3}$, $x=0.25$,
@@ -1550,6 +1746,14 @@ domina: a radio fijo, $\delta\Phi$ arrastra las colas algebraicas de los puntos 
 retorno y del borde (sección~\ref{sec:colasdphi}), que una suma de exponenciales
 no representa, y $h_1$ no las tiene justamente porque $B$ es suave y se anula en
 $J=0$.
+
+\section{Resultados de la teoría lineal (bloque L)}
+\label{sec:lineal}
+
+Los casos son los de la tabla~\ref{tab:casos}, cada uno resuelto y ajustado como
+explica la sección~\ref{sec:metodo_lineal}. Las soluciones quedan en
+\texttt{exe/eta\_\allowbreak lineal/} (fuera del control de versiones); rehacer las
+tablas desde ellas toma segundos.
 
 \subsection{El barrido en $\eta$}
 \label{sec:barrido}
@@ -2153,7 +2357,7 @@ amplitud de la referencia lineal.
   $\delta\Phi$ de la solución lineal de cada caso; $\nu$ con un factor $\sim2$\\
 11 & Criterio de O'Neil (\ref{sec:atrapamiento}) & frontera lineal/no lineal &
   resultado de plasmas (una onda, 1D); es lo que la PIC pone a prueba\\
-12 & Polo dominante por matrix pencil (\ref{sec:lineal}) & $\omega$, $\gamma$, $x$ del bloque~L &
+12 & Polo dominante por matrix pencil (\ref{sec:metodo_lineal}) & $\omega$, $\gamma$, $x$ del bloque~L &
   reproduce el polo de 11\_landau; no depende de $B$ a \SI{10}{\%}\\
 13 & Costo lineal en $N$ y en pasos (\ref{sec:bateria}) & tiempos &
   calibrado con $N=10^4$; optimista para $N=5\times10^4$ si escala peor en paralelo\\
