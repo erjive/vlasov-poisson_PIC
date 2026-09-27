@@ -53,12 +53,14 @@ amortiguamiento se detiene y aparecen islas de partículas atrapadas junto al
 borde de la banda. Y un modo discreto pegado al borde pierde amplitud a
 $\varepsilon=0.1$, cosa que la teoría lineal no predice. Con una masa comparable a
 la del fondo ($a_0=0.5$, $\eta=5.1$) el modo discreto está tan separado de la banda
-que sobrevive intacto aun con $\varepsilon=1$. Cada corrida tiene
+que sobrevive intacto aun con $\varepsilon=1$. Por último, el dato de las corridas
+originales, un bulto en fase que no es un equilibrio, deja de mezclarse cuando su
+masa pasa de $\sim0.03$: se autoliga. Cada corrida tiene
 figuras de espacio fase en $(r,p_r)$ y $(Q,J)$ y un video.
 \end{abstract}
 
 \begin{nota}
-\textbf{Lo que muestra la demo, en seis puntos.}
+\textbf{Lo que muestra la demo, en siete puntos.}
 \begin{enumerate}
 \item \textbf{La PIC reproduce la teoría lineal donde debe} (D1, D2, D3, D4, D8):
 misma frecuencia y misma tasa de amortiguamiento del polo, al \SI{1}{\%} o mejor (más
@@ -88,6 +90,12 @@ normal puro. La PIC lo sigue $40\,\tau_1$ sin amortiguamiento medible
 ($|\gamma|<10^{-5}$) y con la frecuencia lineal a $5\times10^{-4}$ relativo, tanto con $\varepsilon=0.1$
 como con $\varepsilon=1$: la resonancia queda tan lejos ($0.08$ en acción) que la
 amplitud finita no la alcanza.
+\item \textbf{Un bulto con masa suficiente no se deshace} (B0--B5,
+sección~\ref{sec:bulto}): con el dato de las corridas originales, toda la masa en
+una fase orbital, hay una transición entre $a_0=10^{-2}$ y $0.03$. Por encima, el
+bulto colapsa en un núcleo autoligado que oscila como un objeto y los $h_k$ dejan de
+tender a cero. No es el modo discreto lineal ($\eta\approx0.1$): es autoatrapamiento, y
+lo ordena $\mu=\omega_b/\Delta\Omega\approx0.3$--$0.5$.
 \end{enumerate}
 \end{nota}
 
@@ -514,6 +522,14 @@ cuánto dura:
 no pierde nada ($0.687$ y $0.690$). El
 ajuste de $h_1$ en $10$--$20\,\tau_1$ da $\gamma=(5.2\pm1.0)\times10^{-5}$, contra
 $(-0.4\pm0.3)\times10^{-5}$ en la teoría lineal: la diferencia es cinco veces el error.
+Dos comprobaciones independientes del ajuste lo respaldan. La envolvente de la
+solución lineal, sin ajuste alguno, da una tasa efectiva entre $-6\times10^{-6}$ y
+$+2\times10^{-6}$ en $5$--$20\,\tau_1$; una $\gamma$ lineal de $4$--$5\times10^{-5}$ le haría perder
+un \SI{20}{\%}, y no pierde nada. Y con señales sintéticas de $\gamma$ conocida, a la
+misma frecuencia, muestreo y ventana, con un batido del \SI{5}{\%} y ruido de
+$10^{-3}$, el ajuste recupera $\gamma$ con un error de $\sim10^{-6}$ entre $0$ y $10^{-4}$
+(\texttt{demo\_eta.py resolucion}). La pérdida de D3 no es lineal; si es no lineal
+o numérica lo decide la convergencia.
 \end{itemize}
 Lo que distingue a D3 se ve en las partículas del borde de la banda, las de
 $J\approx J_t$. Un modo discreto no resuena con ninguna partícula del soporte, pero
@@ -734,6 +750,142 @@ Como el segundo crece con $\varepsilon$ y el tercero decrece, hay una amplitud �
 para seguir colas largas, del orden de $\varepsilon\approx0.3$--$0.5$, con un piso de unos
 $5\times10^{-4}$. Es una estimación de estas corridas, no una medida.
 
+\section{El bulto: un dato que no es un equilibrio}
+\label{sec:bulto}
+
+Todas las corridas anteriores parten de un equilibrio más una perturbación. El
+dato inicial de las corridas originales de autogravedad
+(\texttt{reproducir/corridas/09\_autogravedad}) es otra cosa: un \emph{bulto} en el
+ángulo,
+\[
+  F_0(Q,J)=e^{-\sin^2(Q/2)/s_Q^2}\;J^2e^{-J^2/s_J^2},\qquad s_Q=s_J=0.1,
+\]
+generado por el propio código (\texttt{state = aa\_quad}, \texttt{dftype = gauss}) en
+una malla regular de las variables ángulo-acción del isócrono \emph{desnudo}. Toda
+la masa está concentrada en una fase orbital, con un ancho de $0.2$ rad: en el
+lenguaje de la sección~\ref{sec:equilibrio} es una perturbación con $\varepsilon\gg1$ en
+todos los armónicos hasta $k\sim1/s_Q\approx10$, y no hay equilibrio del que sea
+perturbación. Las corridas originales usaban $a_0=10^{-4}$--$10^{-2}$.
+
+\paragraph{La pregunta.} Sin autogravedad el bulto se cizalla y sus armónicos
+$h_k$ tienden a cero por mezcla de fases. Con autogravedad, ¿puede su propio campo
+mantenerlo unido? La escala que compite con la cizalla es la frecuencia de rebote
+de las partículas en el pozo del propio bulto, y el cociente relevante es
+$\mu=\omega_b/\Delta\Omega$ (sección~\ref{sec:nolineal}): si $\mu\ll1$ las partículas se
+desfasan antes de sentir el pozo; si $\mu\gtrsim1$ quedan atrapadas en él. En la demo
+de las secciones anteriores $\mu$ nunca pasó de $0.37$.
+
+\paragraph{Las corridas.} El mismo dato, con la misma malla que las originales
+($N_{rc}\times N_{pc}=400\times25$, $J\in[0,0.6]$), a cinco masas, más una sin
+autogravedad (la mezcla libre) y una con cuatro veces más resolución en el ángulo
+(tabla~\ref{tab:bulto}). $\Delta t=0.05$, $t_{\rm fin}=10\,000\approx31\,\tau_1$, con
+$\tau_1=327$ el de la banda del isócrono desnudo para esta distribución,
+$[0.0513,\,0.0705]$. $\omega_b$ se estima de la oscilación del potencial propio en la
+primera vuelta radial, $\omega_b=\sqrt{|\Omega'|\,|\delta\Phi|}$ con $|\Omega'|\approx\Delta\Omega/\Delta J$.
+
+\paragraph{Qué se mide.} Como el dato no es estacionario, no hay un equilibrio fijo
+que sirva de marco. Los $h_k=\sum_jf_je^{-ikQ_j}/\sum_jf_j$ se calculan con dos mapas:
+el del potencial de cada instante, que describe las órbitas reales, y el del
+isócrono desnudo, que es el que usa el código y el de las corridas originales. Con
+masa grande los dos coinciden; con masa chica no, y la diferencia importa
+(abajo).
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llcccccc}
+\toprule
+ & & & & & \multicolumn{2}{c}{$\langle|h_1|\rangle$ en $10$--$20\,\tau_1$} & \\
+\cmidrule(lr){6-7}
+corrida & $a_0$ & $N_{pc}$ & $\eta$ & $\mu$ & instante & desnudo & núcleo\\
+\midrule
+B0 & -- & 25 & 0 & 0 & $7.0\times10^{-5}$ & $7.0\times10^{-5}$ & --\\
+B1 & $10^{-3}$ & 25 & 0.005 & 0.10 & $1.1\times10^{-4}$ & $1.0\times10^{-3}$ & --\\
+B2 & $10^{-2}$ & 25 & 0.05 & 0.31 & $2.6\times10^{-3}$ & $1.1\times10^{-2}$ & --\\
+B3 & $0.03$ & 25 & 0.16 & 0.52 & $0.22$ & $0.22$ & \SI{40}{\%}\\
+B4 & $0.1$ & 25 & 0.60 & 0.89 & $0.80$ & $0.81$ & \SI{79}{\%}\\
+B5 & $0.3$ & 25 & 2.5 & 1.16 & $0.69$ & $0.83$ & \SI{99}{\%}\\
+B4q & $0.1$ & 100 & 0.60 & 0.89 & $0.85$ & $0.86$ & \SI{79}{\%}\\
+\bottomrule
+\end{tabular}
+\caption{El bulto a distintas masas. B0 no tiene autogravedad. $\eta$ es el de la
+distribución promediada en $Q$ ($J^2e^{-J^2/0.1^2}$, \texttt{eta.py}); $\mu=\omega_b/\Delta\Omega$,
+con $\omega_b$ estimada de la primera vuelta. $\langle|h_1|\rangle$ con el mapa del potencial
+del instante y con el del isócrono desnudo. ``Núcleo'': fracción de la masa con $J<0.06$ al final en el
+potencial del instante; solo tiene sentido cuando hay un núcleo (B3--B5): con
+masa chica ese corte recoge también la parte baja de la distribución.}
+\label{tab:bulto}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{bulto_series.pdf}
+\caption{El bulto a distintas masas. Izquierda y centro: envolventes de $|h_1|$
+y $|h_2|$ en el mapa del potencial del instante; en trazos, sin autogravedad.
+Derecha: fluctuación del potencial propio alrededor de su media tardía. Entre
+$a_0=10^{-2}$ y $0.1$ el comportamiento cambia de mezcla a bulto que no se deshace.}
+\label{fig:bulto_series}
+\end{figure}
+
+\subsection{Resultados}
+
+\paragraph{Hay una transición en la masa, y la ordena $\mu$}
+(figura~\ref{fig:bulto_series} y tabla~\ref{tab:bulto}).
+\begin{itemize}
+\item Con $a_0=10^{-3}$ ($\mu=0.1$) el bulto se mezcla casi como sin autogravedad:
+$|h_1|$ baja cuatro órdenes de magnitud en $10\,\tau_1$.
+\item Con $a_0=10^{-2}$ ($\mu=0.3$), el mayor de las corridas originales, se mezcla
+también, pero se detiene en $3\times10^{-3}$, cuarenta veces por encima de la mezcla
+libre; en $(r,p_r)$ queda un resto de núcleo (figura~\ref{fig:bulto_fase_B2}).
+\item Con $a_0=0.03$ ($\mu=0.5$) una parte se mezcla y otra no: $|h_1|$ cae a $0.2$ y
+ahí se queda, con el \SI{40}{\%} de la masa en un núcleo.
+\item Con $a_0=0.1$ y $0.3$ ($\mu\approx0.9$ y $1.2$) el bulto no se deshace: colapsa en
+las primeras vueltas en un núcleo denso con el \SI{79}{\%} y el \SI{99}{\%} de la masa, y
+$|h_1|$ se queda en $0.7$--$0.8$ durante las $31\,\tau_1$.
+\end{itemize}
+La transición está entre $\mu\approx0.3$ y $0.5$: por encima, el pozo del propio bulto
+atrapa a sus partículas antes de que la cizalla las separe.
+
+\paragraph{Qué es el núcleo.} En este modelo radial, un bulto en $(r,p_r)$ es una
+cáscara esférica delgada. Su propio potencial tiene un quiebre en el radio de la
+cáscara, que crea un pozo local; las partículas quedan atrapadas en él y la
+cáscara se mueve como un objeto: en B4 su radio medio oscila $\pm0.8$ alrededor de
+$5.7$, con frecuencia $0.075$, por encima de la banda del isócrono. En el mapa del
+potencial del instante el núcleo aparece en $J\approx0$: es la órbita casi circular
+del potencial que él mismo crea. Alrededor queda un halo de partículas
+arrancadas en las primeras vueltas, que sí se mezclan
+(figura~\ref{fig:bulto_fase_B4}). Es el extremo de las islas de D6 y D7: allí la
+onda atrapaba una fracción de las partículas; aquí las atrapa casi todas.
+
+\paragraph{La intuición de las corridas originales.} La observación de que, al
+subir la masa, un bulto atrae a las partículas y los $h_k$ dejan de tender a cero
+es correcta, y el mecanismo es no lineal: autoatrapamiento, controlado por $\mu$. No
+es el modo discreto lineal de las secciones anteriores: para esta distribución
+$\eta$ vale $0.005$, $0.05$, $0.16$, $0.60$ y $2.5$ de B1 a B5, y la transición ocurre entre
+B2 y B3, con $\eta\approx0.05$--$0.16$, muy por debajo de $\eta_c\approx1.1$, donde la teoría
+lineal predice mezcla. Pero con las masas de las corridas originales ($a_0\le10^{-2}$) el efecto es chico, y hay que
+medirlo con cuidado:
+\begin{itemize}
+\item Con el mapa del isócrono desnudo, el que usa el código, $|h_1|$ se estanca en
+$10^{-3}$ ($a_0=10^{-3}$) y $10^{-2}$ ($a_0=10^{-2}$). Con el mapa del potencial real
+baja a $10^{-4}$ y $3\times10^{-3}$. La diferencia es un efecto de coordenadas, ya
+documentado en \texttt{PREGUNTAS\_ABIERTAS.md}: medir con el mapa del isócrono órbitas
+que viven en otro potencial deja una meseta que no es física.
+\item En B2 los armónicos altos crecen al final ($|h_4|\approx3\times10^{-2}$ en
+$20$--$31\,\tau_1$). Es compatible con el crecimiento del ruido de discreción que
+\texttt{PREGUNTAS\_ABIERTAS.md} mide para $a_0=10^{-2}$ ($\propto t^{1.9}$, menor con
+$N_{rc}$ mayor); no se interpreta como física.
+\end{itemize}
+
+\paragraph{La resolución.} B4q, con cuatro veces más partículas en el ángulo, da
+la misma masa en el núcleo (\SI{79}{\%}) y un $|h_1|$ tardío un \SI{6}{\%} mayor
+($0.85$ contra $0.80$): la conclusión no depende de la resolución en $Q$, aunque el
+valor exacto sí un poco. La resolución en $J$ y en $\Delta t$ no se ha variado.
+
+\paragraph{Lo que falta.} Afinar la transición con masas entre $0.01$ y $0.1$; ver
+si la $\mu$ crítica depende del ancho $s_Q$ del bulto (un bulto más ancho tiene menos
+potencial propio por unidad de masa); y la convergencia en $N_{rc}$ y $\Delta t$.
+
 \section{El espacio fase de cada corrida}
 \label{sec:fase}
 
@@ -832,10 +984,28 @@ resonancia del modo está en $J\approx0.22$.}
 \label{fig:fase_D10}
 \end{figure}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{bulto_fase_B2.jpg}
+\caption{B2: el bulto con $a_0=10^{-2}$, la masa mayor de las corridas originales.
+Color: logaritmo del peso de cada partícula (oscuro, donde está la masa). Se
+cizalla en espiral y se mezcla, pero al final queda un resto de núcleo en
+$r\approx5.7$. Abajo, $(Q,J)$ en el potencial de cada instante.}
+\label{fig:bulto_fase_B2}
+\vspace{1.5em}
+\includegraphics[width=\textwidth]{bulto_fase_B4.jpg}
+\caption{B4: el bulto con $a_0=0.1$. Colapsa en las primeras vueltas en un núcleo
+denso ($r\approx6.5$, $p_r\approx0$ en estos instantes) con el \SI{79}{\%} de la masa,
+rodeado de un halo de partículas arrancadas. En $(Q,J)$ el núcleo está en $J\approx0$:
+es la órbita casi circular del potencial que él mismo crea.}
+\label{fig:bulto_fase_B4}
+\end{figure}
+
 \section{Los videos}
 \label{sec:videos}
 
-Hay un video por simulación, diecisiete en total, en
+Hay un video por simulación, veinticuatro en total (los siete del bulto se llaman
+\texttt{bulto\_B*.mp4}), en
 \texttt{reproducir/\allowbreak videos/\allowbreak demo\_\allowbreak eta/\allowbreak <corrida>.mp4} (fuera del control de
 versiones; se regeneran con \texttt{demo\_eta.py videos}). Tienen 1280$\times$720
 píxeles, un cuadro por instantánea (cada 10 unidades de tiempo, unas ocho por
@@ -928,6 +1098,23 @@ que el equilibrio discreto es estacionario.
 \label{fig:fase_Z3}
 \end{figure}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth]{bulto_fase_B0.jpg}\\[0.8em]
+\includegraphics[width=0.92\textwidth]{bulto_fase_B1.jpg}\\[0.8em]
+\includegraphics[width=0.92\textwidth]{bulto_fase_B3.jpg}
+\caption{El bulto sin autogravedad (B0), con $a_0=10^{-3}$ (B1) y con $a_0=0.03$ (B3).}
+\label{fig:bulto_fase_ap1}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.92\textwidth]{bulto_fase_B5.jpg}\\[0.8em]
+\includegraphics[width=0.92\textwidth]{bulto_fase_B4q.jpg}
+\caption{El bulto con $a_0=0.3$ (B5) y con $a_0=0.1$ y $N_{pc}=100$ (B4q).}
+\label{fig:bulto_fase_ap2}
+\end{figure}
+
 \section{Cómo reproducir la demo}
 \label{sec:reproducir}
 
@@ -948,7 +1135,11 @@ paso & qué hace & tiempo\\
 \bottomrule
 \end{tabular}
 \end{center}
-Las salidas ocupan \SI{2.6}{GB} en \texttt{exe/demo\_eta/}, fuera del control de
+El bulto tiene su propio guion, \texttt{reproducir/scripts/bulto.py}, con los pasos
+\texttt{preparar}, \texttt{correr} (7 corridas, \SI{1.6}{h}; B4q sola, \SI{47}{min}),
+\texttt{analizar} (\SI{1.1}{h}: cada instantánea se mapea en el potencial del
+instante y en el isócrono desnudo), \texttt{figuras} y \texttt{videos}; sus salidas
+quedan en \texttt{exe/demo\_eta/bulto/}. Las salidas ocupan \SI{2.6}{GB} en \texttt{exe/demo\_eta/}, fuera del control de
 versiones.
 
 

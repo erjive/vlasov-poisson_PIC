@@ -368,6 +368,24 @@ def polo_con_error(t, h, lo, hi):
     return w0, max(abs(w - w0) for w, _ in est), g0, max(abs(g - g0) for _, g in est)
 
 
+def resolucion():
+    """Curva de resolución del ajuste: señales sintéticas con gamma conocida a la
+    frecuencia del modo de D3, muestreadas cada 10 y ajustadas en 10-20 tau_1 con
+    polo_con_error; limpias y con un batido del 5 % (0.0735, gamma = 1e-4) más ruido
+    complejo de 1e-3."""
+    rng = np.random.default_rng(1)
+    tau, w = 360, 0.07250
+    t = np.arange(0, 7200.1, 10.0)
+    with open(ruta('resolucion.txt'), 'w') as fo:
+        fo.write('gamma_real  gamma_limpio  err  gamma_ruido  err  |dw|_ruido\n')
+        for g in (0.0, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4):
+            h = np.exp(-(g + 1j*w)*t)
+            hr = h + 0.05*np.exp(-(1e-4 + 1j*0.0735)*t) + 1e-3*(rng.normal(size=t.size) + 1j*rng.normal(size=t.size))
+            a = polo_con_error(t, h, 10*tau, 20*tau); b = polo_con_error(t, hr, 10*tau, 20*tau)
+            fo.write(f'{g:.0e}  {a[2]:+.2e}  {a[3]:.0e}  {b[2]:+.2e}  {b[3]:.0e}  {abs(b[0]-w):.0e}\n')
+    print(open(ruta('resolucion.txt')).read())
+
+
 def envolvente(x, t, ancho=50.0):
     """Máximo de x en |t' - t| <= ancho: una vuelta radial (~90) cabe en la ventana."""
     n = int(round(ancho/(t[1] - t[0])))
@@ -513,7 +531,8 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'todo'])
+    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion',
+                                     'todo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
