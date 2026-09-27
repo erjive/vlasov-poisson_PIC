@@ -61,7 +61,8 @@ figuras de espacio fase en $(r,p_r)$ y $(Q,J)$ y un video.
 \textbf{Lo que muestra la demo, en seis puntos.}
 \begin{enumerate}
 \item \textbf{La PIC reproduce la teoría lineal donde debe} (D1, D2, D3, D4, D8):
-misma frecuencia y misma tasa de amortiguamiento del polo, al \SI{1}{\%}, hasta
+misma frecuencia y misma tasa de amortiguamiento del polo, al \SI{1}{\%} o mejor (más
+fino que el error del propio ajuste, tabla~\ref{tab:polos}), hasta
 que la señal cae a $10^{-2}$--$10^{-3}$ de su valor inicial.
 \item \textbf{La transición existe en la simulación completa}: con $\eta<\eta_c$
 la perturbación del potencial decae en unos pocos $\tau_1$ (D1, D2); con
@@ -453,33 +454,44 @@ de $\tau_1$ de cada equilibrio.}
 \begin{table}[!htbp]
 \centering
 \small
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{llcccccc}
 \toprule
  & & \multicolumn{2}{c}{PIC} & \multicolumn{2}{c}{lineal} & & \\
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}
-corrida & ventana & $\omega$ & $\gamma$ & $\omega$ & $\gamma$ & $R$ & $t_{\rm nl}/\tau_1$\\
+corrida & ventana & $\omega$ & $\gamma\ [10^{-5}]$ & $\omega$ & $\gamma\ [10^{-5}]$ & $R$ & $t_{\rm nl}/\tau_1$\\
 \midrule
-D1 ($\eta=0.1$) & $1$--$3\,\tau_1$ & 0.06568 & $2.59\times10^{-3}$ & 0.06568 & $2.57\times10^{-3}$ & 0.999 & 3.0\\
-D2 ($\eta=0.6$) & $1$--$3\,\tau_1$ & 0.06796 & $1.27\times10^{-3}$ & 0.06796 & $1.28\times10^{-3}$ & 0.999 & 5.2\\
-D3 ($\eta=1.24$) & $3$--$6\,\tau_1$ & 0.07242 & $4\times10^{-5}$ & 0.07244 & $<10^{-5}$ & 0.997 & 7.4\\
- & $10$--$20\,\tau_1$ & 0.07251 & $5\times10^{-5}$ & 0.07250 & $<10^{-5}$ & 0.933 & \\
-D4 ($\eta=2$) & $3$--$6\,\tau_1$ & 0.07849 & $<10^{-5}$ & 0.07847 & $<10^{-5}$ & 0.999 & 9.6\\
-  & $10$--$20\,\tau_1$ & 0.07847 & $<10^{-5}$ & 0.07848 & $<10^{-5}$ & 0.984 & \\
-D9 ($\eta=5.1$) & $3$--$6\,\tau_1$ & 0.10482 & $<10^{-5}$ & 0.10487 & $<10^{-5}$ & 1.000 & 15\\
- & $10$--$20\,\tau_1$ & 0.10482 & $<10^{-6}$ & 0.10487 & $<10^{-6}$ & 1.009 & \\
+D1 ($\eta=0.1$) & $1$--$3\,\tau_1$ & $0.0657(20)$ & $259\pm40$ & $0.0657(20)$ & $257\pm30$ & $0.999(10)$ & 3.0\\
+D2 ($\eta=0.6$) & $1$--$3\,\tau_1$ & $0.0680(1)$ & $127\pm10$ & $0.0680(1)$ & $128\pm10$ & $0.999(1)$ & 5.2\\
+D3 ($\eta=1.24$) & $3$--$6\,\tau_1$ & $0.07242(2)$ & $3.7\pm1.0$ & $0.07244(4)$ & $-0.5\pm4$ & $0.997(1)$ & 7.4\\
+ & $10$--$20\,\tau_1$ & $0.072510(5)$ & $5.2\pm1.0$ & $0.07250(1)$ & $-0.4\pm0.3$ & $0.933(39)$ & \\
+D4 ($\eta=2$) & $3$--$6\,\tau_1$ & $0.07849(3)$ & $0.1\pm5$ & $0.07847(2)$ & $-0.8\pm6$ & $0.999(1)$ & 9.6\\
+ & $10$--$20\,\tau_1$ & $0.0784700(6)$ & $-0.03\pm0.08$ & $0.0784800(2)$ & $0.00\pm0.02$ & $0.984(10)$ & \\
+D9 ($\eta=5.1$) & $3$--$6\,\tau_1$ & $0.104820(9)$ & $0.5\pm2$ & $0.104870(6)$ & $0.4\pm1$ & $1.000(1)$ & 15\\
+ & $10$--$20\,\tau_1$ & $0.1048200(7)$ & $0.03\pm0.06$ & $0.1048700(2)$ & $0.00\pm0.02$ & $1.009(6)$ & \\
 \bottomrule
 \end{tabular}
-\caption{El polo de $h_1$ en la PIC y en la teoría lineal. $R$ es el cociente de las
-envolventes de $\|\delta\Phi\|$, PIC sobre lineal, en la misma ventana. $t_{\rm nl}$ es
-el primer instante en que la envolvente del residuo PIC$-$lineal supera el
-\SI{10}{\%} de la lineal; en D1 y D2 lo fija el piso de la medida
-(\S\ref{sec:res_pisos}), no una desviación dinámica.}
+\caption{El polo de $h_1$ en la PIC y en la teoría lineal, con su incertidumbre:
+entre paréntesis, en las últimas cifras. Es la mayor desviación entre los
+ajustes con matrix pencil de orden $M=2$ y $3$ sobre tres recortes de la ventana
+(completa, sin el primer \SI{10}{\%} y sin el último): una cota del error del
+ajuste, no del error numérico de la corrida, que se mide con la convergencia
+(\S\ref{sec:siguiente}). $R$ es el cociente de las envolventes de
+$\|\delta\Phi\|$, PIC sobre lineal, en la ventana; su error, la mitad de la
+diferencia entre las dos mitades de la ventana. $t_{\rm nl}$ es el primer instante
+en que la envolvente del residuo PIC$-$lineal supera el \SI{10}{\%} de la lineal;
+en D1 y D2 lo fija el piso de la medida (\S\ref{sec:res_pisos}) y en D9 la
+diferencia de frecuencia, no una desviación dinámica.}
 \label{tab:polos}
 \end{table}
 
-\paragraph{Del lado amortiguado} (D1, D2) la PIC y la teoría lineal coinciden en la
-frecuencia y la tasa del polo en tres o cuatro cifras (tabla~\ref{tab:polos}), y
-las envolventes, al \SI{0.1}{\%} mientras la señal baja dos órdenes de magnitud.
+\paragraph{Del lado amortiguado} (D1, D2) la PIC y la teoría lineal dan la misma
+frecuencia y la misma tasa del polo, a $10^{-5}$ en $\omega$ y al \SI{1}{\%} en $\gamma$
+(tabla~\ref{tab:polos}), y las envolventes coinciden al \SI{0.1}{\%} mientras la
+señal baja dos órdenes de magnitud. Esa coincidencia es mucho más fina que la
+incertidumbre del propio polo, que en $1$--$3\,\tau_1$ es de \SI{3}{\%} en $\omega$ y
+\SI{15}{\%} en $\gamma$ en D1, y de $10^{-4}$ y \SI{8}{\%} en D2: las dos señales son casi
+idénticas, y lo que está mal determinado es el polo, no la comparación.
 D1 tiene $\varepsilon=1$: $\delta F/F_{\rm eq}$ es de orden uno y la evolución es lineal
 igual, porque $\nu=0.17$. Es la ilustración directa de que $\varepsilon$ no es el
 parámetro (\S\ref{sec:nolineal}). La PIC se separa de la teoría lineal solo
@@ -488,7 +500,10 @@ y $\sim2\times10^{-3}$ en D2, a los $5\,\tau_1$.
 
 \paragraph{Del lado discreto} (D3, D4) la perturbación del potencial queda en un
 \SIrange{55}{100}{\%} de su valor inicial durante $20\,\tau_1$, con la frecuencia
-lineal a $10^{-4}$ relativo. La autogravedad sostiene una oscilación en la
+lineal a $10^{-4}$ relativo. Esa diferencia, de $1$--$5\times10^{-5}$ en valor
+absoluto también en D9, está muy por encima del error del ajuste ($<10^{-6}$ en
+$10$--$20\,\tau_1$): la PIC da los modos discretos un poco más lentos, un efecto de
+discretización de $\sim10^{-4}$ relativo que no cambia las conclusiones. La autogravedad sostiene una oscilación en la
 simulación completa, no solo en la teoría lineal. Las dos corridas difieren en
 cuánto dura:
 \begin{itemize}
@@ -497,7 +512,8 @@ cuánto dura:
 \item D3, con el modo a $2.5\times10^{-4}$ del borde ($x=-0.01$), pierde un
 \SI{19}{\%} entre $5$ y $20\,\tau_1$ (de $0.685$ a $0.555$), mientras la teoría lineal
 no pierde nada ($0.687$ y $0.690$). El
-ajuste de $h_1$ da $\gamma\approx5\times10^{-5}$.
+ajuste de $h_1$ en $10$--$20\,\tau_1$ da $\gamma=(5.2\pm1.0)\times10^{-5}$, contra
+$(-0.4\pm0.3)\times10^{-5}$ en la teoría lineal: la diferencia es cinco veces el error.
 \end{itemize}
 Lo que distingue a D3 se ve en las partículas del borde de la banda, las de
 $J\approx J_t$. Un modo discreto no resuena con ninguna partícula del soporte, pero

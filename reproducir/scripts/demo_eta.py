@@ -355,6 +355,19 @@ def figuras():
     resumen()
 
 
+def polo_con_error(t, h, lo, hi):
+    """Polo (omega, gamma) de h en [lo, hi] con matrix pencil M = 3, y su
+    incertidumbre: la mayor desviación entre M = 2, 3 y tres recortes de la
+    ventana (completa, sin el primer 10 %, sin el último 10 %). Es una cota del
+    error del ajuste, no del error numérico de la corrida."""
+    from landau_cola import ajustar
+    w0, g0 = ajustar(t, h, lo, hi)['pencil M=3']
+    d = 0.1*(hi - lo)
+    est = [ajustar(t, h, a, b)[f'pencil M={M}'] for M in (2, 3)
+           for a, b in ((lo, hi), (lo + d, hi), (lo, hi - d))]
+    return w0, max(abs(w - w0) for w, _ in est), g0, max(abs(g - g0) for _, g in est)
+
+
 def envolvente(x, t, ancho=50.0):
     """Máximo de x en |t' - t| <= ancho: una vuelta radial (~90) cabe en la ventana."""
     n = int(round(ancho/(t[1] - t[0])))
@@ -391,12 +404,15 @@ def resumen():
                 fo.write(f'   [{a:>2},{b:>2}] tau1: PIC {eP[v].max()/n0:.3e}  lin {eL[v].max()/n0:.3e}'
                          f'  R = {eP[v].max()/eL[v].max():.3f}   est = {norma(r.mean(0))/n0:.1e}'
                          f'  osc = {norma(r - r.mean(0)).mean()/n0:.1e}\n')
-            for a, b in ((1, 3), (3, 6), (5, 9), (10, 20), (20, 44)):
+            for a, b in ((1, 3), (3, 6), (5, 9), (10, 20), (20, 40)):
                 if b*tau1 > t[-1] + 50:
                     continue
-                e = [ajustar(t, x, a*tau1, b*tau1)['pencil M=3'] for x in (s['h1'], s['h1_lin'])]
-                fo.write(f'   polo h1 [{a},{b}] tau1: PIC w = {e[0][0]:.5f} g = {e[0][1]:+.2e}'
-                         f' | lin w = {e[1][0]:.5f} g = {e[1][1]:+.2e}\n')
+                e = [polo_con_error(t, x, a*tau1, b*tau1) for x in (s['h1'], s['h1_lin'])]
+                v = (t >= a*tau1) & (t <= b*tau1); m = np.flatnonzero(v); m1, m2 = m[:len(m)//2], m[len(m)//2:]
+                Rs = [eP[k].max()/eL[k].max() for k in (m, m1, m2)]
+                fo.write(f'   polo h1 [{a},{b}] tau1: PIC w = {e[0][0]:.5f}+-{e[0][1]:.0e} g = {e[0][2]:+.2e}+-{e[0][3]:.0e}'
+                         f' | lin w = {e[1][0]:.5f}+-{e[1][1]:.0e} g = {e[1][2]:+.2e}+-{e[1][3]:.0e}'
+                         f' | R = {Rs[0]:.3f}+-{abs(Rs[1]-Rs[2])/2:.3f}\n')
             filas.append((nombre, tnl))
     print(open(ruta('resumen.txt')).read())
     return filas
