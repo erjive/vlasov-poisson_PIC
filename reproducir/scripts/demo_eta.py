@@ -38,6 +38,7 @@ CASOS = {
     'L5':  dict(a0=0.097,  g=2.0, eta=1.24, tau1=360),
     'L6':  dict(a0=0.170,  g=2.0, eta=2.00, tau1=276),
     'G1a': dict(a0=0.0069, g=1.0, eta=0.10, tau1=557),
+    'M5':  dict(a0=0.5,    g=2.0, eta=5.11, tau1=125),
 }
 # Corridas: nombre, caso, eps, t_fin, descripción. Las Z son las referencias eps = 0.
 CORRIDAS = [
@@ -55,10 +56,13 @@ CORRIDAS = [
     ('Z_A4', 'A4', 0.0, 17200, 'referencia de D5 y D6'),
     ('D8', 'G1a', 1.0, 11140, r'$\eta=0.1$, borde abrupto (King, $g=1$)'),
     ('Z_G1a', 'G1a', 0.0, 11140, 'referencia de D8'),
+    ('D9', 'M5', 0.1, 5000, r'$\eta=5.1$, masa comparable a la del fondo, amplitud chica'),
+    ('D10', 'M5', 1.0, 5000, r'$\eta=5.1$, masa comparable a la del fondo, amplitud grande'),
+    ('Z_M5', 'M5', 0.0, 5000, 'referencia de D9 y D10'),
 ]
-DEMO = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8']
+DEMO = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10']
 REF = {'D1': 'Z_A1', 'D2': 'Z_A3', 'D3': 'Z_L5', 'D7': 'Z_L5', 'D4': 'Z_L6',
-       'D5': 'Z_A4', 'D6': 'Z_A4', 'D8': 'Z_G1a'}
+       'D5': 'Z_A4', 'D6': 'Z_A4', 'D8': 'Z_G1a', 'D9': 'Z_M5', 'D10': 'Z_M5'}
 RMED = np.linspace(3, 15, 121)
 info = {c[0]: dict(caso=c[1], eps=c[2], tfin=c[3], desc=c[4]) for c in CORRIDAS}
 
@@ -319,7 +323,8 @@ def figuras():
     fig.savefig(os.path.join(FIGDIR, 'serie_transicion.pdf'))
     plt.close(fig)
     # Pares: el mismo equilibrio a dos amplitudes, o dos bordes con el mismo eta.
-    pares = {'nolineal': ['D5', 'D6'], 'discreto': ['D3', 'D7'], 'borde': ['D1', 'D8']}
+    pares = {'nolineal': ['D5', 'D6'], 'discreto': ['D3', 'D7'], 'borde': ['D1', 'D8'],
+             'masa': ['D9', 'D10']}
     for clave, lista in pares.items():
         fig, ax = plt.subplots(1, 3, figsize=(11, 3.3), constrained_layout=True)
         for k, nombre in enumerate(lista):

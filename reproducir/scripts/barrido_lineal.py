@@ -74,6 +74,8 @@ CASOS = {
     'G075a': wilson(0.138, 0.0070, g=0.75), 'G075b': wilson(0.138, 0.0215, g=0.75),
     'G1a': wilson(0.138, 0.0069, g=1.0), 'G1b': wilson(0.138, 0.0212, g=1.0),
     'landau': gauss(0.10, 0.01),                 # validación: 11_landau
+    # Masa comparable a la del fondo: la mitad de la del isócrono.
+    'M5': wilson(0.138, 0.5),
 }
 
 

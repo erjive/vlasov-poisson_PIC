@@ -30,7 +30,7 @@
 \graphicspath{{figuras/}}
 
 \title{Autogravedad contra mezcla de fases\\
-       \large Una demo de ocho corridas PIC en la reducción de momento angular fijo}
+       \large Una demo de diez corridas PIC en la reducción de momento angular fijo}
 \author{Notas de trabajo}
 \date{25 de septiembre de 2026}
 
@@ -43,20 +43,22 @@ predice que la autogravedad de una componente de masa pequeña saca un modo de
 la banda de frecuencias orbitales cuando el cociente $\eta$ entre el
 corrimiento de frecuencias y el ancho de la banda pasa de $\eta_c\approx1.1$--$1.2$.
 Esta demo pone a prueba esa predicción, y lo que la teoría lineal no alcanza,
-con ocho corridas PIC de $10^4$ partículas sobre la Maxwelliana de Wilson, más
-seis corridas de referencia sin perturbación. A amplitud baja la PIC reproduce
+con diez corridas PIC de $10^4$ partículas sobre la Maxwelliana de Wilson, más
+siete corridas de referencia sin perturbación. A amplitud baja la PIC reproduce
 la teoría lineal: la frecuencia y la tasa de amortiguamiento del modo en la
 banda al \SI{1}{\%}, la frecuencia de los modos discretos a $10^{-4}$ y la
 respuesta persistente del borde abrupto. Cerca de la transición se aparta de
 ella como anticipa el criterio de O'Neil, aun con $\varepsilon=0.075$: el
 amortiguamiento se detiene y aparecen islas de partículas atrapadas junto al
 borde de la banda. Y un modo discreto pegado al borde pierde amplitud a
-$\varepsilon=0.1$, cosa que la teoría lineal no predice. Cada corrida tiene
+$\varepsilon=0.1$, cosa que la teoría lineal no predice. Con una masa comparable a
+la del fondo ($a_0=0.5$, $\eta=5.1$) el modo discreto está tan separado de la banda
+que sobrevive intacto aun con $\varepsilon=1$. Cada corrida tiene
 figuras de espacio fase en $(r,p_r)$ y $(Q,J)$ y un video.
 \end{abstract}
 
 \begin{nota}
-\textbf{Lo que muestra la demo, en cinco puntos.}
+\textbf{Lo que muestra la demo, en seis puntos.}
 \begin{enumerate}
 \item \textbf{La PIC reproduce la teoría lineal donde debe} (D1, D2, D3, D4, D8):
 misma frecuencia y misma tasa de amortiguamiento del polo, al \SI{1}{\%}, hasta
@@ -78,6 +80,13 @@ de amplitud en $15\,\tau_1$, que la teoría lineal no amortigua; el de $\eta=2$,
 separado, pierde un \SI{5}{\%} más que la predicción lineal. La diferencia está en
 las partículas: el modo empuja a las del borde fuera del soporte, hasta su
 resonancia, que en D3 está a $0.002$ en acción y en D4 a $0.026$.
+\item \textbf{Con masa comparable a la del fondo el modo es robusto} (D9, D10):
+con $a_0=0.5$ la autogravedad acelera las órbitas un \SI{150}{\%}, el modo queda
+a más de media banda por debajo de ella, y la perturbación es casi un modo
+normal puro. La PIC lo sigue $40\,\tau_1$ sin amortiguamiento medible
+($|\gamma|<10^{-5}$) y con la frecuencia lineal a $5\times10^{-4}$ relativo, tanto con $\varepsilon=0.1$
+como con $\varepsilon=1$: la resonancia queda tan lejos ($0.08$ en acción) que la
+amplitud finita no la alcanza.
 \end{enumerate}
 \end{nota}
 
@@ -206,7 +215,8 @@ autoconsistente y $\bar\Omega_{\rm iso}$ la misma para las mismas órbitas en el
 isócrono solo. Con $\eta\ll1$ la dispersión de frecuencias gana y todo se mezcla;
 con $\eta\gtrsim1$ el acoplamiento puede sacar un modo de la banda. En la familia
 de la demo, $\eta$ crece con la masa algo más despacio que linealmente
-($\eta/a_0$ baja de $15$ a $12$ entre $a_0=0.0065$ y $0.17$): $\eta=1$ en $a_0=0.075$.
+($\eta/a_0$ baja de $15$ a $12$ entre $a_0=0.0065$ y $0.17$, y a $10$ en $a_0=0.5$):
+$\eta=1$ en $a_0=0.075$.
 
 \paragraph{Lo que dice la teoría lineal.} \texttt{lineal.py} resuelve la ecuación
 linealizada en una malla $(Q,J)$ sin partículas, y de la cola se extrae el polo
@@ -226,6 +236,7 @@ A3 & 0.042 & 0.59 & $[0.0655,\,0.0791]$ & 0.14 & 0.17 & amortiguado\\
 A4 & 0.075 & 1.00 & $[0.0698,\,0.0857]$ & 0.03 & 0.023 & amortiguado, en el borde\\
 L5 & 0.097 & 1.24 & $[0.0727,\,0.0902]$ & $-0.01$ & 0 & modo discreto pegado al borde\\
 L6 & 0.170 & 2.00 & $[0.0828,\,0.1055]$ & $-0.19$ & 0 & modo discreto separado\\
+M5 & 0.5 & 5.11 & $[0.1342,\,0.1843]$ & $-0.59$ & 0 & masa comparable al fondo; modo muy separado\\
 \midrule
 G1a & 0.0069 & 0.10 & $[0.0610,\,0.0723]$ & $\approx0$ & -- & borde abrupto ($g=1$): respuesta que persiste\\
 \bottomrule
@@ -277,19 +288,19 @@ $\varepsilon$ sino $\nu$.} Es exactamente donde la PIC hace falta. Del lado disc
 sobrevive a amplitud finita, porque su frecuencia se corre con la amplitud y
 uno pegado al borde puede entrar en la banda. El segundo parámetro,
 $\mu=\omega_b/\Delta\Omega$, compara el atrapamiento con la mezcla de todo el
-continuo; en la demo es siempre menor que $0.3$.
+continuo; en la demo es siempre menor que $0.4$.
 
 \section{La demo}
 \label{sec:demo}
 
 \subsection{Las corridas}
 
-Ocho corridas cubren los regímenes de la sección~\ref{sec:conceptos}: los dos
+Diez corridas cubren los regímenes de la sección~\ref{sec:conceptos}: los dos
 lados de la transición a amplitud baja, el borde de la transición a amplitud
-creciente, el modo discreto a amplitud grande y el borde abrupto
-(tabla~\ref{tab:corridas}). Cada equilibrio tiene además una corrida de
+creciente, el modo discreto a amplitud grande, el borde abrupto y una masa
+comparable a la del fondo (tabla~\ref{tab:corridas}). Cada equilibrio tiene además una corrida de
 referencia con $\varepsilon=0$ (las Z), que se resta para aislar la respuesta a la
-perturbación. Son catorce simulaciones.
+perturbación. Son diecisiete simulaciones.
 
 \begin{table}[!htbp]
 \centering
@@ -307,12 +318,14 @@ D5 & A4 & 1.00 & 2 & 0.075 & 3.0 & 0.07 & 17200 & 44 & borde de la transición, 
 D6 & A4 & 1.00 & 2 & 0.84 & 10 & 0.23 & 5200 & 13 & borde de la transición, muy no lineal\\
 D7 & L5 & 1.24 & 2 & 1 & $\infty$ & 0.27 & 7200 & 20 & el modo de D3 a amplitud grande\\
 D8 & G1a & 0.10 & 1 & 1 & $\sim2$ & 0.11 & 11140 & 20 & borde abrupto (King)\\
+D9 & M5 & 5.11 & 2 & 0.1 & $\infty$ & 0.12 & 5000 & 40 & masa comparable al fondo\\
+D10 & M5 & 5.11 & 2 & 1 & $\infty$ & 0.37 & 5000 & 40 & la misma, amplitud grande\\
 \midrule
 \multicolumn{10}{L{14.6cm}}{Referencias con $\varepsilon=0$: Z\_A1 (de D1), Z\_A3 (D2),
-Z\_A4 (D5 y D6), Z\_L5 (D3 y D7), Z\_L6 (D4) y Z\_G1a (D8).}\\
+Z\_A4 (D5 y D6), Z\_L5 (D3 y D7), Z\_L6 (D4), Z\_G1a (D8) y Z\_M5 (D9 y D10).}\\
 \bottomrule
 \end{tabular}
-\caption{Las catorce corridas. $\nu=\omega_b/\gamma$ y $\mu=\omega_b/\Delta\Omega$, con
+\caption{Las diecisiete corridas. $\nu=\omega_b/\gamma$ y $\mu=\omega_b/\Delta\Omega$, con
 $\omega_b\propto\sqrt\varepsilon$ estimada de la solución lineal en $t=0$; $\nu=\infty$
 indica un modo discreto ($\gamma=0$). En G1a el decaimiento tardío no es
 exponencial y $\gamma$ está mal definido: el $\nu$ es solo indicativo. Cada
@@ -329,38 +342,42 @@ predice que el amortiguamiento se detiene y la amplitud oscila.
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}
-\begin{axis}[width=0.78\textwidth, height=0.46\textwidth, xmin=0, xmax=2.2,
+\begin{axis}[width=0.8\textwidth, height=0.46\textwidth, xmode=log, xmin=0.07, xmax=8,
   ymode=log, ymin=0.08, ymax=200, xlabel={$\eta$}, ylabel={$\nu=\omega_b/\gamma$},
+  xtick={0.1,0.3,1,3}, xticklabels={$0.1$,$0.3$,$1$,$3$},
   ytick={0.1,1,10}, yticklabels={$0.1$,$1$,$10$},
   tick label style={font=\small}, label style={font=\small}]
-  \fill[azulosc!6] (axis cs:0,0.08) rectangle (axis cs:2.2,1);
-  \fill[orange!10] (axis cs:0,1) rectangle (axis cs:2.2,40);
-  \fill[green!8] (axis cs:0,40) rectangle (axis cs:2.2,200);
+  \fill[azulosc!6] (axis cs:0.07,0.08) rectangle (axis cs:8,1);
+  \fill[orange!10] (axis cs:0.07,1) rectangle (axis cs:8,40);
+  \fill[green!8] (axis cs:0.07,40) rectangle (axis cs:8,200);
   \fill[gray!25] (axis cs:1.1,0.08) rectangle (axis cs:1.2,200);
-  \draw[gray, thin] (axis cs:0,40) -- (axis cs:2.2,40);
-  \node[font=\footnotesize, azulosc, anchor=south east] at (axis cs:2.17,0.09) {lineal: la onda muere antes de atrapar};
-  \node[font=\footnotesize, orange!60!black, anchor=north west] at (axis cs:0.03,38) {atrapamiento: la teoría lineal falla a tiempos largos};
-  \node[font=\footnotesize, green!40!black, anchor=north west] at (axis cs:0.03,190) {modo discreto, $\gamma=0$};
+  \draw[gray, thin] (axis cs:0.07,40) -- (axis cs:8,40);
+  \node[font=\footnotesize, azulosc, anchor=south east] at (axis cs:7.6,0.09) {lineal: la onda muere antes de atrapar};
+  \node[font=\footnotesize, orange!60!black, anchor=north west] at (axis cs:0.075,38) {atrapamiento: la teoría lineal falla a tiempos largos};
+  \node[font=\footnotesize, green!40!black, anchor=north west] at (axis cs:0.075,190) {modo discreto, $\gamma=0$};
   \node[font=\footnotesize, gray!70!black, rotate=90, anchor=south] at (axis cs:1.1,0.5) {$\eta_c$};
   \addplot[only marks, mark=*, mark size=2.4pt, azulosc] coordinates
     {(0.10,0.17) (0.59,0.30) (1.00,3.0) (1.00,10)};
-  \addplot[only marks, mark=square*, mark size=2.2pt, red!70!black] coordinates {(0.13,2.4)};
+  \addplot[only marks, mark=square*, mark size=2.2pt, red!70!black] coordinates {(0.12,2.4)};
   \addplot[only marks, mark=triangle*, mark size=3pt, green!40!black] coordinates
-    {(1.24,70) (1.40,120) (2.00,80)};
-  \node[font=\footnotesize, anchor=west] at (axis cs:0.13,0.17) {D1};
-  \node[font=\footnotesize, anchor=west] at (axis cs:0.62,0.30) {D2};
-  \node[font=\footnotesize, anchor=west] at (axis cs:1.03,3.0) {D5};
-  \node[font=\footnotesize, anchor=west] at (axis cs:1.03,10) {D6};
-  \node[font=\footnotesize, anchor=west] at (axis cs:0.16,2.4) {D8 ($g=1$)};
+    {(1.24,70) (1.40,120) (2.00,80) (5.11,70) (5.11,120)};
+  \node[font=\footnotesize, anchor=west] at (axis cs:0.108,0.17) {D1};
+  \node[font=\footnotesize, anchor=west] at (axis cs:0.63,0.30) {D2};
+  \node[font=\footnotesize, anchor=west] at (axis cs:1.04,3.0) {D5};
+  \node[font=\footnotesize, anchor=west] at (axis cs:1.04,10) {D6};
+  \node[font=\footnotesize, anchor=west] at (axis cs:0.13,2.4) {D8 ($g=1$)};
   \node[font=\footnotesize, anchor=north] at (axis cs:1.24,62) {D3};
-  \node[font=\footnotesize, anchor=west] at (axis cs:1.43,120) {D7};
-  \node[font=\footnotesize, anchor=west] at (axis cs:2.03,80) {D4};
+  \node[font=\footnotesize, anchor=west] at (axis cs:1.46,120) {D7};
+  \node[font=\footnotesize, anchor=west] at (axis cs:2.08,80) {D4};
+  \node[font=\footnotesize, anchor=east] at (axis cs:4.9,70) {D9};
+  \node[font=\footnotesize, anchor=east] at (axis cs:4.9,120) {D10};
 \end{axis}
 \end{tikzpicture}
 \caption{Las corridas en el plano $(\eta,\nu)$. La franja gris es la transición
 lineal, $\eta_c\approx1.1$--$1.2$. Arriba, fuera de escala, los modos discretos: ahí
 no hay partículas resonantes y $\nu$ no aplica (D3 y D7 están en el mismo $\eta$,
-separadas para que se lean). D8 está desplazada un poco en $\eta$ respecto de D1.}
+separadas para que se lean; lo mismo D9 y D10). D8 está desplazada un poco en $\eta$
+respecto de D1. El eje de $\eta$ es logarítmico.}
 \label{fig:mapa}
 \end{figure}
 
@@ -447,7 +464,9 @@ D2 ($\eta=0.6$) & $1$--$3\,\tau_1$ & 0.06796 & $1.27\times10^{-3}$ & 0.06796 & $
 D3 ($\eta=1.24$) & $3$--$6\,\tau_1$ & 0.07242 & $4\times10^{-5}$ & 0.07244 & $<10^{-5}$ & 0.997 & 7.4\\
  & $10$--$20\,\tau_1$ & 0.07251 & $5\times10^{-5}$ & 0.07250 & $<10^{-5}$ & 0.933 & \\
 D4 ($\eta=2$) & $3$--$6\,\tau_1$ & 0.07849 & $<10^{-5}$ & 0.07847 & $<10^{-5}$ & 0.999 & 9.6\\
- & $10$--$20\,\tau_1$ & 0.07847 & $<10^{-5}$ & 0.07848 & $<10^{-5}$ & 0.984 & \\
+  & $10$--$20\,\tau_1$ & 0.07847 & $<10^{-5}$ & 0.07848 & $<10^{-5}$ & 0.984 & \\
+D9 ($\eta=5.1$) & $3$--$6\,\tau_1$ & 0.10482 & $<10^{-5}$ & 0.10487 & $<10^{-5}$ & 1.000 & 15\\
+ & $10$--$20\,\tau_1$ & 0.10482 & $<10^{-6}$ & 0.10487 & $<10^{-6}$ & 1.009 & \\
 \bottomrule
 \end{tabular}
 \caption{El polo de $h_1$ en la PIC y en la teoría lineal. $R$ es el cociente de las
@@ -622,6 +641,53 @@ con su punto X. D3 y D7 juntas dicen que el modo sobrevive a amplitud finita,
 pero no como un modo lineal: a amplitud chica pierde energía lentamente, y a
 amplitud grande se reorganiza en una estructura no lineal que oscila.
 
+\subsection{Masa comparable a la del fondo}
+\label{sec:res_masa}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{serie_masa.pdf}
+\caption{M5 ($a_0=0.5$, $\eta=5.1$) a dos amplitudes: D9 ($\varepsilon=0.1$) y D10
+($\varepsilon=1$). El eje vertical de la izquierda abarca solo de $0.9$ a $1.05$: la
+envolvente se modula unos $\pm$\SI{7}{\%} por un batido lento que también tiene la
+teoría lineal. En la PIC el batido es más lento, y por eso el cociente de la
+derecha oscila; no hay amortiguamiento.}
+\label{fig:masa}
+\end{figure}
+
+En M5 la componente tiene la mitad de la masa del fondo. Se contrae de
+$r_c=5.7$ a $4.9$, donde el isócrono encierra $0.65$: la componente pesa casi lo
+mismo que el fondo interior a ella, y su propio campo domina la dinámica. La
+autogravedad acelera las órbitas un \SI{150}{\%}: la banda pasa a
+$[0.134,\,0.184]$ y $\tau_1$ a $125$. El modo lineal está en $\omega=0.10487$, a
+$0.029$ del borde, más de media banda por debajo ($x=-0.59$). Sale igual con
+$\Delta t$ a la mitad en la solución lineal ($0.10485$). Y la perturbación es casi
+un modo normal puro: en la teoría lineal la envolvente de $\|\delta\Phi\|$ no baja
+de $0.95$ de su valor inicial en $40\,\tau_1$, sin la pérdida por mezcla que tienen
+D3 y D4.
+
+La PIC lo reproduce con las dos amplitudes (figura~\ref{fig:masa} y
+tabla~\ref{tab:polos}). La frecuencia es $0.10482$ con $\varepsilon=0.1$ y $0.10485$ con
+$\varepsilon=1$, contra $0.10487$ de la lineal ($5\times10^{-4}$ y $2\times10^{-4}$ relativo), y el ajuste no
+encuentra amortiguamiento: $|\gamma|<10^{-6}$ en $10$--$20$ y en $20$--$40\,\tau_1$.
+Proyectada sobre el perfil del modo, la amplitud de la PIC coincide con la lineal
+al \SI{1}{\%} hasta $10\,\tau_1$, y después el cociente oscila entre $0.87$ y $1.04$ por
+el batido. El $t_{\rm nl}=15\,\tau_1$ de la tabla~\ref{tab:polos} no es no linealidad:
+esa pequeña diferencia de frecuencia acumula un cuarto de radián de fase en
+$40\,\tau_1$, y el residuo PIC$-$lineal crece con ella.
+
+La diferencia con D3 y D7 está en la distancia a la resonancia. La del modo
+de M5 está en $J_r\approx J_t+0.029/|\Omega'|\approx0.22$, a $0.08$ del borde del soporte.
+Con $\varepsilon=0.1$ las partículas del borde llegan a $J=0.140$, con un cambio máximo de
+acción de $0.003$ que casi no crece después de $10\,\tau_1$. Con $\varepsilon=1$ llegan a $0.157$, con $0.02$, también
+saturado desde $10\,\tau_1$. En ningún caso se acercan a $J_r$. El criterio de la
+sección~\ref{sec:res_transicion} lo anticipaba: $\omega_b/(\Omega_{\min}-\omega)$ vale $0.2$
+con $\varepsilon=0.1$ y $0.63$ con $\varepsilon=1$, menor que uno en los dos. Es la primera
+prueba de ese criterio con una predicción hecha antes de la corrida, y lo
+sostiene. Con $\varepsilon=1$ la parte estática de segundo orden es mayor
+($7\times10^{-3}$ del valor inicial, contra $\sim10^{-3}$ con $\varepsilon=0.1$), del orden de lo
+que corresponde a un efecto $\propto\varepsilon^2$.
+
 \subsection{Qué limita la medida}
 \label{sec:res_pisos}
 
@@ -734,10 +800,26 @@ borde es de $10^{-3}$ del valor inicial.}
 \label{fig:fase_D8}
 \end{figure}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{fase_D9.jpg}
+\caption{D9: $a_0=0.5$ ($\eta=5.1$), $\varepsilon=0.1$. La componente es más compacta
+($r\in[3.6,\,6.4]$) y las órbitas giran más rápido. Mezcla libre en las
+partículas, aunque el potencial sigue oscilando sin amortiguarse: las filas de $J$
+quedan horizontales (cambio máximo de acción $0.003$).}
+\label{fig:fase_D9}
+\vspace{1.5em}
+\includegraphics[width=\textwidth]{fase_D10.jpg}
+\caption{D10: $a_0=0.5$, $\varepsilon=1$. Las filas se ondulan un poco en $t=250$ y algunas
+partículas cruzan el borde $J_t$, hasta $J=0.157$, pero no se forma una isla: la
+resonancia del modo está en $J\approx0.22$.}
+\label{fig:fase_D10}
+\end{figure}
+
 \section{Los videos}
 \label{sec:videos}
 
-Hay un video por simulación, catorce en total, en
+Hay un video por simulación, diecisiete en total, en
 \texttt{reproducir/\allowbreak videos/\allowbreak demo\_\allowbreak eta/\allowbreak <corrida>.mp4} (fuera del control de
 versiones; se regeneran con \texttt{demo\_eta.py videos}). Tienen 1280$\times$720
 píxeles, un cuadro por instantánea (cada 10 unidades de tiempo, unas ocho por
@@ -765,7 +847,10 @@ discretización del equilibrio, y la oscilación, su piso de ruido.
 de $\delta\Phi$ se apaga. En D3 y D4, que el perfil sigue oscilando igual a los
 $20\,\tau_1$ aunque las partículas ya se mezclaron: el modo es colectivo, no un grupo
 de partículas. En D6 y D7, la formación de la isla en $(Q,J)$. En D5, el final:
-la curva de la PIC se despega de la lineal y deja de bajar.
+la curva de la PIC se despega de la lineal y deja de bajar. En D10, el contraste
+con D7: la misma amplitud, pero con el modo lejos de la banda, las filas de
+$(Q,J)$ se mueven poco, sin formar una isla, y el perfil de $\delta\Phi$ sigue al
+lineal.
 
 \section{Lo que sigue}
 \label{sec:siguiente}
@@ -795,7 +880,7 @@ El diseño completo, con 30 corridas y su costo, está en la batería $\eta$.
 \section{Las corridas de referencia}
 \label{sec:ref}
 
-Las seis corridas Z tienen el mismo equilibrio y las mismas posiciones iniciales
+Las siete corridas Z tienen el mismo equilibrio y las mismas posiciones iniciales
 que sus corridas D, sin perturbación. El color es solo la etiqueta $\cos Q_0$: el
 patrón se enrolla igual que en las D porque las partículas giran con sus
 frecuencias, pero la densidad no cambia, y las filas de $J$ quedan horizontales:
@@ -820,6 +905,13 @@ que el equilibrio discreto es estacionario.
 \label{fig:fase_Z2}
 \end{figure}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{fase_Z_M5.jpg}
+\caption{Referencia de M5 (D9 y D10).}
+\label{fig:fase_Z3}
+\end{figure}
+
 \section{Cómo reproducir la demo}
 \label{sec:reproducir}
 
@@ -831,9 +923,9 @@ se corren desde ese directorio y reutilizan lo que ya exista:
 \toprule
 paso & qué hace & tiempo\\
 \midrule
-\texttt{preparar} & 14 estados iniciales con \texttt{equilibrio.py} y sus \texttt{.par} en \texttt{reproducir/corridas/12\_demo\_eta/} & \SI{4}{min}\\
-\texttt{lineal} & las 6 soluciones lineales con \texttt{lineal.py}, hasta el $t_{\rm fin}$ más largo de cada equilibrio & \SI{13}{min}\\
-\texttt{correr} & las 14 corridas PIC, una tras otra, con 4 hilos & \SI{3}{h}\\
+\texttt{preparar} & 17 estados iniciales con \texttt{equilibrio.py} y sus \texttt{.par} en \texttt{reproducir/corridas/12\_demo\_eta/} & \SI{4}{min}\\
+\texttt{lineal} & las 7 soluciones lineales con \texttt{lineal.py}, hasta el $t_{\rm fin}$ más largo de cada equilibrio & \SI{15}{min}\\
+\texttt{correr} & las 17 corridas PIC, una tras otra, con 4 hilos & \SI{3.3}{h}\\
 \texttt{analizar} & mapa ángulo-acción de cada instantánea (una sola vez), $h_k$, $\delta\Phi$; 4 procesos & \SI{55}{min}\\
 \texttt{figuras} & espacio fase, series y \texttt{exe/demo\_eta/resumen.txt} & \SI{2}{min}\\
 \texttt{videos} & un video por corrida, 4 a la vez & \SI{50}{min}\\
