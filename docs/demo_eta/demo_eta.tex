@@ -100,6 +100,26 @@ lo ordena $\mu=\omega_b/\Delta\Omega\approx0.3$--$0.5$.
 \end{nota}
 
 
+\begin{nota}
+\textbf{Qué se predijo antes de correr, y cuándo.} Tres predicciones son falsables
+con estas corridas; se indica en qué momento se formuló cada una.
+\begin{enumerate}
+\item \emph{Donde $\nu=\omega_b/\gamma\ll1$, la PIC sigue a la teoría lineal del mismo
+equilibrio, para cualquier $\varepsilon$.} Formulada en la batería $\eta$, antes de la demo.
+Se cumple (D1 con $\varepsilon=1$, D2).
+\item \emph{Donde $\nu\gtrsim1$, la PIC se aparta de la teoría lineal hacia
+$t\sim2\pi/\omega_b$ y el amortiguamiento se detiene.} Formulada en la batería. Se
+cumple en D5 y D6, en el orden de magnitud del tiempo; la forma exacta de la
+saturación no se predijo.
+\item \emph{Un modo discreto se vuelve frágil cuando $\omega_b/(\Omega_{\min}-\omega)\gtrsim1$.}
+Formulada \emph{después} de ver D3 y D4, y puesta a prueba a ciegas con D9 y D10
+($a_0=0.5$), donde el cociente vale $0.2$ y $0.63$: el modo sobrevive, como se
+predijo.
+\end{enumerate}
+En el bulto (sección~\ref{sec:bulto}) se esperaba una transición hacia $\mu\sim1$;
+aparece entre $\mu=0.3$ y $0.5$.
+\end{nota}
+
 \section{Los conceptos, en resumen}
 \label{sec:conceptos}
 
@@ -455,7 +475,7 @@ $\tau_1$.
 transición. Izquierda: envolvente de $\|\delta\Phi_\varepsilon\|$; derecha:
 $|h_1|$, las dos relativas a su valor inicial. Azul, PIC; negro a trazos, teoría
 lineal del mismo equilibrio y el mismo dato inicial. El tiempo está en unidades
-de $\tau_1$ de cada equilibrio.}
+de $\tau_1$ de cada equilibrio. Numérica: $N=400\times25$, $\Delta t=0.05$, $\Delta r=0.1$, yoshida4.}
 \label{fig:transicion}
 \end{figure}
 
@@ -581,7 +601,7 @@ onda y no tiene significado.}
 Izquierda y centro: envolvente de $\|\delta\Phi\|$ y $|h_1|$; en trazos, la teoría
 lineal de cada equilibrio. Derecha: cociente de envolventes PIC/lineal. D1 llega
 al piso de la medida hacia $5\,\tau_1$ (\S\ref{sec:res_pisos}); D8 queda por encima
-hasta $\sim15\,\tau_1$.}
+hasta $\sim15\,\tau_1$. Numérica: $N=400\times25$, $\Delta t=0.05$, $\Delta r=0.1$, yoshida4.}
 \label{fig:borde}
 \end{figure}
 
@@ -605,7 +625,7 @@ no distingue los dos bordes.
 \caption{El mismo equilibrio, A4 ($\eta=1$), a dos amplitudes: D5
 ($\varepsilon=0.075$, $\nu=3$) y D6 ($\varepsilon=0.84$, $\nu=10$). En trazos, la teoría
 lineal, que es la misma para las dos una vez dividida por $\varepsilon$. Derecha:
-cociente de envolventes PIC/lineal.}
+cociente de envolventes PIC/lineal. Numérica: $N=400\times25$, $\Delta t=0.05$, $\Delta r=0.1$, yoshida4.}
 \label{fig:nolineal}
 \end{figure}
 
@@ -656,7 +676,7 @@ partículas cambian su acción hasta en $0.048$, un tercio del soporte.
 \centering
 \includegraphics[width=\textwidth]{serie_discreto.pdf}
 \caption{El modo discreto de L5 ($\eta=1.24$) a dos amplitudes: D3
-($\varepsilon=0.1$) y D7 ($\varepsilon=1$).}
+($\varepsilon=0.1$) y D7 ($\varepsilon=1$). Numérica: $N=400\times25$, $\Delta t=0.05$, $\Delta r=0.1$, yoshida4.}
 \label{fig:discreto}
 \end{figure}
 
@@ -683,7 +703,7 @@ amplitud grande se reorganiza en una estructura no lineal que oscila.
 ($\varepsilon=1$). El eje vertical de la izquierda abarca solo de $0.9$ a $1.05$: la
 envolvente se modula unos $\pm$\SI{7}{\%} por un batido lento que también tiene la
 teoría lineal. En la PIC el batido es más lento, y por eso el cociente de la
-derecha oscila; no hay amortiguamiento.}
+derecha oscila; no hay amortiguamiento. Numérica: $N=400\times25$, $\Delta t=0.05$, $\Delta r=0.1$, yoshida4.}
 \label{fig:masa}
 \end{figure}
 
@@ -749,6 +769,36 @@ lisa, o sobre $h_1$, que no pasa por la malla.
 Como el segundo crece con $\varepsilon$ y el tercero decrece, hay una amplitud óptima
 para seguir colas largas, del orden de $\varepsilon\approx0.3$--$0.5$, con un piso de unos
 $5\times10^{-4}$. Es una estimación de estas corridas, no una medida.
+
+\subsection{Los controles}
+\label{sec:controles}
+
+\paragraph{Energía.} El código guarda la energía total en cada instantánea. En las
+17 corridas de la demo $\max_t|E(t)-E(0)|/|E(0)|\le4\times10^{-6}$, sin deriva
+apreciable (figura~\ref{fig:energia}; tabla completa en
+\texttt{exe/demo\_eta/energia.txt}). En el bulto llega a $1.7\times10^{-4}$ en B5, el
+colapso más violento, y a $4\times10^{-5}$ en B4.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{energia.pdf}
+\caption{Conservación de la energía total en las corridas de la demo y del bulto.
+Todas con yoshida4 y $\Delta t=0.05$; B0 no tiene autogravedad.}
+\label{fig:energia}
+\end{figure}
+
+\paragraph{Resolución del ajuste del polo.} Con señales sintéticas de $\gamma$ conocida,
+a la frecuencia del modo de D3, con el mismo muestreo y la misma ventana
+($10$--$20\,\tau_1$), un batido del \SI{5}{\%} y ruido de $10^{-3}$, el ajuste recupera
+$\gamma$ con un error de $\sim10^{-6}$ entre $0$ y $10^{-4}$ (\texttt{demo\_eta.py resolucion}).
+
+\paragraph{La separación lisa/fina no depende de la escala.} Con suavizados de
+$0.25$, $0.5$ y $1.0$ en $r$, el cociente PIC/lineal de la parte lisa de D5 en
+$30$--$44\,\tau_1$ es $4.44$, $4.40$ y $4.31$, y la proyección sobre el perfil del modo,
+que no usa ninguna escala, da $4.45$. La parte fina es $\sim2\times10^{-2}$ con las tres.
+En D6 el cociente es $2.0$ con las tres.
+
+%%CONVERGENCIA%%
 
 \section{El bulto: un dato que no es un equilibrio}
 \label{sec:bulto}
@@ -1038,6 +1088,63 @@ con D7: la misma amplitud, pero con el modo lejos de la banda, las filas de
 $(Q,J)$ se mueven poco, sin formar una isla, y el perfil de $\delta\Phi$ sigue al
 lineal.
 
+\section{Los límites del modelo de $L$ fijo}
+\label{sec:limites}
+
+Todo lo anterior vale para la reducción $f=F(r,p_r)\,\delta(L-L_0)$, que es un modelo
+extremadamente anisótropo. De un sistema esférico real conserva la dinámica
+radial y el borde $\Omega_{\min}$ de la banda; pierde lo siguiente:
+\begin{itemize}
+\item \textbf{No hay dispersión en $L$.} En un sistema con $L$ distribuido la mezcla
+ocurre en dos frecuencias (radial y acimutal) y la dispersión en $L$ difumina el
+borde $\Omega_{\max}=\kappa$; aquí ese borde es exacto y artificial.
+\item \textbf{Solo hay perturbaciones radiales} ($\ell=0$): no hay modos no esféricos
+ni resonancias entre frecuencia radial y acimutal.
+\item \textbf{La estructura orbital es rígida}: la medida $8\pi^2L_0\,dr\,dp_r$ fija el
+peso de cada órbita, y el modo de ``respiración'' es el único grado de libertad
+colectivo.
+\end{itemize}
+Por eso la comparación con los resultados de Hadžić y colaboradores, que son para
+sistemas esféricos isótropos, es una motivación y una analogía, no una
+equivalencia. Lo que sí es comparable es el papel del exponente del borde de
+vacío, porque el borde $\Omega_{\min}$ sí está presente aquí.
+
+\section{Conclusiones}
+\label{sec:conclusiones}
+
+\paragraph{Demostrado} (con los controles de la sección~\ref{sec:controles}):
+\begin{itemize}
+\item En el solver lineal existe la transición de modo amortiguado a modo
+discreto, en $\eta_c\approx1.1$--$1.2$ para esta familia.
+\item La PIC reproduce la teoría lineal donde $\nu\ll1$, a $10^{-5}$ en $\omega$ y al
+\SI{1}{\%} en $\gamma$, y los modos discretos durante $20$--$40\,\tau_1$.
+\item Cerca de $\eta_c$ la PIC se aparta de la teoría lineal con amplitudes chicas
+(D5, $\varepsilon=0.075$), y el modo discreto pegado al borde (D3) pierde amplitud
+mientras la teoría lineal no la pierde ($\gamma_{\rm PIC}=(5.2\pm1.0)\times10^{-5}$, $|\gamma_{\rm lin}|\lesssim6\times10^{-6}$).
+\item Un bulto en fase con $a_0\gtrsim0.03$ no se deshace.
+\end{itemize}
+%%DEMOSTRADO%%
+
+\paragraph{Interpretado} (sostenido por las partículas, sin prueba cuantitativa
+completa):
+\begin{itemize}
+\item Que la saturación de D5 y D6 es atrapamiento tipo O'Neil: lo sostienen el
+tiempo de despegue y las islas en $(Q,J)$; falta el ajuste cuantitativo de la isla y
+del periodo de rebote.
+\item Que la pérdida de D3 se debe a que la amplitud finita empuja partículas del
+borde hasta la resonancia del modo, fuera del soporte.
+\item Que el bulto se mantiene por autoatrapamiento, ordenado por $\mu=\omega_b/\Delta\Omega$.
+\end{itemize}
+
+\paragraph{Hipótesis} (no probadas aquí):
+\begin{itemize}
+\item Que $\eta_c$ sea universal: la teoría lineal muestra que depende del ancho, la
+forma y el borde.
+\item Que el criterio $\omega_b/(\Omega_{\min}-\omega)$ valga en general para modos discretos.
+\item Que algo de esto se traslade a sistemas esféricos con $L$ distribuido
+(sección~\ref{sec:limites}).
+\end{itemize}
+
 \section{Lo que sigue}
 \label{sec:siguiente}
 
@@ -1114,6 +1221,29 @@ que el equilibrio discreto es estacionario.
 \caption{El bulto con $a_0=0.3$ (B5) y con $a_0=0.1$ y $N_{pc}=100$ (B4q).}
 \label{fig:bulto_fase_ap2}
 \end{figure}
+
+\section{La revisión externa}
+\label{sec:revision}
+
+Una revisión externa de este trabajo (\texttt{auditoria\_deepseekpro/revision\_cientifica.md})
+señaló lo que faltaba para pasar de demo a resultado. La respuesta punto por punto
+está en \texttt{auditoria\_deepseekpro/respuesta\_revision\_cientifica.md}. En resumen:
+\begin{itemize}
+\item \textbf{Atendido en esta versión:} incertidumbre de los polos (tabla~\ref{tab:polos});
+resolución del ajuste con señales sintéticas; conservación de la energía; la
+separación lisa/fina a tres escalas (sección~\ref{sec:controles}); predicciones
+explícitas; los límites del modelo de $L$ fijo; y las conclusiones separadas en
+demostrado, interpretado e hipótesis.
+\item \textbf{En curso:} el barrido en $\varepsilon$ de D3 y la convergencia en $N$ y $\Delta t$ de
+D3, D5 y D6 (13 corridas lanzadas), y D6 hasta $t=17\,200$ para el ajuste de la isla.
+\item \textbf{Discutido con los datos:} que la pérdida de D3 dependiera del ajuste
+(la envolvente lineal la acota sin ajuste); que el factor en $Q$ del $h_k$ del código
+convolucionara armónicos (el código multiplica cada armónico por una constante);
+y el ancho de la isla del péndulo, que es $2\sqrt{A/|\Omega'|}$.
+\item \textbf{Pendiente:} el ajuste cuantitativo de la isla y la fracción de
+partículas atrapadas; la robustez de $\eta_c$ frente al borde, el ancho y $W_0$ en el
+solver lineal; D8 con la amplitud óptima; y $\eta_c(L_0)$.
+\end{itemize}
 
 \section{Cómo reproducir la demo}
 \label{sec:reproducir}

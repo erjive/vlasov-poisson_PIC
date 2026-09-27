@@ -60,11 +60,37 @@ CORRIDAS = [
     ('D10', 'M5', 1.0, 5000, r'$\eta=5.1$, masa comparable a la del fondo, amplitud grande'),
     ('Z_M5', 'M5', 0.0, 5000, 'referencia de D9 y D10'),
 ]
+# Controles pedidos por la revisión (auditoria_deepseekpro): barrido en eps del modo
+# de L5, y convergencia en N (400x25 -> 800x50) y en dt (courant 1 -> 0.5) de D3, D5 y
+# D6, cada una con su referencia eps = 0 a la misma resolución. No tienen video.
+EXTRA = [
+    ('D3e003', 'L5', 0.003, 7200, r'D3 con $\varepsilon=0.003$'),
+    ('D3e01', 'L5', 0.01, 7200, r'D3 con $\varepsilon=0.01$'),
+    ('D3e03', 'L5', 0.03, 7200, r'D3 con $\varepsilon=0.03$'),
+    ('D3N', 'L5', 0.1, 7200, r'D3 con $N=800\times50$'),
+    ('Z_L5N', 'L5', 0.0, 7200, 'referencia de D3N'),
+    ('D3dt', 'L5', 0.1, 7200, r'D3 con $\Delta t/2$'),
+    ('Z_L5dt', 'L5', 0.0, 7200, 'referencia de D3dt'),
+    ('D6N', 'A4', 0.84, 5200, r'D6 con $N=800\times50$'),
+    ('D6dt', 'A4', 0.84, 5200, r'D6 con $\Delta t/2$'),
+    ('D5dt', 'A4', 0.075, 17200, r'D5 con $\Delta t/2$'),
+    ('Z_A4dt', 'A4', 0.0, 17200, 'referencia de D5dt y D6dt'),
+    ('D5N', 'A4', 0.075, 17200, r'D5 con $N=800\times50$'),
+    ('Z_A4N', 'A4', 0.0, 17200, 'referencia de D5N y D6N'),
+    ('D6L', 'A4', 0.84, 17200, r'D6 hasta $t=17200$, para varios periodos de rebote'),
+]
+NUM = {n: ((800, 50, 1.0) if n.endswith('N') else (400, 25, 0.5) if n.endswith('dt') else (400, 25, 1.0))
+       for n, *_ in EXTRA}
+CORRIDAS = CORRIDAS + EXTRA
 DEMO = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10']
 REF = {'D1': 'Z_A1', 'D2': 'Z_A3', 'D3': 'Z_L5', 'D7': 'Z_L5', 'D4': 'Z_L6',
-       'D5': 'Z_A4', 'D6': 'Z_A4', 'D8': 'Z_G1a', 'D9': 'Z_M5', 'D10': 'Z_M5'}
+       'D5': 'Z_A4', 'D6': 'Z_A4', 'D8': 'Z_G1a', 'D9': 'Z_M5', 'D10': 'Z_M5',
+       'D3e003': 'Z_L5', 'D3e01': 'Z_L5', 'D3e03': 'Z_L5', 'D3N': 'Z_L5N', 'D3dt': 'Z_L5dt',
+       'D5N': 'Z_A4N', 'D6N': 'Z_A4N', 'D5dt': 'Z_A4dt', 'D6dt': 'Z_A4dt', 'D6L': 'Z_A4'}
 RMED = np.linspace(3, 15, 121)
-info = {c[0]: dict(caso=c[1], eps=c[2], tfin=c[3], desc=c[4]) for c in CORRIDAS}
+info = {c[0]: dict(caso=c[1], eps=c[2], tfin=c[3], desc=c[4],
+                   nrc=NUM.get(c[0], (NRC, NPC, 1.0))[0], npc=NUM.get(c[0], (NRC, NPC, 1.0))[1],
+                   courant=NUM.get(c[0], (NRC, NPC, 1.0))[2], extra=c[0] in NUM) for c in CORRIDAS}
 
 
 def ruta(*p):
@@ -81,14 +107,17 @@ def preparar():
         if not os.path.exists(dat):
             cmd = [sys.executable, os.path.join(AQUI, 'equilibrio.py'), '--forma', 'maxwell',
                    '--jt', str(JT), '--k', str(c['g']), '--w0', str(W0), '--a0', str(c['a0']),
-                   '--eps', str(eps), '--pert', 'suave3', '--nrc', str(NRC), '--npc', str(NPC),
+                   '--eps', str(eps), '--pert', 'suave3', '--nrc', str(info[nombre]['nrc']),
+                   '--npc', str(info[nombre]['npc']),
                    '--salida', dat]
             t0 = time.time()
             subprocess.run(cmd, check=True, stdout=open(ruta('ic', f'{nombre}.log'), 'w'),
                            stderr=subprocess.STDOUT)
             print(f'  estado inicial {nombre} ({time.time()-t0:.0f} s)', flush=True)
-        valores = {'courant': '1.0', 'Nt': str(int(round(tfin/DT))), 'time_output': str(SALIDA),
-                   'spatial_output': str(SALIDA), 'field_output': str(SALIDA),
+        cou = info[nombre]['courant']; sal = int(round(SALIDA/cou))   # una instantánea cada 10
+        valores = {'courant': str(cou), 'Nt': str(int(round(tfin/(DT*cou)))), 'time_output': str(sal),
+                   'spatial_output': str(sal), 'field_output': str(sal),
+                   'Nrc': str(info[nombre]['nrc']), 'Npc': str(info[nombre]['npc']),
                    'directory': f'demo_eta/{nombre}', 'a0': str(c['a0']),
                    'checkpointfile': f'demo_eta/ic/{nombre}.dat', 'j1': f'{J1:.6f}',
                    'sj1': f'{J1:.6f}', 'state': 'checkpoint'}
@@ -222,8 +251,9 @@ def colores(nombre, w):
     """Color de cada partícula: su perturbación de peso, F_eq s cos Q0, normalizada
     (en las referencias eps = 0, el ángulo inicial). Las partículas están en el
     orden de los nodos, (i-1)*Npc + j."""
-    i, jq = np.divmod(np.arange(NRC*NPC), NPC)
-    Jn, Qn = (i + 0.5)*JT/NRC, (jq + 0.5)*2*np.pi/NPC
+    nrc, npc = info[nombre]['nrc'], info[nombre]['npc']
+    i, jq = np.divmod(np.arange(nrc*npc), npc)
+    Jn, Qn = (i + 0.5)*JT/nrc, (jq + 0.5)*2*np.pi/npc
     eps = info[nombre]['eps']
     if eps == 0:
         return np.cos(Qn), r'ángulo inicial $\cos Q_0$ (una etiqueta)'
@@ -298,7 +328,8 @@ def figuras():
     os.makedirs(FIGDIR, exist_ok=True)
     plt.rcParams.update({'font.size': 9, 'axes.titlesize': 9})
     for nombre in info:
-        figura_fase(nombre, plt)
+        if not info[nombre]['extra']:
+            figura_fase(nombre, plt)
     figura_islas(plt)
     # La transición a amplitud baja: una fila por corrida, PIC contra teoría lineal.
     lista = ['D1', 'D2', 'D3', 'D4']
@@ -366,6 +397,35 @@ def polo_con_error(t, h, lo, hi):
     est = [ajustar(t, h, a, b)[f'pencil M={M}'] for M in (2, 3)
            for a, b in ((lo, hi), (lo + d, hi), (lo, hi - d))]
     return w0, max(abs(w - w0) for w, _ in est), g0, max(abs(g - g0) for _, g in est)
+
+
+def energia():
+    """Conservación de la energía total (atributo total_energy del HDF5) en las
+    corridas de la demo y del bulto: tabla en exe/demo_eta/energia.txt y figura
+    docs/demo_eta/figuras/energia.pdf."""
+    import h5py, matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import bulto
+    corr = [(n, ruta(n)) for n in info if os.path.exists(ruta(f'{n}.ok'))] + \
+           [(n, bulto.ruta(n)) for n in bulto.info if os.path.exists(bulto.ruta(f'{n}.ok'))]
+    fig, ax = plt.subplots(1, 2, figsize=(11, 3.6), constrained_layout=True, sharey=True)
+    with open(ruta('energia.txt'), 'w') as fo:
+        fo.write(f"{'corrida':8} {'t_fin':>7} {'E0':>14} {'max|dE/E|':>10} {'final':>10}\n")
+        for n, d in corr:
+            f = h5py.File(os.path.join(d, 'vlasov_output.h5'), 'r')
+            ks = sorted([k for k in f if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+            E = np.array([f[k].attrs['total_energy'] for k in ks])
+            t = np.array([f[k].attrs['time'] for k in ks])
+            dE = (E - E[0])/abs(E[0])
+            fo.write(f'{n:8} {t[-1]:7.0f} {E[0]:+14.6e} {np.abs(dE).max():10.1e} {dE[-1]:+10.1e}\n')
+            a = ax[1] if n.startswith('B') else ax[0]
+            a.semilogy(t, np.maximum(np.abs(dE), 1e-13), lw=0.7, label=n)
+    ax[0].set_title('demo $\\eta$'); ax[1].set_title('bulto')
+    ax[0].set_ylabel(r'$|E(t)-E(0)|/|E(0)|$')
+    for a in ax:
+        a.set_xlabel('$t$'); a.grid(alpha=0.3); a.legend(fontsize=6, ncol=3, loc='lower right')
+    fig.savefig(os.path.join(FIGDIR, 'energia.pdf')); plt.close(fig)
+    print(open(ruta('energia.txt')).read())
 
 
 def resolucion():
@@ -522,7 +582,7 @@ def _video(nombre):
 def videos(solo=None, procesos=4):
     from multiprocessing import Pool
     os.makedirs(VIDDIR, exist_ok=True)
-    pend = [n for n in info if (not solo or n in solo)
+    pend = [n for n in info if not info[n]['extra'] and (not solo or n in solo)
             and not os.path.exists(os.path.join(VIDDIR, f'{n}.mp4'))]
     with Pool(procesos) as pool:
         for n in pool.imap_unordered(_video, pend):
@@ -531,7 +591,7 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion',
+    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion', 'energia',
                                      'todo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()

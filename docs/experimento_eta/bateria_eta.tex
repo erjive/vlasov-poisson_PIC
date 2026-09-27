@@ -513,8 +513,13 @@ donde los leen \texttt{landau\_\allowbreak analisis.py} y, con \texttt{--j1 --sj
 tiene eso se ve en la sección~\ref{sec:colash}.
 
 \paragraph{El $h_k$ del código Fortran.} \texttt{analysish.f90} calcula también un
-$h_k$, con un factor en $Q$ adicional, $e^{-\sin^2(Q/2)/s_Q^2}$, que solo multiplica
-cada armónico por una constante, y con el mapa del isócrono \emph{desnudo}. Con
+$h_k$, con un factor en $Q$ adicional, $A(Q)=e^{-\sin^2(Q/2)/s_Q^2}$, y con el mapa del
+isócrono \emph{desnudo}. El factor no convoluciona los armónicos: el código define
+$h_k$ como la proyección de $f$ sobre el armónico $k$ de la función de prueba
+$A(Q)B(J)$, $\sum_jf_jB(J_j)\,C_k\,e^{-ikQ_j}$ con $C_k=\langle A(Q)\cos kQ\rangle$ calculado una
+vez por cuadratura, de modo que cada armónico queda multiplicado por la constante
+$C_k$. (Multiplicar cada partícula por $A(Q_j)e^{-ikQ_j}$ sí mezclaría armónicos, pero
+no es lo que hace \texttt{analysish.f90}.) Con
 $a_0>0$ las $(Q,J)$ de ese mapa no son las verdaderas, así que la batería usa el
 $h_k$ de \texttt{landau\_\allowbreak analisis.py}.
 
