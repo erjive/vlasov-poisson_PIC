@@ -150,6 +150,25 @@ def lineal():
 
 
 # ------------------------------------------------------------------ correr
+def metadatos(nombre, par, salida):
+    """Versión exacta de lo que produjo la corrida: sha256 del ejecutable y del .par,
+    commit del repositorio (y si src/ tenía cambios sin commit) y fecha."""
+    import hashlib, datetime
+    sha = lambda f: hashlib.sha256(open(f, 'rb').read()).hexdigest()
+    git = lambda *a: subprocess.run(['git', *a], cwd=RAIZ, capture_output=True, text=True).stdout.strip()
+    ahora = datetime.datetime.now().isoformat(timespec='minutes')
+    src = git('log', '-1', '--format=%h', '--', 'src/') + ('+cambios' if git('status', '--porcelain', 'src/') else '')
+    with open(os.path.join(PARDIR, 'METADATOS.txt'), 'a') as fo:           # copia versionada
+        fo.write(f'{nombre:8} {ahora}  par {sha(par)[:16]}  VP_PIC {sha(os.path.join(EXE, "VP_PIC"))[:16]}'
+                 f'  src {src}  HEAD {git("rev-parse", "--short", "HEAD")}\n')
+    open(salida, 'w').write(
+        f'corrida    {nombre}\nfecha      {datetime.datetime.now().isoformat(timespec="seconds")}\n'
+        f'VP_PIC     {sha(os.path.join(EXE, "VP_PIC"))}\npar        {sha(par)}  {os.path.relpath(par, RAIZ)}\n'
+        f'HEAD       {git("rev-parse", "--short", "HEAD")}\n'
+        f'src/       {git("log", "-1", "--format=%h", "--", "src/")}'
+        f'{" (con cambios sin commit)" if git("status", "--porcelain", "src/") else ""}\n')
+
+
 def correr():
     env = dict(os.environ, OMP_NUM_THREADS='4', OMP_PLACES='cores', OMP_PROC_BIND='close')
     for nombre, *_ in CORRIDAS:
@@ -165,6 +184,7 @@ def correr():
         print(f'{estado:5} {nombre} ({time.time()-t0:.0f} s)', flush=True)
         if r.returncode == 0:
             open(ruta(f'{nombre}.ok'), 'w').write('')
+            metadatos(nombre, par, ruta(f'{nombre}.meta'))
 
 
 # ------------------------------------------------------------------ analizar

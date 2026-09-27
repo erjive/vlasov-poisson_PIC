@@ -1,0 +1,32 @@
+# Corridas hechas antes de registrar metadatos por corrida. Todas con el mismo
+# ejecutable: VP_PIC sha256 42d96820e8743372325b08f699b7dd38bd33849b5868ae6ecf0ea1441c3128fb, versionado en f649049 (último cambio de src/,
+# 2026-09-23); sin cambios posteriores en src/. Fecha = fin de la corrida.
+D2       2026-09-25T11:45  par 6daafc9f310bba52
+Z_A3     2026-09-25T11:52  par 9ceb22ae47eb9105
+D1       2026-09-25T12:11  par 7768b768851224e5
+Z_A1     2026-09-25T12:26  par 62035575c479ce76
+D3       2026-09-25T12:35  par dfcfcc1599bf7c0e
+D7       2026-09-25T12:45  par 9a5134d7a7eda060
+Z_L5     2026-09-25T12:54  par 25a68a3de7eb1ae0
+D4       2026-09-25T13:01  par 9f68f55a3b90ffad
+Z_L6     2026-09-25T13:08  par 2ca35bde4ba47390
+D5       2026-09-25T13:31  par 0577bb618398f0f6
+D6       2026-09-25T13:38  par 919e8bcec73e0961
+Z_A4     2026-09-25T14:01  par d52eed26405405f6
+D8       2026-09-25T14:17  par 18a070463603ae74
+Z_G1a    2026-09-25T14:31  par 3cf08fd966f1785b
+D9       2026-09-25T20:23  par 9e97617ba191d6e2
+D10      2026-09-25T20:28  par 016d5aefc758f5ff
+Z_M5     2026-09-25T20:33  par c4c29092c6c8693d
+D3e003   2026-09-27T15:45  par 942658d66c76f87d
+D3e01    2026-09-27T15:56  par f9fca9dafb753dbc
+D3e03    2026-09-27T16:07  par 14e6a0fe6ea21753
+D3N      2026-09-27T16:49  par ccfa127cfb4e5c89
+B0       2026-09-27T11:44  par 4dd5d4147152a155
+B1       2026-09-27T11:54  par 7c80ae6d425302e6
+B2       2026-09-27T12:04  par b63bd92b329542eb
+B3       2026-09-27T12:15  par 76b168fd52d150d5
+B4       2026-09-27T12:25  par 836112eca50b2de3
+B5       2026-09-27T12:36  par d67f17e8bed274c6
+B4q      2026-09-27T13:23  par 4178f9e50fd1e3a1
+# A partir de aquí, una línea por corrida al terminar (demo_eta.metadatos): par, VP_PIC y src/ abreviados.

@@ -8,8 +8,139 @@ Las cifras citadas se recalcularon para esta respuesta; los comandos están en
 
 Resumen: la revisión es útil y en lo esencial correcta en su diagnóstico de
 qué falta (convergencia, barrido en ε, energía, separar lo demostrado de lo
-interpretado). Tres afirmaciones concretas no se sostienen al contrastarlas con
-el código y los datos: B.1 en su premisa, B.9 y la fórmula de F.4.
+interpretado). Varias afirmaciones concretas no se sostienen al contrastarlas
+con el código, los datos o la literatura: B.1 en su premisa, B.9, la fórmula de
+F.4, la escala N^−1/2 de B.2, E.2 y, sobre todo, B.5. El teorema de Hadžić et al.
+está formulado en nuestra misma reducción de |L| fijo, lo que corrige también
+nuestros documentos y mejora el encuadre del trabajo (segunda lectura, §1).
+
+---
+
+## Segunda lectura (2026-09-27): lo que la primera respuesta omitió
+
+Una relectura completa de la revisión, sección por sección (A–M), encontró
+puntos que la primera respuesta no atendió, uno en que la revisión y nuestros
+propios documentos estaban equivocados, y varios que se pudieron resolver con los
+datos existentes. Todo lo de esta sección se verificó hoy.
+
+### 1. El teorema de Hadžić et al. está formulado en nuestro mismo modelo (corrige B.5, C.10 y nuestros documentos)
+
+La revisión (B.5, J.3) y nuestros documentos decían que la comparación con
+Hadžić, Rein, Schrecker y Straub es "motivación, no equivalencia", porque su
+resultado sería para sistemas isótropos. **Es falso.** El artículo (verificado:
+*Damping versus oscillations for a gravitational Vlasov-Poisson system*, Arch.
+Ration. Mech. Anal. **249**, 45 (2025), arXiv:2301.07662) trabaja en **la misma
+reducción**: el sistema de Vlasov–Poisson radial con todas las partículas con el
+mismo |L|, en el potencial de una masa puntual central fija, con equilibrios
+pequeños f = ε(E₀−E)₊^k. Su teorema 1.2:
+
+- (a) si 1/2 < k ≤ 1, existe ε₀(k) tal que para 0 < ε < ε₀ no hay amortiguamiento:
+  hay un autovalor por debajo del fondo del espectro esencial (un modo discreto
+  bajo Ω_min);
+- (b) si k > 1, existe ε₀(k) tal que para 0 < ε < ε₀ hay amortiguamiento de Landau
+  (débil, sin tasa) y el espectro puntual es vacío.
+
+Solo importa la regularidad en el borde de vacío, y los autores señalan que King
+(k = 1) no se amortigua. La prueba usa la ausencia de autovalores embebidos y un
+principio de Birman–Schwinger para el hueco principal: la misma divergencia de
+∫F′/(Ω−ω) en Ω_min para g ≤ 1 que la batería usaba como interpretación.
+
+**Consecuencia para la contribución (A.3, A.6).** El encuadre mejora: el estudio η
+es la exploración numérica, en el mismo modelo reducido y con otro fondo
+(isócrono en vez de masa puntual), de lo que el teorema deja abierto. Primero, el
+valor de ε₀(k) para k > 1: η_c ≈ 1.1–1.2 con g = 2 es una estimación de ε₀(2) para
+el fondo isócrono. Segundo, qué pasa por encima de ε₀. Tercero, la dinámica no
+lineal. Los tres regímenes lineales que encontramos son los del teorema (g = 2
+amortigua con masa chica; King oscila justo por debajo de Ω_min, en PIC
+ω = 0.06088 ± 0.00005 contra Ω_min = 0.06101; g = 2 deja de amortiguar sobre η_c).
+
+**Referencias que faltaban** (de la bibliografía del artículo): Ramming y Rein,
+Phys. D **365**, 72 (2018), estudio numérico de soluciones oscilantes del problema
+radial, el antecedente numérico más cercano; Rioseco y Sarbach, Class. Quantum
+Grav. **37**, 195027 (2020), mezcla de fases en un potencial central externo;
+Hadžić, Rein y Straub, Arch. Ration. Mech. Anal. **243**, 611 (2022), galaxias que
+oscilan linealmente; Weinberg, ApJ **421**, 481 (1994), modos débilmente
+amortiguados, pertinente para A4. **Hecho:** corregidos `bateria_eta.tex` (reducción, § borde de vacío, §
+estado de la teoría) y `demo_eta.tex` (conceptos, límites, conclusiones).
+
+### 2. Afirmaciones de la revisión que no se sostienen (además de B.1, B.9 y F.4)
+
+- **B.2, "la parte fina debe escalar como N^−1/2".** Eso vale para muestreo
+  aleatorio. Con partida silenciosa (malla regular en (Q,J)) el ruido no es de
+  Monte Carlo: `PREGUNTAS_ABIERTAS.md` mide que pasar de N_rc = 400 a 800 baja el
+  ruido de discreción de a₀ = 1e-2 de 1.2e-2 a 3.4e-3, un factor 3.5, no √2. La prueba
+  correcta es que la parte fina cambie con N y la lisa no; D5N lo mide.
+- **B.3, "robustez frente al tipo de perturbación s(J)".** η_c es la posición de
+  un polo del operador linealizado y no depende del dato inicial; s(J) cambia
+  cuánto se excita el modo y la forma de las colas, no η_c.
+- **E.2, "la anisotropía radial favorece inestabilidades".** La inestabilidad de
+  órbitas radiales es no esférica (ℓ ≥ 1); este modelo solo tiene perturbaciones
+  radiales (ℓ = 0), y con F monótona en E el criterio de Antonov excluye modos
+  radiales inestables. No puede aparecer aquí.
+- **E.3, "dependencia en κ/Ω".** Con L fijo la frecuencia acimutal no entra en la
+  dinámica; lo que cambia con L₀ es la forma de Ω(J) (el ancho y la pendiente en
+  el borde). La pregunta bien formulada es si η_c depende de esa forma; D2 (L₀ = 1)
+  ≈ A4 (L₀ = 2) con el ancho escalado es un primer punto.
+- **G.1, "volumen de Liouville vía 8π²L₀∫∫F".** En un PIC de pesos fijos esa
+  integral es Σw y se conserva por construcción: no prueba nada. El control útil
+  del integrador es la comparación con la mezcla libre exacta (G.3, abajo).
+- **C.6 y D.5 remiten a una sección "E.5"** que no existe (E termina en E.4). Por
+  el contexto, se refieren a F.4–F.6.
+- **D.2 pide "D5/4"**: ambiguo (¿Δt/4?). Se hace Δt/2; si D5 cambia, se agrega Δt/4.
+
+### 3. Resuelto hoy con los datos existentes
+
+- **B.7, ω tardío de D5 con incertidumbre.** En h₁, 30–43.5 τ₁:
+  ω_PIC = 0.07056 ± 1e-4 contra ω_lin = 0.07022 ± 4e-6; la diferencia,
+  (3.4 ± 1)e-4, es real a ~3σ (la revisión citaba 5.7e-4).
+- **B.8 / F.1, energía:** ≤ 4e-6 en las 17 corridas de la demo; ≤ 1.7e-4 en el
+  bulto (`demo_eta.py energia`, figura en el documento).
+- **B.6, lisa/fina a tres escalas:** el exceso de D5 sobre la teoría lineal es
+  4.44, 4.40 y 4.31 con suavizados 0.25, 0.5 y 1.0, y 4.45 sin suavizar
+  (proyección sobre el perfil del modo).
+- **G.2 / F.8, virial de L fijo** (⟨p²⟩ + ⟨L²/r²⟩ − ⟨r ∂_rΦ⟩ = 0 en un estado
+  estacionario): residuo estacionario de 4e-5 en Z_A4 y Z_L5 y 4e-4 en Z_M5, del
+  orden del error del gradiente de Φ en la malla; en las perturbadas fluctúa con
+  la respuesta (2e-4 en D5, 4e-3 en D6, 9e-3 en D10).
+- **G.3, solución libre exacta con residuos:** B0 (sin autogravedad) contra
+  Σ w e^{−ik(Q₀+Ω(J₀)t)}: error absoluto ≤ 1.6e-7 en h₁ durante 31 τ₁, mientras h₁
+  baja de 0.8 a 1e-5; en k = 2, 3, ≤ 9e-7.
+- **H.1, paso de tiempo en el pericentro:** Ω_p·Δt ≤ 7.8e-3 en las 22 corridas;
+  error de energía por pericentro ≤ 1e-10.
+- **J.1 / H.1(ii), resolución de la malla en J cerca del borde:** el modo de L5
+  está a 2.5e-4 de Ω_min, que son **solo 5.7 espaciados** de la malla con N_rc = 400
+  (11.5 con 800; 23 en `lineal.py`). Es una explicación numérica posible de la
+  pérdida de D3 que la primera respuesta no mencionaba; D3N la decide. L6 y M5
+  están a 75 y 234 espaciados.
+- **C.11, versión del código por corrida:** `demo_eta.py` y `bulto.py` registran
+  ahora sha256 del ejecutable y del `.par`, commit y fecha de cada corrida en
+  `reproducir/corridas/12_demo_eta/METADATOS.txt`; las anteriores, de forma
+  retroactiva (todas con el ejecutable de f649049, sin cambios en `src/` desde el
+  23 de septiembre).
+
+### 4. Puntos que siguen pendientes y no estaban en el plan
+
+- **C.2:** derivar η (por qué el corrimiento de la frecuencia media mide el
+  acoplamiento) desde la relación de dispersión en acoplamiento débil. Con el
+  teorema de Hadžić, la pregunta se precisa: estimar ε₀(k) analíticamente.
+- **C.7 / G.5:** comparar la saturación de D5 y D6 con las predicciones de
+  O'Neil (amplitud, periodo de rebote). Para una onda en plasma hay resultados
+  del umbral de atrapamiento; para un continuo de frecuencias gravitatorio no
+  conozco fórmula cerrada. Hay que revisarlo en la literatura antes de afirmarlo.
+- **G.6:** agregar g = 1/2 (el borde del teorema) al barrido del borde.
+- **G.7:** continuación analítica (Fouvry–Prunet) para separar polo de
+  transitorio.
+- **H.2:** que el ancho de la isla escale con √ε: hace falta D6 a dos o tres
+  amplitudes con isla.
+- **H.4:** apéndice de control con el ruido de discreción de `PREGUNTAS_ABIERTAS.md`.
+- **I.1:** panel de residuo PIC − lineal en las figuras de D1 y D2.
+- **F.6 y F.7:** frecuencia de rebote medida con la FFT de J(t) de las partículas
+  del borde (con D6L), y quiebre de pendiente en las colas.
+- **F.2, F.3:** perfiles ρ(r,t) y distribución de p_r por capa; baja prioridad
+  (δΦ ya da ρ por Poisson).
+- **L:** la estructura de artículo propuesta es razonable; la demo no es el
+  artículo.
+- **K.11 y K.12** no estaban en mi plan: G.7 y levantar L fijo (proyecto aparte).
 
 ---
 
@@ -68,10 +199,12 @@ Coincide con lo que dice el propio documento (§ "Qué limita la medida"): con
 
 **Pendiente:** D8 con ε ≈ 0.3–0.5 y la parte estática restada.
 
-### B.5 Límites del modelo de L fijo — de acuerdo
+### B.5 Límites del modelo de L fijo — de acuerdo en los límites, en desacuerdo con la comparación
 
-**Pendiente:** una sección dedicada en el documento (no una nota), con la lista
-de J.2.
+De acuerdo con los límites frente a un sistema esférico real (lista de J.2).
+**Hecho:** sección dedicada en `demo_eta.tex`. En desacuerdo con que la
+comparación con Hadžić et al. sea "motivación, no equivalencia": su teorema está
+en esta misma reducción (segunda lectura, §1).
 
 ### B.6 Separación lisa/fina ad hoc — de acuerdo
 
@@ -151,19 +284,24 @@ De acuerdo con el orden de prioridad de K. Observaciones puntuales:
 
 ---
 
-## Plan de trabajo propuesto (orden)
+## Plan de trabajo (estado al 2026-09-27)
 
-| # | Punto | Tipo | Costo |
+| # | Punto | Tipo | Estado |
 |---|---|---|---|
-| 1 | K.1 curva de resolución sintética del matrix pencil | análisis | **hecho** |
-| 2 | F.1 / B.8 energía de las 24 corridas | análisis | minutos |
-| 3 | B.6 separación lisa/fina a tres escalas | análisis | minutos |
-| 4 | B.9 precisar la frase en la batería; C.8 reorganizar conclusiones | texto | — |
-| 5 | D.1 barrido en ε de D3 (4 corridas) | PIC | ~40 min |
-| 6 | D.2 convergencia N y Δt de D3, D5, D6 | PIC | ~6 h |
-| 7 | F.4 / F.5 isla con péndulo y fracción atrapada | análisis | horas |
-| 8 | B.4 D8 con ε óptimo | PIC | ~30 min |
-| 9 | D.4 robustez de η_c (solver lineal) | lineal | ~1 h |
-| 10 | D.3 barrido en η a ε fija | PIC | ~2 h |
-| 11 | B.5 sección de límites de L fijo | texto | — |
-| 12 | E.4 η_c(L₀) en el solver lineal | lineal | ~1 h |
+| 1 | K.1 curva de resolución sintética del matrix pencil | análisis | hecho |
+| 2 | F.1 / B.8 energía de las 24 corridas | análisis | hecho |
+| 3 | B.6 separación lisa/fina a tres escalas | análisis | hecho |
+| 4 | B.9 frase en la batería; C.8 conclusiones; C.1 predicciones; C.3 pies | texto | hecho |
+| 5 | B.5 límites de L fijo y corrección de la comparación con Hadžić | texto | hecho |
+| 6 | B.7, G.2, G.3, H.1, J.1, C.11 | análisis | hecho |
+| 7 | D.1 barrido en ε de D3 (ε = 0.003, 0.01, 0.03) | PIC | corridas hechas; falta analizar |
+| 8 | D.2 convergencia N (800×50) y Δt/2 de D3, D5, D6 | PIC | en curso |
+| 9 | F.4 / F.5 / F.6 isla, fracción atrapada, rebote (con D6L) | PIC + análisis | D6L en cola |
+| 10 | B.4 D8 con ε óptimo | PIC | pendiente |
+| 11 | D.4 / G.6 robustez de η_c: g (incl. 1/2), J_t, W₀ | lineal | pendiente |
+| 12 | D.3 barrido en η a ε fija; H.2 isla contra √ε | PIC | pendiente |
+| 13 | C.7 / G.5 comparación con O'Neil | teoría | pendiente |
+| 14 | C.2 derivación de η; estimar ε₀(k) | teoría | pendiente |
+| 15 | E.4 η_c(L₀) en el solver lineal | lineal | pendiente |
+| 16 | G.7 continuación analítica | teoría + lineal | pendiente |
+| 17 | fondo de masa puntual (BGtype = sphere) para comparar con el teorema tal cual | PIC + lineal | pendiente |

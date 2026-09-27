@@ -21,7 +21,7 @@ import os, sys, subprocess, time, argparse, warnings, numpy as np
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 warnings.filterwarnings('ignore', category=RuntimeWarning)
-from demo_eta import envolvente, norma, RAIZ, EXE, FIGDIR, VIDDIR
+from demo_eta import envolvente, norma, metadatos, RAIZ, EXE, FIGDIR, VIDDIR
 
 BASE = os.path.join(EXE, 'demo_eta', 'bulto')
 PARDIR = os.path.join(RAIZ, 'reproducir', 'corridas', '12_demo_eta')
@@ -78,6 +78,7 @@ def correr():
         print(f'{"OK" if r.returncode == 0 else "FALLO":5} {n} ({time.time()-t0:.0f} s)', flush=True)
         if r.returncode == 0:
             open(ruta(f'{n}.ok'), 'w').write('')
+            metadatos(n, os.path.join(PARDIR, f'bulto__{n}.par'), ruta(f'{n}.meta'))
 
 
 def _mapear(tarea):

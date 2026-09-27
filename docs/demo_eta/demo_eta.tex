@@ -279,9 +279,14 @@ $g=1$ (King).}
 \subsection{El borde de vacío}
 \label{sec:borde}
 
-Hadžić, Rein, Schrecker y Straub (ARMA 2025) prueban, para el problema
-linealizado con una masa central, una dicotomía en el exponente del borde: si
-$F\propto(E_t-E)^g$ con $g>1$ las perturbaciones se amortiguan; si $1/2<g\le1$, no.
+Hadžić, Rein, Schrecker y Straub (Arch.\ Ration.\ Mech.\ Anal.\ \textbf{249}, 45,
+2025) trabajan en \emph{esta misma reducción}: todas las partículas con el mismo
+$|L|$, en el campo fijo de una masa puntual (aquí, el isócrono), con equilibrios
+pequeños $F=\varepsilon(E_0-E)^k$. Prueban, para el problema linealizado, una dicotomía en
+el exponente del borde, válida para $\varepsilon$ menor que un $\varepsilon_0(k)$ que no estiman: si
+$k>1$ (nuestra $g$) las perturbaciones se amortiguan; si $1/2<k\le1$ no, porque hay
+un modo discreto por debajo de $\Omega_{\min}$. Solo importa el comportamiento en el
+borde: para King ($g=1$) señalan que no hay amortiguamiento.
 En la teoría lineal de este modelo se ve lo mismo: con el mismo $\eta=1$, $g\le1$
 ya tiene modo discreto y $g\ge2$ sigue amortiguado; y con $\eta=0.1$ el borde
 abrupto deja una respuesta que oscila en $\Omega_{\min}$ y decae cada vez más
@@ -1104,10 +1109,13 @@ ni resonancias entre frecuencia radial y acimutal.
 peso de cada órbita, y el modo de ``respiración'' es el único grado de libertad
 colectivo.
 \end{itemize}
-Por eso la comparación con los resultados de Hadžić y colaboradores, que son para
-sistemas esféricos isótropos, es una motivación y una analogía, no una
-equivalencia. Lo que sí es comparable es el papel del exponente del borde de
-vacío, porque el borde $\Omega_{\min}$ sí está presente aquí.
+Estos límites valen frente a un sistema esférico real. Frente al teorema de
+Hadžić y colaboradores no hay tal distancia: está formulado en esta misma
+reducción de $|L|$ fijo, con una masa puntual en lugar del isócrono como fondo, así
+que la comparación es directa (sección~\ref{sec:borde}). Lo que este trabajo añade
+es lo que el teorema deja abierto: el valor de la masa hasta la que vale el
+amortiguamiento con $g>1$ (el $\varepsilon_0(k)$ del teorema, que aquí se estima como
+$\eta_c\approx1.1$--$1.2$ para $g=2$), qué pasa por encima de ella, y la dinámica no lineal.
 
 \section{Conclusiones}
 \label{sec:conclusiones}
@@ -1122,6 +1130,12 @@ discreto, en $\eta_c\approx1.1$--$1.2$ para esta familia.
 (D5, $\varepsilon=0.075$), y el modo discreto pegado al borde (D3) pierde amplitud
 mientras la teoría lineal no la pierde ($\gamma_{\rm PIC}=(5.2\pm1.0)\times10^{-5}$, $|\gamma_{\rm lin}|\lesssim6\times10^{-6}$).
 \item Un bulto en fase con $a_0\gtrsim0.03$ no se deshace.
+\item Los tres regímenes lineales son los del teorema de Hadžić y colaboradores,
+formulado en esta misma reducción: con borde suave ($g=2$) y masa chica la
+perturbación se amortigua; con borde de King ($g=1$) y masa chica hay una
+oscilación justo por debajo de $\Omega_{\min}$ (D8: $\omega=0.06088\pm0.00005$ contra
+$\Omega_{\min}=0.06101$); y con $g=2$ el amortiguamiento deja de valer por encima de
+$\eta_c\approx1.1$--$1.2$, una masa que el teorema no estima.
 \end{itemize}
 %%DEMOSTRADO%%
 
@@ -1141,6 +1155,9 @@ borde hasta la resonancia del modo, fuera del soporte.
 \item Que $\eta_c$ sea universal: la teoría lineal muestra que depende del ancho, la
 forma y el borde.
 \item Que el criterio $\omega_b/(\Omega_{\min}-\omega)$ valga en general para modos discretos.
+\item Que $\eta_c$ para $g=2$ coincida con el $\varepsilon_0(2)$ del teorema de Hadžić y
+colaboradores: aquí el fondo es el isócrono y no una masa puntual; con
+\texttt{BGtype = sphere} el código puede reproducir su caso.
 \item Que algo de esto se traslade a sistemas esféricos con $L$ distribuido
 (sección~\ref{sec:limites}).
 \end{itemize}
@@ -1239,7 +1256,10 @@ D3, D5 y D6 (13 corridas lanzadas), y D6 hasta $t=17\,200$ para el ajuste de la 
 \item \textbf{Discutido con los datos:} que la pérdida de D3 dependiera del ajuste
 (la envolvente lineal la acota sin ajuste); que el factor en $Q$ del $h_k$ del código
 convolucionara armónicos (el código multiplica cada armónico por una constante);
-y el ancho de la isla del péndulo, que es $2\sqrt{A/|\Omega'|}$.
+el ancho de la isla del péndulo, que es $2\sqrt{A/|\Omega'|}$; que la parte fina deba
+bajar como $N^{-1/2}$ (con partida silenciosa el ruido no es de Monte Carlo); y
+que la comparación con Hadžić y colaboradores sea solo una analogía: su teorema
+está formulado en esta misma reducción de $|L|$ fijo (sección~\ref{sec:borde}).
 \item \textbf{Pendiente:} el ajuste cuantitativo de la isla y la fracción de
 partículas atrapadas; la robustez de $\eta_c$ frente al borde, el ancho y $W_0$ en el
 solver lineal; D8 con la amplitud óptima; y $\eta_c(L_0)$.

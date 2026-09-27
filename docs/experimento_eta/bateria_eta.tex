@@ -253,8 +253,10 @@ componente es $M=8\pi^2L_0\int\!\!\int F\,dr\,dp_r$.
 
 Esta reducción no es una aproximación \emph{dentro} del modelo, pero sí es un
 modelo extremadamente anisótropo. Todo lo que sigue vale para él, y la
-comparación con resultados de sistemas isótropos (como los de Hadžić y
-colaboradores) debe hacerse con ese cuidado.
+comparación con sistemas isótropos debe hacerse con ese cuidado. No es el caso
+de Hadžić y colaboradores (sección~\ref{sec:borde}): su teorema está formulado
+exactamente en esta reducción, todas las partículas con el mismo $|L|$, en el
+campo de una masa puntual central.
 
 \subsection{Variables acción-ángulo}
 \label{sec:aa}
@@ -1205,12 +1207,42 @@ ser cero dentro del error. La teoría lineal lo confirma
 \subsection{El borde de vacío y la dicotomía de Hadžić}
 \label{sec:borde}
 
-Hadžić, Rein, Schrecker y Straub (ARMA 2025, \texttt{arXiv:2301.07662}) prueban,
-para equilibrios autogravitantes en el campo de una masa puntual central, una
-dicotomía afilada: con $f\propto(E_0-E)^g$ en el borde del soporte (ellos lo llaman
-$k$), si $g>1$ las perturbaciones lineales se amortiguan y si $1/2<g\le1$ no. La
-clave técnica de la prueba es la ausencia de autovalores embebidos en el espectro
-esencial.
+Hadžić, Rein, Schrecker y Straub (\emph{Damping versus oscillations for a
+gravitational Vlasov--Poisson system}, Arch.\ Ration.\ Mech.\ Anal.\ \textbf{249}, 45,
+2025; \texttt{arXiv:2301.07662}) trabajan en \emph{la misma reducción que este
+documento}: el sistema de Vlasov--Poisson radial con todas las partículas con el
+mismo $|L|$, en el potencial fijo de una masa puntual central $M$, con equilibrios
+pequeños $f=\varepsilon\,(E_0-E)_+^k$ ($\varepsilon$ es un parámetro de tamaño, el análogo de
+nuestra $a_0$). Su teorema~1.2 dice:
+\begin{itemize}
+\item si $1/2<k\le1$, existe $\varepsilon_0(k)>0$ tal que para $0<\varepsilon<\varepsilon_0$ el problema
+linealizado \emph{no} se amortigua: hay al menos un autovalor por debajo del fondo
+del espectro esencial, en el hueco principal, es decir, un modo discreto con
+frecuencia menor que $\Omega_{\min}$;
+\item si $k>1$, existe $\varepsilon_0(k)>0$ tal que para $0<\varepsilon<\varepsilon_0$ hay amortiguamiento de
+Landau (en un sentido débil, sin tasa) y el espectro puntual es vacío.
+\end{itemize}
+Solo importa la regularidad en el borde de vacío: el resultado vale para
+cualquier $F$ que se comporte como $(E_0-E)^k$ allí, y los autores señalan que el
+modelo de King ($k=1$) no se amortigua. La prueba tiene dos piezas: la ausencia de
+autovalores embebidos en el espectro esencial y un principio de
+Birman--Schwinger para los autovalores del hueco principal.
+
+\paragraph{Qué deja abierto el teorema, y qué aporta este estudio.} Las dos
+diferencias con este documento son el fondo (isócrono en lugar de masa puntual;
+los dos dan un periodo radial monótono en la energía, que es la propiedad que usa
+la prueba) y el tamaño: el teorema vale para $\varepsilon<\varepsilon_0(k)$, sin estimar $\varepsilon_0$. Con
+$k=g>1$ nada impide que aparezca un modo discreto a masa finita, y es lo que
+encuentra la teoría lineal de la sección~\ref{sec:lineal}: con $g=2$ el modo sale de
+la banda en $\eta_c\approx1.1$--$1.2$. En ese sentido $\eta_c$ es una estimación numérica de
+$\varepsilon_0(2)$ para el fondo isócrono, expresada en la variable $\eta$. Y con $g\le1$ el
+teorema predice un modo por debajo de $\Omega_{\min}$ para toda masa chica, que es lo
+que se ve con $\eta=0.1$ (sección~\ref{sec:borde_lineal}). Trabajos relacionados:
+Ramming y Rein (Phys.\ D \textbf{365}, 72, 2018) estudian numéricamente soluciones
+oscilantes del problema radial sin masa central; Rioseco y Sarbach (Class.\
+Quantum Grav.\ \textbf{37}, 195027, 2020), la mezcla de fases en un potencial central
+externo; Hadžić, Rein y Straub (Arch.\ Ration.\ Mech.\ Anal.\ \textbf{243}, 611, 2022), la
+existencia de galaxias que oscilan linealmente.
 
 La regla de las colas da una intuición de por qué el borde importa: un borde que
 se anula como $(\Omega-\Omega_{\min})^g$ produce en la respuesta libre una cola
@@ -1507,8 +1539,10 @@ $\sim2$ de incertidumbre. En Landau, con $\varepsilon=0.1$, $\nu=0.25$.}
 \subsection{El estado de la teoría}
 
 Los resultados de Hadžić, Rein, Schrecker y Straub son sobre el problema
-\emph{linealizado}: dicen cuándo decae $\delta\Phi$ y cuándo hay oscilaciones puras,
-para la dinámica lineal alrededor del equilibrio. Hasta donde sé, si ese
+\emph{linealizado} y para masa pequeña ($\varepsilon<\varepsilon_0$): dicen cuándo decae $\delta\Phi$ y
+cuándo hay oscilaciones puras, para la dinámica lineal alrededor del equilibrio.
+El trabajo numérico no lineal más cercano que citan es el de Ramming y Rein
+(2018), para el problema radial sin masa central. Hasta donde sé, si ese
 amortiguamiento persiste en el problema no lineal gravitatorio es una pregunta
 abierta. En plasmas está el teorema de Mouhot y Villani (2011), para
 perturbaciones pequeñas y muy regulares; en gravedad no conozco un equivalente, y
