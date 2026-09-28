@@ -14,6 +14,11 @@ F.4, la escala N^−1/2 de B.2, E.2 y, sobre todo, B.5. El teorema de Hadžić e
 está formulado en nuestra misma reducción de |L| fijo, lo que corrige también
 nuestros documentos y mejora el encuadre del trabajo (segunda lectura, §1).
 
+Las corridas de control (2026-09-28) le dan la razón a la revisión en su
+preocupación central de B.2 para un caso: la meseta tardía de D5 no está
+convergida en N. Confirman D3 (no lineal y convergida) y D6 (convergida, con la isla
+y el periodo de rebote del péndulo al 10–20 %).
+
 ---
 
 ## Segunda lectura (2026-09-27): lo que la primera respuesta omitió
@@ -144,6 +149,72 @@ estado de la teoría) y `demo_eta.tex` (conceptos, límites, conclusiones).
 
 ---
 
+## Resultados de las corridas de control (2026-09-28)
+
+Catorce corridas nuevas, todas con el mismo ejecutable (f649049) y registradas en
+`reproducir/corridas/12_demo_eta/METADATOS.txt`; resultados en
+`exe/demo_eta/controles.txt` e `isla.txt` (`demo_eta.py controles`, `isla`).
+
+### D.1 Barrido en ε de D3 — hecho: la pérdida es no lineal
+
+| ε | ω_b/(Ω_min−ω) | pérdida 5→20 τ₁ | γ de h₁ (10–20 τ₁) | J máxima |
+|---|---|---|---|---|
+| 0.003 | 1.0 | 1.3 % | (−2.8 ± 0.9)e-6 | 0.1393 |
+| 0.01 | 1.9 | 3.1 % | (−3.4 ± 0.5)e-6 | 0.1410 |
+| 0.03 | 3.3 | 4.7 % | (+3.3 ± 0.6)e-6 | 0.1454 |
+| 0.1 | 6.0 | 19.8 % | (+5.2 ± 1.0)e-5 | 0.1509 |
+
+La teoría lineal da γ = (−0.4 ± 0.3)e-5. La pérdida tiende a cero al bajar ε: con
+ε ≤ 0.01 la tasa coincide con la lineal. Aparece cuando el cociente pasa de ~2, y
+coincide con el momento en que las partículas del borde alcanzan la resonancia
+del modo (J_r ≈ 0.140). Es la condición (ii) de B.1 cumplida.
+
+### D.2 Convergencia en N (400×25 → 800×50) y Δt/2 — hecho
+
+- **D3:** convergida. Pérdida 19.8 %, 19.5 % y 19.8 %. La duda de J.1 (el modo a 5.7
+  espaciados de la malla en J) queda descartada: con el doble de resolución en J la
+  pérdida no cambia.
+- **D6:** convergida. R = 0.805, 0.801 y 0.805 en 5–10 τ₁; 1.966, 1.970 y 1.966 en
+  10–13 τ₁. La parte fina no cambia con N: es estructura del modo.
+- **D5: no convergida en N después de 20 τ₁.** Δt/2 no cambia nada, pero con N×4
+  el exceso de la parte lisa sobre la lineal en 30–43.5 τ₁ baja de 4.4× a 1.8×, y la
+  parte fina cae 11 veces (2.2e-2 → 2.0e-3), mucho más rápido que N^−1/2. **La
+  revisión tenía razón en su sospecha (B.2, H.2):** buena parte de la meseta tardía de
+  D5 era ruido de discreción. Hasta 20 τ₁, D5 sigue a la teoría lineal en las tres
+  resoluciones. Hace falta N×16 para decidir si queda un exceso físico.
+
+### F.4 / F.5 / F.6 La isla de D6 contra el péndulo — hecho (con D6L, 43 τ₁)
+
+Con la amplitud medida en la resonancia (A = |δΦ₁(J_r)| = 7.1e-6 en 10–43 τ₁,
+J_r = 0.124, |Ω'| = 0.095), sin ajuste:
+- semiancho predicho 2√(A/|Ω'|) = 0.0173; medido 0.0154 (mediana de las
+  atrapadas; máximo 0.025): coincide al 10 %;
+- periodo de rebote predicho 2π/√(A|Ω'|) ≈ 7700; la amplitud del modo oscila con
+  periodo ~9000 (22–24 τ₁ entre mínimos y entre máximos), 15–20 % más largo, como
+  se espera por las partículas cerca de la separatriz; la oscilación se amortigua;
+- atrapadas, identificadas por la libración de ψ = Q − ωt: 1090 partículas del
+  borde, 0.2 % de la masa.
+
+Es la prueba cuantitativa del atrapamiento que pedía la revisión (H.2, M.1–M.2),
+a nivel del 10–20 %, con solo dos periodos de oscilación medidos. La FFT de J(t)
+de las atrapadas da ω_b ≈ 9.6e-4, pero con una resolución de 4.8e-4: no es
+informativa.
+
+### Una corrección de nuestro análisis
+
+La comparación PIC contra teoría lineal emparejaba cada instantánea con la muestra
+lineal siguiente, 2 unidades de tiempo después, en ~60 % de los casos, por redondeo
+acumulado en los tiempos (`serie()` usaba `searchsorted`). No afectaba a
+envolventes, cocientes R ni polos de la PIC, pero sí a los residuos. Corregido
+(`cercano()`), con estos cambios:
+- t_nl de D3: 7.4 → 13.5 τ₁; de D5: 6.7 → 11.7 τ₁; D4 ya no lo alcanza;
+- exceso de pérdida de D4 sobre la lineal: 5 % → 1 %;
+- cociente de amplitud de M5 después de 10 τ₁: 0.87–1.04 → 0.90–1.08.
+
+El documento y los videos se regeneraron con el emparejamiento corregido.
+
+---
+
 ## B. Debilidades científicas
 
 ### B.1 La pérdida del 19 % de D3 "no tiene cota γ lineal" — en desacuerdo con la premisa, de acuerdo con la acción
@@ -168,7 +239,8 @@ batido del 5 % (ω = 0.0735, γ = 1e-4) y ruido complejo de 1e-3, a ~1e-6 en tod
 rango (p. ej. 3e-5 → 2.89e-5 ± 0.1e-5). La diferencia de D3 está cincuenta veces
 por encima de esa resolución.
 
-**Pendiente:** D.1 (barrido ε = 0.003, 0.01, 0.03, 0.1 en L5).
+**Hecho (D.1, D.2):** la pérdida desaparece al bajar ε y no cambia con N×4 ni con
+Δt/2 (ver "Resultados de las corridas de control").
 
 ### B.2 Cero tests de convergencia en lo no lineal — de acuerdo
 
@@ -176,7 +248,8 @@ Correcto y ya señalado en `observaciones.md` §3.3. Única excepción parcial: 
 bloque del bulto (B4 contra B4q, N_pc 25 → 100) da la misma masa en el núcleo
 (79 %) y un |h₁| tardío 6 % mayor. No cubre Δt ni N_rc, ni a D3/D5/D6.
 
-**Pendiente:** D.2 (N_rc = 800, N_pc = 50 y Δt/2 para D3, D5, D6).
+**Hecho:** D3 y D6 convergidas; D5 no lo está después de 20 τ₁ (la revisión tenía
+razón en sospechar de su parte fina). Pendiente: D5 con N×16.
 
 ### B.3 η_c empírico y de una familia — de acuerdo en parte
 
@@ -294,9 +367,10 @@ De acuerdo con el orden de prioridad de K. Observaciones puntuales:
 | 4 | B.9 frase en la batería; C.8 conclusiones; C.1 predicciones; C.3 pies | texto | hecho |
 | 5 | B.5 límites de L fijo y corrección de la comparación con Hadžić | texto | hecho |
 | 6 | B.7, G.2, G.3, H.1, J.1, C.11 | análisis | hecho |
-| 7 | D.1 barrido en ε de D3 (ε = 0.003, 0.01, 0.03) | PIC | corridas hechas; falta analizar |
-| 8 | D.2 convergencia N (800×50) y Δt/2 de D3, D5, D6 | PIC | en curso |
-| 9 | F.4 / F.5 / F.6 isla, fracción atrapada, rebote (con D6L) | PIC + análisis | D6L en cola |
+| 7 | D.1 barrido en ε de D3 (ε = 0.003, 0.01, 0.03) | PIC | hecho: no lineal |
+| 8 | D.2 convergencia N (800×50) y Δt/2 de D3, D5, D6 | PIC | hecho: D3 y D6 sí; D5 tardía no |
+| 9 | F.4 / F.5 / F.6 isla, fracción atrapada, rebote (con D6L) | PIC + análisis | hecho, al 10–20 % |
+| 9b | D5 con N×16 (1600×100) y su referencia | PIC | pendiente, ~12 h |
 | 10 | B.4 D8 con ε óptimo | PIC | pendiente |
 | 11 | D.4 / G.6 robustez de η_c: g (incl. 1/2), J_t, W₀ | lineal | pendiente |
 | 12 | D.3 barrido en η a ε fija; H.2 isla contra √ε | PIC | pendiente |

@@ -29,4 +29,14 @@ B3       2026-09-27T12:15  par 76b168fd52d150d5
 B4       2026-09-27T12:25  par 836112eca50b2de3
 B5       2026-09-27T12:36  par d67f17e8bed274c6
 B4q      2026-09-27T13:23  par 4178f9e50fd1e3a1
+Z_L5N    2026-09-27T17:25  par 25a0367e4f042cf9  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+D3dt     2026-09-27T17:44  par d68fff690a8409fc  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+Z_L5dt   2026-09-27T18:02  par b1a77736270c6f60  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+D6N      2026-09-27T18:29  par bc3af27c4247ba99  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+D6dt     2026-09-27T18:42  par 7905642b7a55f643  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+D5dt     2026-09-27T19:28  par e448f9b72e986c7f  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+Z_A4dt   2026-09-27T20:13  par 84a590f2b091702b  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+D5N      2026-09-27T21:38  par f3f978b9d2b1745c  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
+Z_A4N    2026-09-27T23:03  par 748ce90a8786f8aa  VP_PIC 42d96820e8743372  src f649049  (retroactivo)
 # A partir de aquí, una línea por corrida al terminar (demo_eta.metadatos): par, VP_PIC y src/ abreviados.
+D6L      2026-09-27T23:27  par 25bd9adf9f703223  VP_PIC 42d96820e8743372  src f649049  HEAD 145c815

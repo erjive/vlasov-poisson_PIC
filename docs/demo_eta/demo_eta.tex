@@ -47,11 +47,14 @@ con diez corridas PIC de $10^4$ partículas sobre la Maxwelliana de Wilson, más
 siete corridas de referencia sin perturbación. A amplitud baja la PIC reproduce
 la teoría lineal: la frecuencia y la tasa de amortiguamiento del modo en la
 banda al \SI{1}{\%}, la frecuencia de los modos discretos a $10^{-4}$ y la
-respuesta persistente del borde abrupto. Cerca de la transición se aparta de
-ella como anticipa el criterio de O'Neil, aun con $\varepsilon=0.075$: el
-amortiguamiento se detiene y aparecen islas de partículas atrapadas junto al
-borde de la banda. Y un modo discreto pegado al borde pierde amplitud a
-$\varepsilon=0.1$, cosa que la teoría lineal no predice. Con una masa comparable a
+respuesta persistente del borde abrupto. Cerca de la transición, con
+$\nu=\omega_b/\gamma=10$, se aparta de ella como anticipa el criterio de O'Neil: el
+amortiguamiento se detiene, se forma una isla de partículas atrapadas junto al
+borde de la banda cuyo ancho y periodo de rebote coinciden con el péndulo al
+\SIrange{10}{20}{\%}, y la amplitud del modo oscila con ese periodo. Con $\nu=3$ la
+desviación tardía no está convergida en el número de partículas. Y un modo
+discreto pegado al borde pierde amplitud a $\varepsilon=0.1$, cosa que la teoría lineal
+no predice: la pérdida está convergida y desaparece al bajar $\varepsilon$. Con una masa comparable a
 la del fondo ($a_0=0.5$, $\eta=5.1$) el modo discreto está tan separado de la banda
 que sobrevive intacto aun con $\varepsilon=1$. Por último, el dato de las corridas
 originales, un bulto en fase que no es un equilibrio, deja de mezclarse cuando su
@@ -69,20 +72,25 @@ que la señal cae a $10^{-2}$--$10^{-3}$ de su valor inicial.
 \item \textbf{La transición existe en la simulación completa}: con $\eta<\eta_c$
 la perturbación del potencial decae en unos pocos $\tau_1$ (D1, D2); con
 $\eta>\eta_c$ oscila sin amortiguarse durante $20\,\tau_1$ (D3, D4).
-\item \textbf{Cerca de la transición la dinámica es no lineal para amplitudes
-chicas} (D5, D6): en $\eta=1$, con $\varepsilon=0.075$, la PIC sigue a la teoría
-lineal durante $20\,\tau_1$ y después deja de decaer: en $30$--$44\,\tau_1$ el modo es
-cuatro o cinco veces la predicción lineal, con la frecuencia algo corrida; con $\varepsilon=0.84$ el amortiguamiento se detiene a los
-$5\,\tau_1$ y la amplitud vuelve a crecer. Es el régimen $\nu=\omega_b/\gamma\gtrsim1$.
+\item \textbf{Cerca de la transición la dinámica es no lineal} (D5, D6): en $\eta=1$,
+con $\varepsilon=0.84$ ($\nu=10$) el amortiguamiento se detiene a los $5\,\tau_1$, la amplitud
+vuelve a crecer y oscila con el periodo de rebote del péndulo, al \SI{20}{\%}; está
+convergido en $N$ y en $\Delta t$. Con $\varepsilon=0.075$ ($\nu=3$) la PIC sigue a la teoría
+lineal durante $20\,\tau_1$; después se aparta, pero esa parte no está convergida en
+$N$: con cuatro veces más partículas el exceso baja de $4.4$ a $1.8$ veces la lineal.
 \item \textbf{El atrapamiento se ve directamente}: en $(Q,J)$ las filas de acción
 junto al borde se enrollan en una isla (D6, D7), y las partículas del borde
-cambian su acción unas cien veces más que en la corrida sin perturbación.
+cambian su acción unas cien veces más que en la corrida sin perturbación. En D6
+el semiancho de la isla coincide con el del péndulo, calculado con la amplitud
+medida y sin ajuste, al \SI{10}{\%}.
 \item \textbf{Un modo discreto pegado al borde no es robusto} (D3 contra D4): a
 $\varepsilon=0.1$ el de $\eta=1.24$, a $2.5\times10^{-4}$ del borde, pierde un \SI{19}{\%}
 de amplitud en $15\,\tau_1$, que la teoría lineal no amortigua; el de $\eta=2$,
-separado, pierde un \SI{5}{\%} más que la predicción lineal. La diferencia está en
-las partículas: el modo empuja a las del borde fuera del soporte, hasta su
-resonancia, que en D3 está a $0.002$ en acción y en D4 a $0.026$.
+separado, pierde solo $\sim$\SI{1}{\%} más que la predicción lineal. La pérdida de D3 es
+la misma con $N\times4$ y con $\Delta t/2$, y desaparece al bajar $\varepsilon$: con $\varepsilon\le0.01$ la
+tasa coincide con la lineal. Aparece cuando las partículas del borde, empujadas
+fuera del soporte por el modo, alcanzan su resonancia, que en D3 está a $0.002$
+en acción y en D4 a $0.026$.
 \item \textbf{Con masa comparable a la del fondo el modo es robusto} (D9, D10):
 con $a_0=0.5$ la autogravedad acelera las órbitas un \SI{150}{\%}, el modo queda
 a más de media banda por debajo de ella, y la perturbación es casi un modo
@@ -109,12 +117,14 @@ equilibrio, para cualquier $\varepsilon$.} Formulada en la batería $\eta$, ante
 Se cumple (D1 con $\varepsilon=1$, D2).
 \item \emph{Donde $\nu\gtrsim1$, la PIC se aparta de la teoría lineal hacia
 $t\sim2\pi/\omega_b$ y el amortiguamiento se detiene.} Formulada en la batería. Se
-cumple en D5 y D6, en el orden de magnitud del tiempo; la forma exacta de la
-saturación no se predijo.
+cumple en D6, convergida, con el periodo de rebote del péndulo al \SI{20}{\%}. En D5 la
+desviación tardía no está convergida en $N$, así que no cuenta a favor ni en
+contra.
 \item \emph{Un modo discreto se vuelve frágil cuando $\omega_b/(\Omega_{\min}-\omega)\gtrsim1$.}
 Formulada \emph{después} de ver D3 y D4, y puesta a prueba a ciegas con D9 y D10
 ($a_0=0.5$), donde el cociente vale $0.2$ y $0.63$: el modo sobrevive, como se
-predijo.
+predijo. Y el barrido en $\varepsilon$ de D3 la confirma desde el otro lado: la pérdida
+desaparece cuando el cociente baja de $\sim2$.
 \end{enumerate}
 En el bulto (sección~\ref{sec:bulto}) se esperaba una transición hacia $\mu\sim1$;
 aparece entre $\mu=0.3$ y $0.5$.
@@ -371,7 +381,10 @@ corrida de referencia dura lo mismo que la más larga de las que acompaña.}
 $10$--$20\,\tau_1$, lo suficiente para ver la cola después de la mezcla. En D5 y D6
 la escala relevante es el periodo de rebote $2\pi/\omega_b$ ($5700$ y $1700$): las dos
 cubren unos tres periodos de rebote, el tiempo en que la teoría de O'Neil
-predice que el amortiguamiento se detiene y la amplitud oscila.
+predice que el amortiguamiento se detiene y la amplitud oscila. Esos periodos
+están estimados con la amplitud inicial; como la amplitud cae, el periodo real
+de D6 resultó de $\sim9000$, y para medirlo se agregó D6L, hasta $t=17\,200$
+(sección~\ref{sec:res_nolineal}).
 
 \begin{figure}[htbp]
 \centering
@@ -496,10 +509,10 @@ corrida & ventana & $\omega$ & $\gamma\ [10^{-5}]$ & $\omega$ & $\gamma\ [10^{-5
 \midrule
 D1 ($\eta=0.1$) & $1$--$3\,\tau_1$ & $0.0657(20)$ & $259\pm40$ & $0.0657(20)$ & $257\pm30$ & $0.999(10)$ & 3.0\\
 D2 ($\eta=0.6$) & $1$--$3\,\tau_1$ & $0.0680(1)$ & $127\pm10$ & $0.0680(1)$ & $128\pm10$ & $0.999(1)$ & 5.2\\
-D3 ($\eta=1.24$) & $3$--$6\,\tau_1$ & $0.07242(2)$ & $3.7\pm1.0$ & $0.07244(4)$ & $-0.5\pm4$ & $0.997(1)$ & 7.4\\
- & $10$--$20\,\tau_1$ & $0.072510(5)$ & $5.2\pm1.0$ & $0.07250(1)$ & $-0.4\pm0.3$ & $0.933(39)$ & \\
-D4 ($\eta=2$) & $3$--$6\,\tau_1$ & $0.07849(3)$ & $0.1\pm5$ & $0.07847(2)$ & $-0.8\pm6$ & $0.999(1)$ & 9.6\\
- & $10$--$20\,\tau_1$ & $0.0784700(6)$ & $-0.03\pm0.08$ & $0.0784800(2)$ & $0.00\pm0.02$ & $0.984(10)$ & \\
+D3 ($\eta=1.24$) & $3$--$6\,\tau_1$ & $0.07242(2)$ & $3.7\pm1.0$ & $0.07244(4)$ & $-0.5\pm4$ & $0.997(1)$ & 13.5\\
+ & $10$--$20\,\tau_1$ & $0.072510(5)$ & $5.2\pm1.0$ & $0.07250(1)$ & $-0.4\pm0.3$ & $0.928(39)$ & \\
+D4 ($\eta=2$) & $3$--$6\,\tau_1$ & $0.07849(3)$ & $0.1\pm5$ & $0.07847(2)$ & $-0.8\pm6$ & $0.999(1)$ & --\\
+ & $10$--$20\,\tau_1$ & $0.0784700(6)$ & $-0.03\pm0.08$ & $0.0784800(2)$ & $0.00\pm0.02$ & $0.998(3)$ & \\
 D9 ($\eta=5.1$) & $3$--$6\,\tau_1$ & $0.104820(9)$ & $0.5\pm2$ & $0.104870(6)$ & $0.4\pm1$ & $1.000(1)$ & 15\\
  & $10$--$20\,\tau_1$ & $0.1048200(7)$ & $0.03\pm0.06$ & $0.1048700(2)$ & $0.00\pm0.02$ & $1.009(6)$ & \\
 \bottomrule
@@ -514,7 +527,8 @@ $\|\delta\Phi\|$, PIC sobre lineal, en la ventana; su error, la mitad de la
 diferencia entre las dos mitades de la ventana. $t_{\rm nl}$ es el primer instante
 en que la envolvente del residuo PIC$-$lineal supera el \SI{10}{\%} de la lineal;
 en D1 y D2 lo fija el piso de la medida (\S\ref{sec:res_pisos}) y en D9 la
-diferencia de frecuencia, no una desviación dinámica.}
+diferencia de frecuencia, no una desviación dinámica; en D4 el residuo nunca llega
+al \SI{10}{\%}.}
 \label{tab:polos}
 \end{table}
 
@@ -541,10 +555,11 @@ simulación completa, no solo en la teoría lineal. Las dos corridas difieren en
 cuánto dura:
 \begin{itemize}
 \item D4, con el modo bien separado de la banda ($x=-0.19$), pierde un
-\SI{6.5}{\%} de envolvente entre $5$ y $20\,\tau_1$; la teoría lineal, un \SI{1.2}{\%}.
+\SI{6.5}{\%} de envolvente entre $5$ y $20\,\tau_1$, y la teoría lineal un \SI{5.4}{\%}: el
+exceso es de $\sim$\SI{1}{\%}, y el residuo PIC$-$lineal no llega al \SI{10}{\%} en toda la corrida.
 \item D3, con el modo a $2.5\times10^{-4}$ del borde ($x=-0.01$), pierde un
 \SI{19}{\%} entre $5$ y $20\,\tau_1$ (de $0.685$ a $0.555$), mientras la teoría lineal
-no pierde nada ($0.687$ y $0.690$). El
+no pierde nada ($0.687$ y $0.694$). El
 ajuste de $h_1$ en $10$--$20\,\tau_1$ da $\gamma=(5.2\pm1.0)\times10^{-5}$, contra
 $(-0.4\pm0.3)\times10^{-5}$ en la teoría lineal: la diferencia es cinco veces el error.
 Dos comprobaciones independientes del ajuste lo respaldan. La envolvente de la
@@ -553,8 +568,9 @@ $+2\times10^{-6}$ en $5$--$20\,\tau_1$; una $\gamma$ lineal de $4$--$5\times10^{
 un \SI{20}{\%}, y no pierde nada. Y con señales sintéticas de $\gamma$ conocida, a la
 misma frecuencia, muestreo y ventana, con un batido del \SI{5}{\%} y ruido de
 $10^{-3}$, el ajuste recupera $\gamma$ con un error de $\sim10^{-6}$ entre $0$ y $10^{-4}$
-(\texttt{demo\_eta.py resolucion}). La pérdida de D3 no es lineal; si es no lineal
-o numérica lo decide la convergencia.
+(\texttt{demo\_eta.py resolucion}). La pérdida de D3 no es lineal. Tampoco es
+numérica: con cuatro veces más partículas, que duplican la resolución en $J$ junto
+al borde, es \SI{19.5}{\%}, y con $\Delta t/2$, \SI{19.8}{\%} (sección~\ref{sec:controles}).
 \end{itemize}
 Lo que distingue a D3 se ve en las partículas del borde de la banda, las de
 $J\approx J_t$. Un modo discreto no resuena con ninguna partícula del soporte, pero
@@ -576,11 +592,52 @@ pegado al borde}, y las partículas que llegan ahí le quitan energía; un modo
 separado no la alcanza. En términos de escalas, la frecuencia de rebote de D3,
 $\omega_b\approx1.5\times10^{-3}$, es seis veces la distancia al borde, y la de D4,
 $2.3\times10^{-3}$, la mitad: para un modo discreto el cociente que decide la
-linealidad sería $\omega_b/(\Omega_{\min}-\omega)$, no $\nu$. Es una interpretación
-sostenida por las partículas; para confirmarla hay que ver que la pérdida de D3
-desaparece al bajar $\varepsilon$ hasta que ese cociente sea menor que uno
-($\varepsilon\approx0.003$), y que no cambia con $\Delta t$ ni con $N$
-(\S\ref{sec:siguiente}).
+linealidad sería $\omega_b/(\Omega_{\min}-\omega)$, no $\nu$.
+
+\paragraph{El barrido en $\varepsilon$ lo confirma} (figura~\ref{fig:eps} y tabla~\ref{tab:eps}).
+Con el mismo equilibrio y cuatro amplitudes, la pérdida tiende a cero al bajar
+$\varepsilon$, que es la firma de un efecto no lineal: con $\varepsilon\le0.01$ la tasa de la PIC
+coincide con la lineal dentro del error, aparece en $\varepsilon=0.03$ y crece rápido
+hasta $\varepsilon=0.1$ ($\gamma-\gamma_{\rm lin}\propto\varepsilon^{1.7}$ entre las dos). El umbral cae donde
+$\omega_b/(\Omega_{\min}-\omega)$ pasa de $\sim2$, y coincide con el momento en que las partículas
+del borde alcanzan la resonancia: con $\varepsilon=0.003$ llegan a $J=0.1393$, por debajo de
+$J_r\approx0.140$; con $\varepsilon=0.01$ la tocan ($0.1410$), y desde ahí la sobrepasan.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+corrida & $\varepsilon$ & $\dfrac{\omega_b}{\Omega_{\min}-\omega}$ & pérdida & $\gamma$ de $h_1$ & $J_{\max}$ & $\Delta J_{\rm borde}$\\
+\midrule
+D3e003 & 0.003 & 1.0 & \SI{1.3}{\%} & $(-2.8\pm0.9)\times10^{-6}$ & 0.1393 & 0.0015\\
+D3e01 & 0.01 & 1.9 & \SI{3.1}{\%} & $(-3.4\pm0.5)\times10^{-6}$ & 0.1410 & 0.0031\\
+D3e03 & 0.03 & 3.3 & \SI{4.7}{\%} & $(+3.3\pm0.6)\times10^{-6}$ & 0.1454 & 0.0079\\
+D3 & 0.1 & 6.0 & \SI{19.8}{\%} & $(+5.2\pm1.0)\times10^{-5}$ & 0.1509 & 0.0199\\
+\midrule
+D3N ($N\times4$) & 0.1 & 6.0 & \SI{19.5}{\%} & $(+1.4\pm3)\times10^{-5}$ & 0.1510 & 0.0199\\
+D3dt ($\Delta t/2$) & 0.1 & 6.0 & \SI{19.8}{\%} & $(+5.2\pm1.0)\times10^{-5}$ & 0.1509 & 0.0199\\
+\bottomrule
+\end{tabular}
+\caption{El modo discreto de L5 a cuatro amplitudes, y D3 a dos resoluciones más.
+La pérdida es la de la envolvente de $\|\delta\Phi_\varepsilon\|$ entre $5$ y $20\,\tau_1$, descontada
+la de la teoría lineal; $\gamma$ se ajusta en $10$--$20\,\tau_1$; la teoría lineal da $\gamma=(-0.4\pm0.3)\times10^{-5}$. $J_{\max}$: la mayor acción
+alcanzada al final; la resonancia del modo está en $J_r\approx0.140$. $\Delta J_{\rm borde}$: el mayor
+cambio de acción de las filas del borde ($J_0>0.12$). En D3N el ajuste de $h_1$ es más
+ruidoso; la pérdida en $\delta\Phi$, que no depende de él, coincide.}
+\label{tab:eps}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{controles_eps.pdf}
+\caption{El barrido en $\varepsilon$ del modo de L5. Izquierda: envolventes de
+$\|\delta\Phi_\varepsilon\|$ a cuatro amplitudes y la teoría lineal. Derecha: $\gamma$ de $h_1$ en
+$10$--$20\,\tau_1$ frente a $\varepsilon$, con el cociente $\omega_b/(\Omega_{\min}-\omega)$ arriba. Numérica:
+$N=400\times25$, $\Delta t=0.05$.}
+\label{fig:eps}
+\end{figure}
 
 \begin{figure}[htbp]
 \centering
@@ -615,7 +672,7 @@ del borde de vacío (figura~\ref{fig:borde}). Hasta $2\,\tau_1$ son casi iguales
 después, la de borde abrupto decae mucho más despacio: en $10$--$20\,\tau_1$ su
 envolvente es $2.6\times10^{-3}$, cinco veces la lineal de D1. La PIC sigue a la
 teoría lineal de D8 al \SI{6}{\%} hasta $\sim15\,\tau_1$, y el polo tardío coincide:
-$\omega=0.06088$ contra $0.06086$ en $10$--$20\,\tau_1$, justo debajo del borde de la
+$\omega=0.06088\pm0.00005$ contra $0.06095\pm0.00003$ en $10$--$20\,\tau_1$, justo debajo del borde de la
 banda ($\Omega_{\min}=0.06101$). Es la respuesta de borde que en teoría lineal persiste
 con $g\le1$ (la dicotomía de Hadžić), ahora en la simulación completa. Más allá de
 $15\,\tau_1$ la señal de D8 llega al piso de las corridas con $\varepsilon=1$ y la PIC ya
@@ -642,37 +699,61 @@ O'Neil dice lo contrario: $\nu=3$. La figura~\ref{fig:nolineal} muestra lo que p
 
 \paragraph{D5} ($\varepsilon=0.075$) sigue a la teoría lineal durante mucho tiempo: el
 polo de $h_1$ coincide hasta $20\,\tau_1$ ($\gamma=3.8\times10^{-4}$ contra $3.7\times10^{-4}$) y
-el cociente de envolventes baja lentamente de 1 a 0.9. Entre $20$ y $30\,\tau_1$ la
-amplitud oscila alrededor de la curva lineal ($R=0.76$), y desde $\sim25\,\tau_1$ deja
-de decaer: se queda en $1$--$4\times10^{-2}$ mientras la lineal baja a $2\times10^{-3}$. En
-$30$--$44\,\tau_1$ la envolvente cruda es $4.7$ veces la lineal, y al final, veinte
-veces, pero esa cifra mezcla dos cosas. Separando $\delta\Phi_\varepsilon(r)$ en su parte lisa
-(suavizada sobre $0.5$ en $r$) y su parte fina:
-\begin{itemize}
-\item la parte lisa, proyectada sobre el perfil radial del modo lineal, es $4.5$
-veces la lineal en $30$--$44\,\tau_1$ y oscila coherentemente a $\omega=0.0707$, contra
-$0.0703$ de la lineal: un corrimiento hacia arriba como el de D6. $h_1$, que no pasa
-por la malla, da un factor $\sim3$. Esto es el modo, y es lo que se afirma;
-\item la parte fina, con escala de dos o tres celdas de la malla, es
-$2\times10^{-2}$ al final, cincuenta veces la de la solución lineal, y crece con el
-tiempo ($8\times10^{-3}$ en $20$--$30\,\tau_1$). Puede ser ruido de discretización
-amplificado por $1/\varepsilon$ o estructura fina real de las partículas atrapadas; esta
-demo no lo decide (\S\ref{sec:res_pisos}).
-\end{itemize}
-El tiempo de rebote inicial es $2\pi/\omega_b\approx5700\approx14\,\tau_1$: el
-amortiguamiento se detiene a un par de periodos de rebote, como en el cuadro
-de O'Neil. Las partículas junto al borde ($J\approx0.13$) cambian su acción en
-$0.005$--$0.006$, y ese cambio se satura, como corresponde a partículas atrapadas
-que oscilan en una isla en lugar de seguir absorbiendo energía.
+el cociente de envolventes baja lentamente de 1 a 0.94. Entre $20$ y $30\,\tau_1$ la
+amplitud oscila alrededor de la curva lineal ($R=0.76$), y en la corrida base,
+desde $\sim25\,\tau_1$, deja de decaer: en $30$--$44\,\tau_1$ la parte lisa es $4.4$ veces la
+lineal. \textbf{Esa meseta tardía no está convergida}
+(sección~\ref{sec:controles}). Con $\Delta t/2$ no cambia, pero con cuatro veces más
+partículas el exceso baja de $4.4$ a $1.8$ veces la lineal y la parte fina cae once
+veces ($2.2\times10^{-2}\to2.0\times10^{-3}$). Buena parte de la meseta era ruido de
+discreción, que en estas corridas crece con el tiempo como documenta
+\texttt{PREGUNTAS\_ABIERTAS.md}. Con dos resoluciones no se puede decidir si queda un
+exceso físico: haría falta $N\times16$. Lo robusto de D5 es que sigue a la teoría lineal
+hasta $\sim20\,\tau_1$ en las tres resoluciones; lo que pasa después queda abierto.
 
 \paragraph{D6} ($\varepsilon=0.84$) se aparta de la teoría lineal a los $3\,\tau_1$. Primero
 decae más rápido que ella ($R=0.81$ en $5$--$10\,\tau_1$), después el amortiguamiento
-se detiene ($\gamma=-4\times10^{-5}$ en $5$--$9\,\tau_1$, contra $+3.4\times10^{-4}$ lineal) y la amplitud vuelve a crecer: al final es el doble de la lineal. La frecuencia sube
-un \SI{0.6}{\%} ($0.0709$ contra $0.0704$). El tiempo de rebote,
-$2\pi/\omega_b\approx1700\approx4\,\tau_1$, es justo cuando el amortiguamiento se detiene. En
-$(Q,J)$ la isla es visible (figuras~\ref{fig:islas} y~\ref{fig:fase_D6}): al final las
-filas con $J\gtrsim0.11$ se enrollan en un ojo de gato, con su punto X, y las
-partículas cambian su acción hasta en $0.048$, un tercio del soporte.
+se detiene ($\gamma=-4\times10^{-5}$ en $5$--$9\,\tau_1$, contra $+3.4\times10^{-4}$ lineal) y la
+amplitud vuelve a crecer: a los $13\,\tau_1$ es el doble de la lineal. La frecuencia
+sube un \SI{0.6}{\%} ($0.0709$ contra $0.0704$). Todo esto está convergido: con cuatro
+veces más partículas y con $\Delta t/2$, $R$ vale $0.801$ y $0.805$ en $5$--$10\,\tau_1$, y $1.970$
+y $1.966$ en $10$--$13\,\tau_1$, contra $0.805$ y $1.966$ en la corrida base. En $(Q,J)$ la
+isla es visible (figuras~\ref{fig:islas} y~\ref{fig:fase_D6}): al final las filas
+con $J\gtrsim0.11$ se enrollan en un ojo de gato, con su punto X.
+
+\paragraph{La isla contra el péndulo.} Para contrastarla cuantitativamente, D6L
+repite D6 hasta $t=17\,200$ ($43\,\tau_1$), varios periodos de rebote
+(figura~\ref{fig:isla}; \texttt{demo\_eta.py isla}). El modo tiene $\omega=0.07106$; su
+resonancia está en $J_r=0.124$, con $|\Omega'(J_r)|=0.095$, y la amplitud del potencial a
+lo largo de esa órbita, $A=|\delta\Phi_1(J_r)|$, promedia $7.1\times10^{-6}$ en $10$--$43\,\tau_1$.
+Con esos números, sin ajuste, el péndulo predice:
+\begin{itemize}
+\item \textbf{el semiancho de la isla,} $2\sqrt{A/|\Omega'|}=0.0173$. Se mide $0.0154$, la
+mediana de las partículas atrapadas (máximo $0.025$): coincide al \SI{10}{\%}. Las
+atrapadas se identifican sin mirar su $J$: son las que su fase respecto de la onda,
+$\psi=Q-\omega t$, libra en lugar de circular. Son 1090 partículas, todas del borde
+($J_0\ge0.094$), con el \SI{0.2}{\%} de la masa, porque ahí $F_{\rm eq}\to0$;
+\item \textbf{el periodo de rebote,} $2\pi/\sqrt{A|\Omega'|}\approx7700$. La amplitud del modo
+oscila con un periodo de $\sim9000$ ($22$--$24\,\tau_1$ entre mínimos sucesivos, en $6.6$ y
+$30.2\,\tau_1$, y entre máximos, en $18.0$ y $40.1\,\tau_1$): \SI{15}{\%}--\SI{20}{\%} más
+largo, como se espera, porque las partículas cerca de la separatriz rebotan más
+despacio que las del fondo de la isla. El segundo máximo es menor que el
+primero ($0.47$ contra $0.56$): la oscilación se amortigua. Es la oscilación de
+amplitud que predice O'Neil tras el atrapamiento, con solo dos periodos
+medidos: una prueba de orden \SI{20}{\%}, no un ajuste fino.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{controles_isla.pdf}
+\caption{D6L, la corrida D6 hasta $43\,\tau_1$. Izquierda: envolvente de
+$\|\delta\Phi_\varepsilon\|$ y la teoría lineal. Centro: envolvente lenta (ventana de $\pm300$);
+la amplitud oscila con un periodo de $\sim9000$, y la flecha marca el periodo de
+rebote del péndulo con la amplitud medida. Derecha: las partículas en el plano de
+la onda $(\psi=Q-\omega t,\,J)$ al final; en rojo, las atrapadas (su $\psi$ libra en
+$10$--$43\,\tau_1$): el ojo de gato de la isla. Numérica: $N=400\times25$, $\Delta t=0.05$.}
+\label{fig:isla}
+\end{figure}
 
 \subsection{El modo discreto a amplitud grande}
 \label{sec:res_discreto}
@@ -728,8 +809,8 @@ tabla~\ref{tab:polos}). La frecuencia es $0.10482$ con $\varepsilon=0.1$ y $0.10
 $\varepsilon=1$, contra $0.10487$ de la lineal ($5\times10^{-4}$ y $2\times10^{-4}$ relativo), y el ajuste no
 encuentra amortiguamiento: $|\gamma|<10^{-6}$ en $10$--$20$ y en $20$--$40\,\tau_1$.
 Proyectada sobre el perfil del modo, la amplitud de la PIC coincide con la lineal
-al \SI{1}{\%} hasta $10\,\tau_1$, y después el cociente oscila entre $0.87$ y $1.04$ por
-el batido. El $t_{\rm nl}=15\,\tau_1$ de la tabla~\ref{tab:polos} no es no linealidad:
+al \SI{1}{\%} hasta $10\,\tau_1$, y después el cociente oscila entre $0.90$ y $1.08$
+($\varepsilon=0.1$) y entre $0.94$ y $1.05$ ($\varepsilon=1$) por el batido. El $t_{\rm nl}=15\,\tau_1$ de la tabla~\ref{tab:polos} no es no linealidad:
 esa pequeña diferencia de frecuencia acumula un cuarto de radián de fase en
 $40\,\tau_1$, y el residuo PIC$-$lineal crece con ella.
 
@@ -756,7 +837,7 @@ error combinado de las dos discretizaciones.
 \item \textbf{La parte estática de segundo orden.} El residuo PIC$-$lineal tiene
 una parte que no oscila, constante desde $\sim3\,\tau_1$: $5.7\times10^{-4}$ del valor
 inicial en D1 y $7\times10^{-4}$ en D8. Es física: después de dividir por $\varepsilon$ crece
-como $\varepsilon$ (entre D6 y D5 el cociente es 8--11 según la ventana, y el de las
+como $\varepsilon$ (entre D6 y D5 el cociente es 10--11 según la ventana, y el de las
 amplitudes, 11.2), así que es un efecto $\propto\varepsilon^2$, el cambio del perfil radial promedio ($k=0$) que deja la
 perturbación al mezclarse. Como no oscila, se puede restar; lo que queda es
 $\sim2\times10^{-4}$.
@@ -768,8 +849,11 @@ por $\varepsilon$: con $\varepsilon\approx0.07$ el piso es $\sim2\times10^{-3}$ 
 celdas de la malla, que en la solución lineal es una fracción fija de la señal,
 en la PIC tiene un piso: $4\times10^{-4}$ en D1 y D8 ($\varepsilon=1$), $4\times10^{-3}$ en D2
 ($\varepsilon=0.065$), de nuevo $\propto1/\varepsilon$. En D5 crece con el tiempo, hasta
-$2\times10^{-2}$ a los $44\,\tau_1$. Para las colas largas conviene medir sobre la parte
-lisa, o sobre $h_1$, que no pasa por la malla.
+$2\times10^{-2}$ a los $44\,\tau_1$, y es ruido: con cuatro veces más partículas cae
+once veces (sección~\ref{sec:controles}). Baja mucho más rápido que $N^{-1/2}$,
+porque con partida silenciosa el ruido no es de Monte Carlo. Para las colas
+largas conviene medir sobre la parte lisa, o sobre $h_1$, que no pasa por la malla,
+y verificar con $N$ mayor.
 \end{itemize}
 Como el segundo crece con $\varepsilon$ y el tercero decrece, hay una amplitud óptima
 para seguir colas largas, del orden de $\varepsilon\approx0.3$--$0.5$, con un piso de unos
@@ -803,7 +887,42 @@ $30$--$44\,\tau_1$ es $4.44$, $4.40$ y $4.31$, y la proyección sobre el perfil 
 que no usa ninguna escala, da $4.45$. La parte fina es $\sim2\times10^{-2}$ con las tres.
 En D6 el cociente es $2.0$ con las tres.
 
-%%CONVERGENCIA%%
+\paragraph{Convergencia en $N$ y $\Delta t$.} D3, D5 y D6 se repitieron con cuatro veces
+más partículas ($400\times25\to800\times50$, que también duplica la resolución en $J$) y con
+$\Delta t/2$, cada una con su corrida de referencia a la misma resolución
+(figura~\ref{fig:convergencia}):
+\begin{itemize}
+\item \textbf{D3} está convergida: la pérdida es \SI{19.8}{\%}, \SI{19.5}{\%} y \SI{19.8}{\%}, y
+la parte lisa relativa a la lineal en $10$--$20\,\tau_1$, $0.93$ en las tres.
+\item \textbf{D6} está convergida: $R=0.805$, $0.801$ y $0.805$ en $5$--$10\,\tau_1$, y $1.966$, $1.970$
+y $1.966$ en $10$--$13\,\tau_1$. Su parte fina no cambia con $N$: es estructura del modo,
+no ruido.
+\item \textbf{D5} está convergida en $\Delta t$ pero no en $N$ después de $20\,\tau_1$: en
+$30$--$43.5\,\tau_1$ la parte lisa es $4.4$, $1.8$ y $4.4$ veces la lineal, y la parte fina,
+$2.2\times10^{-2}$, $2.0\times10^{-3}$ y $2.2\times10^{-2}$. Hasta $20\,\tau_1$ las tres coinciden ($R=0.94$--$0.96$).
+\end{itemize}
+Las tablas están en \texttt{exe/demo\_eta/controles.txt} (\texttt{demo\_eta.py controles}).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{controles_convergencia.pdf}
+\caption{Convergencia de D3, D5 y D6: envolvente de $\|\delta\Phi_\varepsilon\|$ con la
+resolución de la demo ($400\times25$, $\Delta t=0.05$), con cuatro veces más partículas
+($800\times50$) y con $\Delta t/2$; en trazos, la teoría lineal. La curva de $\Delta t/2$
+tapa a la de la demo en los tres casos. En D5, la de $N\times4$ se separa de las otras
+dos después de $\sim20\,\tau_1$.}
+\label{fig:convergencia}
+\end{figure}
+
+\paragraph{Una corrección de esta versión.} Hasta aquí, la comparación entre PIC y
+teoría lineal emparejaba cada instantánea con una muestra de la solución lineal
+que, por redondeo acumulado en los tiempos, en $\sim$\SI{60}{\%} de los casos era la
+siguiente, $2$ unidades de tiempo después. No afecta a las envolventes, a los
+cocientes $R$ ni a los polos de la PIC, pero sí a los residuos PIC$-$lineal. Con el
+emparejamiento corregido, el $t_{\rm nl}$ de D3 pasa de $7.4$ a $13.5\,\tau_1$, el de D5 de
+$6.7$ a $11.7\,\tau_1$, D4 no lo alcanza, y el exceso de pérdida de D4 sobre la lineal
+baja de \SI{5}{\%} a \SI{1}{\%}. Todas las cifras de este documento usan el emparejamiento
+corregido.
 
 \section{El bulto: un dato que no es un equilibrio}
 \label{sec:bulto}
@@ -1088,7 +1207,9 @@ discretización del equilibrio, y la oscilación, su piso de ruido.
 de $\delta\Phi$ se apaga. En D3 y D4, que el perfil sigue oscilando igual a los
 $20\,\tau_1$ aunque las partículas ya se mezclaron: el modo es colectivo, no un grupo
 de partículas. En D6 y D7, la formación de la isla en $(Q,J)$. En D5, el final:
-la curva de la PIC se despega de la lineal y deja de bajar. En D10, el contraste
+la curva de la PIC se despega de la lineal y deja de bajar; con cuatro veces más
+partículas ese despegue es mucho menor, así que buena parte es ruido de
+discreción (sección~\ref{sec:controles}). En D10, el contraste
 con D7: la misma amplitud, pero con el modo lejos de la banda, las filas de
 $(Q,J)$ se mueven poco, sin formar una isla, y el perfil de $\delta\Phi$ sigue al
 lineal.
@@ -1126,9 +1247,11 @@ $\eta_c\approx1.1$--$1.2$ para $g=2$), qué pasa por encima de ella, y la dinám
 discreto, en $\eta_c\approx1.1$--$1.2$ para esta familia.
 \item La PIC reproduce la teoría lineal donde $\nu\ll1$, a $10^{-5}$ en $\omega$ y al
 \SI{1}{\%} en $\gamma$, y los modos discretos durante $20$--$40\,\tau_1$.
-\item Cerca de $\eta_c$ la PIC se aparta de la teoría lineal con amplitudes chicas
-(D5, $\varepsilon=0.075$), y el modo discreto pegado al borde (D3) pierde amplitud
-mientras la teoría lineal no la pierde ($\gamma_{\rm PIC}=(5.2\pm1.0)\times10^{-5}$, $|\gamma_{\rm lin}|\lesssim6\times10^{-6}$).
+\item Cerca de $\eta_c$, con $\nu=10$ (D6), la PIC se aparta de la teoría lineal: el
+amortiguamiento se detiene y la amplitud oscila, convergido en $N$ y $\Delta t$.
+\item El modo discreto pegado al borde (D3) pierde amplitud mientras la teoría
+lineal no la pierde ($\gamma_{\rm PIC}=(5.2\pm1.0)\times10^{-5}$, $|\gamma_{\rm lin}|\lesssim6\times10^{-6}$). La
+pérdida está convergida en $N$ y $\Delta t$ y desaparece al bajar $\varepsilon$: es no lineal.
 \item Un bulto en fase con $a_0\gtrsim0.03$ no se deshace.
 \item Los tres regímenes lineales son los del teorema de Hadžić y colaboradores,
 formulado en esta misma reducción: con borde suave ($g=2$) y masa chica la
@@ -1137,21 +1260,23 @@ oscilación justo por debajo de $\Omega_{\min}$ (D8: $\omega=0.06088\pm0.00005$ 
 $\Omega_{\min}=0.06101$); y con $g=2$ el amortiguamiento deja de valer por encima de
 $\eta_c\approx1.1$--$1.2$, una masa que el teorema no estima.
 \end{itemize}
-%%DEMOSTRADO%%
 
-\paragraph{Interpretado} (sostenido por las partículas, sin prueba cuantitativa
-completa):
+\paragraph{Interpretado} (sostenido por las partículas y por pruebas cuantitativas
+de orden \SI{10}{\%}--\SI{20}{\%}):
 \begin{itemize}
-\item Que la saturación de D5 y D6 es atrapamiento tipo O'Neil: lo sostienen el
-tiempo de despegue y las islas en $(Q,J)$; falta el ajuste cuantitativo de la isla y
-del periodo de rebote.
+\item Que la saturación de D6 es atrapamiento tipo O'Neil: el semiancho de la isla
+coincide con el del péndulo al \SI{10}{\%} y la amplitud oscila con su periodo de
+rebote al \SI{20}{\%}, con solo dos periodos medidos.
 \item Que la pérdida de D3 se debe a que la amplitud finita empuja partículas del
-borde hasta la resonancia del modo, fuera del soporte.
+borde hasta la resonancia del modo, fuera del soporte: el umbral en $\varepsilon$ coincide
+con el momento en que esas partículas alcanzan $J_r$.
 \item Que el bulto se mantiene por autoatrapamiento, ordenado por $\mu=\omega_b/\Delta\Omega$.
 \end{itemize}
 
 \paragraph{Hipótesis} (no probadas aquí):
 \begin{itemize}
+\item Que el exceso tardío de D5 sobre la teoría lineal sea físico: con cuatro
+veces más partículas baja de $4.4$ a $1.8$ veces la lineal, y no está convergido.
 \item Que $\eta_c$ sea universal: la teoría lineal muestra que depende del ancho, la
 forma y el borde.
 \item Que el criterio $\omega_b/(\Omega_{\min}-\omega)$ valga en general para modos discretos.
@@ -1166,22 +1291,21 @@ colaboradores: aquí el fondo es el isócrono y no una masa puntual; con
 \label{sec:siguiente}
 
 La demo muestra que las tres preguntas del estudio $\eta$ tienen respuesta
-medible con el código. Para convertir estas observaciones en resultados:
+medible con el código, y los controles de esta versión convirtieron dos de las
+observaciones (D3 y D6) en resultados convergidos. Lo que falta:
 \begin{enumerate}
-\item \textbf{Convergencia de lo que la teoría lineal no predice.} La pérdida de
-D3, la amplitud tardía de D5 y el enrollamiento de D6 no deben cambiar al partir
-$\Delta t$ a la mitad y al cuadruplicar $N$ (bloque~B de la batería). Con $N$ mayor se
-sabrá también si la estructura fina de D5 es ruido: si lo es, baja como
-$N^{-1/2}$.
-\item \textbf{El criterio para los modos discretos.} Un barrido en $\varepsilon$ de D3,
-de $0.1$ a $0.003$, debe mostrar que la pérdida desaparece cuando
-$\omega_b<\Omega_{\min}-\omega$.
-\item \textbf{El mapa $(\eta,\nu)$ completo} del lado amortiguado, con corridas más
-largas en D5 y D6 para ver si la amplitud oscila con el periodo de rebote y dónde
-se satura.
+\item \textbf{D5 a tiempos largos.} Con dos resoluciones no se sabe si queda un exceso
+físico sobre la teoría lineal después de $20\,\tau_1$. Hace falta $N\times16$ ($1600\times100$,
+unas 12 horas con su referencia) o un diagnóstico que no dependa de la malla.
+\item \textbf{El mapa $(\eta,\nu)$ completo} del lado amortiguado, a $\varepsilon$ fija, para ver dónde
+empieza la desviación en función de $\nu$; y D6 a dos o tres amplitudes para ver si
+el ancho de la isla escala con $\sqrt\varepsilon$.
 \item \textbf{El borde abrupto a tiempos largos}, con $\varepsilon\approx0.3$--$0.5$, la
 amplitud que minimiza el piso, y restando la parte estática, para seguir la
 respuesta de D8 más allá de $15\,\tau_1$.
+\item \textbf{El caso del teorema tal cual}, con una masa puntual como fondo
+(\texttt{BGtype = sphere}), para estimar $\varepsilon_0(k)$ en el mismo problema que Hadžić y
+colaboradores.
 \end{enumerate}
 El diseño completo, con 30 corridas y su costo, está en la batería $\eta$.
 
@@ -1251,8 +1375,9 @@ resolución del ajuste con señales sintéticas; conservación de la energía; l
 separación lisa/fina a tres escalas (sección~\ref{sec:controles}); predicciones
 explícitas; los límites del modelo de $L$ fijo; y las conclusiones separadas en
 demostrado, interpretado e hipótesis.
-\item \textbf{En curso:} el barrido en $\varepsilon$ de D3 y la convergencia en $N$ y $\Delta t$ de
-D3, D5 y D6 (13 corridas lanzadas), y D6 hasta $t=17\,200$ para el ajuste de la isla.
+\item \textbf{Hecho con corridas nuevas:} el barrido en $\varepsilon$ de D3, la convergencia en
+$N$ y $\Delta t$ de D3, D5 y D6, y el contraste de la isla de D6 con el péndulo (con D6L,
+hasta $43\,\tau_1$). D3 y D6 están convergidas; D5 a tiempos largos no.
 \item \textbf{Discutido con los datos:} que la pérdida de D3 dependiera del ajuste
 (la envolvente lineal la acota sin ajuste); que el factor en $Q$ del $h_k$ del código
 convolucionara armónicos (el código multiplica cada armónico por una constante);
@@ -1260,9 +1385,10 @@ el ancho de la isla del péndulo, que es $2\sqrt{A/|\Omega'|}$; que la parte fin
 bajar como $N^{-1/2}$ (con partida silenciosa el ruido no es de Monte Carlo); y
 que la comparación con Hadžić y colaboradores sea solo una analogía: su teorema
 está formulado en esta misma reducción de $|L|$ fijo (sección~\ref{sec:borde}).
-\item \textbf{Pendiente:} el ajuste cuantitativo de la isla y la fracción de
-partículas atrapadas; la robustez de $\eta_c$ frente al borde, el ancho y $W_0$ en el
-solver lineal; D8 con la amplitud óptima; y $\eta_c(L_0)$.
+\item \textbf{Pendiente:} D5 con $N\times16$; la robustez de $\eta_c$ frente al borde
+(incluido $g=1/2$), el ancho y $W_0$ en el solver lineal; D8 con la amplitud óptima;
+$\eta_c(L_0)$; la comparación cuantitativa con las fórmulas de O'Neil; y el caso de masa
+puntual del teorema.
 \end{itemize}
 
 \section{Cómo reproducir la demo}

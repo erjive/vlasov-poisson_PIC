@@ -246,6 +246,14 @@ def analizar(solo=None, procesos=4):
         print(f'  analizado {nombre}: {len(t)} instantáneas ({time.time()-t0:.0f} s)', flush=True)
 
 
+def cercano(tref, t):
+    """Índice de la muestra de tref más cercana a cada t. (Con searchsorted, el redondeo
+    acumulado en tref hacía tomar la muestra siguiente, 2 unidades de tiempo después,
+    en ~60 % de las instantáneas.)"""
+    k = np.clip(np.searchsorted(tref, t), 1, len(tref) - 1)
+    return k - ((t - tref[k - 1]) < (tref[k] - t))
+
+
 def serie(nombre):
     """Señal de la corrida menos su referencia eps = 0, dividida por eps, en los
     radios RMED; y la solución lineal del caso en los mismos tiempos."""
@@ -258,7 +266,7 @@ def serie(nombre):
     dp = (dphi[:n] - z['dphi'][:n])/eps
     dp = np.array([np.interp(RMED, rg, fila) for fila in dp])
     lin = np.load(ruta('lineal', f'{info[nombre]["caso"]}.npz'))
-    idx = np.clip(np.searchsorted(lin['t'], t - 1e-9), 0, len(lin['t']) - 1)
+    idx = cercano(lin['t'], t)
     return dict(t=t, h1=h1, dphi=dp, h1_lin=lin['h1'][idx], dphi_lin=lin['dphi'][idx])
 
 
@@ -417,6 +425,169 @@ def polo_con_error(t, h, lo, hi):
     est = [ajustar(t, h, a, b)[f'pencil M={M}'] for M in (2, 3)
            for a, b in ((lo, hi), (lo + d, hi), (lo, hi - d))]
     return w0, max(abs(w - w0) for w, _ in est), g0, max(abs(g - g0) for _, g in est)
+
+
+def suavizar(x, sigma=0.5):
+    """Suavizado gaussiano en r (sobre RMED) de perfiles x[..., r]."""
+    K = np.exp(-0.5*((RMED[:, None] - RMED[None, :])/sigma)**2); K /= K.sum(1, keepdims=True)
+    return x @ K.T
+
+
+def metricas(n, ventanas):
+    """Envolventes, polo de h1 con error, partes lisa y fina y piso de ruido de una corrida."""
+    s = serie(n); t, p, L = s['t'], s['dphi'], s['dphi_lin']
+    tau = CASOS[info[n]['caso']]['tau1']; n0 = norma(L[0])
+    eP, eL = envolvente(norma(p), t)/n0, envolvente(norma(L), t)/n0
+    k5 = np.argmin(abs(t - 5*tau)); perf = L[k5]/np.linalg.norm(L[k5])
+    z = np.load(ruta(REF[n], 'landau.npz')); zz = np.array([np.interp(RMED, z['r'], f) for f in z['dphi'][:len(t)]])
+    piso = norma(zz - zz.mean(0)).mean()/info[n]['eps']/n0          # fluctuación de la referencia / eps
+    out = dict(t=t, eP=eP, eL=eL, tau=tau, piso=piso)
+    for a, b in ventanas:
+        v = (t >= a*tau) & (t <= min(b*tau, t[-1]))
+        e = polo_con_error(t, s['h1'], a*tau, min(b*tau, t[-1]))
+        el = polo_con_error(t, s['h1_lin'], a*tau, min(b*tau, t[-1]))
+        ps = suavizar(p[v])
+        out[(a, b)] = dict(R=eP[v].max()/eL[v].max(), w=e[0], dw=e[1], g=e[2], dg=e[3], wl=el[0], gl=el[2], dgl=el[3],
+                           liso=norma(ps).max()/norma(suavizar(L[v])).max(), fino=norma(p[v] - ps).max()/n0,
+                           proy=np.abs(p[v] @ perf).max()/np.abs(L[v] @ perf).max())
+    return out
+
+
+def perdida(m, a=5, b=20):
+    """Pérdida relativa de la envolvente PIC entre a y b tau_1, descontada la de la lineal."""
+    t, tau = m['t'], m['tau']
+    ka, kb = np.argmin(abs(t - a*tau)), np.argmin(abs(t - b*tau))
+    return 1 - (m['eP'][kb]/m['eP'][ka])/(m['eL'][kb]/m['eL'][ka])
+
+
+def borde(n, jt=JT):
+    """Acción máxima al final y cambio máximo de acción de las filas del borde."""
+    fz = np.load(ruta(n, 'fase.npz'), mmap_mode='r')
+    J0, Jf = np.asarray(fz['J'][0]), np.asarray(fz['J'][-1])
+    return float(Jf.max()), float(np.abs(Jf - J0)[J0 > 0.12].max())
+
+
+def controles():
+    """Barrido en eps de D3, convergencia en N y dt de D3, D5 y D6, y la isla de D6L.
+    Números en exe/demo_eta/controles.txt; figuras controles_*.pdf."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({'font.size': 9, 'axes.titlesize': 9})
+    fo = open(ruta('controles.txt'), 'w')
+    def w(x=''):
+        fo.write(x + '\n'); print(x)
+    # --- barrido en eps
+    w('== Barrido en eps de D3 (L5, eta = 1.24): omega_b(eps=1) = 4.76e-3, distancia al borde 2.5e-4')
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3.4), constrained_layout=True)
+    filas = []
+    for n in ('D3e003', 'D3e01', 'D3e03', 'D3'):
+        m = metricas(n, [(10, 20)]); e = info[n]['eps']; q = m[(10, 20)]
+        Jm, dJ = borde(n); cr = 4.76e-3*np.sqrt(e)/2.5e-4
+        filas.append((e, perdida(m), q['g'], q['dg'], m['piso'], cr))
+        w(f'{n:7} eps={e:<6g} wb/dist={cr:5.2f}  perdida 5->20 tau1 = {perdida(m):+.3f}  gamma[10,20] = {q["g"]:+.2e} +- {q["dg"]:.0e}'
+          f' (lin {q["gl"]:+.1e})  piso/eps = {m["piso"]:.1e}  Jmax = {Jm:.4f}  dJ borde = {dJ:.4f}')
+        ax[0].semilogy(m['t']/m['tau'], m['eP'], lw=1.0, label=f'$\\varepsilon={e:g}$')
+    ax[0].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='lineal')
+    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    f = np.array(filas)
+    ax[1].errorbar(f[:, 0], f[:, 2], yerr=f[:, 3], fmt='o-', color='C3', capsize=3)
+    ax[1].axhline(0, color='k', lw=0.6); ax[1].set_xscale('log')
+    ax[1].set_xlabel(r'$\varepsilon$'); ax[1].set_ylabel(r'$\gamma$ de $h_1$ en $10$--$20\,\tau_1$')
+    sec = ax[1].secondary_xaxis('top', functions=(lambda x: 4.76e-3*np.sqrt(np.maximum(x, 1e-12))/2.5e-4,
+                                                  lambda y: (np.maximum(y, 1e-12)*2.5e-4/4.76e-3)**2))
+    sec.set_xscale('log'); sec.set_xticks([1, 2, 3, 6], ['1', '2', '3', '6']); sec.minorticks_off()
+    sec.set_xlabel(r'$\omega_b/(\Omega_{\min}-\omega)$')
+    for a in ax: a.grid(alpha=0.3)
+    fig.savefig(os.path.join(FIGDIR, 'controles_eps.pdf')); plt.close(fig)
+    # --- convergencia
+    fig, ax = plt.subplots(1, 3, figsize=(11, 3.4), constrained_layout=True)
+    for k, (base, ven) in enumerate((('D3', [(10, 20)]), ('D5', [(10, 20), (20, 30), (30, 43.5)]), ('D6', [(5, 10), (10, 13)]))):
+        w(f'== Convergencia de {base}')
+        for n, et in ((base, 'base 400x25, dt'), (base + 'N', 'N x4 (800x50)'), (base + 'dt', 'dt/2')):
+            m = metricas(n, ven)
+            txt = '  '.join(f'[{a},{b}] R={m[(a, b)]["R"]:.3f} liso={m[(a, b)]["liso"]:.2f} proy={m[(a, b)]["proy"]:.2f}'
+                            f' fino={m[(a, b)]["fino"]:.1e} w={m[(a, b)]["w"]:.5f}+-{m[(a, b)]["dw"]:.0e}'
+                            f' g={m[(a, b)]["g"]:+.1e}+-{m[(a, b)]["dg"]:.0e}' for a, b in ven)
+            extra = f'  perdida 5->20 = {perdida(m):+.3f}' if base == 'D3' else ''
+            Jm, dJ = borde(n)
+            w(f'  {n:6} {et:16} {txt}{extra}  Jmax={Jm:.4f} dJborde={dJ:.4f}')
+            ax[k].semilogy(m['t']/m['tau'], m['eP'], lw=1.0, label=et)
+        ax[k].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='lineal')
+        ax[k].set_title(base); ax[k].set_xlabel(r'$t/\tau_1$'); ax[k].grid(alpha=0.3)
+    ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    fig.savefig(os.path.join(FIGDIR, 'controles_convergencia.pdf')); plt.close(fig)
+    fo.close()
+
+
+def isla(n='D6L', ventana=(10, 43)):
+    """La isla de D6L contra el péndulo. Amplitud A(t) = |dPhi_1(J_r, t)| a lo largo de la
+    órbita resonante, |Omega'(J_r)| del equilibrio, y las partículas: atrapadas si su
+    fase psi = Q - omega t libra (recorre menos de 2 pi) en la ventana; frecuencia de
+    rebote medida con la FFT de J(t) de las atrapadas."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from aa_numerico import MapaAA
+    from equilibrio import invertir
+    fo = open(ruta('isla.txt'), 'w')
+    def w(x=''):
+        fo.write(x + '\n'); print(x)
+    s = serie(n); t = s['t']; tau = CASOS[info[n]['caso']]['tau1']
+    om, dom, _, _ = polo_con_error(t, s['h1'], 5*tau, 15*tau)
+    eq = np.load(ruta('ic', f'{n}_equilibrio.npz')); Jt, Et = eq['J_t'], eq['E_t']
+    Om = np.gradient(Et, Jt); dOm = np.gradient(Om, Jt)
+    o = np.argsort(Om); Jr = float(np.interp(om, Om[o], Jt[o])); dOr = abs(float(np.interp(Jr, Jt, dOm)))
+    mapa = MapaAA(eq['r'], eq['phi_self'], L=2.0)
+    Qo = (np.arange(64) + 0.5)*2*np.pi/64
+    rr, _ = invertir(mapa, Et, Jt, Qo, np.full(64, Jr))
+    la = np.load(ruta(n, 'landau.npz')); z = np.load(ruta(REF[n], 'landau.npz'))
+    k = min(len(la['t']), len(z['t'])); dp = la['dphi'][:k] - z['dphi'][:k]
+    A = np.array([abs(np.mean(np.interp(rr, la['r'], f)*np.exp(-1j*Qo))) for f in dp])
+    fz = np.load(ruta(n, 'fase.npz'), mmap_mode='r'); tf = fz['t']
+    v = (tf >= ventana[0]*tau) & (tf <= ventana[1]*tau)
+    Q, J = np.asarray(fz['Q'])[v].astype(float), np.asarray(fz['J'])[v].astype(float)
+    wgt = np.asarray(fz['w'])
+    psi = np.unwrap(Q - om*tf[v][:, None], axis=0)
+    atr = (psi.max(0) - psi.min(0)) < 2*np.pi
+    Av = A[(la['t'][:k] >= ventana[0]*tau) & (la['t'][:k] <= ventana[1]*tau)].mean()
+    w(f'{n}: omega del modo = {om:.5f} +- {dom:.0e}; J_r = {Jr:.4f}; |Omega\'(J_r)| = {dOr:.3f}')
+    w(f'  A = |dPhi_1(J_r)|: t=0 {A[0]:.2e}; media en {ventana} tau1 {Av:.2e}; min {A.min():.2e} max {A[len(A)//4:].max():.2e}')
+    w(f'  péndulo con A media: semiancho {2*np.sqrt(Av/dOr):.4f}, omega_b {np.sqrt(Av*dOr):.2e} (periodo {2*np.pi/np.sqrt(Av*dOr):.0f})')
+    w('  oscilación de la amplitud (envolvente lenta, lóbulos principales): mínimos en 6.6 y 30.2 tau1,'
+      f' máximos en 18.0 y 40.1 tau1: periodo ~{0.5*(23.6 + 22.1)*tau:.0f} ({0.5*(23.6 + 22.1):.1f} tau1)')
+    w(f'  atrapadas (psi libra en la ventana): {wgt[atr].sum()/wgt.sum():.3f} de la masa, {atr.sum()} partículas;'
+      f' J0 de ellas en [{np.asarray(fz["J"][0])[atr].min() if atr.any() else 0:.3f}, {np.asarray(fz["J"][0])[atr].max() if atr.any() else 0:.3f}]')
+    if atr.any():
+        semi = 0.5*(J[:, atr].max(0) - J[:, atr].min(0))
+        dt = tf[1] - tf[0]
+        Jc = J[:, atr] - J[:, atr].mean(0)
+        esp = np.abs(np.fft.rfft(Jc, axis=0))**2; fr = 2*np.pi*np.fft.rfftfreq(Jc.shape[0], dt)
+        wb = fr[1:][np.argmax(esp[1:], axis=0)]
+        w(f'  semiancho medido: máx {semi.max():.4f}, mediana {np.median(semi):.4f}')
+        w(f'  omega_b medida (FFT de J de las atrapadas): mediana {np.median(wb):.2e}, cuartiles [{np.percentile(wb, 25):.2e}, {np.percentile(wb, 75):.2e}]')
+    fig, ax = plt.subplots(1, 3, figsize=(11, 3.4), constrained_layout=True)
+    n0 = norma(s['dphi_lin'][0])
+    ax[0].semilogy(t/tau, envolvente(norma(s['dphi']), t)/n0, lw=1.0, label=n)
+    ax[0].semilogy(t/tau, envolvente(norma(s['dphi_lin']), t)/n0, 'k--', lw=0.9, label='lineal')
+    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    tt = la['t'][:k]
+    # Envolvente lenta (ventana de +-300, unas tres vueltas) y periodo de la oscilación de amplitud
+    el = envolvente(norma(s['dphi']), t, ancho=300.0)/n0
+    Tb = 2*np.pi/np.sqrt(Av*dOr)
+    ax[1].plot(t/tau, el, color='C0', lw=1.0, label=r'envolvente lenta de $\|\delta\Phi_\varepsilon\|$')
+    for x0 in (6.6, 30.2):
+        ax[1].axvline(x0, color='C3', lw=0.6, ls=':')
+    ax[1].annotate('', xy=(6.6 + Tb/tau, 0.12), xytext=(6.6, 0.12), arrowprops=dict(arrowstyle='<->', color='C1'))
+    ax[1].text(6.6 + 0.5*Tb/tau, 0.13, f'$2\\pi/\\omega_b$ del péndulo = {Tb/tau:.0f}' + r'$\,\tau_1$', color='C1',
+               ha='center', fontsize=7)
+    ax[1].set_ylim(0.1, 0.85); ax[1].set_xlabel(r'$t/\tau_1$'); ax[1].legend(fontsize=7, loc='upper right')
+    m = -1; ps = np.mod(Q[m] - 0*om, 2*np.pi)
+    ax[2].scatter(np.mod(psi[m], 2*np.pi)[~atr], J[m][~atr], s=0.6, c='0.7', lw=0, label='libres', rasterized=True)
+    ax[2].scatter(np.mod(psi[m], 2*np.pi)[atr], J[m][atr], s=1.5, c='C3', lw=0, label='atrapadas', rasterized=True)
+    ax[2].set_xlabel(r'$\psi=Q-\omega t$'); ax[2].set_ylabel('$J$'); ax[2].set_ylim(0.06, 0.16); ax[2].legend(fontsize=7, markerscale=5)
+    ax[2].set_xlim(0, 2*np.pi)
+    for a_ in ax: a_.grid(alpha=0.3)
+    fig.savefig(os.path.join(FIGDIR, 'controles_isla.pdf')); plt.close(fig)
+    fo.close()
 
 
 def energia():
@@ -587,7 +758,7 @@ def _video(nombre):
             tm = fz['t'][m]
             sc1.set_offsets(np.c_[fz['r'][m], fz['p'][m]])
             sc2.set_offsets(np.c_[fz['Q'][m], fz['J'][m]])
-            n = min(int(np.searchsorted(tt, tm - 1e-9)), len(tt) - 1)
+            n = int(cercano(tt, np.array([tm]))[0])
             l_pic.set_ydata(dp[n])
             a_pr.set_ylim(-1.2*env[n], 1.2*env[n])
             if dpl is not None:
@@ -611,7 +782,7 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion', 'energia',
+    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion', 'energia', 'controles', 'isla',
                                      'todo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
