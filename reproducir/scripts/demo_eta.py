@@ -490,9 +490,9 @@ def controles():
     ax[0].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='lineal')
     ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
     f = np.array(filas)
-    ax[1].errorbar(f[:, 0], f[:, 2], yerr=f[:, 3], fmt='o-', color='C3', capsize=3)
+    ax[1].errorbar(f[:, 0], 1e5*f[:, 2], yerr=1e5*f[:, 3], fmt='o-', color='C3', capsize=3)
     ax[1].axhline(0, color='k', lw=0.6); ax[1].set_xscale('log')
-    ax[1].set_xlabel(r'$\varepsilon$'); ax[1].set_ylabel(r'$\gamma$ de $h_1$ en $10$--$20\,\tau_1$')
+    ax[1].set_xlabel(r'$\varepsilon$'); ax[1].set_ylabel(r'$\gamma$ de $h_1$ en $10$--$20\,\tau_1$ [$10^{-5}$]')
     sec = ax[1].secondary_xaxis('top', functions=(lambda x: 4.76e-3*np.sqrt(np.maximum(x, 1e-12))/2.5e-4,
                                                   lambda y: (np.maximum(y, 1e-12)*2.5e-4/4.76e-3)**2))
     sec.set_xscale('log'); sec.set_xticks([1, 2, 3, 6], ['1', '2', '3', '6']); sec.minorticks_off()
