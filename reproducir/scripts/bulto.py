@@ -33,9 +33,9 @@ OM_MIN, OM_MAX, DJ_SOP = 0.0513, 0.0705, 0.270
 TAU1 = 2*np.pi/(OM_MAX - OM_MIN)
 
 CORRIDAS = [
-    ('B0', 0.01, 25, False, 'sin autogravedad: la mezcla libre'),
+    ('B0', 0.01, 25, False, 'no self-gravity: free mixing'),
     ('B1', 0.001, 25, True, r'$a_0=10^{-3}$'),
-    ('B2', 0.01, 25, True, r'$a_0=10^{-2}$ (el mayor de 09\_autogravedad)'),
+    ('B2', 0.01, 25, True, r'$a_0=10^{-2}$ (the largest in 09\_autogravedad)'),
     ('B3', 0.03, 25, True, r'$a_0=0.03$'),
     ('B4', 0.1, 25, True, r'$a_0=0.1$'),
     ('B5', 0.3, 25, True, r'$a_0=0.3$'),
@@ -199,8 +199,8 @@ def figuras():
             ax[1, k].set_xticks([0, np.pi, 2*np.pi], ['0', r'$\pi$', r'$2\pi$'])
             if k:
                 ax[0, k].set_yticklabels([]); ax[1, k].set_yticklabels([])
-        ax[0, 0].set_ylabel('$p_r$'); ax[1, 0].set_ylabel('$J$ (potencial del instante)')
-        fig.colorbar(sc, ax=ax, label=r'$\log_{10}$ del peso relativo', shrink=0.8)
+        ax[0, 0].set_ylabel('$p_r$'); ax[1, 0].set_ylabel('$J$ (instantaneous potential)')
+        fig.colorbar(sc, ax=ax, label=r'$\log_{10}$ of the relative weight', shrink=0.8)
         fig.suptitle(f'{n}: ' + info[n]['desc'].replace('\\_', '_'), fontsize=10)
         fig.savefig(os.path.join(FIGDIR, f'bulto_fase_{n}.jpg'), dpi=130, pil_kwargs={'quality': 88})
         plt.close(fig)
@@ -210,13 +210,13 @@ def figuras():
         d = cargar(n); t = d['t']; hk = np.asarray(d['hk'])
         ls = ':' if n == 'B4q' else ('--' if n == 'B0' else '-')
         col = 'k' if n == 'B0' else ('C3' if n == 'B4q' else f'C{i-1}')
-        lab = 'sin autogr.' if n == 'B0' else f'{n}: $a_0={info[n]["a0"]:g}$' + (', $N_{pc}=100$' if n == 'B4q' else '')
+        lab = 'no self-gravity' if n == 'B0' else f'{n}: $a_0={info[n]["a0"]:g}$' + (', $N_{pc}=100$' if n == 'B4q' else '')
         for j, k in enumerate((1, 2)):
             ax[j].semilogy(t/TAU1, envolvente(np.abs(hk[:, k]), t), ls=ls, color=col, lw=1.0, label=lab)
         if info[n]['sg']:
             tt, _, _, _, fl, _ = potencial(n)
             ax[2].semilogy(tt/TAU1, envolvente(fl, tt), ls=ls, color=col, lw=1.0, label=lab)
-    ax[0].set_ylabel('$|h_1|$ (envolvente)'); ax[1].set_ylabel('$|h_2|$ (envolvente)')
+    ax[0].set_ylabel('$|h_1|$ (envelope)'); ax[1].set_ylabel('$|h_2|$ (envelope)')
     ax[2].set_ylabel(r'$\|\Phi_{\rm self}-\overline{\Phi}_{\rm self}\|/\max|\overline{\Phi}_{\rm self}|$')
     for a in ax:
         a.grid(alpha=0.3); a.set_xlabel(r'$t/\tau_1$'); a.set_xlim(0, TFIN/TAU1)
@@ -243,26 +243,26 @@ def _video(n):
     sc1 = a_rp.scatter(np.asarray(d['R'][0])[orden], np.asarray(d['P'][0])[orden], **kw)
     sc2 = a_qj.scatter(np.asarray(d['Q'][0])[orden], np.asarray(d['J'][0])[orden], **kw)
     a_rp.set_xlim(0, 16); a_rp.set_ylim(-0.45, 0.45); a_rp.set_xlabel('$r$'); a_rp.set_ylabel('$p_r$')
-    a_rp.set_title(r'espacio fase $(r,p_r)$')
+    a_rp.set_title(r'phase space $(r,p_r)$')
     Jtop = max(0.62, float(np.nanmax(np.asarray(d['J'][::20]))) + 0.01)
     a_qj.set_xlim(0, 2*np.pi); a_qj.set_ylim(0, Jtop); a_qj.set_xlabel('$Q$'); a_qj.set_ylabel('$J$')
     a_qj.set_xticks([0, np.pi/2, np.pi, 1.5*np.pi, 2*np.pi], ['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
-    a_qj.set_title(r'ángulo-acción $(Q,J)$ en el potencial del instante')
+    a_qj.set_title(r'angle-action $(Q,J)$ in the instantaneous potential')
     lp, = a_pr.plot(rg[z], ps[0][z], lw=1.3, color='C0', label=r'$\Phi_{\rm self}(r,t)$')
-    a_pr.plot(rg[z], media[z], color='k', ls='--', lw=0.9, label='media tardía')
+    a_pr.plot(rg[z], media[z], color='k', ls='--', lw=0.9, label='late-time mean')
     lo, hi = ps[:, z].min(), ps[:, z].max()
     a_pr.set_ylim(lo - 0.05*(hi - lo) - 1e-12, hi + 0.05*(hi - lo) + 1e-12); a_pr.set_xlim(*RVENT)
-    a_pr.set_xlabel('$r$'); a_pr.set_title('potencial propio'); a_pr.legend(fontsize=8, loc='lower right')
+    a_pr.set_xlabel('$r$'); a_pr.set_title('self-potential'); a_pr.legend(fontsize=8, loc='lower right')
     a_pr.grid(alpha=0.3)
     for k in (1, 2, 3):
         a_ts.semilogy(t/TAU1, np.abs(hk[:, k]), lw=0.7, label=f'$|h_{k}|$')
     marca = a_ts.axvline(0, color='C3', lw=0.9)
     a_ts.set_xlim(0, t[-1]/TAU1); a_ts.set_xlabel(r'$t/\tau_1$'); a_ts.grid(alpha=0.3)
-    a_ts.set_title(r'armónicos del bulto, $h_k=\sum f e^{-ikQ}/\sum f$'); a_ts.legend(fontsize=8, loc='lower left')
-    fig.text(0.06, 0.955, f'{n}: bulto de 09_autogravedad, ' + info[n]['desc'].replace('\\_', '_'),
+    a_ts.set_title(r'harmonics of the blob, $h_k=\sum f e^{-ikQ}/\sum f$'); a_ts.legend(fontsize=8, loc='lower left')
+    fig.text(0.06, 0.955, f'{n}: blob of 09_autogravedad, ' + info[n]['desc'].replace('\\_', '_'),
              fontsize=12, ha='left', va='center')
     reloj = fig.text(0.98, 0.955, '', fontsize=12, ha='right', va='center')
-    fig.text(0.06, 0.918, r'color: $\log_{10}$ del peso de la partícula (oscuro = donde está la masa)',
+    fig.text(0.06, 0.918, r'colour: $\log_{10}$ of the particle weight (dark = where the mass is)',
              fontsize=9, ha='left', va='center', color='0.3')
     os.makedirs(VIDDIR, exist_ok=True)
     w = FFMpegWriter(fps=30, bitrate=3000, codec='libx264', extra_args=['-pix_fmt', 'yuv420p'])

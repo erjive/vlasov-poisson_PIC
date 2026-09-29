@@ -42,42 +42,42 @@ CASOS = {
 }
 # Corridas: nombre, caso, eps, t_fin, descripción. Las Z son las referencias eps = 0.
 CORRIDAS = [
-    ('D2', 'A3', 0.065, 4600, r'$\eta=0.6$, en la banda, lineal ($\nu=0.3$)'),
-    ('Z_A3', 'A3', 0.0, 4600, 'referencia de D2'),
-    ('D1', 'A1', 1.0, 11100, r'$\eta=0.1$, amortiguamiento rápido, lineal ($\nu\approx0.2$)'),
-    ('Z_A1', 'A1', 0.0, 11100, 'referencia de D1'),
-    ('D3', 'L5', 0.1, 7200, r'$\eta=1.24$, modo discreto junto al borde, amplitud chica'),
-    ('D7', 'L5', 1.0, 7200, r'$\eta=1.24$, el mismo modo a amplitud grande'),
-    ('Z_L5', 'L5', 0.0, 7200, 'referencia de D3 y D7'),
-    ('D4', 'L6', 0.1, 5520, r'$\eta=2$, modo discreto separado de la banda'),
-    ('Z_L6', 'L6', 0.0, 5520, 'referencia de D4'),
-    ('D5', 'A4', 0.075, 17200, r'$\eta=1$, en el borde, no lineal ($\nu=3$)'),
-    ('D6', 'A4', 0.84, 5200, r'$\eta=1$, en el borde, muy no lineal ($\nu=10$)'),
-    ('Z_A4', 'A4', 0.0, 17200, 'referencia de D5 y D6'),
-    ('D8', 'G1a', 1.0, 11140, r'$\eta=0.1$, borde abrupto (King, $g=1$)'),
-    ('Z_G1a', 'G1a', 0.0, 11140, 'referencia de D8'),
-    ('D9', 'M5', 0.1, 5000, r'$\eta=5.1$, masa comparable a la del fondo, amplitud chica'),
-    ('D10', 'M5', 1.0, 5000, r'$\eta=5.1$, masa comparable a la del fondo, amplitud grande'),
-    ('Z_M5', 'M5', 0.0, 5000, 'referencia de D9 y D10'),
+    ('D2', 'A3', 0.065, 4600, r'$\eta=0.6$, inside the band, linear ($\nu=0.3$)'),
+    ('Z_A3', 'A3', 0.0, 4600, 'reference for D2'),
+    ('D1', 'A1', 1.0, 11100, r'$\eta=0.1$, fast damping, linear ($\nu\approx0.2$)'),
+    ('Z_A1', 'A1', 0.0, 11100, 'reference for D1'),
+    ('D3', 'L5', 0.1, 7200, r'$\eta=1.24$, discrete mode next to the edge, small amplitude'),
+    ('D7', 'L5', 1.0, 7200, r'$\eta=1.24$, the same mode at large amplitude'),
+    ('Z_L5', 'L5', 0.0, 7200, 'reference for D3 and D7'),
+    ('D4', 'L6', 0.1, 5520, r'$\eta=2$, discrete mode separated from the band'),
+    ('Z_L6', 'L6', 0.0, 5520, 'reference for D4'),
+    ('D5', 'A4', 0.075, 17200, r'$\eta=1$, at the edge, nonlinear ($\nu=3$)'),
+    ('D6', 'A4', 0.84, 5200, r'$\eta=1$, at the edge, strongly nonlinear ($\nu=10$)'),
+    ('Z_A4', 'A4', 0.0, 17200, 'reference for D5 and D6'),
+    ('D8', 'G1a', 1.0, 11140, r'$\eta=0.1$, sharp edge (King, $g=1$)'),
+    ('Z_G1a', 'G1a', 0.0, 11140, 'reference for D8'),
+    ('D9', 'M5', 0.1, 5000, r'$\eta=5.1$, mass comparable to the background, small amplitude'),
+    ('D10', 'M5', 1.0, 5000, r'$\eta=5.1$, mass comparable to the background, large amplitude'),
+    ('Z_M5', 'M5', 0.0, 5000, 'reference for D9 and D10'),
 ]
 # Controles pedidos por la revisión (auditoria_deepseekpro): barrido en eps del modo
 # de L5, y convergencia en N (400x25 -> 800x50) y en dt (courant 1 -> 0.5) de D3, D5 y
 # D6, cada una con su referencia eps = 0 a la misma resolución. No tienen video.
 EXTRA = [
-    ('D3e003', 'L5', 0.003, 7200, r'D3 con $\varepsilon=0.003$'),
-    ('D3e01', 'L5', 0.01, 7200, r'D3 con $\varepsilon=0.01$'),
-    ('D3e03', 'L5', 0.03, 7200, r'D3 con $\varepsilon=0.03$'),
-    ('D3N', 'L5', 0.1, 7200, r'D3 con $N=800\times50$'),
-    ('Z_L5N', 'L5', 0.0, 7200, 'referencia de D3N'),
-    ('D3dt', 'L5', 0.1, 7200, r'D3 con $\Delta t/2$'),
-    ('Z_L5dt', 'L5', 0.0, 7200, 'referencia de D3dt'),
-    ('D6N', 'A4', 0.84, 5200, r'D6 con $N=800\times50$'),
-    ('D6dt', 'A4', 0.84, 5200, r'D6 con $\Delta t/2$'),
-    ('D5dt', 'A4', 0.075, 17200, r'D5 con $\Delta t/2$'),
-    ('Z_A4dt', 'A4', 0.0, 17200, 'referencia de D5dt y D6dt'),
-    ('D5N', 'A4', 0.075, 17200, r'D5 con $N=800\times50$'),
-    ('Z_A4N', 'A4', 0.0, 17200, 'referencia de D5N y D6N'),
-    ('D6L', 'A4', 0.84, 17200, r'D6 hasta $t=17200$, para varios periodos de rebote'),
+    ('D3e003', 'L5', 0.003, 7200, r'D3 with $\varepsilon=0.003$'),
+    ('D3e01', 'L5', 0.01, 7200, r'D3 with $\varepsilon=0.01$'),
+    ('D3e03', 'L5', 0.03, 7200, r'D3 with $\varepsilon=0.03$'),
+    ('D3N', 'L5', 0.1, 7200, r'D3 with $N=800\times50$'),
+    ('Z_L5N', 'L5', 0.0, 7200, 'reference for D3N'),
+    ('D3dt', 'L5', 0.1, 7200, r'D3 with $\Delta t/2$'),
+    ('Z_L5dt', 'L5', 0.0, 7200, 'reference for D3dt'),
+    ('D6N', 'A4', 0.84, 5200, r'D6 with $N=800\times50$'),
+    ('D6dt', 'A4', 0.84, 5200, r'D6 with $\Delta t/2$'),
+    ('D5dt', 'A4', 0.075, 17200, r'D5 with $\Delta t/2$'),
+    ('Z_A4dt', 'A4', 0.0, 17200, 'reference for D5dt and D6dt'),
+    ('D5N', 'A4', 0.075, 17200, r'D5 with $N=800\times50$'),
+    ('Z_A4N', 'A4', 0.0, 17200, 'reference for D5N and D6N'),
+    ('D6L', 'A4', 0.84, 17200, r'D6 up to $t=17200$, for several bounce periods'),
 ]
 NUM = {n: ((800, 50, 1.0) if n.endswith('N') else (400, 25, 0.5) if n.endswith('dt') else (400, 25, 1.0))
        for n, *_ in EXTRA}
@@ -284,10 +284,10 @@ def colores(nombre, w):
     Jn, Qn = (i + 0.5)*JT/nrc, (jq + 0.5)*2*np.pi/npc
     eps = info[nombre]['eps']
     if eps == 0:
-        return np.cos(Qn), r'ángulo inicial $\cos Q_0$ (una etiqueta)'
+        return np.cos(Qn), r'initial angle $\cos Q_0$ (a label)'
     s = (Jn/JT)**1.5
     df = w - w/(1 + eps*s*np.cos(Qn))
-    return df/np.abs(df).max(), r'perturbación de peso $\delta f$ (normalizada)'
+    return df/np.abs(df).max(), r'weight perturbation $\delta f$ (normalized)'
 
 
 def limites(fz):
@@ -345,7 +345,7 @@ def figura_islas(plt, lista=('D3', 'D5', 'D6', 'D7')):
         a.axhline(JT, color='0.4', lw=0.6, ls=':')
         a.set_xticks([0, np.pi, 2*np.pi], ['0', r'$\pi$', r'$2\pi$'])
     ax[0].set_ylabel('$J$')
-    fig.colorbar(sc, ax=ax, label='$J$ inicial', shrink=0.9)
+    fig.colorbar(sc, ax=ax, label='initial $J$', shrink=0.9)
     fig.savefig(os.path.join(FIGDIR, 'islas.jpg'), dpi=150, pil_kwargs={'quality': 90})
     plt.close(fig)
 
@@ -369,10 +369,10 @@ def figuras():
         n0, h0 = norma(s['dphi_lin'][0]), np.abs(s['h1_lin'][0])
         ax[k, 0].semilogy(x, envolvente(norma(s['dphi']), s['t'])/n0, lw=1.0, color='C0', label='PIC')
         ax[k, 0].semilogy(x, envolvente(norma(s['dphi_lin']), s['t'])/n0, color='k', ls='--', lw=0.9,
-                          label='lineal')
+                          label='linear')
         ax[k, 1].semilogy(x, np.abs(s['h1'])/h0, lw=0.7, color='C0', label='PIC')
-        ax[k, 1].semilogy(x, np.abs(s['h1_lin'])/h0, color='k', ls='--', lw=0.7, label='lineal')
-        ax[k, 0].set_ylabel(r'envolvente de $\|\delta\Phi\|$')
+        ax[k, 1].semilogy(x, np.abs(s['h1_lin'])/h0, color='k', ls='--', lw=0.7, label='linear')
+        ax[k, 0].set_ylabel(r'envelope of $\|\delta\Phi\|$')
         ax[k, 1].set_ylabel(r'$|h_1|/|h_1(0)|$')
         ax[k, 0].set_title(f'{nombre}: ' + info[nombre]['desc'], loc='left')
         for a in ax[k]:
@@ -399,13 +399,13 @@ def figuras():
             if not lin_igual or k == 0:
                 c = 'k' if lin_igual else col
                 ax[0].semilogy(x, envolvente(norma(s['dphi_lin']), s['t'])/n0, color=c, ls='--', lw=0.9,
-                               label='lineal' if lin_igual else f'lineal {info[nombre]["caso"]}')
+                               label='linear' if lin_igual else f'linear {info[nombre]["caso"]}')
                 ax[1].semilogy(x, np.abs(s['h1_lin'])/h0, color=c, ls='--', lw=0.8)
             eP = envolvente(norma(s['dphi']), s['t']); eL = envolvente(norma(s['dphi_lin']), s['t'])
             ax[2].semilogy(x, eP/eL, lw=1.0, color=col, label=nombre)
             xmax = max(xmax, x[-1]) if k else x[-1]
-        ax[0].set_ylabel(r'envolvente de $\|\delta\Phi\|$'); ax[1].set_ylabel(r'$|h_1|/|h_1(0)|$')
-        ax[2].set_ylabel('envolvente PIC / lineal'); ax[2].axhline(1, color='k', lw=0.6)
+        ax[0].set_ylabel(r'envelope of $\|\delta\Phi\|$'); ax[1].set_ylabel(r'$|h_1|/|h_1(0)|$')
+        ax[2].set_ylabel('envelope PIC / linear'); ax[2].axhline(1, color='k', lw=0.6)
         ax[0].legend(fontsize=7, loc='lower left')
         for a in ax:
             a.grid(alpha=0.3); a.set_xlim(0, xmax); a.set_xlabel(r'$t/\tau_1$')
@@ -487,12 +487,12 @@ def controles():
         w(f'{n:7} eps={e:<6g} wb/dist={cr:5.2f}  perdida 5->20 tau1 = {perdida(m):+.3f}  gamma[10,20] = {q["g"]:+.2e} +- {q["dg"]:.0e}'
           f' (lin {q["gl"]:+.1e})  piso/eps = {m["piso"]:.1e}  Jmax = {Jm:.4f}  dJ borde = {dJ:.4f}')
         ax[0].semilogy(m['t']/m['tau'], m['eP'], lw=1.0, label=f'$\\varepsilon={e:g}$')
-    ax[0].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='lineal')
-    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    ax[0].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='linear')
+    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envelope of $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
     f = np.array(filas)
     ax[1].errorbar(f[:, 0], 1e5*f[:, 2], yerr=1e5*f[:, 3], fmt='o-', color='C3', capsize=3)
     ax[1].axhline(0, color='k', lw=0.6); ax[1].set_xscale('log')
-    ax[1].set_xlabel(r'$\varepsilon$'); ax[1].set_ylabel(r'$\gamma$ de $h_1$ en $10$--$20\,\tau_1$ [$10^{-5}$]')
+    ax[1].set_xlabel(r'$\varepsilon$'); ax[1].set_ylabel(r'$\gamma$ of $h_1$ over $10$--$20\,\tau_1$ [$10^{-5}$]')
     sec = ax[1].secondary_xaxis('top', functions=(lambda x: 4.76e-3*np.sqrt(np.maximum(x, 1e-12))/2.5e-4,
                                                   lambda y: (np.maximum(y, 1e-12)*2.5e-4/4.76e-3)**2))
     sec.set_xscale('log'); sec.set_xticks([1, 2, 3, 6], ['1', '2', '3', '6']); sec.minorticks_off()
@@ -512,9 +512,9 @@ def controles():
             Jm, dJ = borde(n)
             w(f'  {n:6} {et:16} {txt}{extra}  Jmax={Jm:.4f} dJborde={dJ:.4f}')
             ax[k].semilogy(m['t']/m['tau'], m['eP'], lw=1.0, label=et)
-        ax[k].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='lineal')
+        ax[k].semilogy(m['t']/m['tau'], m['eL'], 'k--', lw=0.9, label='linear')
         ax[k].set_title(base); ax[k].set_xlabel(r'$t/\tau_1$'); ax[k].grid(alpha=0.3)
-    ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    ax[0].set_ylabel(r'envelope of $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
     fig.savefig(os.path.join(FIGDIR, 'controles_convergencia.pdf')); plt.close(fig)
     fo.close()
 
@@ -567,22 +567,22 @@ def isla(n='D6L', ventana=(10, 43)):
     fig, ax = plt.subplots(1, 3, figsize=(11, 3.4), constrained_layout=True)
     n0 = norma(s['dphi_lin'][0])
     ax[0].semilogy(t/tau, envolvente(norma(s['dphi']), t)/n0, lw=1.0, label=n)
-    ax[0].semilogy(t/tau, envolvente(norma(s['dphi_lin']), t)/n0, 'k--', lw=0.9, label='lineal')
-    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envolvente de $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
+    ax[0].semilogy(t/tau, envolvente(norma(s['dphi_lin']), t)/n0, 'k--', lw=0.9, label='linear')
+    ax[0].set_xlabel(r'$t/\tau_1$'); ax[0].set_ylabel(r'envelope of $\|\delta\Phi_\varepsilon\|$'); ax[0].legend(fontsize=7)
     tt = la['t'][:k]
     # Envolvente lenta (ventana de +-300, unas tres vueltas) y periodo de la oscilación de amplitud
     el = envolvente(norma(s['dphi']), t, ancho=300.0)/n0
     Tb = 2*np.pi/np.sqrt(Av*dOr)
-    ax[1].plot(t/tau, el, color='C0', lw=1.0, label=r'envolvente lenta de $\|\delta\Phi_\varepsilon\|$')
+    ax[1].plot(t/tau, el, color='C0', lw=1.0, label=r'slow envelope of $\|\delta\Phi_\varepsilon\|$')
     for x0 in (6.6, 30.2):
         ax[1].axvline(x0, color='C3', lw=0.6, ls=':')
     ax[1].annotate('', xy=(6.6 + Tb/tau, 0.12), xytext=(6.6, 0.12), arrowprops=dict(arrowstyle='<->', color='C1'))
-    ax[1].text(6.6 + 0.5*Tb/tau, 0.13, f'$2\\pi/\\omega_b$ del péndulo = {Tb/tau:.0f}' + r'$\,\tau_1$', color='C1',
+    ax[1].text(6.6 + 0.5*Tb/tau, 0.13, f'pendulum $2\\pi/\\omega_b$ = {Tb/tau:.0f}' + r'$\,\tau_1$', color='C1',
                ha='center', fontsize=7)
     ax[1].set_ylim(0.1, 0.85); ax[1].set_xlabel(r'$t/\tau_1$'); ax[1].legend(fontsize=7, loc='upper right')
     m = -1; ps = np.mod(Q[m] - 0*om, 2*np.pi)
-    ax[2].scatter(np.mod(psi[m], 2*np.pi)[~atr], J[m][~atr], s=0.6, c='0.7', lw=0, label='libres', rasterized=True)
-    ax[2].scatter(np.mod(psi[m], 2*np.pi)[atr], J[m][atr], s=1.5, c='C3', lw=0, label='atrapadas', rasterized=True)
+    ax[2].scatter(np.mod(psi[m], 2*np.pi)[~atr], J[m][~atr], s=0.6, c='0.7', lw=0, label='free', rasterized=True)
+    ax[2].scatter(np.mod(psi[m], 2*np.pi)[atr], J[m][atr], s=1.5, c='C3', lw=0, label='trapped', rasterized=True)
     ax[2].set_xlabel(r'$\psi=Q-\omega t$'); ax[2].set_ylabel('$J$'); ax[2].set_ylim(0.06, 0.16); ax[2].legend(fontsize=7, markerscale=5)
     ax[2].set_xlim(0, 2*np.pi)
     for a_ in ax: a_.grid(alpha=0.3)
@@ -611,7 +611,7 @@ def energia():
             fo.write(f'{n:8} {t[-1]:7.0f} {E[0]:+14.6e} {np.abs(dE).max():10.1e} {dE[-1]:+10.1e}\n')
             a = ax[1] if n.startswith('B') else ax[0]
             a.semilogy(t, np.maximum(np.abs(dE), 1e-13), lw=0.7, label=n)
-    ax[0].set_title('demo $\\eta$'); ax[1].set_title('bulto')
+    ax[0].set_title('demo $\\eta$'); ax[1].set_title('blob')
     ax[0].set_ylabel(r'$|E(t)-E(0)|/|E(0)|$')
     for a in ax:
         a.set_xlabel('$t$'); a.grid(alpha=0.3); a.legend(fontsize=6, ncol=3, loc='lower right')
@@ -705,7 +705,7 @@ def _video(nombre):
     else:
         tt, dpl = la['t'], None
         dp = np.array([np.interp(RMED, la['r'], fila) for fila in la['dphi']])
-        etq = r'$\delta\Phi$ de la corrida sin perturbación'
+        etq = r'$\delta\Phi$ of the unperturbed run'
     fig = plt.figure(figsize=(12.8, 7.2), dpi=100)
     g = fig.add_gridspec(2, 2, height_ratios=[1.35, 1], hspace=0.38, wspace=0.2,
                          left=0.06, right=0.98, top=0.86, bottom=0.08)
@@ -716,40 +716,40 @@ def _video(nombre):
                        lw=0)
     xl, yl = limites(fz)
     a_rp.set_xlim(*xl); a_rp.set_ylim(*yl)
-    a_rp.set_xlabel('$r$'); a_rp.set_ylabel('$p_r$'); a_rp.set_title(r'espacio fase $(r,p_r)$')
+    a_rp.set_xlabel('$r$'); a_rp.set_ylabel('$p_r$'); a_rp.set_title(r'phase space $(r,p_r)$')
     a_qj.set_xlim(0, 2*np.pi); a_qj.set_ylim(0, max(1.02*JT, float(fz['J'].max()) + 0.002))
     a_qj.axhline(JT, color='0.5', lw=0.6, ls=':')
     a_qj.set_xlabel('$Q$'); a_qj.set_ylabel('$J$')
     a_qj.set_xticks([0, np.pi/2, np.pi, 1.5*np.pi, 2*np.pi], ['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
-    a_qj.set_title(r'ángulo-acción $(Q,J)$ del equilibrio; color: $J$ inicial')
+    a_qj.set_title(r'angle-action $(Q,J)$ of the equilibrium; colour: initial $J$')
     l_pic, = a_pr.plot(RMED, dp[0], lw=1.3, color='C0', label='PIC')
     pico = np.abs(dp).max(axis=1)
     if dpl is not None:
-        l_lin, = a_pr.plot(RMED, dpl[0], color='k', ls='--', lw=1.0, label='teoría lineal')
+        l_lin, = a_pr.plot(RMED, dpl[0], color='k', ls='--', lw=1.0, label='linear theory')
         pico = np.maximum(pico, np.abs(dpl).max(axis=1))
     # El eje vertical sigue a la envolvente, suavizada sobre ~1.5 órbitas (+-8 instantáneas).
     env = np.array([pico[max(0, n - 8):n + 9].max() for n in range(len(pico))])
     a_pr.set_ylim(-1.2*env[0], 1.2*env[0]); a_pr.set_xlim(RMED[0], RMED[-1]); a_pr.set_xlabel('$r$')
-    a_pr.set_title(etq + ' (eje reescalado)'); a_pr.legend(fontsize=8, loc='upper right')
+    a_pr.set_title(etq + ' (rescaled axis)'); a_pr.legend(fontsize=8, loc='upper right')
     a_pr.grid(alpha=0.3)
     nrm = norma(dp)
     if dpl is not None:
         a_ts.semilogy(tt, nrm/nrm[0], lw=0.8, color='C0', label='PIC')
-        a_ts.semilogy(tt, norma(dpl)/norma(dpl[0]), color='k', ls='--', lw=0.8, label='teoría lineal')
+        a_ts.semilogy(tt, norma(dpl)/norma(dpl[0]), color='k', ls='--', lw=0.8, label='linear theory')
         a_ts.set_ylabel(r'$\|\delta\Phi\|/\|\delta\Phi(0)\|$')
     else:
         a_ts.semilogy(tt, nrm/float(la['escala']), lw=0.8, color='C0', label='PIC')
         a_ts.set_ylabel(r'$\|\delta\Phi\|/\max|\Phi_{\rm self,eq}|$')
     marca = a_ts.axvline(0, color='C3', lw=0.9)
     a_ts.set_xlim(0, tt[-1]); a_ts.set_xlabel('$t$')
-    a_ts.set_title(r'amplitud de $\delta\Phi$ (rms en $3\leq r\leq15$)'); a_ts.grid(alpha=0.3)
+    a_ts.set_title(r'amplitude of $\delta\Phi$ (rms over $3\leq r\leq15$)'); a_ts.grid(alpha=0.3)
     a_ts.legend(fontsize=8, loc='upper right')
     desc = re.sub(r'^\$\\eta=[0-9.]+\$,? ?', '', i['desc'])
-    fig.text(0.06, 0.955, f'{nombre}: equilibrio {caso} ($\\eta={CASOS[caso]["eta"]:g}$), '
+    fig.text(0.06, 0.955, f'{nombre}: equilibrium {caso} ($\\eta={CASOS[caso]["eta"]:g}$), '
              f'$\\varepsilon={eps:g}$.  {desc}', fontsize=12, ha='left', va='center')
     reloj = fig.text(0.98, 0.955, '', fontsize=12, ha='right', va='center')
-    fig.text(0.06, 0.918, f'color en $(r,p_r)$: {etiqueta}; en $(Q,J)$: acción inicial (una fila que se '
-             'deforma cambió de acción; la línea punteada es el borde $J_t$)', fontsize=9, ha='left',
+    fig.text(0.06, 0.918, f'colour in $(r,p_r)$: {etiqueta}; in $(Q,J)$: initial action (a row that '
+             'deforms has changed its action; the dotted line is the edge $J_t$)', fontsize=9, ha='left',
              va='center', color='0.3')
     tau1 = CASOS[caso]['tau1']
     w = FFMpegWriter(fps=30, bitrate=3000, codec='libx264', extra_args=['-pix_fmt', 'yuv420p'])
