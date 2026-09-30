@@ -59,10 +59,10 @@ $\sim0.03$: it becomes self-bound. Each run has phase-space figures in $(r,p_r)$
 $(Q,J)$ and a video.
 \end{abstract}
 
-\section{Model and numerical method}
-\label{sec:conceptos}
+\section{Theoretical framework}
+\label{sec:teoria}
 
-\subsection{Fixed-angular-momentum reduction}
+\subsection{The fixed-angular-momentum model}
 \label{sec:modelo}
 
 We consider a self-gravitating spherical component of mass $a_0$ moving in a fixed
@@ -88,8 +88,8 @@ where $8\pi^2L_0\,dr\,dp_r$ is the phase-space measure of the reduction. The tot
 is $a_0=8\pi^2L_0\iint F\,dr\,dp_r$. We write $\Phi_{\rm ef}=\Phi_{\rm iso}+\Phi_{\rm
 self}+L_0^2/2r^2$ for the effective potential.
 
-\subsection{Angle--action variables and phase mixing}
-\label{sec:banda}
+\subsection{Angle--action variables}
+\label{sec:aa}
 
 Each orbit is a closed curve in $(r,p_r)$. Its action $J=\frac1{2\pi}\oint p_r\,dr$ is
 the enclosed area divided by $2\pi$, and the angle $Q$ increases uniformly from $0$ to
@@ -107,11 +107,44 @@ $(r,p_r)\mapsto(Q,J)$ is computed numerically in the equilibrium potential
 (Section~\ref{sec:construccion}). All $(Q,J)$ coordinates shown in this document use
 that fixed map.
 
-The equilibrium occupies the actions $0\le J\le J_t$ (the support), and its frequencies
-fill the band $[\Omega_{\min},\Omega_{\max}]=[\Omega(J_t),\Omega(0)]$ of width
-$\Delta\Omega$. Without self-gravity each point of $(Q,J)$ rotates at its own
-frequency, and an initial perturbation $\varepsilon F_{\rm eq}s\cos Q$
-(Section~\ref{sec:dato}) evolves as
+\subsection{Equilibria and perturbations}
+\label{sec:equilibrio}
+\label{sec:dato}
+
+A distribution $F_{\rm eq}(J)$ that depends on the phase-space coordinates only through
+the action is stationary. Because $J$ is defined in the total potential, which includes
+the potential of $F_{\rm eq}$ itself, the equilibrium must be self-consistent; its
+construction is described in Section~\ref{sec:construccion}. The equilibria are lowered Maxwellians in the energy,
+\[
+  F_{\rm eq}=A\,E_\gamma(g,x),\qquad x=\frac{E_t-E}{T}\ (E<E_t),\qquad
+  E_\gamma(g,x)=\sum_{n\ge0}\frac{x^{g+n}}{\Gamma(g+n+1)} ,
+\]
+and $F_{\rm eq}=0$ for $E\ge E_t$. Far from the edge $F_{\rm eq}\propto e^{-E/T}$; near
+the cut-off energy $E_t$ it vanishes as $(E_t-E)^g$. The Wilson model has $g=2$ and the
+King model $g=1$. The edge is the orbit of action $J_t=0.138$, $E_t=E(J_t)$, and the
+temperature is $T=(E_t-E_c)/W_0$ with $W_0=3$, where $E_c$ is the energy of the circular
+orbit. $F_{\rm eq}$ decreases monotonically with the energy, so it has no unstable radial
+modes (Antonov). We chose it because its vacuum edge is the object of the theorems of
+Hadžić et al.\ (Section~\ref{sec:borde}).
+
+The equilibrium occupies the actions $0\le J\le J_t$, the support, and its frequencies
+fill the band $[\Omega_{\min},\Omega_{\max}]=[\Omega(J_t),\Omega(0)]$ of width $\Delta\Omega$.
+
+The initial conditions are the equilibrium plus a perturbation in angle,
+\[
+  F=F_{\rm eq}(J)\,\big[1+\varepsilon\,s(J)\cos Q\big],\qquad s=(J/J_t)^{3/2}.
+\]
+It has zero mean in $Q$, so it changes neither the mass nor the equilibrium. The factor
+$s(J)$ makes it smooth at the circular orbit, since $J^{3/2}\cos Q\propto J\,(r-r_c)$.
+The term $\cos Q$ adds mass on the pericentre side ($Q\approx0$) and removes it on the
+apocentre side: the component breathes radially. Since $s\le1$, the condition
+$F\ge0$ requires $\varepsilon\le1$.
+
+\subsection{Phase mixing}
+\label{sec:banda}
+
+Without self-gravity each point of $(Q,J)$ rotates at its own
+frequency, and the perturbation of Section~\ref{sec:equilibrio} evolves as
 \[
   \delta F(Q,J,t)=\varepsilon F_{\rm eq}\,s\cos\big(Q-\Omega(J)t\big).
 \]
@@ -122,13 +155,9 @@ $e^{-i\Omega(J)t}$ that dephase, and it decays by the Riemann--Lebesgue lemma. T
 phase mixing. There is no dissipation: the information moves to ever finer scales in
 $J$. The $k=1$ harmonic dephases completely in
 \[
-  \tau_1=\frac{2\pi}{\Delta\Omega},
+  \tau_1=\frac{2\pi}{\Delta\Omega}.
 \]
-which ranges from $125$ (M5) to about $560$ (A1) in the runs below. In A4, for
-example, the band is $[0.0698,\,0.0857]$, so $\Delta\Omega=0.0159$ and $\tau_1=395$. The
-radial period ranges from $2\pi/0.0857=73$ at the circular orbit to $2\pi/0.0698=90$ at
-the edge of the support, and the two ends of the band dephase by one full turn after
-about five radial periods. The late-time form of the decay is set by the edges of the
+The late-time form of the decay is set by the edges of the
 band: an edge at which the weight vanishes as $|J-J_e|^\alpha$ produces a tail
 $\propto t^{-(\alpha+1)}$.
 
@@ -158,11 +187,321 @@ orbital frequency relative to the width of the band,
 \]
 where $\bar\Omega$ is the mass-weighted mean frequency of the self-consistent
 equilibrium and $\bar\Omega_{\rm iso}$ is the same average for the same distribution
-in the isochrone alone (Section~\ref{sec:eligenu}). For $\eta\ll1$ the frequency spread
+in the isochrone alone. For $\eta\ll1$ the frequency spread
 dominates and the perturbation mixes; for $\eta\gtrsim1$ the coupling can pull a mode
-out of the band. In the family used here $\eta$ grows slightly more slowly than
-linearly with the mass: $\eta/a_0$ decreases from $15$ to $12$ between $a_0=0.0065$ and
-$0.17$, and is $10$ at $a_0=0.5$. The value $\eta=1$ corresponds to $a_0=0.075$.
+out of the band. The value of $\eta$ at which the mode reaches the edge of the band,
+$\eta_c$, depends on the family of equilibria; Section~\ref{sec:prediccion_lineal}
+gives it for ours.
+
+\subsection{The vacuum edge}
+\label{sec:borde}
+
+The distribution vanishes at the edge of the support, $J=J_t$. Hadžić, Rein, Schrecker
+and Straub (Arch.\ Ration.\ Mech.\ Anal.\ \textbf{249}, 45, 2025) study this same
+reduction: all particles with the same $|L|$, in the fixed field of a point mass (the
+isochrone plays this role here), with small equilibria $F=\varepsilon(E_0-E)^k$. For
+the linearized problem they prove a dichotomy in the exponent of the edge, valid for
+$\varepsilon$ below a threshold $\varepsilon_0(k)$ that they do not estimate. For $k>1$
+(our $g$) perturbations are damped. For $1/2<k\le1$ they are not, because there is a
+discrete mode below $\Omega_{\min}$. Only the behaviour at the edge matters; for the
+King model ($g=1$) they note that there is no damping.
+
+A heuristic argument explains why. The dispersion relation
+contains $\int F_{\rm eq}'/(\Omega-\omega)\,dJ$, and with $F_{\rm eq}'\propto(J_t-J)^{g-1}$
+this integral diverges as $\omega\to\Omega_{\min}$ if $g\le1$. An arbitrarily weak
+coupling then suffices to bind a state at the edge.
+
+\subsection{Nonlinear evolution}
+\label{sec:nolineal}
+
+In a fixed potential the Vlasov equation is exactly linear in $F$ for any amplitude
+$\varepsilon$; nonlinearity enters only through $\delta\Phi$. Near a resonance
+$\Omega(J_r)=\omega$ a particle moves as in a pendulum, with bounce frequency
+\[
+  \omega_b=\sqrt{|\Omega'(J_r)|\,|\delta\Phi|}\;\propto\;\sqrt{\varepsilon}.
+\]
+The wave traps particles on a time $\sim2\pi/\omega_b$ and is damped on a time
+$1/\gamma$. Their ratio is O'Neil's parameter,
+\[
+  \nu=\omega_b/\gamma .
+\]
+For $\nu\ll1$ the wave is damped before it can trap particles, and linear theory holds
+at all times. For $\nu\gtrsim1$ the resonant particles are trapped, damping stops, and
+the amplitude oscillates and saturates; linear theory does not give the final state.
+Near the transition $\gamma\to0$, so $\nu\to\infty$ for any amplitude: at $\eta=1$,
+$\nu\approx11\sqrt\varepsilon$, and $\varepsilon\approx0.008$ already gives $\nu=1$.
+Whether the evolution is linear is decided by $\nu$, not by $\varepsilon$.
+
+For a discrete mode ($\eta>\eta_c$) there is no resonance inside the band, and the
+nonlinear question is whether the mode survives at finite amplitude. Its frequency
+shifts with the amplitude, and a mode just below the edge could enter the band. The
+relevant ratio compares the bounce frequency with the distance to the edge,
+$\omega_b/(\Omega_{\min}-\omega)$. A third ratio, $\mu=\omega_b/\Delta\Omega$, compares
+trapping with the mixing of the whole band. It becomes the controlling parameter when
+the initial condition is far from any equilibrium (Section~\ref{sec:bulto_diseno}).
+
+\paragraph{Dependence on the amplitude.} In the linear regime $\delta\Phi\propto\varepsilon$. At
+$t=0$ this is exact, because the perturbation of the weights and the Poisson equation
+are both linear in $\varepsilon$. Hence $\omega_b(\varepsilon)=\omega_b(1)\sqrt\varepsilon$,
+where $\omega_b(1)$ is the bounce frequency of the same perturbation at $\varepsilon=1$, and
+\[
+  \nu(\varepsilon)=\nu_1\sqrt\varepsilon,\qquad \nu_1=\frac{\omega_b(1)}{\gamma}.
+\]
+The factor $\nu_1$ depends on the equilibrium and on the shape of the perturbation, not
+on its amplitude. The ratio $\omega_b/(\Omega_{\min}-\omega)$ and $\mu$ scale in the same way,
+so their quotients are fixed by the equilibrium; for instance $\mu/\nu=\gamma/\Delta\Omega$.
+Two consequences follow. First, in a given equilibrium the amplitude changes all the
+nonlinear parameters together; changing one relative to the others requires another
+equilibrium, for instance another width $J_t$, which changes $\gamma$ and $\Delta\Omega$
+differently. Second, since $\varepsilon\le1$, $\nu\le\nu_1(\eta)$. Far from the transition
+the coupling is weak, $\gamma$ is large and $\nu_1$ is small, so large values of $\nu$ may
+be out of reach; near $\eta_c$, $\gamma\to0$ and any $\nu$ can be reached. On the discrete
+side the ratio $\omega_b/(\Omega_{\min}-\omega)$ is bounded by $\omega_b(1)/(\Omega_{\min}-\omega)$,
+which decreases away from the transition, so a mode far below the band cannot be made
+fragile with $\varepsilon\le1$.
+
+The evolution is therefore controlled by three time scales: the mixing time $\tau_1$,
+the damping time $1/\gamma$, which is infinite for a discrete mode, and the bounce
+period $2\pi/\omega_b\propto\varepsilon^{-1/2}$.
+
+\subsection{Predictions}
+\label{sec:predicciones}
+
+Three predictions follow from this framework and can be falsified by the runs of
+Section~\ref{sec:corridas}.
+\begin{enumerate}
+\item[P1.] Where $\nu\ll1$, the PIC evolution follows the linear theory of the same
+equilibrium for any $\varepsilon$.
+\item[P2.] Where $\nu\gtrsim1$, the PIC evolution departs from linear theory at
+$t\sim2\pi/\omega_b$, and damping stops.
+\item[P3.] A discrete mode becomes fragile when $\omega_b/(\Omega_{\min}-\omega)\gtrsim1$.
+\end{enumerate}
+P1 and P2 were formulated in the $\eta$ battery, before the runs. P3 was formulated after
+the first two runs with discrete modes (D3 and D4) and tested blind with two later runs
+at larger mass (D9 and D10). For the non-equilibrium initial condition of
+Section~\ref{sec:bulto_diseno} we expected a transition near $\mu\sim1$.
+
+\section{Numerical methods}
+\label{sec:metodos}
+
+\subsection{Self-consistent equilibria}
+\label{sec:construccion}
+
+The equilibrium of Section~\ref{sec:equilibrio} is a fixed point: the action is computed
+in the total potential $\Phi=\Phi_{\rm iso}+\Phi_{\rm self}$, and $\Phi_{\rm self}$ is the
+potential of $F_{\rm eq}(J)$ itself. \texttt{equilibrio.py} finds it by iteration. The inputs are the shape of the distribution ($g$, $W_0$ and
+$J_t$), the angular momentum $L_0$ and the mass $a_0$. The calculation uses its own
+radial grid, $r\in[0.01,25]$ with spacing $0.01$, ten times finer than the PIC grid.
+\begin{enumerate}
+\item Start from $\Phi_{\rm self}=0$, the isochrone alone.
+\item Compute the angle--action map of the current potential. At fixed $L$ the action
+depends only on the energy, so it suffices to tabulate $J(E)$. We take 4000 energies,
+from that of the circular orbit, $E_c=\Phi_{\rm ef}(r_c)$, to one whose action slightly
+exceeds $J_t$. For each energy the turning points $r_\pm$ are found by bisection and
+\[
+  J(E)=\frac1\pi\int_{r_-}^{r_+}\sqrt{2\,\big(E-\Phi_{\rm ef}(r)\big)}\,dr
+\]
+is computed with Gauss--Legendre quadrature after the substitution $r=r_m+r_a\sin\theta$,
+where $r_m$ and $r_a$ are the centre and half-width of the interval. The substitution
+removes the square-root singularity at the turning points. Inverting the table gives
+$E(J)$, and from it $\Omega(J)=dE/dJ$.
+\item Evaluate the lowered Maxwellian in this potential. The cut-off energy is that of
+the edge orbit, $E_t=E(J_t)$, and the temperature is $T=(E_t-E_c)/W_0$. Both are
+recomputed at each iteration, so the support is always $[0,J_t]$ and the depth of the
+well is always $W_0$ temperatures.
+\item Normalize. The map $(r,p_r)\to(Q,J)$ is canonical, $dr\,dp_r=dQ\,dJ$, and $F_{\rm
+eq}$ does not depend on $Q$, so
+\[
+  a_0=8\pi^2L_0\iint F_{\rm eq}\,dQ\,dJ=16\pi^3L_0\,A\int_0^{J_t}E_\gamma\!\Big(g,\frac{E_t-E(J)}{T}\Big)\,dJ ,
+\]
+which fixes $A$. The mass is exactly $a_0$ at every iteration; what changes from one
+iteration to the next is the shape of $F_{\rm eq}$ in $J$.
+\item Compute the density by integrating over the allowed radial velocities at each
+radius,
+\[
+  4\pi r^2\rho(r)=8\pi^2L_0\int F_{\rm eq}\big(E(r,p_r)\big)\,dp_r,\qquad E=\tfrac12p_r^2+\Phi_{\rm ef}(r).
+\]
+Since $F_{\rm eq}$ is a function of the energy, this step does not need the map.
+\item Solve the Poisson equation in spherical symmetry,
+$\Phi_{\rm self}(r)=-M(<r)/r-\int_r^\infty4\pi r'\rho(r')\,dr'$.
+\item Repeat steps 2 to 6 until $\Phi_{\rm self}$ changes by less than $10^{-13}$ between
+two iterations. No relaxation is used. The convergence is geometric and slower for
+larger masses: the equilibrium of A1 needs 7 iterations, that of A4 15, that of L6 24
+and that of M5 ($a_0=0.5$) 50.
+\end{enumerate}
+The result, $\Phi_{\rm self}(r)$, $\rho(r)$, the table $E(J)$ and the amplitude $A$, is
+stored in
+\texttt{exe/\allowbreak demo\_\allowbreak eta/\allowbreak ic/\allowbreak <run>\_\allowbreak equilibrio.npz}. The table gives the frequency band and the angle--action map
+used by all diagnostics.
+
+\subsection{Particle loading}
+\label{sec:carga}
+
+The particles sit at the nodes of a regular grid in the angle--action variables of the
+converged equilibrium, $J_i=(i-\tfrac12)J_t/N_{rc}$ and $Q_j=(j-\tfrac12)2\pi/N_{pc}$, with
+$N_{rc}=400$ and $N_{pc}=25$, so $N=10^4$. For each node the map is inverted. With
+$E=E(J_i)$ and its turning points, bisection finds the point of the orbit at which the
+fraction of the radial period elapsed since pericentre is $Q_j/2\pi$. This gives $r$,
+and $p_r=\pm\sqrt{2(E-\Phi_{\rm ef}(r))}$, with the positive sign for $Q_j\le\pi$. The
+forward map applied to the resulting $(r,p_r)$ returns the nodes with errors below
+$10^{-8}$ in $J$ and $5\times10^{-7}$ in $Q$. The weight of each particle is
+$F_{\rm eq}(J_i)\,[1+\varepsilon\,s(J_i)\cos Q_j]$. When it reads the file, the code
+multiplies all weights by a common constant so that the total mass is $a_0$; since all
+grid cells have the same phase-space volume, this only fixes the normalization. The
+perturbation changes neither the mass nor the mean profile in $J$, because
+$\sum_j\cos Q_j=0$ exactly on a regular grid. This is a quiet start: the perturbation is
+carried by the weights, not by the positions, and there is no sampling noise. The
+reference runs (Z) use the same nodes with $\varepsilon=0$.
+
+The grid must be built in the self-consistent potential. The code's own \texttt{aa\_quad}
+state builds it in the variables of the bare isochrone, and then, once the mass is no
+longer negligible, the initial condition is not stationary: the particles are not
+where the actual potential would keep them. With the present procedure the action of
+each particle in the unperturbed runs changes by at most $2\times10^{-5}$ (A1) to
+$8\times10^{-4}$ (L5), and $1.3\times10^{-3}$ in the most massive case (M5), less than
+\SI{1}{\%} of $J_t$ (Section~\ref{sec:controles}).
+
+\subsection{PIC scheme}
+\label{sec:pic}
+
+The PIC code (\texttt{VP\_PIC}, Fortran with OpenMP) represents the distribution by $N$
+particles. Each particle is a spherical shell with a fixed mass (its weight), a radius
+$r_i$ and a radial momentum $p_i$. The radial grid is uniform and staggered,
+$r_j=(j-\tfrac12)\Delta r$ for $j=1,\dots,N_r$, with $\Delta r=0.1$ and $r\in[0,20]$
+($N_r=200$). The self-gravity is computed in four steps.
+\begin{enumerate}
+\item Deposition. The mass of each particle is assigned to the neighbouring grid
+points with linear B-spline (cloud-in-cell) weights and divided by the cell volume.
+\item Density. Between grid points the density is taken to be linear, with values
+rescaled so that the field sees exactly the deposited mass.
+\item Field. The enclosed mass and the potential follow from $dM/dr=4\pi r^2\rho$ and
+$d\Phi_{\rm self}/dr=M/r^2$, integrated in closed form over each cell. The density is
+even at the origin. The additive constant is fixed by $\Phi_{\rm self}+r\,d\Phi_{\rm
+self}/dr=0$ at the outer grid point, which matches the exterior solution $-M/r$.
+\item Interpolation. The potential and the force are interpolated back to the
+particles with the same weights. Beyond the last grid point the exterior solution,
+$\Phi\propto1/r$ and $F\propto1/r^2$, is used.
+\end{enumerate}
+The isochrone force and the centrifugal force $L_0^2/r^3$ are evaluated analytically at
+each particle. The equations of motion $\dot r=p_r$, $\dot p_r=-\partial_rH$ are
+integrated with the fourth-order symplectic scheme of Yoshida (1990): a symmetric
+composition of three kick--drift--kick leapfrog sub-steps with weights $w_1$, $w_0$,
+$w_1$, where $w_1=1/(2-2^{1/3})$ and $w_0=-2^{1/3}/(2-2^{1/3})$. Each sub-step includes
+a Poisson solve. The time step is $\Delta t=C\,\Delta r/p_{\max}=0.05$, with Courant
+factor $C=1$ and $p_{\max}=2$. A particle that crosses the origin is reflected
+($r\to-r$, $p_r\to-p_r$), but with $L_0=2$ the centrifugal barrier keeps the particles
+away from it. Positions, momenta, weights, the grid potential and the total energy
+(kinetic, background, centrifugal and self-gravitational) are written to HDF5 every
+$200$ steps, that is, every $10$ time units.
+
+\subsection{Linearized solver}
+\label{sec:lineal}
+
+The linear reference is computed by \texttt{lineal.py}, which integrates the linearized
+equation of Section~\ref{sec:modo} about the same equilibrium, without particles. It
+uses a fixed grid of $N_J\times N_Q=1600\times32$ nodes in $(Q,J)$; the radius $r(Q,J)$
+of each node is computed once with the inverse equilibrium map. Each time step, of
+size $\Delta t=0.5$, is a Strang splitting: half a field kick,
+$\delta F\leftarrow\delta F+\tfrac12\Delta t\,F_{\rm eq}'(J)\,\partial_Q\delta\Phi$,
+exact free transport in $Q$, which in Fourier space is $\hat f_k\to\hat f_k\,e^{-ik\Omega(J)\Delta t}$, and a second half kick. The derivative $\partial_Q$ is computed by
+FFT. The potential is obtained with the Green's function of spherical shells, which is
+exact at the nodes,
+\[
+  \delta\Phi(r_i)=-\frac{M(<r_i)}{r_i}-\sum_{r_j>r_i}\frac{m_j}{r_j},\qquad
+  m_j=8\pi^2L_0\,\delta F_j\,\Delta Q\,\Delta J,
+\]
+with the shell of node $i$ counted with half its mass. The initial condition is the
+perturbation of the PIC runs with $\varepsilon=1$. The solver returns
+$\delta\Phi_{\rm lin}(r,t)$ and $h_{1,\rm lin}(t)$ up to the final time of the longest
+run on each equilibrium.
+
+\subsection{Diagnostics}
+\label{sec:medida}
+
+\paragraph{Potential perturbation.} At each snapshot we compute, on the code grid,
+\[
+  \delta\Phi(r,t)=\Phi(r,t)-\Phi_{\rm iso}(r)-\Phi_{\rm self,eq}(r).
+\]
+This quantity does not depend on any angle--action map, and it is the one whose decay
+the theorems address. The part due to the perturbation is isolated by subtracting the
+reference run of the same equilibrium and dividing by $\varepsilon$,
+\[
+  \delta\Phi_\varepsilon(r,t)=\frac{\delta\Phi(r,t;\varepsilon)-\delta\Phi(r,t;0)}{\varepsilon},
+\]
+which is independent of $\varepsilon$ in the linear regime. Its size $\|\delta\Phi\|$ is the
+rms value over $3\le r\le15$, where the component lives.
+
+\paragraph{Harmonic.} With $(Q_j,J_j)$ from the equilibrium map,
+\[
+  h_1(t)=\frac{\sum_jf_jB(J_j)\,e^{-iQ_j}}{\sum_jf_jB(J_j)\big|_{t=0}},\qquad B(J)=J^2e^{-(J-0.05)^2/0.05^2},
+\]
+with the same subtraction of the reference run and division by $\varepsilon$.
+
+\paragraph{Linear reference and nonlinear deviation.} Each PIC snapshot is paired with
+the nearest sample of the linear solution $\delta\Phi_{\rm lin}$, $h_{1,\rm lin}$
+(Section~\ref{sec:lineal}). The nonlinear deviation is
+\[
+  \mathcal D(t)=\frac{\|\delta\Phi_\varepsilon-\delta\Phi_{\rm lin}\|}{\|\delta\Phi_{\rm lin}\|}.
+\]
+In practice we use envelopes (below): $t_{\rm nl}$ is the first time at which the
+envelope of $\|\delta\Phi_\varepsilon-\delta\Phi_{\rm lin}\|$ exceeds \SI{10}{\%} of the
+envelope of $\|\delta\Phi_{\rm lin}\|$.
+
+\paragraph{Envelopes, ratios and losses.} The envelope of a signal is its maximum over
+windows of $\pm50$ time units, slightly more than one radial period; without it the
+oscillation of the mode hides the trend. $R$ is the ratio of the PIC and linear
+envelopes of $\|\delta\Phi\|$ in a time window; its error is half the difference between
+the values in the two halves of the window. The loss of a run between $5$ and
+$20\,\tau_1$ is the relative decrease of the PIC envelope over that interval, net of the
+decrease of the linear envelope:
+$1-[e_{\rm PIC}(20\tau_1)/e_{\rm PIC}(5\tau_1)]/[e_{\rm lin}(20\tau_1)/e_{\rm lin}(5\tau_1)]$.
+
+\paragraph{Pole fits.} The pole $\omega-i\gamma$ of $h_1$ is fitted, in the PIC runs and
+in the linear solution alike, with the matrix-pencil method of order $M=3$ in windows of
+a few $\tau_1$. Its uncertainty is the largest deviation among the fits with $M=2$ and
+$M=3$ on three trims of the window (complete, without the first \SI{10}{\%}, and without
+the last \SI{10}{\%}). This bounds the error of the fit, not the numerical error of the
+run, which is assessed with the convergence tests (Section~\ref{sec:controles}). We
+tested the fit with synthetic signals of known $\gamma$ at $\omega=0.0725$, sampled every
+$10$ time units and fitted over $3600\le t\le7200$ ($10$--$20\,\tau_1$ with $\tau_1=360$): the
+frequency, sampling and window of the discrete mode of L5. Both for clean signals and
+with a \SI{5}{\%} beat and complex noise of amplitude $10^{-3}$, the fit recovers
+$\gamma$ to $\sim10^{-6}$ for $0\le\gamma\le10^{-4}$ (\texttt{demo\_eta.py resolucion}).
+
+\paragraph{Smooth and fine parts.} To separate the large-scale response from structure
+on the scale of a few grid cells, $\delta\Phi_\varepsilon(r)$ is smoothed with a Gaussian
+of width $0.5$ in $r$. The smooth part is compared with the linear solution smoothed in
+the same way, and the remainder, relative to the initial linear norm, is the fine part.
+A scale-free alternative is the projection of $\delta\Phi_\varepsilon(r)$ on the profile of
+the linear solution at $t=5\tau_1$. The noise floor of a run is estimated as the rms
+fluctuation of $\delta\Phi$ of its reference run about its time mean, divided by
+$\varepsilon$.
+
+\paragraph{Trapped particles.} A particle is counted as trapped in a time window if its
+phase relative to the wave, $\psi=Q-\omega t$, librates, that is, varies by less than
+$2\pi$, instead of circulating. The amplitude of the wave felt at the resonance is
+$A(t)=|\delta\Phi_1(J_r,t)|$, the first Fourier coefficient in $Q$ of $\delta\Phi$ along
+the equilibrium orbit of action $J_r$.
+
+\paragraph{Phase-space figures.} Each particle is plotted in $(r,p_r)$ and in $(Q,J)$,
+coloured by its weight perturbation $f_j-f_{{\rm eq},j}=\varepsilon F_{\rm eq}s\cos Q_0$:
+red where the perturbation adds mass and blue where it removes it. The weights do not
+change, so the colour is a label carried by the particle, and its pattern is the fine
+structure of $\delta F$. In the Z runs the colour is $\cos Q_0$, a label without dynamical
+effect. In $(Q,J)$ each row of fixed action advances with its $\Omega(J)$, so the initial
+pattern of columns tilts, and phase mixing appears directly as shear.
+
+\section{Linear predictions and run design}
+\label{sec:diseno}
+
+\subsection{Linear theory of the equilibrium family}
+\label{sec:prediccion_lineal}
+
+All equilibria are Wilson models with $J_t=0.138$, $W_0=3$, $L_0=2$ and $g=2$, except one
+King model ($g=1$, G1a) used to test the vacuum edge. In this family $\eta$ grows slightly
+more slowly than linearly with the mass: $\eta/a_0$ decreases from $15$ to $12$ between
+$a_0=0.0065$ and $0.17$, and is $10$ at $a_0=0.5$. The value $\eta=1$ corresponds to
+$a_0=0.075$.
 
 The linearized solver (Section~\ref{sec:lineal}) gives the pole $\omega-i\gamma$ of each
 equilibrium (Table~\ref{tab:lineal} and Figure~\ref{fig:modo_banda}). As $\eta$
@@ -171,6 +510,18 @@ Between $\eta=1$ and $1.24$ it crosses the edge and becomes a discrete mode, so
 $\eta_c\approx1.1$--$1.2$ for this family. The full linear analysis, including the scan
 in $\eta$ and its checks, is in the companion document on the $\eta$ battery
 (\texttt{docs/\allowbreak experimento\_\allowbreak eta/\allowbreak bateria\_\allowbreak eta.pdf}).
+
+The solver also reproduces the edge dichotomy of Section~\ref{sec:borde}. At $\eta=1$,
+$g\le1$ already has a discrete mode while $g\ge2$ is still damped. At $\eta=0.1$ the sharp
+edge (G1a) leaves a response that oscillates at $\Omega_{\min}$ and decays ever more slowly,
+while the response of the smooth edge (A1) dies out.
+
+In A4, for example, the band is $[0.0698,\,0.0857]$, so $\Delta\Omega=0.0159$ and
+$\tau_1=395$. The radial period ranges from $2\pi/0.0857=73$ at the circular orbit to
+$2\pi/0.0698=90$ at the edge of the support, and the two ends of the band dephase by one
+full turn after about five radial periods. Across the family $\tau_1$ ranges from $125$
+(M5) to about $560$ (A1), and the damping time $1/\gamma$ is $170$ in A1, $420$ in A3 and
+$2700$ in A4.
 
 \begin{figure}[htbp]
 \centering
@@ -230,234 +581,6 @@ are Wilson models with $J_t=0.138$, $W_0=3$, $L_0=2$ and $g=2$, except G1a, a Ki
 \label{tab:lineal}
 \end{table}
 
-\subsection{The vacuum edge}
-\label{sec:borde}
-
-The distribution vanishes at the edge of the support, $J=J_t$. Hadžić, Rein, Schrecker
-and Straub (Arch.\ Ration.\ Mech.\ Anal.\ \textbf{249}, 45, 2025) study this same
-reduction: all particles with the same $|L|$, in the fixed field of a point mass (the
-isochrone plays this role here), with small equilibria $F=\varepsilon(E_0-E)^k$. For
-the linearized problem they prove a dichotomy in the exponent of the edge, valid for
-$\varepsilon$ below a threshold $\varepsilon_0(k)$ that they do not estimate. For $k>1$
-(our $g$) perturbations are damped. For $1/2<k\le1$ they are not, because there is a
-discrete mode below $\Omega_{\min}$. Only the behaviour at the edge matters; for the
-King model ($g=1$) they note that there is no damping.
-
-The linear theory of our model shows the same behaviour. At $\eta=1$, $g\le1$ already
-has a discrete mode while $g\ge2$ is still damped. At $\eta=0.1$ the sharp edge leaves
-a response that oscillates at $\Omega_{\min}$ and decays ever more slowly, while the
-response of the smooth edge dies out. A heuristic explanation: the dispersion relation
-contains $\int F_{\rm eq}'/(\Omega-\omega)\,dJ$, and with $F_{\rm eq}'\propto(J_t-J)^{g-1}$
-this integral diverges as $\omega\to\Omega_{\min}$ if $g\le1$. An arbitrarily weak
-coupling then suffices to bind a state at the edge.
-
-\subsection{Nonlinear time scales}
-\label{sec:nolineal}
-
-In a fixed potential the Vlasov equation is exactly linear in $F$ for any amplitude
-$\varepsilon$; nonlinearity enters only through $\delta\Phi$. Near a resonance
-$\Omega(J_r)=\omega$ a particle moves as in a pendulum, with bounce frequency
-\[
-  \omega_b=\sqrt{|\Omega'(J_r)|\,|\delta\Phi|}\;\propto\;\sqrt{\varepsilon}.
-\]
-The wave traps particles on a time $\sim2\pi/\omega_b$ and is damped on a time
-$1/\gamma$. Their ratio is O'Neil's parameter,
-\[
-  \nu=\omega_b/\gamma .
-\]
-For $\nu\ll1$ the wave is damped before it can trap particles, and linear theory holds
-at all times. For $\nu\gtrsim1$ the resonant particles are trapped, damping stops, and
-the amplitude oscillates and saturates; linear theory does not give the final state.
-Near the transition $\gamma\to0$, so $\nu\to\infty$ for any amplitude: at $\eta=1$,
-$\nu\approx11\sqrt\varepsilon$, and $\varepsilon\approx0.008$ already gives $\nu=1$.
-Whether the evolution is linear is decided by $\nu$, not by $\varepsilon$.
-
-For a discrete mode ($\eta>\eta_c$) there is no resonance inside the band, and the
-nonlinear question is whether the mode survives at finite amplitude. Its frequency
-shifts with the amplitude, and a mode just below the edge could enter the band. The
-relevant ratio compares the bounce frequency with the distance to the edge,
-$\omega_b/(\Omega_{\min}-\omega)$. A third ratio, $\mu=\omega_b/\Delta\Omega$, compares
-trapping with the mixing of the whole band. It stays below $0.4$ in runs D1--D10 and
-becomes the controlling parameter for the non-equilibrium initial condition of
-Section~\ref{sec:bulto}.
-
-In the runs, $\tau_1$ ranges from $125$ to $560$; $1/\gamma$ is $170$ for A1, $420$ for
-A3 and $2700$ for A4, and infinite for a discrete mode; $2\pi/\omega_b$ scales as
-$\varepsilon^{-1/2}$ and is $1700$ for A4 at $\varepsilon=0.84$ and $5700$ at
-$\varepsilon=0.075$. These estimates are order-of-magnitude guides, not thresholds
-(Section~\ref{sec:eligenu}).
-
-\paragraph{Predictions.}
-\label{sec:predicciones}
-Three predictions can be falsified by the runs.
-(P1)~Where $\nu=\omega_b/\gamma\ll1$, the PIC evolution follows the linear theory of the
-same equilibrium for any $\varepsilon$. (P2)~Where $\nu\gtrsim1$, the PIC evolution
-departs from linear theory at $t\sim2\pi/\omega_b$ and damping stops. P1 and P2 were
-formulated in the $\eta$ battery, before the runs. (P3)~A discrete mode becomes
-fragile when $\omega_b/(\Omega_{\min}-\omega)\gtrsim1$. P3 was formulated after runs D3
-and D4 and tested blind with D9 and D10. For the blob of Section~\ref{sec:bulto} we
-expected a transition near $\mu\sim1$.
-
-\subsection{PIC scheme}
-\label{sec:pic}
-
-The PIC code (\texttt{VP\_PIC}, Fortran with OpenMP) represents the distribution by $N$
-particles. Each particle is a spherical shell with a fixed mass (its weight), a radius
-$r_i$ and a radial momentum $p_i$. The radial grid is uniform and staggered,
-$r_j=(j-\tfrac12)\Delta r$ for $j=1,\dots,N_r$, with $\Delta r=0.1$ and $r\in[0,20]$
-($N_r=200$). The self-gravity is computed in four steps.
-\begin{enumerate}
-\item Deposition. The mass of each particle is assigned to the neighbouring grid
-points with linear B-spline (cloud-in-cell) weights and divided by the cell volume.
-\item Density. Between grid points the density is taken to be linear, with values
-rescaled so that the field sees exactly the deposited mass.
-\item Field. The enclosed mass and the potential follow from $dM/dr=4\pi r^2\rho$ and
-$d\Phi_{\rm self}/dr=M/r^2$, integrated in closed form over each cell. The density is
-even at the origin. The additive constant is fixed by $\Phi_{\rm self}+r\,d\Phi_{\rm
-self}/dr=0$ at the outer grid point, which matches the exterior solution $-M/r$.
-\item Interpolation. The potential and the force are interpolated back to the
-particles with the same weights. Beyond the last grid point the exterior solution,
-$\Phi\propto1/r$ and $F\propto1/r^2$, is used.
-\end{enumerate}
-The isochrone force and the centrifugal force $L_0^2/r^3$ are evaluated analytically at
-each particle. The equations of motion $\dot r=p_r$, $\dot p_r=-\partial_rH$ are
-integrated with the fourth-order symplectic scheme of Yoshida (1990): a symmetric
-composition of three kick--drift--kick leapfrog sub-steps with weights $w_1$, $w_0$,
-$w_1$, where $w_1=1/(2-2^{1/3})$ and $w_0=-2^{1/3}/(2-2^{1/3})$. Each sub-step includes
-a Poisson solve. The time step is $\Delta t=C\,\Delta r/p_{\max}=0.05$, with Courant
-factor $C=1$ and $p_{\max}=2$. A particle that crosses the origin is reflected
-($r\to-r$, $p_r\to-p_r$), but with $L_0=2$ the centrifugal barrier keeps the particles
-away from it. Positions, momenta, weights, the grid potential and the total energy
-(kinetic, background, centrifugal and self-gravitational) are written to HDF5 every
-$200$ steps, that is, every $10$ time units.
-
-\subsection{Linearized solver}
-\label{sec:lineal}
-
-The linear reference is computed by \texttt{lineal.py}, which integrates the linearized
-equation of Section~\ref{sec:modo} about the same equilibrium, without particles. It
-uses a fixed grid of $N_J\times N_Q=1600\times32$ nodes in $(Q,J)$; the radius $r(Q,J)$
-of each node is computed once with the inverse equilibrium map. Each time step, of
-size $\Delta t=0.5$, is a Strang splitting: half a field kick,
-$\delta F\leftarrow\delta F+\tfrac12\Delta t\,F_{\rm eq}'(J)\,\partial_Q\delta\Phi$,
-exact free transport in $Q$, which in Fourier space is $\hat f_k\to\hat f_k\,e^{-ik\Omega(J)\Delta t}$, and a second half kick. The derivative $\partial_Q$ is computed by
-FFT. The potential is obtained with the Green's function of spherical shells, which is
-exact at the nodes,
-\[
-  \delta\Phi(r_i)=-\frac{M(<r_i)}{r_i}-\sum_{r_j>r_i}\frac{m_j}{r_j},\qquad
-  m_j=8\pi^2L_0\,\delta F_j\,\Delta Q\,\Delta J,
-\]
-with the shell of node $i$ counted with half its mass. The initial condition is the
-perturbation of the PIC runs with $\varepsilon=1$. The solver returns
-$\delta\Phi_{\rm lin}(r,t)$ and $h_{1,\rm lin}(t)$ up to the final time of the longest
-run on each equilibrium.
-
-\section{Equilibrium and initial data}
-\label{sec:demo}
-
-\subsection{Distribution function}
-\label{sec:equilibrio}
-
-The equilibria are lowered Maxwellians in the energy,
-\[
-  F_{\rm eq}=A\,E_\gamma(g,x),\qquad x=\frac{E_t-E}{T}\ (E<E_t),\qquad
-  E_\gamma(g,x)=\sum_{n\ge0}\frac{x^{g+n}}{\Gamma(g+n+1)} ,
-\]
-and $F_{\rm eq}=0$ for $E\ge E_t$. Far from the edge $F_{\rm eq}\propto e^{-E/T}$; near
-the cut-off energy $E_t$ it vanishes as $(E_t-E)^g$. The Wilson model has $g=2$ and the
-King model $g=1$. The edge is the orbit of action $J_t=0.138$, $E_t=E(J_t)$, and the
-temperature is $T=(E_t-E_c)/W_0$ with $W_0=3$, where $E_c$ is the energy of the circular
-orbit. $F_{\rm eq}$ decreases monotonically with the energy, so it has no unstable radial
-modes (Antonov). We chose it because its vacuum edge is the object of the theorems of
-Hadžić et al.\ (Section~\ref{sec:borde}).
-
-\subsection{Self-consistent construction}
-\label{sec:construccion}
-
-A function of $J$ alone is stationary, but $J$ is defined in the total potential
-$\Phi=\Phi_{\rm iso}+\Phi_{\rm self}$, and $\Phi_{\rm self}$ is the potential of $F_{\rm
-eq}$ itself. The equilibrium is therefore a fixed point, which \texttt{equilibrio.py}
-finds by iteration. The inputs are the shape of the distribution ($g$, $W_0$ and
-$J_t$), the angular momentum $L_0$ and the mass $a_0$. The calculation uses its own
-radial grid, $r\in[0.01,25]$ with spacing $0.01$, ten times finer than the PIC grid.
-\begin{enumerate}
-\item Start from $\Phi_{\rm self}=0$, the isochrone alone.
-\item Compute the angle--action map of the current potential. At fixed $L$ the action
-depends only on the energy, so it suffices to tabulate $J(E)$. We take 4000 energies,
-from that of the circular orbit, $E_c=\Phi_{\rm ef}(r_c)$, to one whose action slightly
-exceeds $J_t$. For each energy the turning points $r_\pm$ are found by bisection and
-\[
-  J(E)=\frac1\pi\int_{r_-}^{r_+}\sqrt{2\,\big(E-\Phi_{\rm ef}(r)\big)}\,dr
-\]
-is computed with Gauss--Legendre quadrature after the substitution $r=r_m+r_a\sin\theta$,
-where $r_m$ and $r_a$ are the centre and half-width of the interval. The substitution
-removes the square-root singularity at the turning points. Inverting the table gives
-$E(J)$, and from it $\Omega(J)=dE/dJ$.
-\item Evaluate the lowered Maxwellian in this potential. The cut-off energy is that of
-the edge orbit, $E_t=E(J_t)$, and the temperature is $T=(E_t-E_c)/W_0$. Both are
-recomputed at each iteration, so the support is always $[0,J_t]$ and the depth of the
-well is always $W_0$ temperatures.
-\item Normalize. The map $(r,p_r)\to(Q,J)$ is canonical, $dr\,dp_r=dQ\,dJ$, and $F_{\rm
-eq}$ does not depend on $Q$, so
-\[
-  a_0=8\pi^2L_0\iint F_{\rm eq}\,dQ\,dJ=16\pi^3L_0\,A\int_0^{J_t}E_\gamma\!\Big(g,\frac{E_t-E(J)}{T}\Big)\,dJ ,
-\]
-which fixes $A$. The mass is exactly $a_0$ at every iteration; what changes from one
-iteration to the next is the shape of $F_{\rm eq}$ in $J$.
-\item Compute the density by integrating over the allowed radial velocities at each
-radius,
-\[
-  4\pi r^2\rho(r)=8\pi^2L_0\int F_{\rm eq}\big(E(r,p_r)\big)\,dp_r,\qquad E=\tfrac12p_r^2+\Phi_{\rm ef}(r).
-\]
-Since $F_{\rm eq}$ is a function of the energy, this step does not need the map.
-\item Solve the Poisson equation in spherical symmetry,
-$\Phi_{\rm self}(r)=-M(<r)/r-\int_r^\infty4\pi r'\rho(r')\,dr'$.
-\item Repeat steps 2 to 6 until $\Phi_{\rm self}$ changes by less than $10^{-13}$ between
-two iterations. No relaxation is used. The convergence is geometric and slower for
-larger masses: the equilibrium of A1 needs 7 iterations, that of A4 15, that of L6 24
-and that of M5 ($a_0=0.5$) 50.
-\end{enumerate}
-The result, $\Phi_{\rm self}(r)$, $\rho(r)$, the table $E(J)$ and the amplitude $A$, is
-stored in
-\texttt{exe/\allowbreak demo\_\allowbreak eta/\allowbreak ic/\allowbreak <run>\_\allowbreak equilibrio.npz}. The table gives the frequency band and the angle--action map
-used by all diagnostics.
-
-\subsection{Perturbation and particle loading}
-\label{sec:dato}
-
-The initial condition is the equilibrium plus a perturbation in angle,
-\[
-  F=F_{\rm eq}(J)\,\big[1+\varepsilon\,s(J)\cos Q\big],\qquad s=(J/J_t)^{3/2}.
-\]
-It has zero mean in $Q$, so it changes neither the mass nor the equilibrium. The factor
-$s(J)$ makes it smooth at the circular orbit, since $J^{3/2}\cos Q\propto J\,(r-r_c)$.
-The term $\cos Q$ adds mass on the pericentre side ($Q\approx0$) and removes it on the
-apocentre side: the component breathes radially.
-
-The particles sit at the nodes of a regular grid in the angle--action variables of the
-converged equilibrium, $J_i=(i-\tfrac12)J_t/N_{rc}$ and $Q_j=(j-\tfrac12)2\pi/N_{pc}$, with
-$N_{rc}=400$ and $N_{pc}=25$, so $N=10^4$. For each node the map is inverted. With
-$E=E(J_i)$ and its turning points, bisection finds the point of the orbit at which the
-fraction of the radial period elapsed since pericentre is $Q_j/2\pi$. This gives $r$,
-and $p_r=\pm\sqrt{2(E-\Phi_{\rm ef}(r))}$, with the positive sign for $Q_j\le\pi$. The
-forward map applied to the resulting $(r,p_r)$ returns the nodes with errors below
-$10^{-8}$ in $J$ and $5\times10^{-7}$ in $Q$. The weight of each particle is
-$F_{\rm eq}(J_i)\,[1+\varepsilon\,s(J_i)\cos Q_j]$. When it reads the file, the code
-multiplies all weights by a common constant so that the total mass is $a_0$; since all
-grid cells have the same phase-space volume, this only fixes the normalization. The
-perturbation changes neither the mass nor the mean profile in $J$, because
-$\sum_j\cos Q_j=0$ exactly on a regular grid. This is a quiet start: the perturbation is
-carried by the weights, not by the positions, and there is no sampling noise. The
-reference runs (Z) use the same nodes with $\varepsilon=0$.
-
-The grid must be built in the self-consistent potential. The code's own \texttt{aa\_quad}
-state builds it in the variables of the bare isochrone, and then, once the mass is no
-longer negligible, the initial condition is not stationary: the particles are not
-where the actual potential would keep them. With the present procedure the action of
-each particle in the unperturbed runs changes by at most $2\times10^{-5}$ (A1) to
-$8\times10^{-4}$ (L5), and $1.3\times10^{-3}$ in the most massive case (M5), less than
-\SI{1}{\%} of $J_t$ (Section~\ref{sec:controles}).
-
 \subsection{Choice of \texorpdfstring{$\eta$}{eta} and \texorpdfstring{$\nu$}{nu}}
 \label{sec:eligenu}
 
@@ -484,33 +607,21 @@ $a_0=0.003$ and $0.5$), so a given $\eta$ is obtained by scanning $a_0$ and
 interpolating: $a_0=0.075$ gives $\eta=0.996$ (A4). Changing $J_t$, $W_0$ or $g$ at fixed
 mass also changes $\eta$.
 
-\paragraph{$\gamma$ is a property of the equilibrium.} \texttt{lineal.py} solves the
-problem linearized about that equilibrium, and the fit of the tail gives the pole
-$\omega-i\gamma$. The rate $\gamma$ depends on $\eta$ and on the shape of the
-distribution, but not on $\varepsilon$.
-
-\paragraph{$\nu$ is set by the amplitude.} The bounce frequency is estimated from the
+\paragraph{$\nu$ is set by the amplitude.} \texttt{lineal.py} gives the pole
+$\omega-i\gamma$ of the equilibrium. The bounce frequency is estimated from the
 potential of the perturbation at $t=0$, which the linear solution with $\varepsilon=1$
 provides:
 \[
   \omega_b(\varepsilon)=\sqrt{|\Omega'|\,\max_r|\delta\Phi(r,0;\varepsilon)|},\qquad |\Omega'|\approx\frac{\Delta\Omega}{J_t} .
 \]
-At $t=0$, $\delta\Phi$ is exactly proportional to $\varepsilon$, because the perturbation
-of the weights is linear in $\varepsilon$ and so is the Poisson equation. Then
-$\omega_b(\varepsilon)=\omega_b(1)\sqrt\varepsilon$, and
-\[
-  \nu(\varepsilon)=\nu_1\sqrt\varepsilon,\qquad \nu_1=\frac{\omega_b(1)}{\gamma},\qquad \varepsilon=\Big(\frac{\nu}{\nu_1}\Big)^2
-\]
-is the amplitude that gives a chosen $\nu$. The runs were set in this way. For D2, in
+Since $\nu=\nu_1\sqrt\varepsilon$ (Section~\ref{sec:nolineal}), the amplitude that gives a
+chosen $\nu$ is $\varepsilon=(\nu/\nu_1)^2$. The runs were set in this way. For D2, in
 A3, $\nu_1=1.17$, and $\nu=0.3$ requires $\varepsilon=(0.3/1.17)^2=0.066$ ($0.065$ was used).
 For D5 and D6, in A4, $\nu_1=10.9$, and $\nu=3$ and $\nu=10$ require $\varepsilon=0.075$ and
-$0.84$. For a discrete mode $\gamma=0$ and $\nu$ is not defined, but the ratio that
-replaces it scales in the same way,
-$\omega_b/(\Omega_{\min}-\omega)=[\omega_b(1)/(\Omega_{\min}-\omega)]\sqrt\varepsilon$. The
+$0.84$. For a discrete mode the ratio $\omega_b/(\Omega_{\min}-\omega)$ plays the role of $\nu$. The
 amplitudes of the $\varepsilon$ scan of D3 were chosen with it: in L5 the factor is
-$19$, and $\varepsilon=0.003$, $0.01$, $0.03$ and $0.1$ give $1.0$, $1.9$, $3.3$ and $6.0$. The
-same holds for $\mu=\omega_b/\Delta\Omega=\mu_1\sqrt\varepsilon$, with
-$\mu_1=\omega_b(1)/\Delta\Omega$ ($0.25$ in A4). Table~\ref{tab:techo} lists these factors
+$19$, and $\varepsilon=0.003$, $0.01$, $0.03$ and $0.1$ give $1.0$, $1.9$, $3.3$ and $6.0$. For $\mu$
+the factor is $\mu_1=\omega_b(1)/\Delta\Omega$, $0.25$ in A4. Table~\ref{tab:techo} lists these factors
 for the whole family.
 
 \begin{table}[!htbp]
@@ -556,28 +667,21 @@ $\varepsilon$ also changes $\nu$: at $\varepsilon=0.075$, $\nu$ goes from $0.05$
 $\eta=0.1$ to $3$ at $\eta=1$. Keeping $\nu=1$ requires $\varepsilon=0.73$ at $\eta=0.6$,
 $0.098$ at $\eta=0.8$ and $0.0084$ at $\eta=1$.
 
-The ratios $\nu$, $\mu$ and $\omega_b/(\Omega_{\min}-\omega)$ all have $\omega_b$ in the
-numerator, so they all scale as $\sqrt\varepsilon$ and their quotients are fixed by the
-equilibrium: $\mu/\nu=\gamma/\Delta\Omega$. In A4, $\gamma/\Delta\Omega=0.023$, so
-$\mu=0.023\,\nu$ at any amplitude (D5 has $\nu=3$ and $\mu=0.07$; D6 has $\nu=10$ and
-$\mu=0.23$). To change them independently one must change the equilibrium, for
-instance its width $J_t$, which changes $\gamma$ and $\Delta\Omega$ differently.
+Since $\mu/\nu=\gamma/\Delta\Omega$ is fixed by the equilibrium (Section~\ref{sec:nolineal}),
+in A4, where $\gamma/\Delta\Omega=0.023$, $\mu=0.023\,\nu$ at any amplitude: D5 has $\nu=3$
+and $\mu=0.07$, and D6 has $\nu=10$ and $\mu=0.23$.
 
-\paragraph{The ceiling.} The amplitude cannot exceed $1$: with $s\le1$ and angular
-profile $\chi(Q)=\cos Q$, $F$ would become negative at some node, and
-\texttt{equilibrio.py} refuses to build such data. Hence $\nu\le\nu_1(\eta)$, and part of
-the $(\eta,\nu)$ plane is inaccessible (Figure~\ref{fig:mapa}). Far from the transition
-the coupling is weak, $\gamma$ is large and $\nu_1$ small: for $\eta\le0.45$ this
-perturbation cannot reach $\nu=1$. Near $\eta_c$, $\gamma\to0$ and any $\nu$ can be
-reached. On the discrete side the opposite happens. The ratio
-$\omega_b/(\Omega_{\min}-\omega)$ is bounded by $\omega_b(1)/(\Omega_{\min}-\omega)$, which
-decreases away from the transition: $19$ in L5, $1.7$ in L6 and $0.63$ in M5. A mode far
-below the band cannot be made fragile with $\varepsilon\le1$, which is what D10 shows.
+\paragraph{The ceiling in practice.} Since $\varepsilon\le1$, and \texttt{equilibrio.py}
+refuses to build data with $F<0$, part of the $(\eta,\nu)$ plane is inaccessible
+(Figure~\ref{fig:mapa}): for $\eta\le0.45$ this perturbation cannot reach $\nu=1$. On the
+discrete side the largest ratio, $\omega_b(1)/(\Omega_{\min}-\omega)$, is $19$ in L5, $1.7$ in
+L6 and $0.63$ in M5, so the mode of M5 cannot be made fragile with $\varepsilon\le1$,
+which is what D10 shows.
 The ceiling can be raised at fixed $\eta$ in three ways: with a perturbation that
 produces more $\delta\Phi$ per unit $\varepsilon$, through another radial profile $s(J)$
 or angular profile $\chi(Q)$; with a different width $J_t$ at fixed $\eta$, which changes
 $\gamma$, $\Delta\Omega$ and $\nu_1$, although $\eta_c$ moves as well; or with a
-non-perturbative initial condition, such as the blob of Section~\ref{sec:bulto}, whose
+non-perturbative initial condition, such as the blob of Section~\ref{sec:bulto_diseno}, whose
 amplitude is of order one by construction. The blob, however, is not a perturbation
 of any equilibrium, and the parameter that orders its evolution is $\mu$.
 
@@ -593,7 +697,7 @@ value of $\nu$ overestimates the effective one by a factor of a few.
 \subsection{Runs}
 \label{sec:corridas}
 
-Ten runs cover the regimes of Section~\ref{sec:conceptos}: both sides of the transition
+Ten runs cover the regimes of Section~\ref{sec:teoria}: both sides of the transition
 at low amplitude, the edge of the transition at increasing amplitude, the discrete mode
 at large amplitude, the sharp edge, and a mass comparable to that of the background
 (Table~\ref{tab:corridas} and Figure~\ref{fig:mapa}). Each equilibrium also has a
@@ -608,11 +712,10 @@ with the initial amplitude. Since the amplitude decays, the actual period of D6 
 out to be $\sim9000$, and the run D6L, extended to $t=17\,200$, was added to measure it
 (Section~\ref{sec:res_nolineal}).
 
-All runs use the same numerical parameters: $\Delta r=0.1$, $r\in[0,20]$, $\Delta t=0.05$,
-the yoshida4 integrator, $N=400\times25=10^4$ particles and self-gravity. They were run
-one after another with four OpenMP threads. The \texttt{.par} files are in
-\texttt{reproducir/corridas/12\_demo\_eta/} and the whole workflow in
-\texttt{reproducir/scripts/demo\_eta.py} (Appendix~\ref{sec:reproducir}). The control runs
+All runs use the PIC scheme of Section~\ref{sec:pic} with $N=400\times25=10^4$ particles,
+and were run one after another with four OpenMP threads. The \texttt{.par} files are in
+\texttt{reproducir/\allowbreak corridas/\allowbreak 12\_demo\_eta/} and the whole workflow in
+\texttt{reproducir/\allowbreak scripts/\allowbreak demo\_eta.py} (Appendix~\ref{sec:reproducir}). The control runs
 of Section~\ref{sec:controles} differ from these only in $N$, $\Delta t$, $\varepsilon$ or
 the final time.
 
@@ -703,76 +806,41 @@ and D10. The $\eta$ axis is logarithmic.}
 \label{fig:mapa}
 \end{figure}
 
-\section{Diagnostics}
-\label{sec:medida}
+\subsection{Non-equilibrium initial condition: the blob}
+\label{sec:bulto_diseno}
 
-\paragraph{Potential perturbation.} At each snapshot we compute, on the code grid,
+The runs of Section~\ref{sec:corridas} start from an equilibrium plus a perturbation. The initial condition of
+the earlier self-gravity runs (\texttt{reproducir/corridas/09\_autogravedad}) is different:
+a blob in angle,
 \[
-  \delta\Phi(r,t)=\Phi(r,t)-\Phi_{\rm iso}(r)-\Phi_{\rm self,eq}(r).
+  F_0(Q,J)=e^{-\sin^2(Q/2)/s_Q^2}\;J^2e^{-J^2/s_J^2},\qquad s_Q=s_J=0.1,
 \]
-This quantity does not depend on any angle--action map, and it is the one whose decay
-the theorems address. The part due to the perturbation is isolated by subtracting the
-reference run of the same equilibrium and dividing by $\varepsilon$,
-\[
-  \delta\Phi_\varepsilon(r,t)=\frac{\delta\Phi(r,t;\varepsilon)-\delta\Phi(r,t;0)}{\varepsilon},
-\]
-which is independent of $\varepsilon$ in the linear regime. Its size $\|\delta\Phi\|$ is the
-rms value over $3\le r\le15$, where the component lives.
+generated by the code itself (\texttt{state = aa\_quad}, \texttt{dftype = gauss}) on a regular
+grid in the angle--action variables of the \emph{bare} isochrone. All the mass is
+concentrated in one orbital phase, with a width of $0.2$ rad. In the terms of
+Section~\ref{sec:dato} it is a perturbation with $\varepsilon\gg1$ in all harmonics up to
+$k\sim1/s_Q\approx10$, and there is no equilibrium of which it is a perturbation. The earlier
+runs used $a_0=10^{-4}$--$10^{-2}$.
 
-\paragraph{Harmonic.} With $(Q_j,J_j)$ from the equilibrium map,
-\[
-  h_1(t)=\frac{\sum_jf_jB(J_j)\,e^{-iQ_j}}{\sum_jf_jB(J_j)\big|_{t=0}},\qquad B(J)=J^2e^{-(J-0.05)^2/0.05^2},
-\]
-with the same subtraction of the reference run and division by $\varepsilon$.
+Without self-gravity the blob is sheared, and its harmonics $h_k$ tend to zero by phase
+mixing. With self-gravity its own field could hold it together. The scale that competes
+with the shear is the bounce frequency of the particles in the well of the blob itself,
+and the relevant ratio is $\mu=\omega_b/\Delta\Omega$ (Section~\ref{sec:nolineal}): for
+$\mu\ll1$ the particles dephase before they feel the well, and for $\mu\gtrsim1$ they are
+trapped in it. In runs D1--D10, $\mu$ never exceeds $0.37$.
 
-\paragraph{Linear reference and nonlinear deviation.} Each PIC snapshot is paired with
-the nearest sample of the linear solution $\delta\Phi_{\rm lin}$, $h_{1,\rm lin}$
-(Section~\ref{sec:lineal}). The nonlinear deviation is
-\[
-  \mathcal D(t)=\frac{\|\delta\Phi_\varepsilon-\delta\Phi_{\rm lin}\|}{\|\delta\Phi_{\rm lin}\|}.
-\]
-In practice we use envelopes (below): $t_{\rm nl}$ is the first time at which the
-envelope of $\|\delta\Phi_\varepsilon-\delta\Phi_{\rm lin}\|$ exceeds \SI{10}{\%} of the
-envelope of $\|\delta\Phi_{\rm lin}\|$.
-
-\paragraph{Envelopes, ratios and losses.} The envelope of a signal is its maximum over
-windows of $\pm50$ time units, slightly more than one radial period; without it the
-oscillation of the mode hides the trend. $R$ is the ratio of the PIC and linear
-envelopes of $\|\delta\Phi\|$ in a time window; its error is half the difference between
-the values in the two halves of the window. The loss of a run between $5$ and
-$20\,\tau_1$ is the relative decrease of the PIC envelope over that interval, net of the
-decrease of the linear envelope:
-$1-[e_{\rm PIC}(20\tau_1)/e_{\rm PIC}(5\tau_1)]/[e_{\rm lin}(20\tau_1)/e_{\rm lin}(5\tau_1)]$.
-
-\paragraph{Pole fits.} The pole $\omega-i\gamma$ of $h_1$ is fitted, in the PIC runs and
-in the linear solution alike, with the matrix-pencil method of order $M=3$ in windows of
-a few $\tau_1$. Its uncertainty is the largest deviation among the fits with $M=2$ and
-$M=3$ on three trims of the window (complete, without the first \SI{10}{\%}, and without
-the last \SI{10}{\%}). This bounds the error of the fit, not the numerical error of the
-run, which is assessed with the convergence tests (Section~\ref{sec:controles}).
-
-\paragraph{Smooth and fine parts.} To separate the large-scale response from structure
-on the scale of a few grid cells, $\delta\Phi_\varepsilon(r)$ is smoothed with a Gaussian
-of width $0.5$ in $r$. The smooth part is compared with the linear solution smoothed in
-the same way, and the remainder, relative to the initial linear norm, is the fine part.
-A scale-free alternative is the projection of $\delta\Phi_\varepsilon(r)$ on the profile of
-the linear solution at $t=5\tau_1$. The noise floor of a run is estimated as the rms
-fluctuation of $\delta\Phi$ of its reference run about its time mean, divided by
-$\varepsilon$.
-
-\paragraph{Trapped particles.} A particle is counted as trapped in a time window if its
-phase relative to the wave, $\psi=Q-\omega t$, librates, that is, varies by less than
-$2\pi$, instead of circulating. The amplitude of the wave felt at the resonance is
-$A(t)=|\delta\Phi_1(J_r,t)|$, the first Fourier coefficient in $Q$ of $\delta\Phi$ along
-the equilibrium orbit of action $J_r$.
-
-\paragraph{Phase-space figures.} Each particle is plotted in $(r,p_r)$ and in $(Q,J)$,
-coloured by its weight perturbation $f_j-f_{{\rm eq},j}=\varepsilon F_{\rm eq}s\cos Q_0$:
-red where the perturbation adds mass and blue where it removes it. The weights do not
-change, so the colour is a label carried by the particle, and its pattern is the fine
-structure of $\delta F$. In the Z runs the colour is $\cos Q_0$, a label without dynamical
-effect. In $(Q,J)$ each row of fixed action advances with its $\Omega(J)$, so the initial
-pattern of columns tilts, and phase mixing appears directly as shear.
+We ran the same initial condition, on the same grid as the earlier runs
+($N_{rc}\times N_{pc}=400\times25$, $J\in[0,0.6]$), at five masses, plus one run without
+self-gravity (free mixing) and one with four times more resolution in angle
+(Table~\ref{tab:bulto}). The runs use $\Delta t=0.05$ and $t_{\rm fin}=10\,000\approx31\,\tau_1$,
+where $\tau_1=327$ is that of the band of the bare isochrone for this distribution,
+$[0.0513,\,0.0705]$. $\omega_b$ is estimated from the oscillation of the self-potential
+during the first radial period, $\omega_b=\sqrt{|\Omega'|\,|\delta\Phi|}$ with
+$|\Omega'|\approx\Delta\Omega/\Delta J$. Since the initial condition is not stationary, there is
+no fixed equilibrium to serve as a frame. The harmonics $h_k=\sum_jf_je^{-ikQ_j}/\sum_jf_j$
+are computed with two maps: that of the instantaneous potential, which describes the
+actual orbits, and that of the bare isochrone, which the code and the earlier runs use.
+The two maps agree at large mass but not at small mass (Section~\ref{sec:bulto}).
 
 \section{Results}
 \label{sec:resultados}
@@ -873,7 +941,7 @@ D5 follows linear theory for a long time. The pole of $h_1$ agrees up to $20\,\t
 from 1 to 0.94. Between $20$ and $30\,\tau_1$ the amplitude oscillates about the linear
 curve ($R=0.76$), and from $\sim25\,\tau_1$ on it stops decaying in the base run: over
 $30$--$44\,\tau_1$ its smooth part is $4.4$ times the linear one. This late plateau is not
-converged (Section~\ref{sec:controles}). It does not change with $\Delta t/2$, but with four
+converged (Section~\ref{sec:convergencia}). It does not change with $\Delta t/2$, but with four
 times more particles the excess drops from $4.4$ to $1.8$ times the linear value and the
 fine part drops by a factor of eleven ($2.2\times10^{-2}\to2.0\times10^{-3}$). Much of the
 plateau was discreteness noise, which in these runs grows with time, as documented in
@@ -938,7 +1006,7 @@ between $-6\times10^{-6}$ and $+2\times10^{-6}$ over $5$--$20\,\tau_1$; a linear
 $4$--$5\times10^{-5}$ would make it lose \SI{20}{\%}, and it loses nothing. With synthetic
 signals of known $\gamma$ at the same frequency, sampling and window, with a
 \SI{5}{\%} beat and noise of $10^{-3}$, the fit recovers $\gamma$ to $\sim10^{-6}$ between
-$0$ and $10^{-4}$ (Section~\ref{sec:controles}). The loss of D3 is therefore not linear.
+$0$ and $10^{-4}$ (Section~\ref{sec:medida}). The loss of D3 is therefore not linear.
 Nor is it numerical: with four times more particles, which doubles the resolution in $J$
 near the edge, it is \SI{19.5}{\%}, and with $\Delta t/2$ it is \SI{19.8}{\%}.
 
@@ -1115,41 +1183,8 @@ near $5\,\tau_1$ (Section~\ref{sec:res_pisos}); D8 stays above it until $\sim15\
 \label{fig:borde}
 \end{figure}
 
-\subsection{A non-equilibrium initial condition: the blob}
+\subsection{The blob}
 \label{sec:bulto}
-
-The runs above start from an equilibrium plus a perturbation. The initial condition of
-the earlier self-gravity runs (\texttt{reproducir/corridas/09\_autogravedad}) is different:
-a blob in angle,
-\[
-  F_0(Q,J)=e^{-\sin^2(Q/2)/s_Q^2}\;J^2e^{-J^2/s_J^2},\qquad s_Q=s_J=0.1,
-\]
-generated by the code itself (\texttt{state = aa\_quad}, \texttt{dftype = gauss}) on a regular
-grid in the angle--action variables of the \emph{bare} isochrone. All the mass is
-concentrated in one orbital phase, with a width of $0.2$ rad. In the terms of
-Section~\ref{sec:dato} it is a perturbation with $\varepsilon\gg1$ in all harmonics up to
-$k\sim1/s_Q\approx10$, and there is no equilibrium of which it is a perturbation. The earlier
-runs used $a_0=10^{-4}$--$10^{-2}$.
-
-Without self-gravity the blob is sheared, and its harmonics $h_k$ tend to zero by phase
-mixing. With self-gravity its own field could hold it together. The scale that competes
-with the shear is the bounce frequency of the particles in the well of the blob itself,
-and the relevant ratio is $\mu=\omega_b/\Delta\Omega$ (Section~\ref{sec:nolineal}): for
-$\mu\ll1$ the particles dephase before they feel the well, and for $\mu\gtrsim1$ they are
-trapped in it. In runs D1--D10, $\mu$ never exceeds $0.37$.
-
-We ran the same initial condition, on the same grid as the earlier runs
-($N_{rc}\times N_{pc}=400\times25$, $J\in[0,0.6]$), at five masses, plus one run without
-self-gravity (free mixing) and one with four times more resolution in angle
-(Table~\ref{tab:bulto}). The runs use $\Delta t=0.05$ and $t_{\rm fin}=10\,000\approx31\,\tau_1$,
-where $\tau_1=327$ is that of the band of the bare isochrone for this distribution,
-$[0.0513,\,0.0705]$. $\omega_b$ is estimated from the oscillation of the self-potential
-during the first radial period, $\omega_b=\sqrt{|\Omega'|\,|\delta\Phi|}$ with
-$|\Omega'|\approx\Delta\Omega/\Delta J$. Since the initial condition is not stationary, there is
-no fixed equilibrium to serve as a frame. The harmonics $h_k=\sum_jf_je^{-ikQ_j}/\sum_jf_j$
-are computed with two maps: that of the instantaneous potential, which describes the
-actual orbits, and that of the bare isochrone, which the code and the earlier runs use.
-At large mass the two agree; at small mass they do not, and the difference matters.
 
 \begin{table}[!htbp]
 \centering
@@ -1306,23 +1341,6 @@ other two after $\sim20\,\tau_1$.}
 \label{fig:convergencia}
 \end{figure}
 
-\subsection{Accuracy of the pole fits}
-\label{sec:ajuste}
-
-We fitted synthetic signals of known $\gamma$ at the frequency of the mode of D3, with the
-same sampling and window ($10$--$20\,\tau_1$), both clean and with a \SI{5}{\%} beat and
-complex noise of amplitude $10^{-3}$. The fit recovers $\gamma$ to $\sim10^{-6}$ for
-$0\le\gamma\le10^{-4}$ (\texttt{demo\_eta.py resolucion}).
-
-A previous version of the comparison paired each PIC snapshot with a sample of the
-linear solution that, because of rounding accumulated in the sample times, was in
-$\sim$\SI{60}{\%} of the cases the next one, two time units later. This does not affect the
-envelopes, the ratios $R$ or the PIC poles, but it does affect the PIC$-$linear residuals.
-With the corrected pairing, $t_{\rm nl}$ of D3 changes from $7.4$ to $13.5\,\tau_1$ and that
-of D5 from $6.7$ to $11.7\,\tau_1$, D4 never reaches it, and the excess loss of D4 over
-linear theory drops from \SI{5}{\%} to \SI{1}{\%}. All numbers in this document use the
-corrected pairing.
-
 \subsection{Measurement floors}
 \label{sec:res_pisos}
 
@@ -1354,6 +1372,15 @@ $h_1$, which does not go through the grid, and to check with larger $N$.
 Since the second effect grows with $\varepsilon$ and the third decreases, there is an
 optimal amplitude for following long tails, of order $\varepsilon\approx0.3$--$0.5$, with a
 floor of about $5\times10^{-4}$. This is an estimate from these runs, not a measurement.
+
+\paragraph{Correction to the previous version.} A previous version of the comparison paired each PIC snapshot with a sample of the
+linear solution that, because of rounding accumulated in the sample times, was in
+$\sim$\SI{60}{\%} of the cases the next one, two time units later. This does not affect the
+envelopes, the ratios $R$ or the PIC poles, but it does affect the PIC$-$linear residuals.
+With the corrected pairing, $t_{\rm nl}$ of D3 changes from $7.4$ to $13.5\,\tau_1$ and that
+of D5 from $6.7$ to $11.7\,\tau_1$, D4 never reaches it, and the excess loss of D4 over
+linear theory drops from \SI{5}{\%} to \SI{1}{\%}. All numbers in this document use the
+corrected pairing.
 
 \section{Discussion and conclusions}
 \label{sec:conclusiones}
