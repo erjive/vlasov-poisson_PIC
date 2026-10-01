@@ -637,6 +637,23 @@ def resolucion():
     print(open(ruta('resolucion.txt')).read())
 
 
+def armonicos(lista=('D3', 'D4', 'D9', 'D10')):
+    """Contenido armónico de los modos discretos: rms de |h_k|/|h_1| en dos ventanas, con
+    h_k como h_1 pero con exp(-i k Q) y restada la referencia; en
+    exe/demo_eta/armonicos.txt."""
+    with open(ruta('armonicos.txt'), 'w') as fo:
+        fo.write('corrida  ventana      |h2|/|h1|  |h3|/|h1|  |h4|/|h1|\n')
+        for n in lista:
+            d, z = np.load(ruta(n, 'landau.npz')), np.load(ruta(REF[n], 'landau.npz'))
+            m = min(len(d['t']), len(z['t']))
+            t, h = d['t'][:m], d['hk'][:m] - z['hk'][:m]
+            for lo, hi in ((500, 1500), (2000, 4000)):
+                s = (t >= lo) & (t <= hi)
+                a = np.sqrt(np.mean(np.abs(h[s])**2, axis=0))
+                fo.write(f'{n:7}  {lo:4}-{hi:<5}  {a[2]/a[1]:9.3f}  {a[3]/a[1]:9.3f}  {a[4]/a[1]:9.3f}\n')
+    print(open(ruta('armonicos.txt')).read())
+
+
 def envolvente(x, t, ancho=50.0):
     """Máximo de x en |t' - t| <= ancho: una vuelta radial (~90) cabe en la ventana."""
     n = int(round(ancho/(t[1] - t[0])))
@@ -782,7 +799,7 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion', 'energia', 'controles', 'isla',
+    ap.add_argument('paso', choices=['preparar', 'lineal', 'correr', 'analizar', 'figuras', 'videos', 'resolucion', 'energia', 'controles', 'isla', 'armonicos',
                                      'todo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()

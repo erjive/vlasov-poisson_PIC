@@ -166,15 +166,69 @@ $\propto t^{-(\alpha+1)}$.
 \label{sec:eta}
 
 With self-gravity, $\delta F$ generates a potential $\delta\Phi$ that acts back on the
-particles. The linearized equation in angle--action variables is
+particles. In angle--action variables the Hamiltonian is $H=E(J)+\delta\Phi(Q,J,t)$, where
+$E(J)$ is the energy of the equilibrium orbit and $\delta\Phi(Q,J,t)=\delta\Phi\big(r(Q,J),t\big)$
+is the potential perturbation along it. The equations of motion are
+$\dot Q=\Omega(J)+\partial_J\delta\Phi$ and $\dot J=-\partial_Q\delta\Phi$, and the Vlasov equation is
+$\partial_tF+\dot Q\,\partial_QF+\dot J\,\partial_JF=0$. With $F=F_{\rm eq}(J)+\delta F$, and
+dropping the products of two perturbations, it becomes
 \[
-  \partial_t\delta F+\Omega(J)\,\partial_Q\delta F-F_{\rm eq}'(J)\,\partial_Q\delta\Phi=0 ,
+  \partial_t\delta F+\Omega(J)\,\partial_Q\delta F-F_{\rm eq}'(J)\,\partial_Q\delta\Phi=0 .
 \]
-and it admits collective solutions $\propto e^{i(Q-\omega t)}$ with complex frequency
-$\omega-i\gamma$. If $\omega$ lies inside the band, resonant particles with
-$\Omega(J)=\omega$ exchange energy with the mode and the mode is Landau damped,
-$\gamma>0$. If $\omega$ lies outside the band there is no resonance and the mode
-oscillates without damping: it is a discrete mode, $\gamma=0$. We measure the position
+The second term is the free rotation of Section~\ref{sec:banda}. The third is the effect of
+the field on the equilibrium: $\delta\Phi$ changes the actions at the rate
+$\dot J=-\partial_Q\delta\Phi$, and this moves mass along the gradient $F_{\rm eq}'(J)$. The
+potential is linear in $\delta F$. Each element of phase space is a shell of mass
+$8\pi^2L_0\,\delta F\,dQ\,dJ$, so
+\[
+  \delta\Phi(r,t)=8\pi^2L_0\iint G\big(r,r(Q',J')\big)\,\delta F(Q',J',t)\,dQ'\,dJ',\qquad
+  G(r,r')=-\frac1{\max(r,r')}.
+\]
+
+\paragraph{Why the solutions have the form $e^{i(Q-\omega t)}$.} The coefficients of the
+equation, $\Omega(J)$ and $F_{\rm eq}'(J)$, and the relation between $\delta F$ and $\delta\Phi$ do
+not depend on time, because the equilibrium is stationary. A linear equation with
+time-independent coefficients has solutions $\delta F=a(Q,J)\,e^{-i\omega t}$, with $\omega$ an
+eigenvalue. The coefficients do not depend on $Q$ either, so we expand in Fourier series,
+$a=\sum_ka_k(J)\,e^{ikQ}$ and $\delta\Phi=e^{-i\omega t}\sum_k\delta\Phi_k(J)\,e^{ikQ}$. Each
+harmonic then obeys
+\[
+  \big(k\,\Omega(J)-\omega\big)\,a_k(J)=k\,F_{\rm eq}'(J)\,\delta\Phi_k(J).
+\]
+Unlike in a homogeneous plasma, the harmonics do not separate. A shift of $Q$ is not a
+symmetry, because $\delta\Phi$ depends on $Q$ through the radius $r(Q,J)$, so each
+$\delta\Phi_k$ depends on all the $a_{k'}$. Together with the Poisson equation, these relations
+form a linear eigenvalue problem, and the condition for a non-zero solution, the
+dispersion relation, fixes $\omega$. The coupling acts mainly on $k=\pm1$. Near the circular
+orbit $r-r_c\approx-\sqrt{2J/\kappa}\cos Q$, with $\kappa=\Omega(0)$ (Section~\ref{sec:aa}), so a
+smooth $\delta\Phi(r)$ seen along an orbit is $\delta\Phi(r_c)-\delta\Phi'(r_c)\sqrt{2J/\kappa}\,\cos Q$:
+a constant plus a pure $k=\pm1$ term. The other harmonics enter at higher order in the
+size of the epicycle. The modes are therefore dominated by $k=\pm1$, and since $\delta F$ is
+real the $k=-1$ part is the complex conjugate of the $k=1$ part. This is what
+$\delta F\propto e^{i(Q-\omega t)}$ means. In the PIC runs the $k=2$ harmonic of the discrete
+modes is $4$--\SI{5}{\%} of the $k=1$ harmonic in D3, \SI{6}{\%} in D4 and $11$--\SI{12}{\%} in
+D9 and D10. It is measured with $h_k$, the $h_1$ of Section~\ref{sec:medida} with $e^{-ikQ_j}$.
+
+\paragraph{Discrete modes and Landau damping.} Without self-gravity the relation above
+has no regular solution: $a_k$ can be non-zero only where $k\Omega(J)=\omega$, and each orbit
+oscillates at its own frequency (Section~\ref{sec:banda}). With self-gravity,
+$a_1(J)=F_{\rm eq}'(J)\,\delta\Phi_1(J)/\big(\Omega(J)-\omega\big)$, where $\delta\Phi_1$ is produced by
+$a_1$ itself. All the orbits then oscillate at one frequency, set by the self-consistent
+field and not by any single orbit, so the solution is collective. Its denominator vanishes
+at the resonant action, $\Omega(J_r)=\omega$. If $\omega$ lies below the band,
+$0<\omega<\Omega_{\min}$, no orbit is resonant for any $k$, because $k\Omega(J)>\omega$ for $k\ge1$
+and $k\Omega(J)<0$ for $k\le-1$. The eigenvalue problem then has a regular solution with
+real $\omega$. This is a discrete mode, which oscillates without damping, $\gamma=0$. If
+$\omega$ lies inside the band, there is no regular solution with real $\omega$. The
+initial-value problem, solved with a Laplace transform in time, still gives a response
+whose long-time part oscillates at one frequency and decays, $\propto e^{-i(\omega-i\gamma)t}$. Its
+complex frequency is a root of the dispersion relation continued analytically from
+${\rm Im}\,\omega>0$ to ${\rm Im}\,\omega<0$ (Landau's prescription), and $\gamma>0$ reflects the
+exchange of energy with the resonant particles, $\Omega(J)\approx\omega$. This is Landau
+damping. In both cases $\omega-i\gamma$ is the dominant pole that the fits of
+Section~\ref{sec:medida} measure, in the PIC runs and in the linear solver alike.
+
+We measure the position
 of the mode relative to the band by $x=(\omega-\Omega_{\min})/\Delta\Omega$, so that
 $0<x<1$ inside the band and $x<0$ below it. Gravity is attractive and pushes the mode
 down, towards $\Omega_{\min}$, the frequency of the largest orbits.
@@ -2029,7 +2083,8 @@ step & what it does & time\\
 \end{tabular}
 \end{center}
 The steps \texttt{controles}, \texttt{isla}, \texttt{energia} and \texttt{resolucion} produce the
-tables and figures of Section~\ref{sec:controles}. The two constructions of the equilibria
+tables and figures of Section~\ref{sec:controles}, and \texttt{armonicos} the harmonic content
+of the discrete modes (Section~\ref{sec:modo}). The two constructions of the equilibria
 are compared by \texttt{comparar\_\allowbreak equilibrios.py} (Table~\ref{tab:edo}; with
 \texttt{-{}-refinar}, also the finer grids of the iteration). Their evolution with the PIC code
 is run by \texttt{equilibrio\_\allowbreak edo\_\allowbreak pic.py}, with the steps
