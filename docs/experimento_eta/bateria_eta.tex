@@ -202,11 +202,11 @@ a threshold: where $\tilde F$ exceeds \SI{1}{\%} of its maximum, which is $e^{-1
 Solving $u^2e^{-u^2}=0.01\,e^{-1}$ gives $u=0.061$ and $u=2.763$, so the support is
 $[0.061,\,2.763]\,\sigma_J$ and its width $\Delta J\approx2.70\,\sigma_J$.
 \item \textbf{The hollow family}, $\tilde F=J^m(J_t-J)^g$ on $[0,J_t)$ and zero outside
-(\texttt{--forma politropo}). It has compact support $[0,J_t]$, vanishes as $J^m$ at the
+(\texttt{-{}-forma politropo}). It has compact support $[0,J_t]$, vanishes as $J^m$ at the
 circular orbit and as $(J_t-J)^g$ at the vacuum edge, and has its maximum at
 $J=mJ_t/(m+g)$. We use $m=g=2$, $J^2(J_t-J)^2$, with its maximum at $J_t/2$. With $m=0$ it is
 the polytrope in the action.
-\item \textbf{The lowered Maxwellian} (\texttt{--forma maxwell}), written in the energy:
+\item \textbf{The lowered Maxwellian} (\texttt{-{}-forma maxwell}), written in the energy:
 \begin{gather*}
   F_{\rm eq} = A\,E_\gamma\!\left(g,\,x\right),\qquad x=\frac{E_t-E}{T}\ \ \text{if }E<E_t,\\
   E_\gamma(g,x) = e^x\,P(g,x) = \sum_{n\ge0}\frac{x^{g+n}}{\Gamma(g+n+1)},
@@ -238,7 +238,7 @@ The initial condition is the equilibrium plus a perturbation in angle,
 
 \paragraph{Angular profile $\chi(Q)$.} It must be periodic with zero mean, so that the
 integral of $F$ over $Q$, and with it the mass and the equilibrium, do not change. Two
-profiles are used (\texttt{--gq}):
+profiles are used (\texttt{-{}-gq}):
 \begin{itemize}
 \item \texttt{cos}: $\chi=\cos Q$. It excites only $k=1$. In the linear regime each
 harmonic evolves independently, so exciting a single one gives the cleanest
@@ -248,7 +248,7 @@ used for the \emph{common-frequency} test, the signature of a genuine mode
 (Section~\ref{sec:protocolo}).
 \end{itemize}
 
-\paragraph{Radial factor $s(J)$.} Three factors are used (\texttt{--pert}): $s=1$
+\paragraph{Radial factor $s(J)$.} Three factors are used (\texttt{-{}-pert}): $s=1$
 (\texttt{plana}), $s=\sqrt{J/J_{\max}}$ (\texttt{suave}) and $s=(J/J_{\max})^{3/2}$
 (\texttt{suave3}). The choice is set by regularity at the circular orbit
 (Section~\ref{sec:aa}):
@@ -303,7 +303,7 @@ analogue, $\sum\delta F\,B\,e^{-ikQ}/\sum F_{\rm eq}B$.
 The test function $B(J)$ is a choice of the code (\texttt{analysish.f90}). Its centre and
 width follow the support, $j_1=s_{j1}=J_t/2.763$, the same proportion as in the Landau runs
 ($0.10$ on a support that ends at $0.276$). They are set in the \texttt{.par} file of each
-run, from which \texttt{landau\_\allowbreak analisis.py} and, with \texttt{--j1 --sj1},
+run, from which \texttt{landau\_\allowbreak analisis.py} and, with \texttt{-{}-j1 -{}-sj1},
 \texttt{lineal.py} read them. The factor $J^2$ makes $B$ vanish at the circular orbit; the
 consequences are given in Section~\ref{sec:colash}.
 
@@ -908,6 +908,33 @@ bisection, and the integrals are computed with the substitution $r = r_m + r_a\s
 which removes the square-root singularity at the turning points, and Gauss--Legendre
 quadrature. $E(J)$ is tabulated, and $\Omega = dE/dJ$ is obtained by finite differences.
 
+\paragraph{Convergence.} This is a fixed-point (Picard) iteration without relaxation. If
+the map is a contraction near the solution, with factor $q<1$, the iteration converges
+geometrically, the fixed point is unique in that neighbourhood, and the error after the
+last iteration is at most $q/(1-q)$ times the last change. For small mass the contraction
+holds, with $q=O(a_0)$: $\Phi_{\rm self}$ is the potential of a fixed mass, and a change of the
+potential only redistributes that mass. For finite mass, \texttt{equilibrio.py} measures $q$
+as the median ratio of consecutive changes and reports the bound. For the Wilson and King
+equilibria used in the PIC runs, $q$ grows from $0.017$ at $a_0=0.0065$ to $0.587$ at $a_0=0.5$,
+following $q\approx a_0/(a_0+0.35)$ for $g=2$, and the bound is below $10^{-13}$. The script stops
+with an error if the change is still above the tolerance after 60 iterations, which by the
+fit would happen near $a_0\approx0.7$.
+
+\paragraph{An independent construction.} For the lowered Maxwellian, which depends on the
+energy only, the density at $r$ depends only on the potential at $r$:
+$4\pi r^2\rho=8\pi^2L_0A\sqrt{2\pi T}\,E_\gamma\big(g+\tfrac12,(E_t-\Phi_{\rm ef})/T\big)$. Poisson's equation is then
+an ordinary differential equation, integrated over the support, and three numbers
+($E_t$, $T$ and $A$) are fixed by the mass, $W_0$ and $J_t$ (\texttt{equilibrio\_\allowbreak edo.py};
+\texttt{equilibrio.py -{}-metodo edo}). The two constructions agree to $1$--$2\times10^{-6}$ in
+$\Phi_{\rm self}$. The difference is the discretization error of the iteration, which
+decreases as the square of its radial spacing. Evolved with the PIC code at $\varepsilon=0$, the
+equilibria of the two constructions agree to better than \SI{1}{\%}. Their departures from
+stationarity come from the PIC discretization. There are two effects: an $O(\Delta r^2)$ error
+of the field, and a slow spread of the actions caused by the discreteness of the particles,
+which disappears with four times more particles. The derivation and the tables are in Section~2.1 of the demo
+document (\texttt{docs/\allowbreak demo\_\allowbreak eta/\allowbreak demo\_\allowbreak eta.pdf}), and
+the PIC tests in its Section~5.2.
+
 The initial data use nodes in $[0,J_{\max}]$ (Section~\ref{sec:discreto}). With compact
 support $J_{\max}=J_t$, the edge of the support; for the Gaussian, $J_{\max}=6\sigma_J$.
 
@@ -1033,7 +1060,7 @@ kick, a full transport step and another half kick,
 which is second order in $\Delta t$. The error per step comes from the fact that transport
 and kick do not commute, and it is of the order of the square of the product of $\Delta t$ and
 the scale of the coupling. With $\Delta t=0.5$ it is negligible, as checked by halving
-$\Delta t$. With the option \texttt{--libre} the kicks are omitted, which gives the exact free
+$\Delta t$. With the option \texttt{-{}-libre} the kicks are omitted, which gives the exact free
 phase mixing of Section~\ref{sec:mezcla}. A case of $10\,\tau_1$ takes between about 2\,000
 and 22\,000 steps, depending on $\tau_1$, and costs one to three minutes.
 
@@ -2238,15 +2265,15 @@ differentiating the table $E(J)$ twice, which gave noise of order one between
 neighbouring nodes, and it is now the mean slope over the support.
 
 \begin{itemize}
-\item \texttt{equilibrio.py}: the option \texttt{--forma} selects \texttt{gauss}
-(\texttt{--sigma}), \texttt{politropo} ($J^m(J_t-J)^k$, with \texttt{--jt}, \texttt{--k} and
-\texttt{--m}) or \texttt{maxwell} ($E_\gamma(k,(E_t-E)/T)$, with \texttt{--jt}, \texttt{--k} and
-\texttt{--w0}); the other options are \texttt{--jmax}, \texttt{--l0}, \texttt{--gq} and
-\texttt{--pert} (\texttt{plana}, \texttt{suave} or \texttt{suave3}). It checks the positivity of $F$
+\item \texttt{equilibrio.py}: the option \texttt{-{}-forma} selects \texttt{gauss}
+(\texttt{-{}-sigma}), \texttt{politropo} ($J^m(J_t-J)^k$, with \texttt{-{}-jt}, \texttt{-{}-k} and
+\texttt{-{}-m}) or \texttt{maxwell} ($E_\gamma(k,(E_t-E)/T)$, with \texttt{-{}-jt}, \texttt{-{}-k} and
+\texttt{-{}-w0}); the other options are \texttt{-{}-jmax}, \texttt{-{}-l0}, \texttt{-{}-gq} and
+\texttt{-{}-pert} (\texttt{plana}, \texttt{suave} or \texttt{suave3}). It checks the positivity of $F$
 and stores in the equilibrium file the shape, $(J_t,k,m,W_0)$ and the perturbation.
 $E_\gamma$ is evaluated with its series of positive terms.
 \item \texttt{lineal.py}: the linearized Vlasov--Poisson solver; it takes the shape and
-the perturbation from the equilibrium; \texttt{--j1 --sj1 --pb} set the test function
+the perturbation from the equilibrium; \texttt{-{}-j1 -{}-sj1 -{}-pb} set the test function
 $B(J)=J^{p_b}e^{-(J-j_1)^2/s_{j1}^2}$ ($p_b=2$, the one of the code, by default).
 \item \texttt{barrido\_\allowbreak lineal.py}: block~L. For each case it builds the
 equilibrium, solves the linear dynamics, fits the pole with matrix pencil in windows

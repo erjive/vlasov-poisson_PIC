@@ -324,15 +324,135 @@ radius,
 Since $F_{\rm eq}$ is a function of the energy, this step does not need the map.
 \item Solve the Poisson equation in spherical symmetry,
 $\Phi_{\rm self}(r)=-M(<r)/r-\int_r^\infty4\pi r'\rho(r')\,dr'$.
-\item Repeat steps 2 to 6 until $\Phi_{\rm self}$ changes by less than $10^{-13}$ between
-two iterations. No relaxation is used. The convergence is geometric and slower for
-larger masses: the equilibrium of A1 needs 7 iterations, that of A4 15, that of L6 24
-and that of M5 ($a_0=0.5$) 50.
+\item Repeat steps 2 to 6 until $\max_r|\Phi_{\rm self}^{(n+1)}-\Phi_{\rm self}^{(n)}|<10^{-13}$.
+No relaxation is used.
 \end{enumerate}
 The result, $\Phi_{\rm self}(r)$, $\rho(r)$, the table $E(J)$ and the amplitude $A$, is
 stored in
 \texttt{exe/\allowbreak demo\_\allowbreak eta/\allowbreak ic/\allowbreak <run>\_\allowbreak equilibrio.npz}. The table gives the frequency band and the angle--action map
 used by all diagnostics.
+
+\paragraph{Convergence of the iteration.} Steps 2--6 define a map $\mathcal T$ on the
+potential, $\Phi_{\rm self}^{(n+1)}=\mathcal T(\Phi_{\rm self}^{(n)})$, and the equilibrium is its fixed
+point. By the Banach fixed-point theorem, if $\mathcal T$ is a contraction near the solution,
+$\|\mathcal T(\Phi)-\mathcal T(\Phi')\|\le q\,\|\Phi-\Phi'\|$ with $q<1$, the iteration converges
+geometrically from any starting point in that neighbourhood, the fixed point is unique
+there, and the error of the last iterate is bounded by
+$q/(1-q)\,\|\Phi_{\rm self}^{(n)}-\Phi_{\rm self}^{(n-1)}\|$. For small mass the contraction holds:
+$\Phi_{\rm self}$ is the potential of a fixed mass $a_0$, and a change of $\Phi$ only changes
+how that mass is distributed in $r$, so $\mathcal T$ depends on $\Phi$ at order $a_0$ and
+$q=O(a_0)$. The same argument, through the implicit function theorem around the
+isochrone alone, gives existence and uniqueness of the equilibrium for small $a_0$. For
+finite mass there is no a priori proof, so $q$ is measured: \texttt{equilibrio.py} takes the
+median ratio of consecutive changes while both exceed $10^{-10}$, far above round-off, and
+reports the bound. Table~\ref{tab:q} gives the values. In each case the ratio is constant
+to three digits during the iteration (from $0.174$ to $0.176$ in A4), the signature of a
+clean contraction, and for the six equilibria with $g=2$ it follows
+$q\approx a_0/(a_0+0.35)$ to within $0.002$. The bound on the error of the final potential is
+below $10^{-13}$ in all cases. The script stops with an error if the change is still above
+the tolerance after 60 iterations. By the fit this would happen near $a_0\approx0.7$, where
+$q\approx0.67$ and about 68 iterations are needed; larger masses would require more
+iterations or an accelerated iteration (Anderson mixing).
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+case & $a_0$ & iterations & $q$ & bound on the final error\\
+\midrule
+A1 & 0.0065 & 7 & 0.017 & $1.0\times10^{-16}$\\
+A3 & 0.042 & 12 & 0.105 & $2.6\times10^{-15}$\\
+A4 & 0.075 & 15 & 0.175 & $1.1\times10^{-14}$\\
+L5 & 0.097 & 17 & 0.216 & $1.7\times10^{-14}$\\
+L6 & 0.170 & 24 & 0.327 & $1.6\times10^{-14}$\\
+G1a ($g=1$) & 0.0069 & 7 & 0.017 & $9.6\times10^{-17}$\\
+M5 & 0.5 & 50 & 0.587 & $9.6\times10^{-14}$\\
+\bottomrule
+\end{tabular}
+\caption{Convergence of the fixed-point iteration for the seven equilibria. $q$ is the
+contraction factor and the last column is $q/(1-q)$ times the last change. The bound
+refers to the fixed point of the discretized map; the discretization error itself is
+measured below.}
+\label{tab:q}
+\end{table}
+
+\paragraph{An independent construction.}
+\label{sec:edo}
+For the lowered Maxwellian, $F$ depends on the energy only, so the density at radius $r$
+depends only on the potential at $r$. With $\psi(r)=(E_t-\Phi_{\rm ef}(r))/T$, integrating over
+$|p_r|\le\sqrt{2T\psi}$ gives
+\[
+  4\pi r^2\rho(r)=C\,E_\gamma\big(g+\tfrac12,\psi(r)\big),\qquad C=8\pi^2L_0A\sqrt{2\pi T},
+\]
+and $\rho=0$ where $\psi\le0$, because
+$\int E_\gamma(g,\psi-p^2/2T)\,dp=\sqrt{2\pi T}\,E_\gamma(g+\tfrac12,\psi)$, term by term in the series
+of $E_\gamma$ with the Beta function $B(g+n+1,\tfrac12)$. Poisson's equation then becomes an
+ordinary differential equation. With $u=\Phi_{\rm self}-\Phi_{\rm self}(0)$ and
+$\tilde E=E_t-\Phi_{\rm self}(0)$,
+\[
+  \frac{dM}{dr}=C\,E_\gamma\big(g+\tfrac12,\psi\big),\qquad \frac{du}{dr}=\frac{M}{r^2},\qquad
+  \psi=\frac{\tilde E-\Phi_{\rm iso}(r)-L_0^2/2r^2-u}{T}.
+\]
+The centrifugal barrier leaves the centre empty, so $M=u=0$ up to the inner edge of the
+support, and outside the support $\Phi_{\rm self}=-M/r$, which fixes $\Phi_{\rm self}(0)$. The system
+is integrated only over the support $[r_-,r_+]$, where $\psi>0$ and the right-hand side is
+smooth, with the eighth-order Dormand--Prince method (relative tolerance $10^{-12}$). The
+three numbers $(\tilde E,T,C)$ are fixed by three conditions: the total mass,
+$M(r_+)=a_0$; the depth, $\psi(r_c)=W_0$ at the circular orbit (the minimum of $\Phi_{\rm ef}$),
+which is $T=(E_t-E_c)/W_0$; and the edge, $J(E_t)=\frac1\pi\int_{r_-}^{r_+}\sqrt{2T\psi}\,dr=J_t$,
+since the turning points of the edge orbit are the edges of the support. They are found
+with a Powell hybrid root finder (\texttt{scipy.optimize.root}), starting from the isochrone
+alone, with continuation in the mass if it fails. Each equilibrium takes about
+\SI{0.5}{s}. This construction has no iteration on a field: its error is set by the
+integrator tolerance, and existence and uniqueness reduce to a root problem in three
+variables. It applies only to distributions that depend on $E$, such as the Wilson and
+King models; the Gaussian and the hollow family of the $\eta$ battery depend on $J$, which
+is not local in the potential. It is implemented in \texttt{equilibrio\_\allowbreak edo.py}
+and selected with \texttt{equilibrio.py -{}-metodo edo}. In the limit $a_0=10^{-9}$ it
+reproduces the isochrone values of $E_t$ and $E_c$ to $1.4$ and $1.6\times10^{-10}$, the
+self-potential of that mass ($\approx-a_0/r_c$), and $T$ to $7\times10^{-12}$.
+
+\paragraph{Accuracy of the two constructions.} Table~\ref{tab:edo} compares the two for
+the seven equilibria (\texttt{comparar\_\allowbreak equilibrios.py}). They agree to
+$1$--$2\times10^{-6}$ in $\Phi_{\rm self}$, relative to its maximum, and to $10^{-5}$ or better in
+the density and the parameters. The solution of the differential equation is the
+reference: it changes by $4\times10^{-10}$ when its tolerance is relaxed a hundredfold and
+its quadrature nodes are halved. The difference is the discretization error of the
+iteration. It is dominated by the radial grid: with twice as many energies and momenta it
+is unchanged ($1.1\times10^{-6}$ in A4), and with radial spacings $h=0.01$, $0.005$ and $0.0025$
+it decreases as $h^2$, to $1.1\times10^{-6}$, $2.8\times10^{-7}$ and $6.5\times10^{-8}$, at the same
+$q=0.175$. The mass of the iteration, integrated on its grid, differs from $a_0$ by at most
+$1.9\times10^{-7}$ (M5). Both constructions converge to the same solution, and the
+remaining error, $\sim10^{-6}$, is far below that of the PIC discretization
+(Section~\ref{sec:estacionario}).
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+case & $\Phi_{\rm self}$ & $\rho$ & $E_t$ & $T$ & $A$\\
+\midrule
+A1 & $9.3\times10^{-7}$ & $1.2\times10^{-7}$ & $3.3\times10^{-9}$ & $8.1\times10^{-8}$ & $6.2\times10^{-8}$\\
+A3 & $1.0\times10^{-6}$ & $7.9\times10^{-7}$ & $2.1\times10^{-8}$ & $5.5\times10^{-7}$ & $4.2\times10^{-7}$\\
+A4 & $1.1\times10^{-6}$ & $1.5\times10^{-6}$ & $4.0\times10^{-8}$ & $1.0\times10^{-6}$ & $7.7\times10^{-7}$\\
+L5 & $1.2\times10^{-6}$ & $1.9\times10^{-6}$ & $5.2\times10^{-8}$ & $1.3\times10^{-6}$ & $1.0\times10^{-6}$\\
+L6 & $1.4\times10^{-6}$ & $3.5\times10^{-6}$ & $9.7\times10^{-8}$ & $2.4\times10^{-6}$ & $1.8\times10^{-6}$\\
+G1a & $9.5\times10^{-7}$ & $1.8\times10^{-7}$ & $4.8\times10^{-9}$ & $7.7\times10^{-8}$ & $4.3\times10^{-8}$\\
+M5 & $2.3\times10^{-6}$ & $1.2\times10^{-5}$ & $3.6\times10^{-7}$ & $8.2\times10^{-6}$ & $6.0\times10^{-6}$\\
+\bottomrule
+\end{tabular}
+\caption{Relative differences between the equilibrium of the fixed-point iteration and
+that of the differential equation: maximum over the grid of $|\Delta\Phi_{\rm self}|$ relative to
+$\max|\Phi_{\rm self}|$, the same for $\rho$, and the relative differences of $E_t$, $T$ and $A$.}
+\label{tab:edo}
+\end{table}
+
+\paragraph{Stationarity in the PIC code.} The final test of an equilibrium is to evolve it
+with the code at $\varepsilon=0$. The equilibria built by the two methods evolve in the same
+way, to better than \SI{1}{\%}, and the departures from stationarity are set by the PIC
+discretization, not by the construction (Section~\ref{sec:estacionario}).
 
 \subsection{Particle loading}
 \label{sec:carga}
@@ -357,9 +477,9 @@ The grid must be built in the self-consistent potential. The code's own \texttt{
 state builds it in the variables of the bare isochrone, and then, once the mass is no
 longer negligible, the initial condition is not stationary: the particles are not
 where the actual potential would keep them. With the present procedure the action of
-each particle in the unperturbed runs changes by at most $2\times10^{-5}$ (A1) to
-$8\times10^{-4}$ (L5), and $1.3\times10^{-3}$ in the most massive case (M5), less than
-\SI{1}{\%} of $J_t$ (Section~\ref{sec:controles}).
+each particle in the unperturbed runs changes by at most $1.2\times10^{-4}J_t$ (A1) to
+$9.5\times10^{-3}J_t$ (M5, the most massive case), less than \SI{1}{\%} of $J_t$
+(Section~\ref{sec:estacionario}).
 
 \subsection{PIC scheme}
 \label{sec:pic}
@@ -1281,19 +1401,14 @@ $\Delta t$.
 \section{Validation}
 \label{sec:controles}
 
-\subsection{Energy conservation and stationarity}
+\subsection{Energy conservation}
+\label{sec:energia}
 
 The code stores the total energy at each snapshot. In the 17 runs,
 $\max_t|E(t)-E(0)|/|E(0)|\le4\times10^{-6}$, with no appreciable drift, and in the 14 control
 runs (the $\varepsilon$ scan, the convergence runs and D6L) it stays below $10^{-6}$
 (Figure~\ref{fig:energia}; full table in \texttt{exe/demo\_eta/energia.txt}). In the blob
 runs it reaches $1.7\times10^{-4}$ in B5, the most violent collapse, and $4\times10^{-5}$ in B4.
-
-The seven Z runs have the same equilibrium and initial positions as their D runs,
-without perturbation. In them the rows of constant $J$ stay horizontal: the maximum
-change of action ranges from $2\times10^{-5}$ (Z\_A1) to $8\times10^{-4}$ (Z\_L5), and is
-$1.3\times10^{-3}$ in Z\_M5, less than \SI{1}{\%} of $J_t$ (Appendix~\ref{sec:ref}). The
-discrete equilibrium is therefore stationary to this accuracy.
 
 \begin{figure}[htbp]
 \centering
@@ -1303,6 +1418,133 @@ Right: the blob runs; B0 has no self-gravity. All runs use yoshida4 with $\Delta
 except the $\Delta t/2$ controls.}
 \label{fig:energia}
 \end{figure}
+
+\subsection{Stationarity of the equilibria}
+\label{sec:estacionario}
+
+The seven Z runs have the same equilibrium and initial positions as their D runs, without
+perturbation. In them the rows of constant $J$ stay horizontal (Appendix~\ref{sec:ref}):
+the largest change of action of any particle over the run ranges from $1.2\times10^{-4}J_t$
+(Z\_A1) to $9.5\times10^{-3}J_t$ (Z\_M5). To find what sets these changes we use four
+measures, computed every $50$ time units: the largest change of action,
+$\max_i|J_i(t)-J_i(0)|$; the mean change weighted by mass,
+$\langle|\Delta J|\rangle=\sum_iw_i|J_i(t)-J_i(0)|/\sum_iw_i$; the rms of $\delta\Phi$ over
+$3\le r\le15$, relative to $\max|\Phi_{\rm self}|$; and the energy error. The actions are
+computed with the angle--action map of the equilibrium and are given in units of $J_t$.
+
+\paragraph{The two constructions.} The equilibria of A1, G1a, A4 and M5 were also built with
+the differential equation (Section~\ref{sec:edo}), loaded on the same nodes and evolved with
+the parameters of the Z runs (runs E, \texttt{equilibrio\_\allowbreak edo\_\allowbreak pic.py}).
+Table~\ref{tab:estacionario} compares the two. All the measures agree to better than
+\SI{1}{\%}. The difference between the two equilibria, $\sim10^{-6}$, is not visible in the PIC
+code, and the departures from stationarity come from the PIC discretization.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llrccccc}
+\toprule
+case & equilibrium & $t$ & $\max_i|\Delta J|$ & $\langle|\Delta J|\rangle$ & $\delta\Phi(0)$ & $\overline{\delta\Phi}$ & $|\Delta E/E|$\\
+\midrule
+A1 & ODE & 5550 & $6.14\times10^{-5}$ & $8.81\times10^{-6}$ & $5.76\times10^{-5}$ & $5.72\times10^{-5}$ & $1.20\times10^{-7}$\\
+ & iteration & & $6.15\times10^{-5}$ & $8.83\times10^{-6}$ & $5.79\times10^{-5}$ & $5.75\times10^{-5}$ & $1.20\times10^{-7}$\\
+G1a & ODE & 5550 & $6.25\times10^{-5}$ & $9.49\times10^{-6}$ & $5.52\times10^{-5}$ & $5.48\times10^{-5}$ & $1.04\times10^{-7}$\\
+ & iteration & & $6.26\times10^{-5}$ & $9.51\times10^{-6}$ & $5.55\times10^{-5}$ & $5.52\times10^{-5}$ & $1.04\times10^{-7}$\\
+A4 & ODE & 3950 & $1.75\times10^{-3}$ & $1.30\times10^{-4}$ & $6.12\times10^{-5}$ & $6.99\times10^{-5}$ & $2.81\times10^{-7}$\\
+ & iteration & & $1.76\times10^{-3}$ & $1.30\times10^{-4}$ & $6.15\times10^{-5}$ & $7.02\times10^{-5}$ & $2.81\times10^{-7}$\\
+M5 & ODE & 5000 & $9.18\times10^{-3}$ & $1.28\times10^{-3}$ & $8.69\times10^{-5}$ & $1.80\times10^{-4}$ & $1.25\times10^{-6}$\\
+ & iteration & & $9.26\times10^{-3}$ & $1.29\times10^{-3}$ & $8.73\times10^{-5}$ & $1.80\times10^{-4}$ & $1.25\times10^{-6}$\\
+\bottomrule
+\end{tabular}
+\caption{Evolution at $\varepsilon=0$ of the equilibria of the differential equation (runs
+E) and of the iteration (runs Z), at the resolution of the demo. The changes of action are
+at time $t$, in units of $J_t$. $\delta\Phi(0)$ is the rms of $\delta\Phi$ at $t=0$ and
+$\overline{\delta\Phi}$ its mean over the second half of the interval, both relative to
+$\max|\Phi_{\rm self}|$. The last column is the largest energy error up to $t$.}
+\label{tab:estacionario}
+\end{table}
+
+\paragraph{The error of the PIC field.} The resolution runs of M5 in
+Table~\ref{tab:resolucion} separate two effects. They repeat E\_M5 with four times more
+particles, with half the cell ($\Delta r=0.05$ with the same $\Delta t$, so the Courant
+factor is $C=2$), with both, and with half the cell and half the time step.
+
+The first effect is deterministic. At $t=0$ the potential that the code computes from the
+particles differs from that of the equilibrium by the error of the deposition and of the
+field solve. In M5 the rms difference is $8.7\times10^{-5}$. The particles sit on orbits of
+the exact potential, so in the potential of the code they are slightly out of equilibrium,
+and the system adjusts. After a few radial periods $\delta\Phi$ has a static part, with rms
+$1.7\times10^{-4}$, and an oscillation at the frequency of the discrete mode of M5,
+$\omega=0.1048$ (Section~\ref{sec:res_masa}). The oscillation has a constant rms amplitude of
+$7.7\times10^{-5}$ from $t=500$ to $5000$: the mismatch excites the mode, and the mode does not
+damp. These three numbers do not depend on $N$ or $\Delta t$, to \SI{3}{\%}, and they decrease
+by a factor of $3.9$ to $4.1$ when $\Delta r$ is halved. They are the $O(\Delta r^2)$ error of
+the PIC field. The same happens in the other equilibria with a discrete mode: in Z\_L5 and
+Z\_L6, $\delta\Phi$ oscillates at the frequencies of the modes of D3 and D4
+(Table~\ref{tab:polos}), with rms amplitudes of $8.9\times10^{-6}$ and $2.3\times10^{-5}$. Without
+a discrete mode (A1, A3, A4 and G1a) the oscillation is below $4\times10^{-6}$, and only the
+static part remains, $5.5$--$7.0\times10^{-5}$.
+
+The actions respond to the same error. On an orbit of the code, the energy in the potential
+of the equilibrium, $E-\delta\Phi(r)$, varies by $\delta\Phi$ along the orbit, and since
+$dJ/dE=1/\Omega$ the action measured with the map of the equilibrium varies by about
+$|\delta\Phi|/\Omega$. With $\overline{\delta\Phi}$ of Table~\ref{tab:estacionario} and $\Omega$ at
+the centre of the band, this estimate is $6.9\times10^{-6}J_t$ in A1, $8.7\times10^{-5}J_t$ in A4
+and $8.7\times10^{-4}J_t$ in M5. It is within a factor of $1.5$ of the measured
+$\langle|\Delta J|\rangle$, over a range of more than two orders of magnitude. In M5 the
+measured value depends little on $N$ ($1.28$ and $1.21\times10^{-3}J_t$ at $\Delta r=0.1$), and
+with $\Delta r/2$ and four times more particles it is $3.2\times10^{-4}J_t$, $3.8$ times less. In
+E\_M5, E\_M5N and E\_M5drN, $\langle|\Delta J|\rangle$ grows by only $20$--\SI{30}{\%} between
+$t=1000$ and $5000$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lcccrrrrrc}
+\toprule
+ & & & & \multicolumn{2}{c}{$\langle|\Delta J|\rangle\ [10^{-3}J_t]$} & \multicolumn{3}{c}{$\delta\Phi\ [10^{-5}]$} & \\
+\cmidrule(lr){5-6}\cmidrule(lr){7-9}
+run & $\Delta r$ & particles & $\Delta t$ & $t=1000$ & $5000$ & $t=0$ & static & mode & $|\Delta E/E|$\\
+\midrule
+E\_M5 & 0.1 & $400\times25$ & 0.05 & 1.01 & 1.28 & 8.69 & 17.2 & 7.66 & $1.3\times10^{-6}$\\
+E\_M5N & 0.1 & $800\times50$ & 0.05 & 0.99 & 1.21 & 8.63 & 17.2 & 7.63 & $1.1\times10^{-6}$\\
+E\_M5dr & 0.05 & $400\times25$ & 0.05 & 0.85 & 4.22 & 2.15 & 4.28 & 1.98 & $2.3\times10^{-6}$\\
+E\_M5drdt & 0.05 & $400\times25$ & 0.025 & 0.85 & 4.18 & 2.15 & 4.26 & 1.98 & $2.3\times10^{-6}$\\
+E\_M5drN & 0.05 & $800\times50$ & 0.05 & 0.25 & 0.32 & 2.13 & 4.27 & 1.92 & $2.1\times10^{-7}$\\
+\bottomrule
+\end{tabular}
+\caption{Resolution runs of M5 at $\varepsilon=0$, from the equilibrium of the differential
+equation. With $800\times50$ particles the resolution in $J$ is also doubled. $\delta\Phi$ is the
+rms over $3\le r\le15$ relative to $\max|\Phi_{\rm self}|$: at $t=0$; of its time average over
+$500\le t\le5000$ (static); and of the rest (mode), which oscillates at the frequency of the
+discrete mode. The last column is the largest energy error.}
+\label{tab:resolucion}
+\end{table}
+
+\paragraph{Discreteness of the particles.} The second effect is a growth of the spread of
+the actions. It is clear with $\Delta r/2$ and $400\times25$ particles (E\_M5dr):
+$\langle|\Delta J|\rangle$ grows almost linearly in time, from $8.5\times10^{-4}J_t$ at $t=1000$ to
+$4.2\times10^{-3}J_t$ at $t=5000$, and the largest change reaches $4.7\times10^{-2}J_t$. With half the
+time step the result is the same (E\_M5drdt), so the time integration is not the cause.
+With four times more particles the growth disappears (E\_M5drN). The spread is symmetric:
+in E\_M5dr the mean change of action, weighted by mass, is $3.5\times10^{-7}J_t$, $10^{-4}$ of
+$\langle|\Delta J|\rangle$, so there is no heating. $\delta\Phi$ is also the same as with four
+times more particles. The energy error behaves in the same way: it is $2.3\times10^{-6}$ in E\_M5dr
+and E\_M5drdt, and $2.1\times10^{-7}$ with four times more particles. The same growth is present
+at $\Delta r=0.1$, but it is much slower. In Z\_A4, $\langle|\Delta J|\rangle$ rises from
+$1.0\times10^{-4}J_t$ at $t=1000$ to $2.9\times10^{-4}J_t$ at $t=17200$. With $\Delta t/2$ (Z\_A4dt)
+the values are the same to three digits, and with four times more particles (Z\_A4N)
+$\langle|\Delta J|\rangle$ is $9.2$ and $8.8\times10^{-5}J_t$ at the same times. L5 behaves in the
+same way. As for the fine part of $\delta\Phi$ (Section~\ref{sec:res_pisos}), the growth falls
+with $N$ much faster than Monte Carlo noise would, as expected with a quiet start, whose
+noise is not Monte Carlo noise. At fixed $N$ a finer cell makes the growth faster, so
+refining $\Delta r$ requires more particles.
+
+At the resolution of the demo the error of the PIC field dominates. It is almost the same in
+a D run and in its Z run, which have the same particles, so it cancels in
+$\delta\Phi_\varepsilon$ up to the floors of Section~\ref{sec:res_pisos}. The growth from
+discreteness adds about $2\times10^{-4}J_t$ to $\langle|\Delta J|\rangle$ by $t=17200$ in Z\_A4.
+Neither effect depends on how the equilibrium was built.
 
 \subsection{Convergence in \texorpdfstring{$N$}{N} and \texorpdfstring{$\Delta t$}{dt}}
 \label{sec:convergencia}
@@ -1357,7 +1599,8 @@ amplitudes is 11.2), so it is an effect $\propto\varepsilon^2$: the change of th
 profile ($k=0$) that the perturbation leaves as it mixes. Since it does not oscillate it
 can be subtracted, and what remains is $\sim2\times10^{-4}$.
 \item \textbf{Subtraction noise.} The Z run is not exactly stationary: its $\delta\Phi$ has a
-static part, the discretization error of the equilibrium, and fluctuations. The
+static part and, in L5, L6 and M5, an oscillation of the discrete mode, both caused by the
+$O(\Delta r^2)$ error of the PIC field (Section~\ref{sec:estacionario}), and fluctuations. The
 subtraction cancels them almost completely, but the remainder is divided by $\varepsilon$.
 With $\varepsilon\approx0.07$ the floor is $\sim2\times10^{-3}$ (D2).
 \item \textbf{Fine structure.} The part of $\delta\Phi_\varepsilon(r)$ on the scale of a few grid
@@ -1638,7 +1881,7 @@ orbit of the potential that it creates.}
 The seven Z runs have the same equilibrium and initial positions as their D runs, without
 perturbation. The colour is only the label $\cos Q_0$. The pattern winds up as in the D
 runs because the particles rotate with their frequencies, but the density does not
-change, and the rows of $J$ stay horizontal (Section~\ref{sec:controles}).
+change, and the rows of $J$ stay horizontal (Section~\ref{sec:estacionario}).
 
 \begin{figure}[p]
 \centering
@@ -1707,8 +1950,9 @@ a line marking the time of the frame.
 \end{itemize}
 In the videos of the Z runs the colour in $(r,p_r)$ is the label $\cos Q_0$, and the bottom
 panels show the $\delta\Phi$ of the unperturbed run relative to the equilibrium potential. Its
-static part is the discretization error of the equilibrium, and its oscillation is the
-noise floor.
+static part is the error of the PIC field. In Z\_L5, Z\_L6 and Z\_M5 it also oscillates at the
+frequency of the discrete mode, which that error excites (Section~\ref{sec:estacionario}); in
+the other Z runs the oscillation is the noise floor.
 
 In D1 and D2 the spiral tightens while the profile of $\delta\Phi$ dies out. In D3 and D4 the
 profile still oscillates in the same way at $20\,\tau_1$, although the particles have mixed:
@@ -1768,7 +2012,13 @@ step & what it does & time\\
 \end{tabular}
 \end{center}
 The steps \texttt{controles}, \texttt{isla}, \texttt{energia} and \texttt{resolucion} produce the
-tables and figures of Section~\ref{sec:controles}. The blob has its own
+tables and figures of Section~\ref{sec:controles}. The two constructions of the equilibria
+are compared by \texttt{comparar\_\allowbreak equilibrios.py} (Table~\ref{tab:edo}; with
+\texttt{-{}-refinar}, also the finer grids of the iteration). Their evolution with the PIC code
+is run by \texttt{equilibrio\_\allowbreak edo\_\allowbreak pic.py}, with the steps
+\texttt{preparar}, \texttt{correr} (8 runs, \SI{1.7}{h}) and \texttt{analizar}. The last one also
+reads the Z runs analysed by \texttt{demo\_eta.py}, and writes the numbers of
+Section~\ref{sec:estacionario} to \texttt{exe/\allowbreak demo\_\allowbreak eta/\allowbreak edo/\allowbreak resumen.txt}. The blob has its own
 script, \texttt{reproducir/scripts/bulto.py}, with the steps \texttt{preparar}, \texttt{correr}
 (7 runs, \SI{1.6}{h}; B4q alone, \SI{47}{min}), \texttt{analizar} (\SI{1.1}{h}: each snapshot is
 mapped in the instantaneous potential and in the bare isochrone), \texttt{figuras} and
