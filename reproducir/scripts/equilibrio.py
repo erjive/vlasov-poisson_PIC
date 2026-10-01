@@ -354,8 +354,13 @@ if __name__ == '__main__':
     ap.add_argument('--pert', default='plana', choices=['plana', 'suave', 'suave3'],
                     help="factor radial de la perturbación: 1, sqrt(J/J_max) o (J/J_max)^1.5 "
                          "(ver condicion_inicial)")
+    ap.add_argument('--metodo', default='picard', choices=['picard', 'edo'],
+                    help='picard: iteración de punto fijo; edo: Poisson como ecuación '
+                         'diferencial ordinaria (solo forma maxwell; ver equilibrio_edo.py)')
     ap.add_argument('--salida', required=True)
     arg = ap.parse_args()
+    if arg.metodo == 'edo' and arg.forma != 'maxwell':
+        raise SystemExit('--metodo edo solo vale para la forma maxwell, que depende de E')
     if arg.forma in ('politropo', 'maxwell'):
         if arg.jt is None:
             raise SystemExit(f'la forma {arg.forma} necesita --jt')
@@ -379,7 +384,15 @@ if __name__ == '__main__':
     print(f'equilibrio: a0={arg.a0:g}, F_eq = {desc}, '
           f'L0={arg.l0}, J_max={arg.jmax}, g(Q)="{arg.gq}", pert={arg.pert}')
     eq = Equilibrio(arg.a0, sigma=arg.sigma, jmax=arg.jmax, l0=arg.l0,
-                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0).iterar()
+                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0)
+    extra = {}
+    if arg.metodo == 'picard':
+        eq.iterar()
+    else:
+        from equilibrio_edo import EquilibrioEDO, adoptar
+        edo = EquilibrioEDO(arg.a0, arg.jt, arg.k, arg.w0, arg.l0).resolver(verboso=True)
+        adoptar(eq, edo)
+        extra = dict(metodo='edo', E_borde=edo.E_t, T=edo.T)
     r, p, F, Q, J = condicion_inicial(eq, arg.eps, arg.nrc, arg.npc, arg.gq, arg.pert)
     m = eq.mapa()
     Qc, Jc, _ = m(r, p)
@@ -395,5 +408,5 @@ if __name__ == '__main__':
              nrc=arg.nrc, npc=arg.npc, J_max=eq.jmax, sigma_J=eq.sigma,
              L0=eq.L0, gq=arg.gq, forma=arg.forma,
              J_borde=(-1.0 if arg.jt is None else arg.jt), k_borde=arg.k, m_borde=arg.m,
-             w0=(-1.0 if arg.w0 is None else arg.w0), pert=arg.pert)
+             w0=(-1.0 if arg.w0 is None else arg.w0), pert=arg.pert, **extra)
     print(f'escrito {arg.salida} ({len(r)} partículas) y {base}_equilibrio.npz')
