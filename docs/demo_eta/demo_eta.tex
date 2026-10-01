@@ -297,14 +297,31 @@ radial grid, $r\in[0.01,25]$ with spacing $0.01$, ten times finer than the PIC g
 \item Compute the angle--action map of the current potential. At fixed $L$ the action
 depends only on the energy, so it suffices to tabulate $J(E)$. We take 4000 energies,
 from that of the circular orbit, $E_c=\Phi_{\rm ef}(r_c)$, to one whose action slightly
-exceeds $J_t$. For each energy the turning points $r_\pm$ are found by bisection and
+exceeds $J_t$. For each energy the turning points $r_\pm$, where $p_r=0$, are found by
+bisection, and
 \[
-  J(E)=\frac1\pi\int_{r_-}^{r_+}\sqrt{2\,\big(E-\Phi_{\rm ef}(r)\big)}\,dr
+  J(E)=\frac1\pi\int_{r_-}^{r_+}p_r\,dr,\qquad p_r=\sqrt{2\,\big(E-\Phi_{\rm ef}(r)\big)},
 \]
-is computed with Gauss--Legendre quadrature after the substitution $r=r_m+r_a\sin\theta$,
-where $r_m$ and $r_a$ are the centre and half-width of the interval. The substitution
-removes the square-root singularity at the turning points. Inverting the table gives
-$E(J)$, and from it $\Omega(J)=dE/dJ$.
+is computed with 64-point Gauss--Legendre quadrature. At a turning point
+$\Phi_{\rm ef}'(r_\pm)\ne0$, unless the orbit is circular, so $E-\Phi_{\rm ef}$ vanishes linearly
+in $r$ and $p_r\propto|r-r_\pm|^{1/2}$. The integrand of $J$ is zero there, but its derivative
+is infinite. The map also needs the radial period, $2\pi/\Omega=2\int_{r_-}^{r_+}dr/p_r$, for the
+angle $Q$, and the integrand $1/p_r$ of the period is itself infinite at $r_\pm$. A Gauss--Legendre
+rule with $n$ nodes integrates polynomials of degree up to $2n-1$ exactly, so it converges
+fast only for smooth integrands, and slowly for these two. The substitution
+$r=r_m+r_a\sin\theta$, with $\theta\in[-\pi/2,\pi/2]$ and $r_m$, $r_a$ the centre and half-width
+of $[r_-,r_+]$, makes both integrands smooth. Since $(r_+-r)(r-r_-)=r_a^2\cos^2\theta$ and the
+zeros of $E-\Phi_{\rm ef}$ at $r_\pm$ are simple, $E-\Phi_{\rm ef}=r_a^2\cos^2\theta\,h(\theta)$ with
+$h$ smooth and positive. Then $p_r=r_a\cos\theta\sqrt{2h}$, and the integrands of $J$ and of
+the period become
+\[
+  p_r\,\frac{dr}{d\theta}=r_a^2\cos^2\theta\,\sqrt{2h},\qquad
+  \frac1{p_r}\,\frac{dr}{d\theta}=\frac1{\sqrt{2h}}.
+\]
+In the bare isochrone, where both integrals are known in closed form, 64 nodes give $J$ to
+$10^{-14}$ and the period to $10^{-11}$. Without the substitution the errors are
+$2\times10^{-6}$ and $9\times10^{-3}$, and they decrease only as $n^{-3}$ and $n^{-1}$. Inverting
+the table gives $E(J)$, and from it $\Omega(J)=dE/dJ$.
 \item Evaluate the lowered Maxwellian in this potential. The cut-off energy is that of
 the edge orbit, $E_t=E(J_t)$, and the temperature is $T=(E_t-E_c)/W_0$. Both are
 recomputed at each iteration, so the support is always $[0,J_t]$ and the depth of the

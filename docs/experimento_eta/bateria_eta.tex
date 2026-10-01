@@ -903,10 +903,16 @@ exactly, so that the nonlinear deviation is measured without ambiguity.}
 \]
 starting from $\Phi_{\rm self}=0$, until the potential changes by less than $10^{-13}$ between
 iterations. The angle--action map of each iterate is computed numerically
-(\texttt{aa\_\allowbreak numerico.py}): for each energy the turning points are found by
-bisection, and the integrals are computed with the substitution $r = r_m + r_a\sin\theta$,
-which removes the square-root singularity at the turning points, and Gauss--Legendre
-quadrature. $E(J)$ is tabulated, and $\Omega = dE/dJ$ is obtained by finite differences.
+(\texttt{aa\_\allowbreak numerico.py}): for each energy the turning points $r_\pm$ are found by
+bisection, and the integrals are computed with Gauss--Legendre quadrature after the
+substitution $r = r_m + r_a\sin\theta$, where $r_m$ and $r_a$ are the centre and half-width of
+$[r_-,r_+]$. At a turning point $E-\Phi_{\rm ef}$ vanishes linearly in $r$, so
+$p_r\propto|r-r_\pm|^{1/2}$: the integrand of $J$ has an infinite derivative there, and that of
+the radial period, $1/p_r$, is infinite. Gauss--Legendre quadrature converges slowly for both.
+With the substitution, $E-\Phi_{\rm ef}=r_a^2\cos^2\theta\,h(\theta)$ with $h$ smooth and positive,
+so $p_r\,dr/d\theta=r_a^2\cos^2\theta\sqrt{2h}$ and $(dr/d\theta)/p_r=1/\sqrt{2h}$ are smooth, and
+64 nodes give $J$ to $10^{-14}$ in the bare isochrone (Section~2.1 of the demo document).
+$E(J)$ is tabulated, and $\Omega = dE/dJ$ is obtained by finite differences.
 
 \paragraph{Convergence.} This is a fixed-point (Picard) iteration without relaxation. If
 the map is a contraction near the solution, with factor $q<1$, the iteration converges
