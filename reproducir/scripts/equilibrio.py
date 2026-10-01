@@ -226,6 +226,15 @@ class Equilibrio:
         return -M/r - ext, M[-1]
 
     def iterar(self, tol=1e-13, alfa=1.0, maxit=60, verboso=True):
+        """Iteración de punto fijo sobre Phi_self (Picard; relajada si alfa < 1).
+
+        Converge si el mapa es una contracción cerca de la solución: cada cambio es
+        q veces el anterior, con q < 1, y el error que queda después de la última
+        iteración es a lo sumo q/(1 - q) veces el último cambio. q se estima con los
+        cocientes de cambios consecutivos mientras están lejos del redondeo. Si
+        después de maxit iteraciones el cambio no bajó de tol, se detiene con un
+        error en lugar de devolver un equilibrio sin converger."""
+        cambios = []
         for it in range(maxit):
             m = self.mapa()
             E_t, J_t = self.tabla_J_de_E(m)
@@ -235,11 +244,25 @@ class Equilibrio:
             nuevo, M = self.poisson(rho)
             cambio = np.max(np.abs(nuevo - self.phi_self))
             self.phi_self = (1 - alfa)*self.phi_self + alfa*nuevo
+            cambios.append(cambio)
+            q = cambio/cambios[-2] if len(cambios) > 1 else float('nan')
             if verboso:
                 print(f'  iteración {it:2d}: max|dPhi| = {cambio:.2e}   masa = {M:.10e}'
-                      f'   Phi_self(r_c) = {np.interp(m.rc, self.r, self.phi_self):.6e}')
+                      f'   Phi_self(r_c) = {np.interp(m.rc, self.r, self.phi_self):.6e}'
+                      f'   q = {q:.3f}')
             if cambio < tol:
                 break
+        c = np.array(cambios)
+        lejos = (c[1:] > 1e3*tol) & (c[:-1] > 1e3*tol)       # cocientes fuera del redondeo
+        self.q = float(np.median(c[1:][lejos]/c[:-1][lejos])) if lejos.any() else \
+            (float(c[-1]/c[-2]) if len(c) > 1 else 0.0)
+        if cambio >= tol:
+            raise RuntimeError(f'equilibrio sin converger: {len(c)} iteraciones, último cambio '
+                               f'{cambio:.2e} >= tol = {tol:.0e}, q = {self.q:.3f}')
+        self.cota = self.q/(1 - self.q)*cambio if self.q < 1 else float('inf')
+        if verboso:
+            print(f'  convergido en {len(c)} iteraciones: q = {self.q:.3f}; error después de la '
+                  f'última <= q/(1-q) x {cambio:.1e} = {self.cota:.1e}')
         self.E_t, self.J_t, self.rho, self.masa = E_t, J_t, rho, M
         return self
 
