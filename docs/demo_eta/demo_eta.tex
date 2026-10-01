@@ -196,7 +196,11 @@ where $\mathcal L$, the linearized Vlasov--Poisson operator, acts on functions $
 phase space and generates the linear evolution. $\mathcal L$ does not depend on time,
 because the equilibrium is stationary. A linear equation with a time-independent operator
 has the solution $\delta F=a(Q,J)\,e^{-i\omega t}$ whenever $\mathcal L\,a=\omega\,a$: $\omega$ is an
-eigenvalue of $\mathcal L$ and $a$ its eigenfunction. The coefficients $\Omega(J)$ and
+eigenvalue of $\mathcal L$ and $a$ its eigenfunction. The sign in $e^{-i\omega t}$ is a
+convention, the usual one in plasma physics. With it, a pattern $e^{i(Q-\omega t)}$ with
+$\omega>0$ advances in $Q$ as the particles do, a free orbit has $\omega=k\Omega(J)>0$ for
+$k>0$, and a complex frequency $\omega-i\gamma$ with $\gamma>0$ is damped, since
+$e^{-i(\omega-i\gamma)t}=e^{-i\omega t}e^{-\gamma t}$. The coefficients $\Omega(J)$ and
 $F_{\rm eq}'(J)$ do not depend on $Q$, so we expand in Fourier series,
 $a=\sum_ka_k(J)\,e^{ikQ}$ and $\delta\Phi=e^{-i\omega t}\sum_k\delta\Phi_k(J)\,e^{ikQ}$. Each
 harmonic then obeys
@@ -214,7 +218,8 @@ orbit $r-r_c\approx-\sqrt{2J/\kappa}\cos Q$, with $\kappa=\Omega(0)$ (Section~\r
 smooth $\delta\Phi(r)$ seen along an orbit is $\delta\Phi(r_c)-\delta\Phi'(r_c)\sqrt{2J/\kappa}\,\cos Q$:
 a constant plus a pure $k=\pm1$ term. The other harmonics enter at higher order in the
 size of the epicycle. The modes are therefore dominated by $k=\pm1$, and since $\delta F$ is
-real the $k=-1$ part is the complex conjugate of the $k=1$ part. This is what
+real the $k=-1$ part is the complex conjugate of the $k=1$ part, $\propto e^{-i(Q-\omega t)}$,
+and carries $e^{+i\omega t}$. This is what
 $\delta F\propto e^{i(Q-\omega t)}$ means. In the PIC runs the $k=2$ harmonic of the discrete
 modes is $4$--\SI{5}{\%} of the $k=1$ harmonic in D3, \SI{6}{\%} in D4 and $11$--\SI{12}{\%} in
 D9 and D10. It is measured with $h_k$, the $h_1$ of Section~\ref{sec:medida} with $e^{-ikQ_j}$.
@@ -662,7 +667,8 @@ $20\,\tau_1$ is the relative decrease of the PIC envelope over that interval, ne
 decrease of the linear envelope:
 $1-[e_{\rm PIC}(20\tau_1)/e_{\rm PIC}(5\tau_1)]/[e_{\rm lin}(20\tau_1)/e_{\rm lin}(5\tau_1)]$.
 
-\paragraph{Pole fits.} The pole $\omega-i\gamma$ of $h_1$ is fitted, in the PIC runs and
+\paragraph{Pole fits.} With $e^{-iQ_j}$ in its definition, $h_1$ picks the $k=1$ part of
+the mode, so $h_1\propto e^{-i(\omega-i\gamma)t}$ with $\omega>0$. The pole $\omega-i\gamma$ is fitted, in the PIC runs and
 in the linear solution alike, with the matrix-pencil method of order $M=3$ in windows of
 a few $\tau_1$. Its uncertainty is the largest deviation among the fits with $M=2$ and
 $M=3$ on three trims of the window (complete, without the first \SI{10}{\%}, and without
