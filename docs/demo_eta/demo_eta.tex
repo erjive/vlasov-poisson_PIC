@@ -185,11 +185,19 @@ $8\pi^2L_0\,\delta F\,dQ\,dJ$, so
   G(r,r')=-\frac1{\max(r,r')}.
 \]
 
-\paragraph{Why the solutions have the form $e^{i(Q-\omega t)}$.} The coefficients of the
-equation, $\Omega(J)$ and $F_{\rm eq}'(J)$, and the relation between $\delta F$ and $\delta\Phi$ do
-not depend on time, because the equilibrium is stationary. A linear equation with
-time-independent coefficients has solutions $\delta F=a(Q,J)\,e^{-i\omega t}$, with $\omega$ an
-eigenvalue. The coefficients do not depend on $Q$ either, so we expand in Fourier series,
+\paragraph{Why the solutions have the form $e^{i(Q-\omega t)}$.} Write the potential as
+$\delta\Phi=\mathcal G\,\delta F$, where $\mathcal G$ is the linear operator defined by the integral
+above, evaluated at $r=r(Q,J)$. The linearized equation is then
+\[
+  i\,\partial_t\delta F=\mathcal L\,\delta F,\qquad
+  \mathcal L\,a=-i\big[\Omega(J)\,\partial_Qa-F_{\rm eq}'(J)\,\partial_Q(\mathcal G a)\big],
+\]
+where $\mathcal L$, the linearized Vlasov--Poisson operator, acts on functions $a(Q,J)$ of
+phase space and generates the linear evolution. $\mathcal L$ does not depend on time,
+because the equilibrium is stationary. A linear equation with a time-independent operator
+has the solution $\delta F=a(Q,J)\,e^{-i\omega t}$ whenever $\mathcal L\,a=\omega\,a$: $\omega$ is an
+eigenvalue of $\mathcal L$ and $a$ its eigenfunction. The coefficients $\Omega(J)$ and
+$F_{\rm eq}'(J)$ do not depend on $Q$, so we expand in Fourier series,
 $a=\sum_ka_k(J)\,e^{ikQ}$ and $\delta\Phi=e^{-i\omega t}\sum_k\delta\Phi_k(J)\,e^{ikQ}$. Each
 harmonic then obeys
 \[
@@ -197,9 +205,11 @@ harmonic then obeys
 \]
 Unlike in a homogeneous plasma, the harmonics do not separate. A shift of $Q$ is not a
 symmetry, because $\delta\Phi$ depends on $Q$ through the radius $r(Q,J)$, so each
-$\delta\Phi_k$ depends on all the $a_{k'}$. Together with the Poisson equation, these relations
-form a linear eigenvalue problem, and the condition for a non-zero solution, the
-dispersion relation, fixes $\omega$. The coupling acts mainly on $k=\pm1$. Near the circular
+$\delta\Phi_k$ depends on all the $a_{k'}$. These relations, with $\delta\Phi_k$ given by the Poisson
+equation, are the eigenvalue problem $\mathcal L\,a=\omega\,a$ written in harmonics. Eliminating
+the $a_k$ leaves a linear equation for $\delta\Phi$ alone, and the condition for it to have a
+non-zero solution is the dispersion relation. Its roots are the eigenvalues $\omega$. The
+coupling acts mainly on $k=\pm1$. Near the circular
 orbit $r-r_c\approx-\sqrt{2J/\kappa}\cos Q$, with $\kappa=\Omega(0)$ (Section~\ref{sec:aa}), so a
 smooth $\delta\Phi(r)$ seen along an orbit is $\delta\Phi(r_c)-\delta\Phi'(r_c)\sqrt{2J/\kappa}\,\cos Q$:
 a constant plus a pure $k=\pm1$ term. The other harmonics enter at higher order in the
@@ -209,20 +219,25 @@ $\delta F\propto e^{i(Q-\omega t)}$ means. In the PIC runs the $k=2$ harmonic of
 modes is $4$--\SI{5}{\%} of the $k=1$ harmonic in D3, \SI{6}{\%} in D4 and $11$--\SI{12}{\%} in
 D9 and D10. It is measured with $h_k$, the $h_1$ of Section~\ref{sec:medida} with $e^{-ikQ_j}$.
 
-\paragraph{Discrete modes and Landau damping.} Without self-gravity the relation above
-has no regular solution: $a_k$ can be non-zero only where $k\Omega(J)=\omega$, and each orbit
-oscillates at its own frequency (Section~\ref{sec:banda}). With self-gravity,
+\paragraph{Discrete modes and Landau damping.} Without self-gravity ($\mathcal G=0$),
+$\mathcal L$ multiplies the harmonic $k$ by $k\Omega(J)$. Its spectrum is the continuum of these
+values, the bands $k\,[\Omega_{\min},\Omega_{\max}]$ with $k\ne0$, and its eigenfunctions are
+concentrated on single orbits, $a_k\propto\delta(J-J_r)$ with $k\Omega(J_r)=\omega$: each orbit
+oscillates at its own frequency (Section~\ref{sec:banda}). Self-gravity keeps this
+continuum and can add eigenvalues outside it. With self-gravity,
 $a_1(J)=F_{\rm eq}'(J)\,\delta\Phi_1(J)/\big(\Omega(J)-\omega\big)$, where $\delta\Phi_1$ is produced by
 $a_1$ itself. All the orbits then oscillate at one frequency, set by the self-consistent
 field and not by any single orbit, so the solution is collective. Its denominator vanishes
 at the resonant action, $\Omega(J_r)=\omega$. If $\omega$ lies below the band,
 $0<\omega<\Omega_{\min}$, no orbit is resonant for any $k$, because $k\Omega(J)>\omega$ for $k\ge1$
-and $k\Omega(J)<0$ for $k\le-1$. The eigenvalue problem then has a regular solution with
-real $\omega$. This is a discrete mode, which oscillates without damping, $\gamma=0$. If
+and $k\Omega(J)<0$ for $k\le-1$. If the dispersion relation has a root there, $\omega$ is a
+real eigenvalue of $\mathcal L$ with a regular eigenfunction. This is a discrete mode, which
+oscillates without damping, $\gamma=0$. If
 $\omega$ lies inside the band, there is no regular solution with real $\omega$. The
 initial-value problem, solved with a Laplace transform in time, still gives a response
 whose long-time part oscillates at one frequency and decays, $\propto e^{-i(\omega-i\gamma)t}$. Its
-complex frequency is a root of the dispersion relation continued analytically from
+complex frequency is not an eigenvalue of $\mathcal L$. It is a root of the dispersion
+relation continued analytically from
 ${\rm Im}\,\omega>0$ to ${\rm Im}\,\omega<0$ (Landau's prescription), and $\gamma>0$ reflects the
 exchange of energy with the resonant particles, $\Omega(J)\approx\omega$. This is Landau
 damping. In both cases $\omega-i\gamma$ is the dominant pole that the fits of
@@ -1820,6 +1835,7 @@ $\varepsilon$, $s(J)$ & amplitude and radial profile of the perturbation $\varep
 $\eta$ & self-gravitational frequency shift over the width of the band & $0.1$--$5.1$ (blob: $0.005$--$2.5$)\\
 $\eta_c$ & value of $\eta$ at which the mode leaves the band & $1.1$--$1.2$\\
 $\omega$, $\gamma$ & frequency and damping rate of the collective mode & $\omega=0.061$--$0.105$; $1/\gamma=170$--$2700$\\
+$\mathcal L$ & linearized Vlasov--Poisson operator, $i\,\partial_t\delta F=\mathcal L\,\delta F$; the frequencies of the discrete modes are its eigenvalues & --\\
 $x$ & position of the mode in the band, $(\omega-\Omega_{\min})/\Delta\Omega$ & $-0.59$ (M5) to $\sim0.5$ (A1)\\
 $\omega_b$ & bounce frequency of the trapped particles & $7\times10^{-4}$--$2\times10^{-2}$\\
 $\nu=\omega_b/\gamma$ & O'Neil parameter: trapping versus damping & $0.17$--$10$\\
@@ -1827,7 +1843,7 @@ $\mu=\omega_b/\Delta\Omega$ & trapping versus the mixing of the whole band & $\l
 $\nu_1=\omega_b(1)/\gamma$ & design factor, $\nu=\nu_1\sqrt\varepsilon$ & $0.17$ (A1) to $10.9$ (A4)\\
 $J_r$ & action of the resonance $\Omega(J_r)=\omega$, with $\Omega(J)$ continued outside the support if needed & $0.124$ (A4), $0.140$ (L5), $0.22$ (M5)\\
 $\delta\Phi$, $\delta\Phi_\varepsilon$, $\|\delta\Phi\|$ & potential perturbation; the same minus the Z run and divided by $\varepsilon$; its rms value over $3\le r\le15$ & --\\
-$h_1$ & first harmonic in $Q$ of the distribution, with the test function $B(J)$ & --\\
+$h_1$, $h_k$ & first and $k$-th harmonic in $Q$ of the distribution, with the test function $B(J)$ & --\\
 $R$ & envelope ratio of $\|\delta\Phi\|$, PIC over linear & $1$ when the PIC follows linear theory\\
 $t_{\rm nl}$ & first time at which the PIC departs from linear theory by \SI{10}{\%} & --\\
 $N_{rc}$, $N_{pc}$, $N$ & nodes in $J$, nodes in $Q$ and number of particles & $400$, $25$, $10^4$\\
