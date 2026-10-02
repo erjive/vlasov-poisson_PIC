@@ -43,7 +43,11 @@ accordingly does not move it, but the threshold depends on the width of the supp
 the shape of the distribution and the exponent of the vacuum edge. With a sharp edge,
 King included, the discrete mode is already present at $\eta=1$, and the edge response
 persists at $\eta=0.1$, in the direction of the dichotomy proved by Hadžić and
-collaborators. Near the transition the linear damping rate tends to zero while the
+collaborators. The exact criterion is the gain of the self-consistent loop at the lower edge
+of the band, $\lambda_{\rm edge}$: in the 25 equilibria with compact support the mode is discrete if
+and only if $\lambda_{\rm edge}>1$, whatever the width, shape or edge, and the root of
+$\lambda(\omega)=1$ gives its frequency. With a sharp edge the discrete mode exists at weak
+coupling, but so close to the edge that no run can separate it. Near the transition the linear damping rate tends to zero while the
 bounce frequency of trapped particles does not, so O'Neil's parameter
 $\nu=\omega_b/\gamma$ is large for any finite amplitude and the late-time dynamics is
 nonlinear: at $\eta=1$, $\varepsilon\approx0.008$ already gives $\nu=1$. We propose a
@@ -719,13 +723,48 @@ $\bar\Omega_{\rm iso}$ is not $\Omega(0)$. $\Omega(0)=\kappa$ is the frequency o
 circular one, the fastest in the band; $\bar\Omega$ and $\bar\Omega_{\rm iso}$ are averages over all
 the orbits of the distribution.
 
-$\eta$ is a design criterion with a physical basis, not a theorem. The rigorous statement
-is where the eigenvalue of $\mathcal A$ lies relative to the essential spectrum, and that
-also depends on the density of states near the edge of the band
-(Section~\ref{sec:borde}). What $\eta$ guarantees is that the cases explore the range
-where the transition \emph{can} occur, instead of lying entirely on one side of it. The
-calculation decides: Section~\ref{sec:barrido} shows that $\eta$ orders the transition but
-does not fix it alone.
+$\eta$ is a design criterion with a physical basis, not a theorem. What $\eta$ guarantees is
+that the cases explore the range where the transition \emph{can} occur, instead of lying
+entirely on one side of it. Section~\ref{sec:barrido} shows that $\eta$ orders the
+transition but does not fix it alone. The exact criterion is the following.
+
+\paragraph{The loop gain at the edge.}
+\label{sec:lazo}
+The density sees only the part of $\delta F$ that is even in $Q$, because $r(-Q)=r(Q)$. With
+$b_k=\delta F_k+\delta F_{-k}$, the formula for $\delta F_k$ above gives
+\[
+  b_k(J)=R_k(J;\omega)\,\delta\Phi_k(J),\qquad
+  R_k(J;\omega)=\frac{2k^2\,\Omega(J)\,F_{\rm eq}'(J)}{k^2\Omega(J)^2-\omega^2},\quad k\ge1,
+\]
+and the potential of the shells closes the loop:
+\begin{gather*}
+  \delta\Phi_k(J)=\sum_{k'\ge1}\int M_{kk'}(J,J')\,b_{k'}(J')\,dJ',\\
+  M_{kk'}(J,J')=4\pi L_0\iint\cos kQ\,\cos k'Q'\,G\big(r(Q,J),r(Q',J')\big)\,dQ\,dQ',
+\end{gather*}
+with $G(r,r')=-1/\max(r,r')$. This is the matrix form of the response method, with the harmonics in $Q$ as the basis
+along the orbits. A mode of frequency $\omega$ exists if $MR(\omega)$, which maps a potential to
+the potential of the response it produces, has the eigenvalue $1$. $M$ is negative, since
+gravity attracts. With $F_{\rm eq}'<0$ and $\omega<\Omega_{\min}$ so is $R$, and $MR$ is similar to the
+symmetric positive operator $|R|^{1/2}(-M)|R|^{1/2}$. Its largest eigenvalue $\lambda(\omega)$ is the
+gain of the loop. $\lambda$ grows with $\omega$ up to the edge and decreases along imaginary
+frequencies, so a value $\lambda(0)\ge1$ would imply a growing mode, and Antonov's stability
+gives $\lambda(0)<1$. Hence there is a discrete mode below the band if and only if
+\[
+  \lambda_{\rm edge}\equiv\lim_{\omega\to\Omega_{\min}^-}\lambda(\omega)>1,
+\]
+and its frequency is the root of $\lambda(\omega_d)=1$. In quantum mechanics this is the
+Birman--Schwinger criterion for a bound state at the edge of a band. Near the edge
+$|R_1|\propto(J_t-J)^{g-1}/(\Omega-\omega)$, so $\lambda_{\rm edge}$ is finite only for $g>1$, and
+\[
+  \lambda_{\rm edge}-\lambda(\Omega_{\min}-\delta)\propto\delta^{\min(g-1,\,1)},
+\]
+with a logarithm for $g=2$; for $g\le1$, $\lambda$ diverges at the edge. Inverting this law
+gives the distance $\delta_d$ of the mode below the edge. Near the threshold,
+$\delta_d\propto(\lambda_{\rm edge}-1)^{1/(g-1)}$ for $1<g<2$, and $\delta_d\propto\lambda_{\rm edge}-1$ up to the logarithm
+for $g\ge2$. For $g<1$ there is a mode at any coupling, at a distance that decreases as the
+power $1/(1-g)$ of the coupling, and for $g=1$ the distance decreases exponentially. The
+threshold $\lambda_{\rm edge}=1$ does not depend on the family; Section~\ref{sec:res_lazo}
+computes it for all the equilibria.
 
 \subsection{The vacuum edge and the Hadžić dichotomy}
 \label{sec:borde}
@@ -1517,7 +1556,8 @@ the wide support (A7, $J_t=0.276$) is still damped ($x=0.10$, $\gamma/\Delta\Ome
 reference width (A4) is at the edge, and the narrow support (A9, $J_t=0.083$) already has a
 discrete mode. At $\eta=0.3$ the three widths agree within the precision (A2, A6, A8:
 $x\approx0.3$--$0.35$). The threshold $\eta_c$ decreases as the support narrows: $\eta$ is a good
-design criterion, not the exact variable of the transition.
+design criterion, not the exact variable of the transition. The exact variable is the loop
+gain at the edge (Section~\ref{sec:res_lazo}).
 \item \textbf{The shape of $F_{\rm eq}$ matters} (Table~\ref{tab:familias_lineal}). At $\eta=1$ the
 hollow family already has a clear discrete mode ($x=-0.28$); the more thermal Maxwellian
 ($W_0=6$) is still inside the band ($x=0.13$); and the Gaussian has a pole \emph{below} its
@@ -1609,14 +1649,192 @@ consecutive windows; $\delta\Phi$ gives the same ($-0.9$, $-1.3$ and $-2.2$ in t
 \label{tab:borde_largo}
 \end{table}
 
-What cannot be decided with $60\,\tau_1$ is whether the response of the sharp edges is a very
-weakly bound discrete mode or a tail that decays ever more slowly: a mode less than
+The time evolution cannot decide, with $60\,\tau_1$, whether the response of the sharp edges is a
+very weakly bound discrete mode or a tail that decays ever more slowly: a mode less than
 $10^{-3}\Delta\Omega$ below the edge takes $\gtrsim6\times10^5$ to separate from the tail, ten times longer
-than these runs. What is established is the contrast: with a sharp edge the response at
-the edge persists, 60 times above that of the smooth edge over $30$--$60\,\tau_1$. Settling
-the question is cheap, a couple of linear runs of $500\,\tau_1$ (somewhat more than an hour
-each, without particles), and it is the linear question most directly connected with
-the theorem.
+than these runs. What these runs establish is the contrast: with a sharp edge the response
+at the edge persists, 60 times above that of the smooth edge over $30$--$60\,\tau_1$. The loop
+gain decides the question (Section~\ref{sec:res_lazo}): both sharp edges have a discrete mode,
+$4\times10^{-6}\Delta\Omega$ below the edge for $g=0.75$ and about $10^{-25}\Delta\Omega$ for King, so close that
+no run can separate it from the response of the edge.
+
+\subsection{The loop gain at the edge}
+\label{sec:res_lazo}
+
+\texttt{lambda\_\allowbreak borde.py} computes the gain $\lambda(\omega)$ of Section~\ref{sec:lazo} for each
+equilibrium. It discretizes $J=J_t(1-s^2)$ with 200 Gauss--Legendre nodes in $s$, which removes
+the square root at the edge, $Q$ with 128 points and the harmonics up to $k=6$. It takes
+$r(Q,J)$ from the inverse map of the equilibrium, and does the integrals in $Q$ on a radial
+grid of 2000 nodes, with linear weights, so that $M=4\pi L_0\,PGP^{\rm T}$. The mass of the
+equilibrium is recovered to $10^{-8}$. Doubling or halving each resolution changes
+$\lambda_{\rm edge}$ of L5 by at most $2\times10^{-5}$; keeping only $k\le3$ changes it by $4\times10^{-4}$.
+Table~\ref{tab:lazo} and Figure~\ref{fig:lazo} give the result for the 25 equilibria with
+compact support.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+case & equilibrium & $\eta$ & $x$ (linear) & $\lambda_{\rm edge}$ & $\omega_d$ from $\lambda=1$ & $\omega$ (linear)\\
+\midrule
+L1 & reference & 0.05 & $\sim0.6$ & 0.047 & -- & --\\
+A1 & reference & 0.10 & $\sim0.5$ & 0.100 & -- & --\\
+L2 & reference & 0.20 & $\sim0.4$ & 0.194 & -- & --\\
+A2 & reference & 0.30 & $\sim0.35$ & 0.290 & -- & --\\
+L3 & reference & 0.45 & 0.21 & 0.428 & -- & --\\
+A3 & reference & 0.59 & 0.14 & 0.555 & -- & --\\
+L4 & reference & 0.80 & 0.07 & 0.720 & -- & --\\
+A4 & reference & 1.00 & 0.03 & 0.874 & -- & --\\
+L5 & reference & 1.24 & $-0.01$ & 1.047 & 0.07250 & 0.07247\\
+A5 & reference & 1.50 & $-0.07$ & 1.208 & 0.07458 & 0.07459\\
+L6 & reference & 2.00 & $-0.19$ & 1.468 & 0.07848 & 0.07847\\
+\midrule
+A6 & $J_t=0.276$ & 0.30 & $\sim0.37$ & 0.243 & -- & --\\
+A7 & $J_t=0.276$ & 1.00 & 0.10 & 0.670 & -- & --\\
+A8 & $J_t=0.083$ & 0.30 & $\sim0.31$ & 0.328 & -- & --\\
+A9 & $J_t=0.083$ & 1.00 & $-0.01$ & 1.040 & 0.07076 & 0.07074\\
+D1 & $L_0=1$ & 0.29 & $\sim0.35$ & 0.288 & -- & --\\
+D2 & $L_0=1$ & 1.00 & 0.03 & 0.881 & -- & --\\
+E3 & $W_0=6$ & 1.00 & 0.13 & 0.753 & -- & --\\
+G3 & $g=3$ & 1.00 & 0.10 & 0.772 & -- & --\\
+G15 & $g=1.5$ & 1.00 & $-0.01$ & 1.051 & 0.06985 & marginal\\
+G1 & $g=1$ (King) & 1.00 & $-0.04$ & $\infty$ & 0.06945 & 0.06927\\
+G075 & $g=0.75$ & 1.00 & $-0.05$ & $\infty$ & 0.06920 & 0.06911\\
+\midrule
+E1 & hollow & 1.00 & $-0.28$ & 3.37 & 0.06611 & 0.06609\\
+H9 & hollow, $J_t=0.083$ & 0.99 & $-0.35$ & 3.91 & 0.06767 & 0.06767\\
+H3 & hollow, $J_t=0.083$ & 3.10 & $-1.20$ & 8.02 & 0.07160 & 0.07159\\
+\bottomrule
+\end{tabular}
+\caption{The loop gain at the lower edge of the band. ``Reference'' is the Wilson model with
+$J_t=0.138$, $W_0=3$, $L_0=2$ and $g=2$; the other rows change what is indicated. $x$ and $\omega$
+come from the linearized solver (Tables~\ref{tab:barrido_eta}, \ref{tab:familias_lineal} and
+\ref{tab:borde}); values with $\sim$ have no isolated pole. For $g\le1$, $\lambda_{\rm edge}$ diverges, and
+its value on the grid (4.1 and 37) only grows with the resolution. In the hollow family
+$F_{\rm eq}'$ changes sign and the largest real eigenvalue of $MR$ is used; $\lambda(\omega)$ still grows
+towards the edge.}
+\label{tab:lazo}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.8\textwidth, height=0.46\textwidth, xmode=log, xmin=0.03, xmax=12,
+  ymin=-1.3, ymax=0.75, xlabel={$\lambda_{\rm edge}$}, ylabel={$x=(\omega-\Omega_{\min})/\Delta\Omega$},
+  xtick={0.1,0.3,1,3,10}, xticklabels={$0.1$,$0.3$,$1$,$3$,$10$},
+  tick label style={font=\small}, label style={font=\small},
+  legend style={font=\footnotesize, draw=none, fill=none}, legend pos=south west]
+  \fill[darkblue!8] (axis cs:0.03,0) rectangle (axis cs:1,0.75);
+  \fill[green!8] (axis cs:1,-1.3) rectangle (axis cs:12,0);
+  \draw[gray!70, thin] (axis cs:1,-1.3) -- (axis cs:1,0.75);
+  \draw[darkblue!60, thin] (axis cs:0.03,0) -- (axis cs:12,0);
+  \addplot[mark=*, mark size=2pt, darkblue, thick] coordinates
+    {(0.428,0.21) (0.555,0.14) (0.720,0.07) (0.874,0.03) (1.047,-0.01) (1.208,-0.07) (1.468,-0.19)};
+  \addlegendentry{reference}
+  \addplot[only marks, mark=square*, mark size=2pt, orange!80!black] coordinates
+    {(0.670,0.10) (1.040,-0.01)};
+  \addlegendentry{$J_t=0.276$, $0.083$}
+  \addplot[only marks, mark=diamond*, mark size=2.5pt, red!70!black] coordinates {(0.881,0.03)};
+  \addlegendentry{$L_0=1$}
+  \addplot[only marks, mark=triangle*, mark size=2.5pt, green!50!black] coordinates {(0.753,0.13)};
+  \addlegendentry{$W_0=6$}
+  \addplot[only marks, mark=pentagon*, mark size=2.5pt, violet] coordinates {(0.772,0.10) (1.051,-0.01)};
+  \addlegendentry{$g=3$, $1.5$}
+  \addplot[only marks, mark=otimes*, mark size=2.5pt, brown!70!black] coordinates {(3.37,-0.28) (3.91,-0.35) (8.02,-1.20)};
+  \addlegendentry{hollow}
+  \addplot[only marks, mark=o, mark size=2pt, darkblue!70] coordinates
+    {(0.047,0.6) (0.100,0.5) (0.194,0.4) (0.290,0.35) (0.243,0.37) (0.328,0.31) (0.288,0.35)};
+  \addlegendentry{no isolated pole}
+  \node[font=\footnotesize, darkblue, anchor=north east] at (axis cs:0.95,0.72) {damped};
+  \node[font=\footnotesize, green!40!black, anchor=north east] at (axis cs:11,-0.03) {discrete};
+\end{axis}
+\end{tikzpicture}
+\caption{Position of the linear mode against the loop gain at the edge, for all the
+families of Table~\ref{tab:lazo} except $g\le1$, where $\lambda_{\rm edge}=\infty$. Every damped mode
+($x>0$) has $\lambda_{\rm edge}<1$ and every discrete mode ($x<0$) has $\lambda_{\rm edge}>1$: the points
+occupy only the two shaded quadrants, whatever the width, $L_0$, $W_0$, $g$ or the family.
+With $\eta$ as abscissa (Figure~\ref{fig:eta}) the threshold moves from one family to another.}
+\label{fig:lazo}
+\end{figure}
+
+There are four results.
+\begin{enumerate}
+\item \textbf{The threshold is $\lambda_{\rm edge}=1$ for every family.} The 15 damped equilibria have
+$\lambda_{\rm edge}$ between $0.047$ and $0.881$, and the 10 discrete ones between $1.040$ and $\infty$.
+The three widths at $\eta=1$, which $\eta$ does not separate, have $\lambda_{\rm edge}=0.670$ (wide,
+damped), $0.874$ (reference, at the edge) and $1.040$ (narrow, discrete). G15, which the
+time evolution leaves marginal, has $\lambda_{\rm edge}=1.051$ and a mode $0.003\,\Delta\Omega$ below the
+edge, consistent with the law $\delta_d\propto(\lambda_{\rm edge}-1)^2$ for $g=3/2$ and the prefactor of
+Table~\ref{tab:lazo_borde}.
+\item \textbf{The root of $\lambda(\omega)=1$ is the frequency of the discrete mode.} It agrees with the
+pole of the linearized solver to $3\times10^{-4}$ or better where that pole is clean. For L5 the
+value of the table, fitted over $3$--$9\,\tau_1$, differs by $4\times10^{-4}$; over $10$--$20\,\tau_1$ the
+solver gives $0.07250$, the same as here. The two calculations are
+independent: one integrates the initial-value problem, the other solves an eigenvalue
+problem at fixed frequency. The larger differences, in G1 and G075, are those of fits
+without a dominant pole.
+\item \textbf{The critical mass follows directly.} Interpolating $\lambda_{\rm edge}$ in $a_0$, the reference
+family crosses $1$ at $a_0\approx0.091$ ($\eta\approx1.18$) and the narrow support at $a_0\approx0.042$. For
+the wide support $\lambda_{\rm edge}=0.670$ at $a_0=0.148$, and since $\lambda_{\rm edge}/a_0$ decreases with the
+mass, its critical mass is above $0.22$. At small mass $\lambda_{\rm edge}\approx\eta$ in the reference family
+($0.100$ and $0.100$ in A1), which is why its $\eta_c$ is close to $1$; the ratio $\lambda_{\rm edge}/\eta$
+falls to $0.88$ at $\eta=1$ and changes with the width ($0.81$ in A6, $1.09$ in A8).
+\item \textbf{The laws at the edge depend only on $g$} (Table~\ref{tab:lazo_borde}). The local
+exponent of $\lambda_{\rm edge}-\lambda(\Omega_{\min}-\delta)$ tends to $1$ for $g=3$, to $0.5$ for $g=3/2$, and for
+$g=2$ it grows slowly towards $1$, as the logarithm requires ($1-1/\ln(1/\delta)\approx0.87$ at
+$\delta=10^{-3}\Delta\Omega$). For $g=1$, $\lambda$ grows as $0.15\ln(1/\delta)$.
+\end{enumerate}
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llrll}
+\toprule
+$g$ & case & $\lambda_{\rm edge}$ & local exponent for $\delta/\Delta\Omega=3\times10^{-2}\to3\times10^{-4}$ & expected\\
+\midrule
+3 & G3 & 0.772 & 0.94, 0.97, 0.99, 1.00 & 1\\
+2 & A4 & 0.874 & 0.79, 0.84, 0.87, 0.88 & 1, with a logarithm\\
+1.5 & G15 & 1.051 & 0.51, 0.51, 0.51, 0.51 & 0.5\\
+1 & G1 & $\infty$ & $d\lambda/d\ln(1/\delta)$: 0.16, 0.15, 0.15, 0.15 & constant\\
+\bottomrule
+\end{tabular}
+\caption{How $\lambda$ approaches its value at the edge. The local exponent is
+$d\ln[\lambda_{\rm edge}-\lambda(\Omega_{\min}-\delta)]/d\ln\delta$ between consecutive values of
+$\delta/\Delta\Omega=3\times10^{-2}$, $10^{-2}$, $3\times10^{-3}$, $10^{-3}$ and $3\times10^{-4}$ (\texttt{-{}-borde}).}
+\label{tab:lazo_borde}
+\end{table}
+
+\paragraph{Sharp edges at weak coupling.} This settles the question left open in
+Section~\ref{sec:borde_lineal} (Table~\ref{tab:lazo_debil}, \texttt{-{}-debil}). With $g\le1$ and
+$\eta=0.1$--$0.3$, $\lambda$ crosses $1$ very close to the edge, so there is a discrete mode, as the
+theorem says, but bound by a tiny amount. For $g=0.75$ the distance scales as the fourth power
+of the coupling: tripling $a_0$ (from G075a to G075b) multiplies $\delta_d$ by $91$, against
+$3.07^4=89$. For King it decreases exponentially: in G1a $\lambda$ reaches only $0.37$ at
+$\delta=10^{-8}\Delta\Omega$, and extrapolating the logarithm puts the mode about $10^{-25}\Delta\Omega$ below the
+edge. Separating such a mode from the response of the edge takes a time of order $\tau_1/\delta_d$.
+That is why the runs of $60\,\tau_1$ see only a response at $\Omega_{\min}$ that decays ever more
+slowly.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+ & & & \multicolumn{4}{c}{$\lambda$ at $\delta/\Delta\Omega=$} & & \\
+\cmidrule(lr){4-7}
+case & $g$ & $\eta$ & $10^{-2}$ & $10^{-4}$ & $10^{-6}$ & $10^{-8}$ & $\delta_d/\Delta\Omega$ & $\tau_1/\delta_d$\\
+\midrule
+G075b & 0.75 & 0.30 & 0.487 & 1.373 & 4.193 & 13.26 & $3.9\times10^{-4}$ & $2.6\times10^{3}\,\tau_1$\\
+G075a & 0.75 & 0.10 & 0.167 & 0.470 & 1.433 & 4.417 & $4.3\times10^{-6}$ & $2.3\times10^{5}\,\tau_1$\\
+G1b & 1 & 0.30 & 0.398 & 0.621 & 0.845 & 1.071 & $4.3\times10^{-8}$ & $2.3\times10^{7}\,\tau_1$\\
+G1a & 1 & 0.10 & 0.137 & 0.213 & 0.289 & 0.366 & $\sim10^{-25}$ & $\sim10^{25}\,\tau_1$\\
+\bottomrule
+\end{tabular}
+\caption{The sharp edges at weak coupling. $\delta_d$ is the distance of the discrete mode below the
+edge, the root of $\lambda=1$; for G1a it is an extrapolation of the logarithm.}
+\label{tab:lazo_debil}
+\end{table}
 
 \subsection{Nonlinear scales of the damped cases}
 \label{sec:res_escalas}
@@ -2166,7 +2384,7 @@ the section where each is introduced and how it was checked.
 6 & Regenerated component at $\Omega_{\max}$ (\ref{sec:regenerada}) & reading of the tail &
   confirmed in linear theory: slope $-2.2$ to $-2.3$ in A1 up to $60\,\tau_1$\\
 7 & The shift measures the coupling (\ref{sec:eta}) & definition of $\eta$ &
-  heuristic; linear theory shows that $\eta$ orders the transition but does not fix it alone\\
+  heuristic; $\eta$ orders the transition but does not fix it alone; $\lambda_{\rm edge}=1$ does (\ref{sec:res_lazo})\\
 8 & Pendulum, isolated resonance (\ref{sec:atrapamiento}) & $\omega_b$, $\Delta J_{\rm atr}$, $\mu$, $\nu$ &
   standard in nonlinear dynamics\\
 9 & $\omega_b\approx\sqrt{|\Omega'|\max_r|\delta\Phi|}$, $|\Omega'|\approx\Delta\Omega/J_t$ (\ref{sec:atrapamiento}) & nonlinear map &
@@ -2250,6 +2468,8 @@ $\delta\Omega$, $\eta$ & relative shift of $\bar\Omega$ and design criterion & \
 $\omega_b$, $\Delta J_{\rm atr}$ & bounce frequency and half-width of the trapping island & \ref{sec:atrapamiento}\\
 $\mu$, $\nu$ & $\omega_b/\Delta\Omega$ and $\omega_b/\gamma$ & \ref{sec:atrapamiento}\\
 $\eta_c$ & value of $\eta$ at the transition & \ref{sec:barrido}\\
+$\lambda(\omega)$, $\lambda_{\rm edge}$ & gain of the self-consistent loop, and its value at $\Omega_{\min}$ & \ref{sec:lazo}\\
+$\delta_d$ & distance of a discrete mode below the edge, in units of $\Delta\Omega$ & \ref{sec:res_lazo}\\
 $T_{\rm rec}(k)$ & recurrence time of the grid in $J$ & \ref{sec:recurrencia}\\
 $t_{\rm fin}$ & duration of a run & \ref{sec:recurrencia}\\
 \bottomrule
@@ -2287,6 +2507,10 @@ $[a,2a]\,\tau_1$ and gives $\omega_b$. It is validated by reproducing bit for bi
 solution of 11\_landau and its pole.
 \item \texttt{eta.py}: band, shift, $\eta$, $\tau_1$, $T_{\rm rec}$ and cost of a run, without
 simulating.
+\item \texttt{lambda\_\allowbreak borde.py}: the loop gain $\lambda(\omega)$, $\lambda_{\rm edge}$ and the frequency of
+the discrete mode of each equilibrium (Section~\ref{sec:res_lazo}); with \texttt{-{}-borde}, the
+approach to the edge, and with \texttt{-{}-debil}, the sharp edges at weak coupling. All of it
+takes \SI{11}{min} and is written to \texttt{exe/\allowbreak eta\_\allowbreak lineal/\allowbreak lambda\_\allowbreak borde.txt}.
 \item \texttt{colas\_\allowbreak libres.py}: exact free decay of $h_1$ and $\delta\Phi$ by quadrature,
 and $\rho_\Phi$.
 \item \texttt{landau\_\allowbreak analisis.py}: $\delta\Phi$ and $h_k$ of the PIC runs in the frame of

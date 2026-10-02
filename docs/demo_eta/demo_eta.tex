@@ -286,6 +286,44 @@ pull a mode out of the band. The value of $\eta$ at which the mode reaches the e
 band, $\eta_c$, depends on the family of equilibria, through the width and the shape of the
 distribution; Section~\ref{sec:prediccion_lineal} gives it for ours.
 
+\paragraph{The exact criterion: the gain of the self-consistent loop.}
+\label{sec:lazo}
+Whether a discrete mode exists can be decided without estimates. The density sees only the
+part of $\delta F$ that is even in $Q$, because $r(-Q)=r(Q)$. Adding the relations for the
+harmonics $k$ and $-k$, $b_k=a_k+a_{-k}$ obeys
+\[
+  b_k(J)=R_k(J;\omega)\,\delta\Phi_k(J),\qquad
+  R_k(J;\omega)=\frac{2k^2\,\Omega(J)\,F_{\rm eq}'(J)}{k^2\Omega(J)^2-\omega^2},\quad k\ge1,
+\]
+and the Poisson equation closes the loop,
+\begin{gather*}
+  \delta\Phi_k(J)=\sum_{k'\ge1}\int M_{kk'}(J,J')\,b_{k'}(J')\,dJ',\\
+  M_{kk'}(J,J')=4\pi L_0\iint\cos kQ\,\cos k'Q'\,G\big(r(Q,J),r(Q',J')\big)\,dQ\,dQ'.
+\end{gather*}
+The operator $MR(\omega)$ maps a potential to the potential of the response it produces, and a
+mode of frequency $\omega$ exists if it has the eigenvalue $1$. $M$ is negative, because
+gravity attracts. If $F_{\rm eq}$ decreases with $J$ and $\omega<\Omega_{\min}$, $R$ is negative too,
+and $MR$ is similar to the symmetric positive operator $|R|^{1/2}(-M)|R|^{1/2}$. Its largest
+eigenvalue $\lambda(\omega)$ is the gain of the loop at the frequency $\omega$. Each $|R_k|$ grows with
+$\omega$, so $\lambda(\omega)$ grows towards the edge of the band. At imaginary frequency $\lambda$
+decreases instead, so a value $\lambda(0)\ge1$ would imply a growing mode; Antonov's stability
+of the monotonic $F_{\rm eq}$ therefore gives $\lambda(0)<1$. It follows that
+\[
+  \text{there is a discrete mode below the band}\quad\Longleftrightarrow\quad
+  \lambda_{\rm edge}\equiv\lim_{\omega\to\Omega_{\min}^-}\lambda(\omega)>1,
+\]
+and its frequency is the root of $\lambda(\omega_d)=1$. In quantum mechanics this is the
+Birman--Schwinger criterion for a bound state at the edge of a band. Near the edge
+$|R_1|\propto(J_t-J)^{g-1}/(\Omega-\omega)$, so $\lambda_{\rm edge}$ is finite only for $g>1$, and the way
+$\lambda$ approaches it depends only on $g$:
+$\lambda_{\rm edge}-\lambda(\Omega_{\min}-\delta)\propto\delta^{\min(g-1,1)}$, with a logarithm for $g=2$. The
+distance of the mode below the edge near the threshold follows from inverting this law;
+for $g=3/2$, for example, it grows as $(\lambda_{\rm edge}-1)^2$. For $g\le1$, $\lambda$ diverges at the
+edge and there is a discrete mode for any mass. Unlike $\eta_c$, the threshold
+$\lambda_{\rm edge}=1$ does not depend on the family; $\eta$ is an estimate of $\lambda_{\rm edge}$
+that uses only the equilibrium. Section~\ref{sec:prediccion_lineal} computes $\lambda_{\rm edge}$ for
+the equilibria of the runs.
+
 \subsection{The vacuum edge}
 \label{sec:borde}
 
@@ -299,10 +337,12 @@ $\varepsilon$ below a threshold $\varepsilon_0(k)$ that they do not estimate. Fo
 discrete mode below $\Omega_{\min}$. Only the behaviour at the edge matters; for the
 King model ($g=1$) they note that there is no damping.
 
-A heuristic argument explains why. The dispersion relation
-contains $\int F_{\rm eq}'/(\Omega-\omega)\,dJ$, and with $F_{\rm eq}'\propto(J_t-J)^{g-1}$
-this integral diverges as $\omega\to\Omega_{\min}$ if $g\le1$. An arbitrarily weak
-coupling then suffices to bind a state at the edge.
+The loop gain of Section~\ref{sec:lazo} explains why. It contains
+$\int F_{\rm eq}'/(\Omega-\omega)\,dJ$, and with $F_{\rm eq}'\propto(J_t-J)^{g-1}$ this integral diverges
+as $\omega\to\Omega_{\min}$ if $g\le1$. Then $\lambda_{\rm edge}=\infty$, and an arbitrarily weak coupling
+suffices to bind a state at the edge. At small mass this state lies very close to the
+edge: its distance decreases as a power of the coupling for $g<1$ and exponentially for
+$g=1$ (Section~\ref{sec:prediccion_lineal}).
 
 \subsection{Nonlinear evolution}
 \label{sec:nolineal}
@@ -742,10 +782,35 @@ $\eta_c\approx1.1$--$1.2$ for this family. The full linear analysis, including t
 in $\eta$ and its checks, is in the companion document on the $\eta$ battery
 (\texttt{docs/\allowbreak experimento\_\allowbreak eta/\allowbreak bateria\_\allowbreak eta.pdf}).
 
+The loop gain of Section~\ref{sec:lazo} places the transition exactly. It is computed by
+\texttt{lambda\_\allowbreak borde.py}, which discretizes $J=J_t(1-s^2)$ with 200 Gauss--Legendre nodes
+in $s$, $Q$ with 128 points, the harmonics up to $k=6$, and the integrals in $Q$ on a radial
+grid of 2000 nodes, with $r(Q,J)$ from the inverse map of the equilibrium. Doubling or
+halving each resolution changes $\lambda_{\rm edge}$ of L5 by at most $2\times10^{-5}$; keeping only
+$k\le3$ changes it by $4\times10^{-4}$. In this family $\lambda_{\rm edge}$ grows from $0.100$ (A1) to
+$0.874$ (A4), $1.047$ (L5) and $2.21$ (M5) (Table~\ref{tab:lineal}): the damped equilibria have
+$\lambda_{\rm edge}<1$ and the discrete ones $\lambda_{\rm edge}>1$. Interpolating between A4 and L5,
+$\lambda_{\rm edge}=1$ at $a_0\approx0.091$, that is $\eta\approx1.18$. For the discrete modes the root of
+$\lambda(\omega_d)=1$ gives $\omega_d=0.07250$ (L5), $0.07848$ (L6) and $0.10486$ (M5), against
+$0.07250$, $0.07848$ and $0.10487$ from the linearized solver over $10$--$20\,\tau_1$
+(Table~\ref{tab:polos}). The two calculations are independent: one integrates the
+initial-value problem in time, the other solves an eigenvalue problem at fixed frequency.
+At small mass $\lambda_{\rm edge}\approx\eta$ in this family ($0.100$ and $0.100$ in A1), which is why
+$\eta_c$ is close to $1$, but the ratio $\lambda_{\rm edge}/\eta$ falls to $0.88$ in A4 and $0.43$ in M5.
+The battery document computes $\lambda_{\rm edge}$ for its 25 equilibria with compact support: it
+separates the damped modes from the discrete ones in all of them, whatever the width,
+$L_0$, $W_0$, $g$ or the family, while $\eta_c$ moves.
+
 The solver also reproduces the edge dichotomy of Section~\ref{sec:borde}. At $\eta=1$,
 $g\le1$ already has a discrete mode while $g\ge2$ is still damped. At $\eta=0.1$ the sharp
 edge (G1a) leaves a response that oscillates at $\Omega_{\min}$ and decays ever more slowly,
-while the response of the smooth edge (A1) dies out.
+while the response of the smooth edge (A1) dies out. The loop gain explains this. For
+$g=1$, $\lambda$ diverges at the edge only as the logarithm of $1/\delta$, with $\delta$ the distance
+below the edge: in G1a it is $0.14$ at $\delta=10^{-2}\Delta\Omega$ and only $0.37$ at $10^{-8}\Delta\Omega$.
+The discrete mode of the theorem exists, but extrapolating the logarithm places it about
+$10^{-25}\Delta\Omega$ below the edge. Separating such a mode from the response of the edge
+takes a time of order $\tau_1/\delta$, so no run can see it: what the runs measure is the
+response at the edge itself.
 
 In A4, for example, the band is $[0.0698,\,0.0857]$, so $\Delta\Omega=0.0159$ and
 $\tau_1=395$. The radial period ranges from $2\pi/0.0857=73$ at the circular orbit to
@@ -792,21 +857,22 @@ approximate. Labels mark the equilibria used in the runs.}
 \begin{table}[!htbp]
 \centering
 \small
-\begin{tabular}{lrrcrrL{3.9cm}}
+\begin{tabular}{lrrcrrrL{3.6cm}}
 \toprule
-case & $a_0$ & $\eta$ & band $[\Omega_{\min},\Omega_{\max}]$ & $x$ & $\gamma/\Delta\Omega$ & linear regime\\
+case & $a_0$ & $\eta$ & band $[\Omega_{\min},\Omega_{\max}]$ & $x$ & $\gamma/\Delta\Omega$ & $\lambda_{\rm edge}$ & linear regime\\
 \midrule
-A1 & 0.0065 & 0.10 & $[0.0610,\,0.0723]$ & $\sim0.5$ & $\sim0.5$ & fast damping\\
-A3 & 0.042 & 0.59 & $[0.0655,\,0.0791]$ & 0.14 & 0.17 & damped\\
-A4 & 0.075 & 1.00 & $[0.0698,\,0.0857]$ & 0.03 & 0.023 & damped, at the edge\\
-L5 & 0.097 & 1.24 & $[0.0727,\,0.0902]$ & $-0.01$ & 0 & discrete mode next to the edge\\
-L6 & 0.170 & 2.00 & $[0.0828,\,0.1055]$ & $-0.19$ & 0 & discrete mode, separated\\
-M5 & 0.5 & 5.11 & $[0.1342,\,0.1843]$ & $-0.59$ & 0 & mass comparable to the background; mode far from the band\\
+A1 & 0.0065 & 0.10 & $[0.0610,\,0.0723]$ & $\sim0.5$ & $\sim0.5$ & 0.100 & fast damping\\
+A3 & 0.042 & 0.59 & $[0.0655,\,0.0791]$ & 0.14 & 0.17 & 0.555 & damped\\
+A4 & 0.075 & 1.00 & $[0.0698,\,0.0857]$ & 0.03 & 0.023 & 0.874 & damped, at the edge\\
+L5 & 0.097 & 1.24 & $[0.0727,\,0.0902]$ & $-0.01$ & 0 & 1.047 & discrete mode next to the edge\\
+L6 & 0.170 & 2.00 & $[0.0828,\,0.1055]$ & $-0.19$ & 0 & 1.468 & discrete mode, separated\\
+M5 & 0.5 & 5.11 & $[0.1342,\,0.1843]$ & $-0.59$ & 0 & 2.210 & mass comparable to the background; mode far from the band\\
 \midrule
-G1a & 0.0069 & 0.10 & $[0.0610,\,0.0723]$ & $\approx0$ & -- & sharp edge ($g=1$): persistent response\\
+G1a & 0.0069 & 0.10 & $[0.0610,\,0.0723]$ & $\approx0$ & -- & $\infty$ & sharp edge ($g=1$): persistent response\\
 \bottomrule
 \end{tabular}
-\caption{The equilibria and their linear pole (from the scan of the $\eta$ battery). All
+\caption{The equilibria, their linear pole (from the scan of the $\eta$ battery) and the gain
+of the self-consistent loop at the lower edge of the band (Section~\ref{sec:lazo}). All
 are Wilson models with $J_t=0.138$, $W_0=3$, $L_0=2$ and $g=2$, except G1a, a King model
 ($g=1$).}
 \label{tab:lineal}
@@ -1767,6 +1833,11 @@ $\eta_c\approx1.1$--$1.2$ for $g=2$), what happens above it, and the nonlinear d
 \begin{itemize}
 \item The linear solver has a transition from a damped mode to a discrete mode at
 $\eta_c\approx1.1$--$1.2$ for this family.
+\item The transition is where the gain of the self-consistent loop at the lower edge of the
+band, $\lambda_{\rm edge}$, crosses $1$ (Section~\ref{sec:lazo}). This holds in the 25 equilibria
+of the battery with compact support, whatever the width, $L_0$, $W_0$, $g$ or the family,
+and the root of $\lambda(\omega_d)=1$ reproduces the frequencies of the discrete modes. The
+threshold $\eta_c$ is not universal, but $\lambda_{\rm edge}=1$ is.
 \item The PIC runs reproduce linear theory where $\nu\ll1$, to $10^{-5}$ in $\omega$ and
 \SI{1}{\%} in $\gamma$, and they reproduce the discrete modes over $20$--$40\,\tau_1$.
 \item Near $\eta_c$, with $\nu=10$ (D6), the PIC run departs from linear theory: damping
@@ -1798,8 +1869,6 @@ those particles reaching $J_r$.
 \begin{itemize}
 \item That the late excess of D5 over linear theory is physical. With four times more
 particles it drops from $4.4$ to $1.8$ times the linear value, and it is not converged.
-\item That $\eta_c$ is universal. Linear theory shows that it depends on the width, the
-shape and the edge of the distribution.
 \item That the criterion $\omega_b/(\Omega_{\min}-\omega)$ holds in general for discrete modes.
 \item That $\eta_c$ for $g=2$ coincides with the $\varepsilon_0(2)$ of the theorem of Hadžić et
 al. Here the background is the isochrone, not a point mass; with \texttt{BGtype = sphere}
@@ -1860,6 +1929,7 @@ $\varepsilon$, $s(J)$ & amplitude and radial profile of the perturbation $\varep
 $\eta$ & self-gravitational frequency shift over the width of the band & $0.1$--$5.1$ (blob: $0.005$--$2.5$)\\
 $\eta_c$ & value of $\eta$ at which the mode leaves the band & $1.1$--$1.2$\\
 $\omega$, $\gamma$ & frequency and damping rate of the collective mode & $\omega=0.061$--$0.105$; $1/\gamma=170$--$2700$\\
+$\lambda(\omega)$, $\lambda_{\rm edge}$ & gain of the self-consistent loop at the frequency $\omega$ and at the lower edge of the band; there is a discrete mode if and only if $\lambda_{\rm edge}>1$ & $0.100$ (A1) to $2.21$ (M5); $\infty$ for $g\le1$\\
 $\mathcal L$ & linearized Vlasov--Poisson operator, $i\,\partial_t\delta F=\mathcal L\,\delta F$; the frequencies of the discrete modes are its eigenvalues & --\\
 $x$ & position of the mode in the band, $(\omega-\Omega_{\min})/\Delta\Omega$ & $-0.59$ (M5) to $\sim0.5$ (A1)\\
 $\omega_b$ & bounce frequency of the trapped particles & $7\times10^{-4}$--$2\times10^{-2}$\\
@@ -2097,10 +2167,12 @@ the pendulum island, which is $2\sqrt{A/|\Omega'|}$; whether the fine part shoul
 $N^{-1/2}$ (with a quiet start the noise is not Monte Carlo noise); and whether the
 comparison with Hadžić et al.\ is only an analogy (their theorem is formulated in this same
 fixed-$|L|$ reduction, Section~\ref{sec:borde}).
-\item \textbf{Pending:} D5 with $N\times16$; the robustness of $\eta_c$ with respect to the edge
-(including $g=1/2$), the width and $W_0$ in the linear solver; D8 at the optimal amplitude;
-$\eta_c(L_0)$; the quantitative comparison with O'Neil's formulas; and the point-mass case of
-the theorem.
+\item \textbf{Answered with the loop gain:} the robustness of the threshold with respect to
+the edge, the width, $W_0$ and $L_0$. $\eta_c$ moves with all of them, but the transition is
+always at $\lambda_{\rm edge}=1$ (Section~\ref{sec:lazo}).
+\item \textbf{Pending:} D5 with $N\times16$; the edge $g=1/2$; D8 at the optimal amplitude;
+the quantitative comparison with O'Neil's formulas; and the point-mass case of the
+theorem.
 \end{itemize}
 
 \section{Reproduction}
@@ -2125,7 +2197,9 @@ step & what it does & time\\
 \end{center}
 The steps \texttt{controles}, \texttt{isla}, \texttt{energia} and \texttt{resolucion} produce the
 tables and figures of Section~\ref{sec:controles}, and \texttt{armonicos} the harmonic content
-of the discrete modes (Section~\ref{sec:modo}). The two constructions of the equilibria
+of the discrete modes (Section~\ref{sec:modo}). \texttt{lambda\_\allowbreak borde.py --borde --debil}
+computes the loop gain of the equilibria of the battery in \SI{11}{min} and writes it to
+\texttt{exe/\allowbreak eta\_\allowbreak lineal/\allowbreak lambda\_\allowbreak borde.txt}. The two constructions of the equilibria
 are compared by \texttt{comparar\_\allowbreak equilibrios.py} (Table~\ref{tab:edo}; with
 \texttt{-{}-refinar}, also the finer grids of the iteration). Their evolution with the PIC code
 is run by \texttt{equilibrio\_\allowbreak edo\_\allowbreak pic.py}, with the steps

@@ -152,20 +152,27 @@ def borde(w, casos=(('G3', 3), ('A4', 2), ('G15', 1.5), ('G1', 1)), nj=400):
 
 
 def debil(w, casos=('G075a', 'G075b', 'G1a', 'G1b'), nj=400):
-    """Bordes abruptos con acoplamiento débil: lambda muy cerca del borde."""
+    """Bordes abruptos con acoplamiento débil: lambda muy cerca del borde, y la distancia
+    delta_d del modo bajo el borde, en anchos de banda, si cae por encima de 1e-8. Separar
+    el modo de la respuesta del borde lleva un tiempo del orden de tau_1/delta_d."""
     ds = 10.0**-np.arange(1, 9)
-    w('Bordes abruptos, acoplamiento débil: lambda en delta/ancho = 1e-1 ... 1e-8')
+    w('Bordes abruptos, acoplamiento débil: lambda en delta/ancho = 1e-1 ... 1e-8, y delta_d')
     for n in casos:
         z = Lazo(os.path.join(DIR, f'{n}_equilibrio.npz'), nj=nj)
         ancho = z.Om_max - z.Om_min
-        w(f'  {n:5} a0 = {z.a0:.4f}: ' + ' '.join(f'{z.lam(z.Om_min - d*ancho):.3f}' for d in ds))
+        f = lambda ld: z.lam(z.Om_min - np.exp(ld)*ancho) - 1
+        l = [z.lam(z.Om_min - d*ancho) for d in ds]
+        txt = (f'delta_d = {np.exp(brentq(f, np.log(1e-8), np.log(1e-1), xtol=1e-6)):.1e}'
+               if l[-1] > 1 > l[0] else 'lambda < 1 hasta 1e-8')
+        w(f'  {n:5} a0 = {z.a0:.4f}: ' + ' '.join(f'{x:.3f}' for x in l) + f'   {txt}')
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--casos', nargs='+', default=['A2', 'L3', 'A3', 'L4', 'A4', 'L5', 'A5', 'L6',
-                                                    'A6', 'A7', 'A8', 'A9', 'D2', 'E3', 'G3', 'G15',
-                                                    'G1', 'G075', 'E1', 'H9'])
+    ap.add_argument('--casos', nargs='+', default=['L1', 'A1', 'L2', 'A2', 'L3', 'A3', 'L4', 'A4',
+                                                    'L5', 'A5', 'L6', 'M5', 'A6', 'A7', 'A8', 'A9',
+                                                    'D1', 'D2', 'E3', 'G3', 'G15', 'G1', 'G075',
+                                                    'E1', 'H9', 'H3'])
     ap.add_argument('--nj', type=int, default=200)
     ap.add_argument('--kmax', type=int, default=6)
     ap.add_argument('--nq', type=int, default=128)
