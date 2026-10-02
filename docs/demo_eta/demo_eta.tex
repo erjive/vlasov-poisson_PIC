@@ -253,19 +253,38 @@ of the mode relative to the band by $x=(\omega-\Omega_{\min})/\Delta\Omega$, so 
 $0<x<1$ inside the band and $x<0$ below it. Gravity is attractive and pushes the mode
 down, towards $\Omega_{\min}$, the frequency of the largest orbits.
 
-The strength of the coupling is measured by the self-gravitational shift of the mean
-orbital frequency relative to the width of the band,
+Whether a mode can leave the band depends on two frequency scales. The width of the band,
+$\Delta\Omega$, sets how fast the perturbation mixes (Section~\ref{sec:banda}). The coupling has to
+be compared with it in the same units, and self-gravity provides a frequency directly. For a
+nearly circular orbit $\kappa^2=\Phi''+3\Phi'/r_c$, since $\Phi'(r_c)=L_0^2/r_c^3$, and the Poisson
+equation, $\Phi''+2\Phi'/r=4\pi G\rho$, turns this into
+\[
+  \kappa^2=4\pi G\rho(r_c)+\frac{G\,M(<r_c)}{r_c^3}.
+\]
+The mass of the component raises the orbital frequencies by an amount set by its own
+density at the orbit. The coupling of $\delta F$ to itself through $\delta\Phi$ comes from the same
+density and is of the same order. The shift of the frequencies of the equilibrium therefore
+measures the strength of the coupling, and it needs only the equilibrium. This is a
+heuristic, not a theorem. We compare the shift of the mean frequency with the width of the
+band,
 \[
   \eta=\frac{\delta\Omega}{\Delta\Omega/\bar\Omega},\qquad
   \delta\Omega=\frac{\bar\Omega-\bar\Omega_{\rm iso}}{\bar\Omega_{\rm iso}},
 \]
 where $\bar\Omega$ is the mass-weighted mean frequency of the self-consistent
 equilibrium and $\bar\Omega_{\rm iso}$ is the same average for the same distribution
-in the isochrone alone. For $\eta\ll1$ the frequency spread
-dominates and the perturbation mixes; for $\eta\gtrsim1$ the coupling can pull a mode
-out of the band. The value of $\eta$ at which the mode reaches the edge of the band,
-$\eta_c$, depends on the family of equilibria; Section~\ref{sec:prediccion_lineal}
-gives it for ours.
+in the isochrone alone. Since $\bar\Omega/\bar\Omega_{\rm iso}=1+\delta\Omega$, this is
+$\eta=(1+\delta\Omega)\,(\bar\Omega-\bar\Omega_{\rm iso})/\Delta\Omega$. To first order in the shift, $\eta$
+is the number of band widths by which self-gravity moves the mean frequency. In A4 the mean
+frequency moves by $0.84$ band widths and $\eta=1.00$. In M5, where $\delta\Omega=1.49$, it moves
+by $2.05$ band widths and $\eta=5.11$. In a plasma the same role is played by
+$1/(k\lambda_D)=\omega_p/(kv_{\rm th})$, the collective frequency over the spread of the free-streaming
+frequencies. Unlike the mass $a_0$ alone, $\eta$ takes the width of the band into account: a
+narrow band needs less mass than a wide one for the same effect. For $\eta\ll1$ the
+frequency spread dominates and the perturbation mixes; for $\eta\gtrsim1$ the coupling can
+pull a mode out of the band. The value of $\eta$ at which the mode reaches the edge of the
+band, $\eta_c$, depends on the family of equilibria, through the width and the shape of the
+distribution; Section~\ref{sec:prediccion_lineal} gives it for ours.
 
 \subsection{The vacuum edge}
 \label{sec:borde}
