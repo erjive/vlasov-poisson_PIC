@@ -53,7 +53,7 @@ def banda(a0, sigma, jmax, l0, nj=4000, verboso=False, forma='gauss', jt=None, k
     """Banda de Omega sobre el soporte de F_eq, en el equilibrio autoconsistente."""
     eq = Equilibrio(a0, sigma=sigma, jmax=jmax, l0=l0, forma=forma, jt=jt, k=k, m=m, w0=w0)
     if a0 > 0:
-        eq.iterar(tol=1e-10, maxit=25, verboso=verboso)
+        eq.iterar(tol=1e-10, verboso=verboso)
     else:                                   # a0 = 0: el isócrono desnudo
         mapa = eq.mapa()
         eq.E_t, eq.J_t = eq.tabla_J_de_E(mapa)
