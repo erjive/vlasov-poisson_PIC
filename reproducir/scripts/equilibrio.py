@@ -19,7 +19,7 @@ Uso:
 """
 import os, sys, math, argparse, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from aa_numerico import MapaAA, phi_iso, L0
+from aa_numerico import MapaAA, phi_iso, L0, c_fondo
 
 # Valores por omisión: los de las corridas de 11_landau. sigma_J fija el ancho
 # del soporte en J y con él el ancho de la banda de frecuencias; J_MAX es el
@@ -106,6 +106,38 @@ def dFdE_maxwell(E, E_t, T, g):
     return np.where(E < E_t, -dE_gamma(g, x)/T, 0.0)
 
 
+FORMAS_E = ('maxwell', 'polE')         # las formas que dependen de la energía
+
+
+def F_polE(E, E_t, k):
+    """Politropo en la energía, (E_t - E)^k si E < E_t, el de Hadžić, Rein, Schrecker y
+    Straub (2025); es el límite W0 -> 0 de la Maxwelliana rebajada."""
+    E = np.asarray(E, float)
+    u = np.where(E < E_t, E_t - E, 0.0)
+    return np.where(E < E_t, u**k, 0.0)
+
+
+def dFdE_polE(E, E_t, k):
+    E = np.asarray(E, float)
+    u = np.where(E < E_t, E_t - E, 1.0)
+    return np.where(E < E_t, -k*u**(k - 1), 0.0)
+
+
+def borde_E(forma, E_tab, J_tab, jt, w0):
+    """(E_t, T) de una forma en la energía: E_t = E(J_t); T solo en la Maxwelliana."""
+    if forma == 'maxwell':
+        return maxwell_borde(E_tab, J_tab, jt, w0)
+    return float(np.interp(jt, J_tab, E_tab)), None
+
+
+def F_E(forma, E, E_t, T, g):
+    return F_maxwell(E, E_t, T, g) if forma == 'maxwell' else F_polE(E, E_t, g)
+
+
+def dFdE_E(forma, E, E_t, T, g):
+    return dFdE_maxwell(E, E_t, T, g) if forma == 'maxwell' else dFdE_polE(E, E_t, g)
+
+
 def F_perfil(J, forma='gauss', sigma=None, jt=None, k=None, m=0.0):
     """Forma de F_eq(J) sin normalizar: 'gauss' (J^2 exp(-J^2/sigma^2)) o 'politropo'."""
     if forma == 'gauss':
@@ -151,13 +183,14 @@ def g_angular(nombre):
 class Equilibrio:
     def __init__(self, a0, r_malla=np.arange(0.01, 25.0 + 1e-9, 0.01),
                  sigma=SIGMA_J, jmax=J_MAX, l0=L0, forma='gauss', jt=None, k=None, m=0.0,
-                 w0=None):
+                 w0=None, fondo='isocrono'):
         self.a0 = a0
         self.sigma, self.jmax, self.L0 = sigma, jmax, l0
         self.forma, self.jt, self.k, self.m, self.w0 = forma, jt, k, m, w0
+        self.fondo = fondo
         self.r = r_malla
         self.phi_self = np.zeros_like(r_malla)
-        if forma == 'maxwell':
+        if forma in FORMAS_E:
             # La forma en J depende del potencial: A, E_t y T se fijan con la
             # tabla J(E) de cada iteración (fijar_tabla).
             self.A = None
@@ -165,22 +198,22 @@ class Equilibrio:
             self.A = amplitud(a0, sigma, jmax, l0, forma, jt, k, m)
 
     def fijar_tabla(self, E_tab, J_tab):
-        """Maxwelliana: borde, temperatura y amplitud en el potencial de la tabla."""
+        """Formas en la energía: borde, temperatura y amplitud en el potencial de la tabla."""
         self.E_tab, self.J_tab = E_tab, J_tab
-        self.E_borde, self.T = maxwell_borde(E_tab, J_tab, self.jt, self.w0)
+        self.E_borde, self.T = borde_E(self.forma, E_tab, J_tab, self.jt, self.w0)
         Jq = np.linspace(0, self.jt, 200001)
-        Fq = F_maxwell(np.interp(Jq, J_tab, E_tab), self.E_borde, self.T, self.k)
+        Fq = F_E(self.forma, np.interp(Jq, J_tab, E_tab), self.E_borde, self.T, self.k)
         self.A = self.a0/(16*np.pi**3*self.L0*np.trapezoid(Fq, Jq))
 
     def F(self, J, E=None):
-        if self.forma == 'maxwell':
+        if self.forma in FORMAS_E:
             if E is None:
                 E = np.interp(J, self.J_tab, self.E_tab)
-            return self.A*F_maxwell(E, self.E_borde, self.T, self.k)
+            return self.A*F_E(self.forma, E, self.E_borde, self.T, self.k)
         return self.A*F_perfil(J, self.forma, self.sigma, self.jt, self.k, self.m)
 
     def mapa(self):
-        return MapaAA(self.r, self.phi_self, L=self.L0)
+        return MapaAA(self.r, self.phi_self, L=self.L0, fondo=self.fondo)
 
     def tabla_J_de_E(self, m, n=4000):
         """J(E) a L fijo: J solo depende de E. Se evalúa en el pericentro de
@@ -194,8 +227,8 @@ class Equilibrio:
         return E, J
 
     def E_de_J_aprox(self, m, J):
-        # Isócrono como cota de partida; se amplía hasta que la tabla cubra J.
-        c = 0.5*(self.L0 + np.sqrt(self.L0**2 + 4))
+        # El fondo sin masa propia como cota de partida; se amplía hasta que la tabla cubra J.
+        c = c_fondo(self.fondo, self.L0)
         E = -0.5/(J + c)**2
         for _ in range(20):
             _, Jt, _ = m(np.array([m.rc]), np.array([np.sqrt(2*max(E - m.phi_ef(m.rc), 0))]))
@@ -213,7 +246,7 @@ class Equilibrio:
         P = pmax[:, None]*u[None, :]
         E = 0.5*P**2 + phief[:, None]
         J = np.interp(E, E_t, J_t, right=self.jmax*10)
-        F = self.F(J, E) if self.forma == 'maxwell' else self.F(J)
+        F = self.F(J, E) if self.forma in FORMAS_E else self.F(J)
         integral = np.trapezoid(F, u, axis=1)*pmax
         return 8*np.pi**2*self.L0*integral/(4*np.pi*self.r**2)
 
@@ -238,7 +271,7 @@ class Equilibrio:
         for it in range(maxit):
             m = self.mapa()
             E_t, J_t = self.tabla_J_de_E(m)
-            if self.forma == 'maxwell':
+            if self.forma in FORMAS_E:
                 self.fijar_tabla(E_t, J_t)
             rho = self.densidad(m, E_t, J_t)
             nuevo, M = self.poisson(rho)
@@ -338,8 +371,12 @@ if __name__ == '__main__':
     ap.add_argument('--eps', type=float, default=0.1)
     ap.add_argument('--nrc', type=int, default=400)
     ap.add_argument('--npc', type=int, default=25)
-    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo', 'maxwell'],
-                    help='gauss: A J^2 exp(-J^2/sigma^2); politropo: A (J_t - J)^k')
+    ap.add_argument('--forma', default='gauss', choices=['gauss', 'politropo', 'maxwell', 'polE'],
+                    help='gauss: A J^2 exp(-J^2/sigma^2); politropo: A (J_t - J)^k; '
+                         'polE: A (E_t - E)^k con E_t = E(J_t)')
+    ap.add_argument('--fondo', default='isocrono', choices=['isocrono', 'puntual'],
+                    help='potencial de fondo: isócrono de masa y escala 1, o masa puntual de '
+                         'masa 1 (BGtype = "sphere" en el código, para r > 1)')
     ap.add_argument('--sigma', type=float, default=SIGMA_J, help='ancho en J (forma gauss)')
     ap.add_argument('--jt', type=float, default=None, help='borde del soporte (forma politropo)')
     ap.add_argument('--k', type=float, default=3.0, help='exponente del borde (forma politropo)')
@@ -361,7 +398,7 @@ if __name__ == '__main__':
     arg = ap.parse_args()
     if arg.metodo == 'edo' and arg.forma != 'maxwell':
         raise SystemExit('--metodo edo solo vale para la forma maxwell, que depende de E')
-    if arg.forma in ('politropo', 'maxwell'):
+    if arg.forma in ('politropo', 'maxwell', 'polE'):
         if arg.jt is None:
             raise SystemExit(f'la forma {arg.forma} necesita --jt')
         if arg.forma == 'maxwell' and arg.w0 is None:
@@ -378,13 +415,16 @@ if __name__ == '__main__':
         desc = f'A J^2 exp(-J^2/{arg.sigma}^2)'
     elif arg.forma == 'maxwell':
         desc = f'A E_gamma({arg.k:g}, (E_t - E)/T), E_t = E(J_t = {arg.jt}), W0 = {arg.w0:g}'
+    elif arg.forma == 'polE':
+        desc = f'A (E_t - E)^{arg.k:g}, E_t = E(J_t = {arg.jt})'
     else:
         desc = f'A ({arg.jt} - J)^{arg.k:g}' if arg.m == 0 else \
                f'A J^{arg.m:g} ({arg.jt} - J)^{arg.k:g}'
     print(f'equilibrio: a0={arg.a0:g}, F_eq = {desc}, '
-          f'L0={arg.l0}, J_max={arg.jmax}, g(Q)="{arg.gq}", pert={arg.pert}')
+          f'L0={arg.l0}, J_max={arg.jmax}, g(Q)="{arg.gq}", pert={arg.pert}'
+          + ('' if arg.fondo == 'isocrono' else f', fondo {arg.fondo}'))
     eq = Equilibrio(arg.a0, sigma=arg.sigma, jmax=arg.jmax, l0=arg.l0,
-                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0)
+                    forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0, fondo=arg.fondo)
     extra = {}
     if arg.metodo == 'picard':
         eq.iterar()
@@ -408,5 +448,5 @@ if __name__ == '__main__':
              nrc=arg.nrc, npc=arg.npc, J_max=eq.jmax, sigma_J=eq.sigma,
              L0=eq.L0, gq=arg.gq, forma=arg.forma,
              J_borde=(-1.0 if arg.jt is None else arg.jt), k_borde=arg.k, m_borde=arg.m,
-             w0=(-1.0 if arg.w0 is None else arg.w0), pert=arg.pert, **extra)
+             w0=(-1.0 if arg.w0 is None else arg.w0), pert=arg.pert, fondo=arg.fondo, **extra)
     print(f'escrito {arg.salida} ({len(r)} partículas) y {base}_equilibrio.npz')

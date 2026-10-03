@@ -31,7 +31,7 @@ import os, sys, argparse, time, numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aa_numerico import MapaAA, L0
 from equilibrio import (invertir, F_forma, F_perfil, dF_perfil, J_MAX,
-                        F_maxwell, dFdE_maxwell, maxwell_borde)
+                        FORMAS_E, borde_E, F_E, dFdE_E)
 from landau_libre import omega_de_J
 
 J1, SJ1 = 0.10, 0.10                 # función de prueba de 11_landau
@@ -68,6 +68,11 @@ def forma_eq(eqf):
     return forma, jt, kb, mb, w0, pert
 
 
+def fondo_eq(eq):
+    """Fondo del equilibrio: el isócrono si el archivo es anterior a la opción."""
+    return str(eq['fondo']) if 'fondo' in eq.files else 'isocrono'
+
+
 def dF_forma(J, sigma):
     return np.exp(-J**2/sigma**2)*(2*J - 2*J**3/sigma**2)
 
@@ -79,7 +84,7 @@ def radios(eqf, nj, nq, cache):
             return d['r']
     eq = np.load(eqf)
     _, jmx, l0 = params_eq(eqf)
-    m = MapaAA(eq['r'], eq['phi_self'], L=l0)
+    m = MapaAA(eq['r'], eq['phi_self'], L=l0, fondo=fondo_eq(eq))
     Jn = (np.arange(nj) + 0.5)*jmx/nj
     Qn = (np.arange(nq) + 0.5)*2*np.pi/nq
     JJ, QQ = np.meshgrid(Jn, Qn, indexing='ij')
@@ -112,11 +117,11 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
     if forma == 'gauss':
         Feq = A*F_forma(Jn, sigma)
         dFeq = A*dF_forma(Jn, sigma)
-    elif forma == 'maxwell':                       # F(E): dF/dJ = F'(E) Omega(J)
+    elif forma in FORMAS_E:                        # F(E): dF/dJ = F'(E) Omega(J)
         En = np.interp(Jn, eq['J_t'], eq['E_t'])
-        Eb, T = maxwell_borde(eq['E_t'], eq['J_t'], jt, w0)
-        Feq = A*F_maxwell(En, Eb, T, kb)
-        dFeq = A*dFdE_maxwell(En, Eb, T, kb)*om
+        Eb, T = borde_E(forma, eq['E_t'], eq['J_t'], jt, w0)
+        Feq = A*F_E(forma, En, Eb, T, kb)
+        dFeq = A*dFdE_E(forma, En, Eb, T, kb)*om
     else:
         Feq = A*F_perfil(Jn, forma, sigma, jt, kb, mb)
         dFeq = A*dF_perfil(Jn, forma, sigma, jt, kb, mb)

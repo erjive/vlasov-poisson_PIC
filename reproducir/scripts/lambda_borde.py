@@ -37,7 +37,7 @@ from scipy.optimize import brentq
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 from aa_numerico import MapaAA
-from equilibrio import invertir, F_maxwell, dFdE_maxwell, maxwell_borde, F_perfil, dF_perfil
+from equilibrio import invertir, FORMAS_E, borde_E, F_E, dFdE_E, F_perfil, dF_perfil
 
 DIR = os.path.join(AQUI, '..', '..', 'exe', 'eta_lineal')
 
@@ -58,10 +58,10 @@ class Lazo:
         E, self.Om = sp(J), Omf(J)
         self.Om_min, self.Om_max = float(Omf(jt)), float(Omf(0.0))
         A = float(d['A'])
-        if forma == 'maxwell':
-            Et, T = maxwell_borde(d['E_t'], d['J_t'], jt, float(d['w0']))
-            F = A*F_maxwell(E, Et, T, g)
-            self.dF = A*dFdE_maxwell(E, Et, T, g)*self.Om
+        if forma in FORMAS_E:
+            Et, T = borde_E(forma, d['E_t'], d['J_t'], jt, float(d['w0']))
+            F = A*F_E(forma, E, Et, T, g)
+            self.dF = A*dFdE_E(forma, E, Et, T, g)*self.Om
         else:
             m = float(d['m_borde'])
             F = A*F_perfil(J, forma, None if forma != 'gauss' else float(d['sigma_J']), jt, g, m)
@@ -69,7 +69,8 @@ class Lazo:
         self.masa = 16*np.pi**3*L0*np.sum(self.wJ*F)          # debe ser a0
         self.monotona = bool(np.all(self.dF <= 0))
         # r(Q, J) en los nodos, con el mapa inverso del equilibrio.
-        mapa = MapaAA(d['r'], d['phi_self'], L=L0)
+        self.fondo = str(d['fondo']) if 'fondo' in d.files else 'isocrono'
+        mapa = MapaAA(d['r'], d['phi_self'], L=L0, fondo=self.fondo)
         Q = (np.arange(nq) + 0.5)*2*np.pi/nq
         JJ, QQ = np.meshgrid(J, Q, indexing='ij')
         r = np.empty(JJ.size)
@@ -114,7 +115,9 @@ class Lazo:
         ancho = self.Om_max - self.Om_min
         if self.lam(self.Om_min) <= 1:
             return None
-        ws = self.Om_min - ancho*np.concatenate([np.linspace(2, 0.1, 20), [0.03, 0.01, 0.0]])
+        # En [0, Omega_min): con una banda ancha (masa puntual) 2 anchos llegarían a omega < 0.
+        ws = np.maximum(self.Om_min - ancho*np.concatenate([np.linspace(2, 0.1, 20), [0.03, 0.01, 0.0]]),
+                        0.0)
         ls = [self.lam(w) for w in ws]
         for i in range(len(ws) - 1):
             if ls[i] < 1 <= ls[i+1]:

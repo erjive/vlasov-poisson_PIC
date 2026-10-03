@@ -1,8 +1,11 @@
 """Variables ángulo-acción numéricas para un potencial esférico cualquiera, con L fijo.
 
-El potencial es el isócrono analítico más una corrección tabulada en una malla
+El potencial es el del fondo analítico más una corrección tabulada en una malla
 radial (el potencial propio que guarda el código), interpolada con un spline
-cúbico natural. Para cada partícula (r, p_r):
+cúbico natural. El fondo es el isócrono de masa y escala 1 (fondo = 'isocrono', el
+de todas las corridas anteriores) o una masa puntual de masa 1 (fondo = 'puntual', el
+de Hadžić, Rein, Schrecker y Straub; en el código, BGtype = "sphere" para r > 1).
+Para cada partícula (r, p_r):
 
     E  = p_r^2/2 + Phi_ef(r),          Phi_ef = Phi + L^2/(2 r^2)
     r_-, r_+ : raíces de Phi_ef(r) = E, por bisección a cada lado del mínimo
@@ -23,6 +26,15 @@ L0 = 2.0
 
 def phi_iso(r):
     return -1.0/(1.0 + np.sqrt(1.0 + r**2))
+
+
+FONDOS = {'isocrono': phi_iso, 'puntual': lambda r: -1.0/r}
+
+
+def c_fondo(fondo, L=L0):
+    """J + c = 1/sqrt(-2E) sin potencial propio: c = (L + sqrt(L^2 + 4))/2 en el
+    isócrono y c = L con la masa puntual (Kepler); Omega = (J + c)^-3 en los dos."""
+    return 0.5*(L + np.sqrt(L**2 + 4)) if fondo == 'isocrono' else L
 
 
 class SplineCubico:
@@ -54,8 +66,9 @@ class SplineCubico:
 
 
 class MapaAA:
-    def __init__(self, r_malla=None, phi_self=None, L=L0, nodos=64):
+    def __init__(self, r_malla=None, phi_self=None, L=L0, nodos=64, fondo='isocrono'):
         self.L = L
+        self.fondo, self.phi_fondo = fondo, FONDOS[fondo]
         self.self_ = None if phi_self is None else SplineCubico(r_malla, phi_self)
         if phi_self is not None:
             # Fuera de la tabla el potencial propio es kepleriano: -M/r.
@@ -68,7 +81,7 @@ class MapaAA:
         self.rc = rr[np.argmin(self.phi_ef(rr))]
 
     def phi(self, r):
-        p = phi_iso(r)
+        p = self.phi_fondo(r)
         if self.self_ is None:
             return p
         r = np.asarray(r, float)
