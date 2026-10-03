@@ -1,5 +1,8 @@
 # First results in the setting of Hadžić, Rein, Schrecker and Straub
 
+These are the notes of the first series (a₀ = 0.01). The full results, with the runs at
+a₀ = 1 and ε = 0.5, the η table and the figures, are in `hadzic_informe.pdf`.
+
 Setting of [HRSS23] (see `hadzic_base.md`): all particles with |L| = L₀ = 2, a point mass of
 mass 1 at the centre, and steady states that are polytropes in the energy,
 F = A (E_t − E)ᵏ, with the edge at the action J_t = 0.7. Without self-gravity this is

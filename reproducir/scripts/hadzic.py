@@ -8,6 +8,7 @@ Pasos (cada uno reutiliza lo que ya exista):
     python3 hadzic.py preparar   estados iniciales (equilibrio.py) y .par de las corridas
     python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos
     python3 hadzic.py analizar   dPhi y h_1 en el mapa del equilibrio, menos eps = 0
+    python3 hadzic.py figuras    figuras del informe (docs/hadzic/figuras/)
 
 Parámetros: L0 = 2 (su L = 4), J_t = 0.7, es decir E_t = -0.0686 sin masa propia, dentro
 de su condición de un solo hueco (-0.079 < E_t < 0; Omega_max/Omega_min = 2.46). En el
@@ -25,17 +26,35 @@ PARDIR = os.path.join(RAIZ, 'reproducir', 'corridas', '13_hadzic')
 PLANTILLA = os.path.join(RAIZ, 'reproducir', 'corridas', '11_landau', 'landau__L_a1e-2_n400_e0.1.par')
 JT, L0 = 0.7, 2.0
 J1, SJ1 = 0.35, 0.20                    # función de prueba de h_1: B = J^2 exp(-(J-J1)^2/SJ1^2)
-# courant = 2 (el de 11_landau): dt = courant dr/pmax = 0.1; una instantánea cada 200 pasos,
-# es decir cada 20 unidades de tiempo; t_fin = 8000, unos 95 tau_1.
-NRC, NPC, COURANT, DT, SALIDA, TFIN = 400, 25, 2.0, 0.1, 200, 8000.0
-ZONA = (3.0, 12.0)                      # radios de la cáscara para ||dPhi|| (la solución lineal da 3-15)
+# courant = 2 (el de 11_landau): dt = courant dr/pmax = 0.1. Con a0 = 0.01, una instantánea cada
+# 200 pasos (20 unidades de tiempo) hasta t_fin = 8000, unos 95 tau_1. Con a0 = 1 la banda sube a
+# 0.15-0.33 y tau_1 baja a ~37: una instantánea cada 50 pasos (5 unidades, para no submuestrear
+# la frecuencia) hasta t_fin = 4000.
+NRC, NPC, COURANT, DT = 400, 25, 2.0, 0.1
+TFIN, SALIDA = {0.01: 8000.0, 1.0: 4000.0}, {0.01: 200, 1.0: 50}
+# Radios de la cáscara para ||dPhi|| (la solución lineal da 3-15): con a0 = 1 la cáscara se
+# contrae a 1.8 < r < 7.5.
+ZONA = {0.01: (3.0, 12.0), 1.0: (3.0, 7.5)}
 # Mapa lineal: exponentes del borde y masas.
 K_MAPA = [0.75, 1.0, 1.25, 1.5, 2.0, 3.0]
 A0_MAPA = [0.01, 0.03, 0.1, 0.3, 0.6, 1.0]
-# Corridas PIC: a0 = 0.01; D con eps = 0.1 y su referencia Z con eps = 0.
-K_PIC = [0.75, 1.0, 1.5, 2.0]
-A0_PIC, EPS = 0.01, 0.1
-CORRIDAS = [(f'{p}_k{k:g}', k, e) for k in K_PIC for p, e in (('D', EPS), ('Z', 0.0))]
+# Corridas PIC: nombre, k, a0, eps y la referencia eps = 0 (None en las referencias).
+#  serie 1, a0 = 0.01 y eps = 0.1: el régimen del teorema;
+#  serie 2, a0 = 1 y eps = 0.1: el modo de k <= 1 bien ligado, y el umbral (k = 1.25 y 1.5
+#           tienen modo, k = 2 no);
+#  serie 3, a0 = 0.01 y eps = 0.5, con las referencias de la serie 1: piso de ruido más bajo.
+CORRIDAS = []
+for k in [0.75, 1.0, 1.5, 2.0]:
+    CORRIDAS += [(f'D_k{k:g}', k, 0.01, 0.1, f'Z_k{k:g}'), (f'Z_k{k:g}', k, 0.01, 0.0, None)]
+for k in [0.75, 1.0, 1.25, 1.5, 2.0]:
+    CORRIDAS += [(f'D_k{k:g}_a1', k, 1.0, 0.1, f'Z_k{k:g}_a1'), (f'Z_k{k:g}_a1', k, 1.0, 0.0, None)]
+for k in [0.75, 1.0, 1.5, 2.0]:
+    CORRIDAS += [(f'D5_k{k:g}', k, 0.01, 0.5, f'Z_k{k:g}')]
+
+
+def nombre_lin(k, a0):
+    """Solución lineal en el tiempo del equilibrio (k, a0)."""
+    return f'lin_k{k:g}' + ('' if a0 == 0.01 else f'_a{a0:g}')
 
 
 def ruta(*p):
@@ -63,11 +82,16 @@ def lineal():
     lineas = []
     def w(x=''):
         lineas.append(x); print(x, flush=True)
+    if os.path.exists(ruta('lineal', 'lambda.txt')):        # el mapa ya está hecho
+        print(open(ruta('lineal', 'lambda.txt')).read())
+        K_MAPA_, A0_MAPA_ = [], []
+    else:
+        K_MAPA_, A0_MAPA_ = K_MAPA, A0_MAPA
     w(f'Masa puntual, polE, J_t = {JT}, L0 = {L0}. delta en anchos de banda bajo Omega_min.')
     w(f'{"k":>5} {"a0":>6} {"iter":>5} {"Omega_min":>10} {"Omax/Omin":>9} {"lambda_edge":>12} '
       f'{"l(1e-3)":>8} {"l(1e-6)":>8} {"omega_d":>9} {"x_d":>8}')
-    for k in K_MAPA:
-        for a0 in A0_MAPA:
+    for k in K_MAPA_:
+        for a0 in A0_MAPA_:
             npz = ruta('lineal', f'P_k{k:g}_a{a0:g}_equilibrio.npz')
             try:
                 equilibrio(ruta('lineal', f'P_k{k:g}_a{a0:g}.dat'), k, a0, 0.0)
@@ -82,36 +106,62 @@ def lineal():
             txt = f'{wd:9.5f} {(wd - z.Om_min)/an:+8.4f}' if wd is not None else f'{"--":>9} {"--":>8}'
             w(f'{k:5g} {a0:6g} {it:5d} {z.Om_min:10.5f} {z.Om_max/z.Om_min:9.3f} {lb:12.4f} '
               f'{l3:8.4f} {l6:8.4f} {txt}')
-    open(ruta('lineal', 'lambda.txt'), 'w').write('\n'.join(lineas) + '\n')
-    for k in K_PIC:
-        sal = ruta('lineal', f'lin_k{k:g}.npz')
+    if K_MAPA_:
+        open(ruta('lineal', 'lambda.txt'), 'w').write('\n'.join(lineas) + '\n')
+    tabla_eta()
+    for k, a0 in sorted({(k, a0) for _, k, a0, eps, ref in CORRIDAS if ref}):
+        sal = ruta('lineal', nombre_lin(k, a0) + '.npz')
         if os.path.exists(sal):
             continue
         t0 = time.time()
-        t, h1, h2, rmed, dphi = resolver(ruta('lineal', f'P_k{k:g}_a{A0_PIC:g}_equilibrio.npz'),
-                                         1600, 32, 0.5, TFIN, verboso=False, j1=J1, sj1=SJ1)
+        t, h1, h2, rmed, dphi = resolver(ruta('lineal', f'P_k{k:g}_a{a0:g}_equilibrio.npz'),
+                                         1600, 32, 0.5, TFIN[a0], verboso=False, j1=J1, sj1=SJ1)
         np.savez(sal, t=t, h1=h1, h2=h2, r=rmed, dphi=dphi)
-        print(f'  lineal k = {k:g} hasta t = {TFIN:g} ({time.time()-t0:.0f} s)', flush=True)
+        print(f'  lineal k = {k:g}, a0 = {a0:g} hasta t = {TFIN[a0]:g} ({time.time()-t0:.0f} s)', flush=True)
+
+
+def tabla_eta():
+    """eta = dOmega/(ancho/media) de cada equilibrio del mapa, como en eta.py: medias pesadas
+    por la masa con la tabla E(J) del equilibrio, y la del fondo desnudo con eta.banda(0)."""
+    from eta import banda
+    from equilibrio import F_E, borde_E
+    lineas = ['eta de los equilibrios del mapa (masa puntual, polE, J_t = 0.7).',
+              f'{"k":>5} {"a0":>6} {"eta":>7} {"dOmega":>7} {"ancho/media":>11}']
+    for k in K_MAPA:
+        b0 = banda(0.0, None, JT, L0, forma='polE', jt=JT, k=k, fondo='puntual')
+        for a0 in A0_MAPA:
+            d = np.load(ruta('lineal', f'P_k{k:g}_a{a0:g}_equilibrio.npz'))
+            J = np.linspace(0.0, JT, 4000)
+            E = np.interp(J, d['J_t'], d['E_t']); Om = np.gradient(E, J)
+            F = F_E('polE', E, *borde_E('polE', d['E_t'], d['J_t'], JT, None), k)
+            media = np.sum(F*Om)/np.sum(F)
+            dO = (media - b0['Om_media'])/b0['Om_media']; rel = (Om.max() - Om.min())/media
+            lineas.append(f'{k:5g} {a0:6g} {dO/rel:7.3f} {dO:7.3f} {rel:11.3f}')
+    open(ruta('lineal', 'eta.txt'), 'w').write('\n'.join(lineas) + '\n')
+    print('\n'.join(lineas))
 
 
 # ------------------------------------------------------------------ preparar
 def preparar():
     os.makedirs(ruta('ic'), exist_ok=True); os.makedirs(PARDIR, exist_ok=True)
     plantilla = open(PLANTILLA).read().split('\n')
-    for nombre, k, eps in CORRIDAS:
+    for nombre, k, a0, eps, ref in CORRIDAS:
+        if os.path.exists(ruta(f'{nombre}.ok')):       # corrida hecha: su .par queda como se usó
+            continue
         dat = ruta('ic', f'{nombre}.dat')
         if not os.path.exists(dat):
             t0 = time.time()
-            equilibrio(dat, k, A0_PIC, eps)
+            equilibrio(dat, k, a0, eps)
             print(f'  estado inicial {nombre} ({time.time()-t0:.0f} s)', flush=True)
-        valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN/DT))), 'time_output': str(SALIDA),
-                   'spatial_output': str(SALIDA), 'field_output': str(SALIDA),
+        sal = str(SALIDA[a0])
+        valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN[a0]/DT))), 'time_output': sal,
+                   'spatial_output': sal, 'field_output': sal,
                    'Nrc': str(NRC), 'Npc': str(NPC), 'Lfix': str(L0),
-                   'directory': f'hadzic/{nombre}', 'a0': str(A0_PIC), 'BGtype': 'sphere',
+                   'directory': f'hadzic/{nombre}', 'a0': str(a0), 'BGtype': 'sphere',
                    'checkpointfile': f'hadzic/ic/{nombre}.dat', 'j1': f'{J1:.6f}',
                    'sj1': f'{SJ1:.6f}', 'state': 'checkpoint'}
         lineas = [f'# Escenario de Hadžić, corrida {nombre}: polE con k = {k:g}, J_t = {JT}, '
-                  f'a0 = {A0_PIC}, eps = {eps}, t_fin = {TFIN:g}.',
+                  f'a0 = {a0:g}, eps = {eps}, t_fin = {TFIN[a0]:g}.',
                   '# Masa puntual: BGtype = sphere (masa 1, radio 1). Generado por '
                   'reproducir/scripts/hadzic.py a partir de 11_landau.']
         for l in plantilla:
@@ -188,42 +238,142 @@ def _serie(nombre):
     return nombre, dict(serie(nombre))
 
 
+def frecuencia(t, x, a):
+    """Frecuencia del máximo del periodograma (ventana de Hann) de x en t >= a."""
+    s = t >= a
+    om = np.linspace(0.005, 0.6, 11901)
+    return om[np.argmax(np.abs(np.exp(-1j*np.outer(om, t[s])) @ (x[s]*np.hanning(s.sum()))))]
+
+
+def modos():
+    """omega_d de lambda.txt para cada (k, a0); None si no hay modo."""
+    res = {}
+    for l in open(ruta('lineal', 'lambda.txt')).readlines()[2:]:
+        p = l.split()
+        if len(p) == 10:
+            res[(float(p[0]), float(p[1]))] = None if p[8] == '--' else float(p[8])
+    return res
+
+
 def analizar(procesos=4):
     from multiprocessing import Pool
     os.environ['OMP_NUM_THREADS'] = '1'
+    hechas = [n for n, *_ in CORRIDAS if os.path.exists(ruta(f'{n}.ok'))]
     with Pool(procesos) as pool:                 # una corrida por proceso
-        series = dict(pool.map(_serie, [n for n, *_ in CORRIDAS]))
+        series = dict(pool.map(_serie, hechas))
+    wd = modos()
     lineas = []
     def w(x=''):
         lineas.append(x); print(x, flush=True)
-    w(f'Corridas PIC (a0 = {A0_PIC}, eps = {EPS}): envolventes (máximo en ventanas de 100) de |h_1| y '
-      f'de ||dPhi_eps|| (rms en {ZONA[0]} <= r <= {ZONA[1]}), PIC y lineal; pendiente de ln(envolvente) '
-      f'frente a ln t entre t = 1000 y 8000; error de la energía.')
-    ventanas = (0, 500, 1000, 2000, 4000, 7900)
-    for k in K_PIC:
-        d, z = series[f'D_k{k:g}'], series[f'Z_k{k:g}']
-        lin = np.load(ruta('lineal', f'lin_k{k:g}.npz'))
+    w('Perturbación = (D - Z)/eps. Envolventes: máximo en ventanas de 100 de |h_1| y de ||dPhi_eps|| '
+      '(rms en la zona de la cáscara), PIC y lineal; pendiente de ln(envolvente) frente a ln t en las '
+      'cuatro últimas ventanas; frecuencia tardía (segunda mitad), PIC y lineal; omega_d de lambda.')
+    for nombre, k, a0, eps, ref in CORRIDAS:
+        if not ref or nombre not in series or ref not in series:
+            continue
+        d, z = series[nombre], series[ref]
+        lin = np.load(ruta('lineal', nombre_lin(k, a0) + '.npz'))
         t, tl = d['t'], lin['t']
-        h = (d['h1'] - z['h1'])/EPS
-        zona = (d['r'] >= ZONA[0]) & (d['r'] <= ZONA[1])
-        nphi = np.sqrt(np.mean(((d['dphi'] - z['dphi'])/EPS)[:, zona]**2, axis=1))
-        zl = (lin['r'] >= ZONA[0]) & (lin['r'] <= ZONA[1])
+        h = (d['h1'] - z['h1'])/eps
+        zr = ZONA[a0]
+        zona = (d['r'] >= zr[0]) & (d['r'] <= zr[1])
+        nphi = np.sqrt(np.mean(((d['dphi'] - z['dphi'])/eps)[:, zona]**2, axis=1))
+        zl = (lin['r'] >= zr[0]) & (lin['r'] <= zr[1])
         nlin = np.sqrt(np.mean(lin['dphi'][:, zl]**2, axis=1))
+        T = TFIN[a0]
+        ventanas = (0, T/16, T/8, T/4, T/2, T - 100)
         env = lambda x, tt, a: np.max(np.abs(x[(tt >= a) & (tt < a + 100)]))
         pend = lambda x, tt: np.polyfit(np.log(np.array(ventanas[2:]) + 50),
                                         np.log([env(x, tt, a) for a in ventanas[2:]]), 1)[0]
         dE = max(np.max(np.abs(d['E']/d['E'][0] - 1)), np.max(np.abs(z['E']/z['E'][0] - 1)))
-        w(f'k = {k:g}   max|dE/E| = {dE:.1e}   pendientes: |h_1| PIC {pend(h, t):+.2f}, lineal '
-          f'{pend(lin["h1"], tl):+.2f};  ||dPhi|| PIC {pend(nphi, t):+.2f}, lineal {pend(nlin, tl):+.2f}')
+        eq = np.load(ruta('ic', f'{nombre}_equilibrio.npz'))
+        om_min = float(np.gradient(eq['E_t'], eq['J_t'])[np.searchsorted(eq['J_t'], JT)])
+        m = wd.get((k, a0))
+        w(f'{nombre}: k = {k:g}, a0 = {a0:g}, eps = {eps:g}   max|dE/E| = {dE:.1e}   Omega_min = {om_min:.5f}'
+          f'   omega_d = {"--" if m is None else f"{m:.5f}"}')
+        w(f'   pendientes: |h_1| PIC {pend(h, t):+.2f}, lineal {pend(lin["h1"], tl):+.2f};  ||dPhi|| PIC '
+          f'{pend(nphi, t):+.2f}, lineal {pend(nlin, tl):+.2f};  frecuencia tardía de h_1: PIC '
+          f'{frecuencia(t, h, T/2):.5f}, lineal {frecuencia(tl, lin["h1"], T/2):.5f}')
         for a in ventanas:
-            w(f'   t {a:4d}-{a + 100:4d}: |h_1| PIC {env(h, t, a):.2e}  lineal {env(lin["h1"], tl, a):.2e}'
+            w(f'   t {a:5.0f}-{a + 100:5.0f}: |h_1| PIC {env(h, t, a):.2e}  lineal {env(lin["h1"], tl, a):.2e}'
               f'   ||dPhi|| PIC {env(nphi, t, a):.2e}  lineal {env(nlin, tl, a):.2e}')
+        if a0 == 1.0:                 # un polo (matrix pencil, M = 3) antes de que domine el ruido
+            from landau_cola import ajustar
+            for lo, hi in ((300, 1000), (300, 1500)) if k < 2 else ((100, 400), (100, 600)):
+                wp, gp = ajustar(t, h, lo, hi)['pencil M=3']
+                wl, gl = ajustar(tl, lin['h1'], lo, hi)['pencil M=3']
+                w(f'   polo en [{lo}, {hi}]: PIC omega = {wp:.5f}, gamma = {gp:+.1e};  lineal omega = '
+                  f'{wl:.5f}, gamma = {gl:+.1e}')
     open(ruta('resumen.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+def envolvente(t, x, ancho=100.0):
+    """Máximo de |x| en |t' - t| <= ancho/2."""
+    x = np.abs(x)
+    return np.array([x[(t >= a - ancho/2) & (t <= a + ancho/2)].max() for a in t])
+
+
+def figuras():
+    """Figuras del informe en docs/hadzic/figuras/."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    destino = os.path.join(RAIZ, 'docs', 'hadzic', 'figuras')
+    os.makedirs(destino, exist_ok=True)
+    plt.rcParams.update({'font.size': 9})
+    # 1. lambda_edge(a0) para cada k; con k <= 1, lambda a 1e-6 anchos de banda del borde.
+    tabla = {}
+    for l in open(ruta('lineal', 'lambda.txt')).readlines()[2:]:
+        q = l.split()
+        if len(q) == 10:
+            tabla[(float(q[0]), float(q[1]))] = (float(q[5]), float(q[7]))
+    fig, ax = plt.subplots(figsize=(5.2, 3.6), constrained_layout=True)
+    for k, c in zip(K_MAPA, ['C3', 'C1', 'C2', 'C0', 'C4', 'C5']):
+        a = np.array(A0_MAPA)
+        if k <= 1:
+            ax.loglog(a, [tabla[(k, x)][1] for x in a], '--o', color=c, ms=3,
+                      label=f'$k={k:g}$: $\\lambda$ at $\\delta=10^{{-6}}$ (diverges at the edge)')
+        else:
+            ax.loglog(a, [tabla[(k, x)][0] for x in a], '-o', color=c, ms=3, label=f'$k={k:g}$')
+    ax.axhline(1, color='k', lw=0.8)
+    ax.set_xlabel('$a_0$'); ax.set_ylabel('$\\lambda_{\\rm edge}$')
+    ax.legend(fontsize=7, frameon=False); ax.grid(alpha=0.3, which='both')
+    fig.savefig(os.path.join(destino, 'lambda_mapa.pdf')); plt.close(fig)
+    # 2. a0 = 0.01: |h_1| lineal y PIC con eps = 0.1 y 0.5.
+    fig, axs = plt.subplots(2, 2, figsize=(7, 5), constrained_layout=True, sharex=True, sharey=True)
+    for ax, k in zip(axs.flat, [0.75, 1.0, 1.5, 2.0]):
+        lin = np.load(ruta('lineal', nombre_lin(k, 0.01) + '.npz'))
+        ax.loglog(lin['t'][1:], envolvente(lin['t'], lin['h1'])[1:], 'k', lw=1.2, label='linear')
+        z = np.load(ruta(f'Z_k{k:g}', 'serie.npz'))
+        for nombre, eps, c in ((f'D_k{k:g}', 0.1, 'C0'), (f'D5_k{k:g}', 0.5, 'C1')):
+            d = np.load(ruta(nombre, 'serie.npz'))
+            ax.loglog(d['t'][1:], envolvente(d['t'], (d['h1'] - z['h1'])/eps)[1:], color=c, lw=0.9,
+                      label=f'PIC, $\\varepsilon={eps:g}$')
+        ax.set_title(f'$k={k:g}$, $a_0=0.01$'); ax.grid(alpha=0.3, which='both')
+        ax.set_ylim(1e-8, 1)
+    for ax in axs[1]: ax.set_xlabel('$t$')
+    for ax in axs[:, 0]: ax.set_ylabel('$|h_1|$ (envelope)')
+    axs[0, 0].legend(fontsize=7, frameon=False)
+    fig.savefig(os.path.join(destino, 'pic_a001.pdf')); plt.close(fig)
+    # 3. a0 = 1: |h_1| lineal y PIC, y la referencia sola (ruido de la corrida sin perturbar).
+    fig, axs = plt.subplots(2, 3, figsize=(8, 5), constrained_layout=True, sharex=True, sharey=True)
+    for ax, k in zip(axs.flat, [0.75, 1.0, 1.25, 1.5, 2.0]):
+        lin = np.load(ruta('lineal', nombre_lin(k, 1.0) + '.npz'))
+        d, z = np.load(ruta(f'D_k{k:g}_a1', 'serie.npz')), np.load(ruta(f'Z_k{k:g}_a1', 'serie.npz'))
+        ax.semilogy(lin['t'], envolvente(lin['t'], lin['h1']), 'k', lw=1.2, label='linear')
+        ax.semilogy(d['t'], envolvente(d['t'], (d['h1'] - z['h1'])/0.1), 'C0', lw=0.9, label='PIC, $(D-Z)/\\varepsilon$')
+        ax.semilogy(z['t'], envolvente(z['t'], z['h1']/0.1), color='0.6', lw=0.8, label='$Z/\\varepsilon$ (noise)')
+        ax.set_title(f'$k={k:g}$, $a_0=1$'); ax.grid(alpha=0.3); ax.set_ylim(1e-6, 1)
+    axs.flat[-1].axis('off')
+    for ax in axs[1]: ax.set_xlabel('$t$')
+    for ax in axs[:, 0]: ax.set_ylabel('$|h_1|$ (envelope)')
+    axs[0, 0].legend(fontsize=7, frameon=False)
+    fig.savefig(os.path.join(destino, 'pic_a1.pdf')); plt.close(fig)
+    print('figuras en', destino)
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'analizar'])
+    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'analizar', 'figuras'])
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     globals()[a.paso]()
