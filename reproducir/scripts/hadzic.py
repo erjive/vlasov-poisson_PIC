@@ -292,7 +292,7 @@ def analizar(procesos=4):
     with Pool(procesos) as pool:                 # una corrida por proceso
         series = dict(pool.map(_serie, hechas))
     wd = modos()
-    lineas = []
+    lineas, polos = [], {}
     def w(x=''):
         lineas.append(x); print(x, flush=True)
     w('Perturbación = (D - Z)/eps. Envolventes: máximo en ventanas de 100 de |h_1| y de ||dPhi_eps|| '
@@ -332,8 +332,27 @@ def analizar(procesos=4):
             for lo, hi in ((300, 1000), (300, 1500)) if k < 2 else ((100, 400), (100, 600)):
                 wp, gp = ajustar(t, h, lo, hi)['pencil M=3']
                 wl, gl = ajustar(tl, lin['h1'], lo, hi)['pencil M=3']
+                polos[nombre, lo, hi] = (wp, gp)
                 w(f'   polo en [{lo}, {hi}]: PIC omega = {wp:.5f}, gamma = {gp:+.1e};  lineal omega = '
                   f'{wl:.5f}, gamma = {gl:+.1e}')
+    # Serie 4: el polo de cada variante junto al de la corrida base, y el ruido de la referencia.
+    w('\nSerie 4 (a0 = 1): polo de (D - Z)/eps en [300, 1000] y [300, 1500], y |h_1| de la referencia Z '
+      '(máximo en ventanas de 100).')
+    w(f'{"corrida":>15} {"k":>5} {"eps":>5} {"cambio":>18} {"omega":>8} {"gamma":>8} {"omega":>8} '
+      f'{"gamma":>8} {"|Z| t=1000":>10} {"|Z| t=3900":>10}')
+    for k in [1.25, 1.5]:
+        b = f'k{k:g}_a1'
+        for nombre in (f'D_{b}', f'De03_{b}', f'De3_{b}', f'Ddr_{b}', f'DN_{b}'):
+            if (nombre, 300, 1500) not in polos:
+                continue
+            eps = {f'De03_{b}': 0.03, f'De3_{b}': 0.3}.get(nombre, 0.1)
+            c = ', '.join(f'{x} = {v}' for x, v in CAMBIOS.get(nombre, {}).items() if x != 'ic') or '--'
+            ref = dict((n, r) for n, _, _, _, r in CORRIDAS)[nombre]
+            zt, zh = series[ref]['t'], np.abs(series[ref]['h1'])
+            zv = [zh[(zt >= a) & (zt < a + 100)].max() for a in (1000, 3900)]
+            (w1, g1), (w2, g2) = polos[nombre, 300, 1000], polos[nombre, 300, 1500]
+            w(f'{nombre:>15} {k:5g} {eps:5g} {c:>18} {w1:8.5f} {g1:+8.1e} {w2:8.5f} {g2:+8.1e} '
+              f'{zv[0]:10.1e} {zv[1]:10.1e}')
     open(ruta('resumen.txt'), 'w').write('\n'.join(lineas) + '\n')
 
 
@@ -398,6 +417,36 @@ def figuras():
     for ax in axs[:, 0]: ax.set_ylabel('$|h_1|$ (envelope)')
     axs[0, 0].legend(fontsize=7, frameon=False)
     fig.savefig(os.path.join(destino, 'pic_a1.pdf')); plt.close(fig)
+    # 4. Serie 4, k = 1.25 y 1.5 con a0 = 1: arriba, la amplitud (eps = 0.03, 0.1, 0.3); abajo, la
+    #    malla y las partículas (dr/2, 4N), con el ruido de las referencias Z de la base y de 4N.
+    fig, axs = plt.subplots(2, 2, figsize=(7, 5), constrained_layout=True, sharex=True, sharey=True)
+    for col, k in enumerate([1.25, 1.5]):
+        b = f'k{k:g}_a1'
+        lin = np.load(ruta('lineal', nombre_lin(k, 1.0) + '.npz'))
+        filas = [((f'De03_{b}', f'Z_{b}', 0.03, 'C1', '$\\varepsilon=0.03$'),
+                  (f'D_{b}', f'Z_{b}', 0.1, 'C0', '$\\varepsilon=0.1$ (base)'),
+                  (f'De3_{b}', f'Z_{b}', 0.3, 'C2', '$\\varepsilon=0.3$')),
+                 ((f'D_{b}', f'Z_{b}', 0.1, 'C0', 'base'),
+                  (f'Ddr_{b}', f'Zdr_{b}', 0.1, 'C3', '$\\Delta r/2$'),
+                  (f'DN_{b}', f'ZN_{b}', 0.1, 'C4', '$4N$'))]
+        for fila, curvas in enumerate(filas):
+            ax = axs[fila, col]
+            ax.semilogy(lin['t'], envolvente(lin['t'], lin['h1']), 'k', lw=1.4, label='linear')
+            for nombre, ref, eps, c, et in curvas:
+                d, z = np.load(ruta(nombre, 'serie.npz')), np.load(ruta(ref, 'serie.npz'))
+                ax.semilogy(d['t'], envolvente(d['t'], (d['h1'] - z['h1'])/eps), color=c, lw=1.0, label=et)
+            if fila == 1:
+                for ref, ls, et in ((f'Z_{b}', '-', '$Z/\\varepsilon$, base'), (f'ZN_{b}', '--', '$Z/\\varepsilon$, $4N$')):
+                    z = np.load(ruta(ref, 'serie.npz'))
+                    ax.semilogy(z['t'], envolvente(z['t'], z['h1']/0.1), color='0.55', ls=ls, lw=0.8, label=et)
+            ax.set_title(f'$k={k:g}$, $a_0=1$'); ax.grid(alpha=0.3); ax.set_xlim(0, 4000)
+            ax.set_ylim(5e-3, 0.4)
+    for ax in axs[1]: ax.set_xlabel('$t$')
+    for ax in axs[:, 0]: ax.set_ylabel('$|h_1|$ (envelope)')
+    for ax, donde, nc in ((axs[0, 0], 'lower right', 1), (axs[1, 0], 'upper center', 3)):
+        for l in ax.legend(fontsize=7, frameon=False, loc=donde, ncol=nc).get_lines():
+            l.set_linewidth(1.6)
+    fig.savefig(os.path.join(destino, 'pic_barrido.pdf')); plt.close(fig)
     print('figuras en', destino)
 
 
