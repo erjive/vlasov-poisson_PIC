@@ -54,6 +54,7 @@ exe/*
 docs/**/*.pdf
 !docs/introduccion/figuras/*.pdf
 !docs/demo_eta/figuras/*.pdf
+!docs/hadzic/figuras/*.pdf
 docs/**/*.aux
 docs/**/*.log
 docs/**/*.out
