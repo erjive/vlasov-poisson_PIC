@@ -50,6 +50,23 @@ for k in [0.75, 1.0, 1.25, 1.5, 2.0]:
     CORRIDAS += [(f'D_k{k:g}_a1', k, 1.0, 0.1, f'Z_k{k:g}_a1'), (f'Z_k{k:g}_a1', k, 1.0, 0.0, None)]
 for k in [0.75, 1.0, 1.5, 2.0]:
     CORRIDAS += [(f'D5_k{k:g}', k, 0.01, 0.5, f'Z_k{k:g}')]
+#  serie 4, a0 = 1, k = 1.25 y 1.5: ¿la pérdida de amplitud del modo cercano al borde es física
+#           o numérica? Cada corrida cambia una sola cosa respecto de D_k{k}_a1: eps = 0.03 o 0.3
+#           (con la misma referencia), dr/2 con el mismo dt (courant = 4, mismo dato inicial) o
+#           cuatro veces más partículas (800 x 50); estas dos, con su propia referencia.
+CAMBIOS = {}                            # cambios en el .par y dato inicial ('ic') de la serie 4
+for k in [1.25, 1.5]:
+    b = f'k{k:g}_a1'
+    CORRIDAS += [(f'De03_{b}', k, 1.0, 0.03, f'Z_{b}'), (f'De3_{b}', k, 1.0, 0.3, f'Z_{b}')]
+    for s, c in (('dr', {'dr': '0.05', 'courant': '4.0'}), ('N', {'Nrc': '800', 'Npc': '50'})):
+        CORRIDAS += [(f'D{s}_{b}', k, 1.0, 0.1, f'Z{s}_{b}'), (f'Z{s}_{b}', k, 1.0, 0.0, None)]
+        for x in 'DZ':
+            CAMBIOS[f'{x}{s}_{b}'] = dict(c, ic=f'{x}_{b}') if s == 'dr' else c
+
+
+def ic_de(nombre):
+    """Nombre del dato inicial de la corrida (el suyo, salvo las de dr/2)."""
+    return CAMBIOS.get(nombre, {}).get('ic', nombre)
 
 
 def nombre_lin(k, a0):
@@ -142,34 +159,47 @@ def tabla_eta():
 
 
 # ------------------------------------------------------------------ preparar
+def escribir_par(nombre, k, a0, eps, destino=PARDIR):
+    """.par de la corrida a partir de la plantilla de 11_landau, con los cambios de CAMBIOS."""
+    c = CAMBIOS.get(nombre, {})
+    # Todas las corridas tienen dt = courant dr/pmax = 0.1 (pmax = 2): Nt y la salida no cambian.
+    assert abs(float(c.get('courant', COURANT))*float(c.get('dr', 0.1))/2.0 - DT) < 1e-12
+    sal = str(SALIDA[a0])
+    valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN[a0]/DT))), 'time_output': sal,
+               'spatial_output': sal, 'field_output': sal,
+               'Nrc': str(NRC), 'Npc': str(NPC), 'Lfix': str(L0),
+               'directory': f'hadzic/{nombre}', 'a0': str(a0), 'BGtype': 'sphere',
+               'checkpointfile': f'hadzic/ic/{ic_de(nombre)}.dat', 'j1': f'{J1:.6f}',
+               'sj1': f'{SJ1:.6f}', 'state': 'checkpoint'}
+    valores.update({x: v for x, v in c.items() if x != 'ic'})
+    lineas = [f'# Escenario de Hadžić, corrida {nombre}: polE con k = {k:g}, J_t = {JT}, '
+              f'a0 = {a0:g}, eps = {eps}, t_fin = {TFIN[a0]:g}.',
+              '# Masa puntual: BGtype = sphere (masa 1, radio 1). Generado por '
+              'reproducir/scripts/hadzic.py a partir de 11_landau.']
+    if c:
+        lineas.append('# Cambios respecto de la corrida base: '
+                      + ', '.join(f'{x} = {v}' for x, v in c.items() if x != 'ic')
+                      + (f'; dato inicial de {c["ic"]}.' if 'ic' in c else '.'))
+    for l in open(PLANTILLA).read().split('\n'):
+        if l.startswith('#') or '=' not in l:
+            continue
+        clave = l.split('=')[0].strip()
+        lineas.append(f'{clave:<16} = {valores[clave]}' if clave in valores else l)
+    open(os.path.join(destino, f'hadzic__{nombre}.par'), 'w').write('\n'.join(lineas) + '\n')
+
+
 def preparar():
     os.makedirs(ruta('ic'), exist_ok=True); os.makedirs(PARDIR, exist_ok=True)
-    plantilla = open(PLANTILLA).read().split('\n')
     for nombre, k, a0, eps, ref in CORRIDAS:
         if os.path.exists(ruta(f'{nombre}.ok')):       # corrida hecha: su .par queda como se usó
             continue
-        dat = ruta('ic', f'{nombre}.dat')
+        c = CAMBIOS.get(nombre, {})
+        dat = ruta('ic', f'{ic_de(nombre)}.dat')
         if not os.path.exists(dat):
             t0 = time.time()
-            equilibrio(dat, k, a0, eps)
-            print(f'  estado inicial {nombre} ({time.time()-t0:.0f} s)', flush=True)
-        sal = str(SALIDA[a0])
-        valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN[a0]/DT))), 'time_output': sal,
-                   'spatial_output': sal, 'field_output': sal,
-                   'Nrc': str(NRC), 'Npc': str(NPC), 'Lfix': str(L0),
-                   'directory': f'hadzic/{nombre}', 'a0': str(a0), 'BGtype': 'sphere',
-                   'checkpointfile': f'hadzic/ic/{nombre}.dat', 'j1': f'{J1:.6f}',
-                   'sj1': f'{SJ1:.6f}', 'state': 'checkpoint'}
-        lineas = [f'# Escenario de Hadžić, corrida {nombre}: polE con k = {k:g}, J_t = {JT}, '
-                  f'a0 = {a0:g}, eps = {eps}, t_fin = {TFIN[a0]:g}.',
-                  '# Masa puntual: BGtype = sphere (masa 1, radio 1). Generado por '
-                  'reproducir/scripts/hadzic.py a partir de 11_landau.']
-        for l in plantilla:
-            if l.startswith('#') or '=' not in l:
-                continue
-            clave = l.split('=')[0].strip()
-            lineas.append(f'{clave:<16} = {valores[clave]}' if clave in valores else l)
-        open(os.path.join(PARDIR, f'hadzic__{nombre}.par'), 'w').write('\n'.join(lineas) + '\n')
+            equilibrio(dat, k, a0, eps, int(c.get('Nrc', NRC)), int(c.get('Npc', NPC)))
+            print(f'  estado inicial {ic_de(nombre)} ({time.time()-t0:.0f} s)', flush=True)
+        escribir_par(nombre, k, a0, eps)
     print('preparado:', len(CORRIDAS), 'corridas')
 
 
@@ -212,7 +242,7 @@ def serie(nombre):
     sal = ruta(nombre, 'serie.npz')
     if os.path.exists(sal):
         return np.load(sal)
-    eq = np.load(ruta('ic', f'{nombre}_equilibrio.npz'))
+    eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
     mapa = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
     f = h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r')
     pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
@@ -228,7 +258,7 @@ def serie(nombre):
         h1.append(np.sum(w*B*np.exp(-1j*Q)))
         dphi.append(g['potential'][:] - fondo)
     f.close()
-    Q0, J0, _ = mapa(*np.loadtxt(ruta('ic', f'{nombre}.dat'), usecols=(0, 1), unpack=True))
+    Q0, J0, _ = mapa(*np.loadtxt(ruta('ic', f'{ic_de(nombre)}.dat'), usecols=(0, 1), unpack=True))
     norma = np.sum(w*J0**2*np.exp(-(J0 - J1)**2/SJ1**2))
     np.savez(sal, t=np.array(t), h1=np.array(h1)/norma, dphi=np.array(dphi), r=rg, E=np.array(E))
     return np.load(sal)
@@ -286,7 +316,7 @@ def analizar(procesos=4):
         pend = lambda x, tt: np.polyfit(np.log(np.array(ventanas[2:]) + 50),
                                         np.log([env(x, tt, a) for a in ventanas[2:]]), 1)[0]
         dE = max(np.max(np.abs(d['E']/d['E'][0] - 1)), np.max(np.abs(z['E']/z['E'][0] - 1)))
-        eq = np.load(ruta('ic', f'{nombre}_equilibrio.npz'))
+        eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
         om_min = float(np.gradient(eq['E_t'], eq['J_t'])[np.searchsorted(eq['J_t'], JT)])
         m = wd.get((k, a0))
         w(f'{nombre}: k = {k:g}, a0 = {a0:g}, eps = {eps:g}   max|dE/E| = {dE:.1e}   Omega_min = {om_min:.5f}'
