@@ -1,0 +1,184 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Numerical methods}
+\label{Sec:Numerics}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this section we describe the numerical methods on which our study is based. We start with the PIC method used to solve the nonlinear Vlasov-Poisson system and with the construction of the self-consistent steady states. Next, we explain how the initial data are represented by the computational particles and how the response of the gas to a small perturbation is extracted from the simulations. Finally, we describe the numerical solution of the linearized equations, the computation of the gain $\lambda(\omega)$ of the self-consistent loop, and the determination of frequencies and damping rates from a time series.
+
+
+\subsection{Particle-in-cell method}
+\label{SubSec:PIC}
+
+In the PIC method~\cite{BirdsallLangdon-Book,HockneyEastwood-Book} the DF is represented by a finite number $N$ of computational particles, each of which stands for a large number of gas particles. In spherical symmetry a computational particle is a spherical shell, which is characterized by its radius $r_j(t)$, its radial momentum $p_j(t)$, its angular momentum $L_j$ and its mass $m_j$, $j = 1,2,\ldots,N$, the last two quantities being constant in time. This corresponds to the approximation
+\begin{equation}
+\mathcal{F}(t,r,p_r,L)\approx \sum\limits_{j=1}^N \frac{m_j}{8\pi^2 L_j}\,\delta(r - r_j(t))\,\delta(p_r - p_j(t))\,\delta(L - L_j)
+\label{Eq:PICDF}
+\end{equation}
+of the DF, where the factor $8\pi^2 L_j$ is due to the volume element~(\ref{Eq:PSVolumeForm}). Introducing Eq.~(\ref{Eq:PICDF}) into the Vlasov equation~(\ref{Eq:VlasovSph}) yields the equations of motion
+\begin{equation}
+\frac{dr_j}{dt} = p_j,\qquad
+\frac{dp_j}{dt} = \frac{L_j^2}{r_j^3} - \frac{\partial\Phi_{ext}}{\partial r}(r_j) - \frac{\partial\Phi_{gas}}{\partial r}(t,r_j)
+\label{Eq:EOM}
+\end{equation}
+for the computational particles; in the reduced model $L_j = L_0$ for all $j$. The first two terms on the right-hand side of the second equation are evaluated analytically, whereas the last one requires the solution of the Poisson equation~(\ref{Eq:PoissonSph}). To this purpose we introduce the uniform grid $R_i := (i - 1/2)\Delta r$, $i = 1,2,\ldots,N_r$, which is staggered with respect to the center, and proceed in four steps.
+\begin{enumerate}
+\item[(i)] The mass of each computational particle is assigned to its two neighboring grid points with the linear weights of the cloud-in-cell scheme~\cite{BirdsallLangdon-Book,HockneyEastwood-Book}, such that the grid point $R_i$ receives the mass
+\begin{equation}
+\mu_i := \sum\limits_{j=1}^N m_j W\left( \frac{R_i - r_j}{\Delta r} \right),\qquad
+W(y) := \max\{ 1 - |y|,0 \}.
+\label{Eq:Deposit}
+\end{equation}
+\item[(ii)] The density is approximated by the continuous, piecewise linear function $\rho(t,r)$ which assumes the values
+\begin{equation}
+\rho_i := \frac{\mu_i}{4\pi\Delta r\left( R_i^2 + \Delta r^2/6 \right)}
+\label{Eq:rhoGrid}
+\end{equation}
+at the grid points and which is constant for $0\leq r\leq R_1$. The denominator in Eq.~(\ref{Eq:rhoGrid}) is the integral of the function $4\pi r^2 W((r - R_i)/\Delta r)$ over $r$, which guarantees that the mass of the reconstructed density coincides with the total mass of the computational particles.
+\item[(iii)] The mass function $m(t,r)$ and the potential are obtained by integrating the equations $\partial m/\partial r = 4\pi r^2\rho$ and $\partial\Phi_{gas}/\partial r = G m/r^2$ outwards from the center. Since $\rho$ is linear on each interval $[R_{i-1},R_i]$, both integrals are computed in closed form, such that no further discretization error is introduced. The additive constant in $\Phi_{gas}$ is fixed by requiring that $\Phi_{gas} + r\,\partial\Phi_{gas}/\partial r = 0$ at the outermost grid point, which matches the potential to the exterior solution $-G M_{gas}/r$.
+\item[(iv)] The potential and its gradient are interpolated from the grid points to the positions of the computational particles with the same weights as in Eq.~(\ref{Eq:Deposit}).
+\end{enumerate}
+For particles which lie within the distance $\Delta r$ from the center, the weights in steps (i) and (iv) are complemented by those of their mirror images at $-r_j$, in accordance with the regularity of the density at the center, and beyond the outermost grid point the exterior solution is used. Neither of these situations plays a role for the configurations considered in this article, in which the gas occupies a shell that lies well inside the grid.
+
+Note that the potential which acts on a computational particle includes the contribution of the particle itself. In PIC schemes based on Cartesian coordinates the use of the same weights for the assignment and for the interpolation guarantees that a particle exerts no force on itself~\cite{BirdsallLangdon-Book,HockneyEastwood-Book}. In spherical symmetry this is not the case, and it should not be: a thin shell of mass $m$ and radius $r$ is subject to the mean value of the gravitational fields on its two sides, that is, to the force $-G m/(2r^2)$ per unit mass. This is the self-gravity of the shell; the scheme reproduces it up to a correction of the order $\Delta r/r$, and we do not subtract it. In fact, we have verified that subtracting it reduces the order of convergence with respect to $1/N$ from two to one in the collapse of a cold homogeneous sphere, for which the exact solution is known.
+
+Equations~(\ref{Eq:EOM}) are integrated in time with the fourth-order symplectic method of Yoshida~\cite{hY90}, which is a composition of three steps of the second-order leapfrog method with step sizes $w_1\Delta t$, $w_0\Delta t$ and $w_1\Delta t$, where $w_1 := 1/(2 - 2^{1/3})$ and $w_0 := 1 - 2w_1$. A leapfrog step with step size $h$ consists of the update $p_j\mapsto p_j + h f_j/2$ of the momenta, with $f_j$ the right-hand side of the second equation in~(\ref{Eq:EOM}), followed by the update $r_j\mapsto r_j + h p_j$ of the radii, the computation of the potential for the new radii, and a second update of the momenta with the new values of $f_j$. Hence, the Poisson equation is solved three times per time step. We use a symplectic method because, for the motion in a given potential, it does not introduce a secular drift of the energy and of the action variables of the particles, which would otherwise limit the accuracy of the observables at late times. For the same reason we keep the time step $\Delta t$ fixed.
+
+At selected times we compute the total energy~(\ref{Eq:Egas}),
+\begin{equation}
+\mathcal{E}_{gas}\approx \sum\limits_{j=1}^N m_j\left[ \frac{p_j^2}{2} + \frac{L_j^2}{2r_j^2} + \Phi_{ext}(r_j) + \frac{1}{2}\Phi_{gas}(t,r_j) \right],
+\label{Eq:EgasPIC}
+\end{equation}
+the potential $\Phi_{gas}$ on the grid, from which $\delta\Phi$ is obtained according to Eq.~(\ref{Eq:deltaPhi}), and the functions
+\begin{equation}
+h_n(t)\approx \sum\limits_{j=1}^N m_j B(J_j,L_j) e^{-inQ_j},
+\label{Eq:hnPIC}
+\end{equation}
+which follow from Eqs.~(\ref{Eq:hk},\ref{Eq:PICDF}). Here $(Q_j,J_j)$ denote the action-angle variables of the particle $j$ at the time $t$ with respect to the reference potential, which are computed with the method described in Appendix~\ref{App:ActionAngle}. In the reduced model we choose the weight function
+\begin{equation}
+B(J) = J^2\exp\left[ -\frac{(J - J_1)^2}{\sigma_1^2} \right],
+\label{Eq:BDef}
+\end{equation}
+with parameters $J_1$ and $\sigma_1$ which are specified below. The factor $J^2$ makes the function $B(J)e^{-inQ}$ continuous at the circular orbit for $|n|\leq 4$.
+
+We have implemented this method in two codes, one for the reduced model and one for a general distribution of the angular momenta, which share the algorithm described above. Unless otherwise stated, the simulations of this article use $\Delta r = 0.1$, a grid which extends to $r = 20$, a time step $\Delta t = 0.05$ or $0.1$, and $N = 10^4$ computational particles. \EJ{To be decided: whether the codes and the scripts which reproduce the results are made public, in which case the repository should be cited here.}
+
+
+\subsection{Self-consistent steady states}
+\label{SubSec:SteadyStatesNum}
+
+As explained in section~\ref{SubSec:AA}, the construction of a self-consistent steady state requires the solution of a nonlinear problem, because the DF is a prescribed function of integrals of motion which themselves depend on the potential generated by the gas. In the reduced model we consider the following two families of steady states. The first one consists of the polytropes
+\begin{equation}
+\mathcal{F}_{0,eq} = \alpha (E_0 - E)^k\quad \hbox{for $E < E_0$},
+\label{Eq:Polytrope}
+\end{equation}
+and $\mathcal{F}_{0,eq} = 0$ for $E\geq E_0$, with an exponent $k > 1/2$. These are the steady states considered in Ref.~\cite{mHgRmScS25}. The second family consists of the lowered Maxwellians
+\begin{equation}
+\mathcal{F}_{0,eq} = \alpha\, E_\gamma\left( g,\frac{E_0 - E}{\vartheta} \right)\quad \hbox{for $E < E_0$},\qquad
+E_\gamma(g,x) := \sum\limits_{l=0}^\infty \frac{x^{g+l}}{\Gamma(g+l+1)},
+\label{Eq:LoweredMaxwellian}
+\end{equation}
+and $\mathcal{F}_{0,eq} = 0$ for $E\geq E_0$, see Ref.~\cite{mGaZ15}. They include the King model~\cite{iK66} for $g = 1$, in which case $E_\gamma(1,x) = e^x - 1$, and the Wilson model~\cite{cW75} for $g = 2$, in which case $E_\gamma(2,x) = e^x - 1 - x$. Far from the cutoff the DF~(\ref{Eq:LoweredMaxwellian}) is proportional to $e^{-E/\vartheta}$, whereas for $E\to E_0$ it vanishes like $(E_0 - E)^g$, such that $g$ plays the role of the exponent $k$ in Eq.~(\ref{Eq:PolytropeEdge}). The parameter $\vartheta$ is specified through the dimensionless depth $W_0 := [E_0 - E_{min}(L_0)]/\vartheta$ of the potential well. In both families we prescribe the action variable $J_{max}$ of the outermost orbit instead of the cutoff energy, which is then given by $E_0 = E(J_{max},L_0)$, and we determine the constant $\alpha$ from the mass of the gas. Since the transformation to action-angle variables is symplectic, the latter is
+\begin{equation}
+M_{gas} = 16\pi^3 L_0\int\limits_0^{J_{max}} \mathcal{F}_{0,eq}\, dJ.
+\label{Eq:MgasJ}
+\end{equation}
+
+The steady state is computed by the following iteration, which starts with $\Phi_{gas} = 0$. Given $\Phi_{gas}$ on a radial grid, we first tabulate the function $J = A(E,L_0)/2\pi$ belonging to the potential $\Phi_{ext} + \Phi_{gas}$ by numerical quadrature (see Appendix~\ref{App:ActionAngle}). This yields $E_{min}(L_0)$, the cutoff energy $E_0$ and, by inversion, the function $E(J,L_0)$. Next, we determine $\alpha$ from Eq.~(\ref{Eq:MgasJ}), compute the density from the second equation in~(\ref{Eq:VlasovFixedL}), and obtain a new potential from Eq.~(\ref{Eq:PhigasSol}). These steps are repeated until the maximum change of $\Phi_{gas}$ between two consecutive iterations is smaller than $10^{-13}$. The radial grid used for this computation has the spacing $0.01$, which is ten times smaller than the one of the PIC grid. The iteration converges geometrically, with a rate that deteriorates when the mass of the gas increases: for the lowered Maxwellians in the isochrone potential considered in section~\ref{Sec:FixedL}, the ratio between two consecutive changes of the potential grows from $0.02$ for $M_{gas}/M = 0.0065$ to $0.59$ for $M_{gas}/M = 0.5$, while for the polytropes in the Kepler potential between $6$ and $42$ iterations are required for $0.01\leq M_{gas}/M\leq 1$.
+
+For a DF with a distribution of angular momenta the same iteration is used, with the density computed from the second equation in~(\ref{Eq:PoissonSph}), which requires the function $J(E,L)$ for each value of $L$ in the support of the DF. \EJ{The families of steady states with a distribution in $L$ are to be specified together with section~\ref{Sec:Dispersion}.}
+
+
+\subsection{Initial data and response to a perturbation}
+\label{SubSec:QuietStart}
+
+The initial data considered in this article consist of a self-consistent steady state and a small perturbation. In the reduced model they are of the form
+\begin{equation}
+\mathcal{F}_0(0,Q,J) = \mathcal{F}_{0,eq}(J)\left[ 1 + \varepsilon\, s(J)\cos Q \right],\qquad
+s(J) := \left( \frac{J}{J_{max}} \right)^{3/2},
+\label{Eq:InitialData}
+\end{equation}
+where $(Q,J)$ are the action-angle variables which belong to $\Phi_{eq}$ and $0\leq \varepsilon\leq 1$ is the amplitude of the perturbation. The perturbation increases the density of the gas near the pericenters of the orbits and decreases it near their apocenters. It changes neither the mass of the gas nor the angle-average of its DF, and the factor $s(J)$ makes it regular at the circular orbit $J = 0$, where the angle variable is not defined.
+
+If the radii and momenta of the computational particles were drawn at random from the DF~(\ref{Eq:InitialData}), the fluctuations of the observables, which are of the order of $N^{-1/2}$, would exceed the signal produced by the perturbation for the numbers of particles used in this work. For this reason we proceed in a different way, which consists of three ingredients.
+
+First, the computational particles are placed on a regular lattice in the action-angle variables of the steady state,
+\begin{equation}
+J_a := \left( a - \frac{1}{2} \right)\frac{J_{max}}{N_J},\quad a = 1,\ldots,N_J,\qquad
+Q_b := \left( b - \frac{1}{2} \right)\frac{2\pi}{N_Q},\quad b = 1,\ldots,N_Q,
+\label{Eq:Lattice}
+\end{equation}
+such that $N = N_J N_Q$, and their radii and momenta are obtained by inverting the map $(r,p_r)\mapsto (Q,J)$ numerically (see Appendix~\ref{App:ActionAngle}). Since this map is symplectic, all the cells of the lattice have the same volume in phase space. Hence, the sums over the computational particles in Eqs.~(\ref{Eq:EgasPIC},\ref{Eq:hnPIC}) are midpoint rules for the corresponding integrals over phase space, and they are free of the fluctuations of a random sample.
+
+Second, the perturbation is encoded in the masses of the computational particles instead of their positions: the particle at the lattice point $(Q_b,J_a)$ has the mass
+\begin{equation}
+m_{ab} = c\,\mathcal{F}_{0,eq}(J_a)\left[ 1 + \varepsilon\, s(J_a)\cos Q_b \right],
+\label{Eq:Masses}
+\end{equation}
+where the constant $c$ is determined by the total mass $M_{gas}$. Since $\sum_b \cos Q_b = 0$, the perturbation does not alter the mass which is assigned to each orbit.
+
+Third, each simulation with $\varepsilon > 0$ is accompanied by a reference simulation with $\varepsilon = 0$ which uses the same lattice and the same numerical parameters, and the response of the gas to the perturbation is defined by
+\begin{equation}
+\chi_n(t) := \frac{h_n^{(\varepsilon)}(t) - h_n^{(0)}(t)}{\varepsilon\, h_0^{(0)}(0)},\qquad
+\delta\Phi_{res}(t,r) := \frac{\delta\Phi^{(\varepsilon)}(t,r) - \delta\Phi^{(0)}(t,r)}{\varepsilon},
+\label{Eq:Response}
+\end{equation}
+where the superscripts refer to the amplitude of the perturbation. The subtraction of the reference simulation removes the errors which are common to both simulations, in particular the small departure of the discretized steady state from stationarity, which is quantified in section~\ref{Sec:Validation}. As long as the evolution is in the linear regime, the quantities~(\ref{Eq:Response}) are independent of $\varepsilon$, and they can be compared directly with the solution of the linearized equations.
+
+In plasma physics, a loading of the particles which avoids the fluctuations of a random sample is known as a quiet start~\cite{BirdsallLangdon-Book}, and particle methods in which the perturbation is carried by the weights of the particles have been used in Refs.~\cite{fLfCjB93,jBaOyY11}. We stress that the lattice has to be constructed in the action-angle variables of the self-consistent potential $\Phi_{eq}$. If those of the external potential are used instead, the resulting configuration is not stationary unless the mass of the gas is negligible. Furthermore, the regularity of the lattice is eventually lost due to the discreteness of the particles, which limits the time span over which the method is reliable; this time span is determined in section~\ref{Sec:Validation}.
+
+For a distribution of angular momenta the lattice~(\ref{Eq:Lattice}) is supplemented by the midpoints $L_c$ of $N_L$ equal subintervals of $[L_1,L_2]$, the action-angle variables being those of the corresponding effective potential, and the masses of the computational particles are proportional to $L_c\,\mathcal{F}(0,Q_b,J_a,L_c)$.
+
+
+\subsection{Numerical solution of the linearized equations}
+\label{SubSec:LinSolver}
+
+In order to compare the PIC simulations with the predictions of the linearized theory, we solve Eqs.~(\ref{Eq:LinVlasov},\ref{Eq:LinPoisson}) for the reduced model numerically as an initial-value problem. The function $\delta\mathcal{F}_0(t,Q,J)$ is represented by its values on a lattice of the form~(\ref{Eq:Lattice}), whose points have the fixed radii $r_{ab} := r(Q_b,J_a)$, and it is advanced in time with the second-order splitting method of Strang~\cite{gS68}. Each time step consists of the update
+\begin{equation}
+\delta\mathcal{F}_0\mapsto \delta\mathcal{F}_0 + \frac{\Delta t}{2}\frac{\partial\mathcal{F}_{0,eq}}{\partial J}\frac{\partial\delta\Phi}{\partial Q},
+\label{Eq:Kick}
+\end{equation}
+followed by the exact solution of the transport equation $\partial_t\delta\mathcal{F}_0 + \Omega(J)\partial_Q\delta\mathcal{F}_0 = 0$ over the time $\Delta t$, which multiplies the $n$-th Fourier coefficient of $\delta\mathcal{F}_0$ with respect to $Q$ by the factor $e^{-in\Omega(J)\Delta t}$, and by a second update of the form~(\ref{Eq:Kick}). The derivative with respect to $Q$ is computed with the fast Fourier transform. The potential is obtained from the midpoint rule for Eq.~(\ref{Eq:LinPoisson}),
+\begin{equation}
+\delta\Phi(t,r_{ab}) = -8\pi^2 G L_0\,\Delta Q\,\Delta J\sum\limits_{c=1}^{N_J}\sum\limits_{d=1}^{N_Q} \frac{\delta\mathcal{F}_0(t,Q_d,J_c)}{\max\{ r_{ab},r_{cd} \}},
+\label{Eq:ShellPotential}
+\end{equation}
+with $\Delta Q := 2\pi/N_Q$ and $\Delta J := J_{max}/N_J$, which is the exact potential of a set of concentric shells. Since the radii $r_{ab}$ do not change in time, the lattice points need to be sorted only once, and the evaluation of Eq.~(\ref{Eq:ShellPotential}) at all of them requires a number of operations proportional to $N_J N_Q$. Unless otherwise stated we use $N_J = 1600$, $N_Q = 32$ and $\Delta t = 0.5$.
+
+The initial datum is $\delta\mathcal{F}_0 = \mathcal{F}_{0,eq}(J) s(J)\cos Q$, which corresponds to Eq.~(\ref{Eq:InitialData}) with $\varepsilon = 1$, and the output consists of $\delta\Phi$ and of the functions
+\begin{equation}
+\chi_n(t) = \frac{\sum_{a,b} \delta\mathcal{F}_0(t,Q_b,J_a) B(J_a) e^{-inQ_b}}{\sum_{a,b} \mathcal{F}_{0,eq}(J_a) B(J_a)},
+\label{Eq:ChiLin}
+\end{equation}
+which are the counterparts of the quantities defined in Eq.~(\ref{Eq:Response}). This method is free of particle noise, but by construction it is restricted to the linear regime.
+
+
+\subsection{Computation of the gain of the self-consistent loop}
+\label{SubSec:GainNum}
+
+For the reduced model, the operator $S(\omega)$ defined in Eq.~(\ref{Eq:SDef}) is discretized as follows. The harmonics are truncated at $n\leq n_{max}$. The integral over $J'$ in Eq.~(\ref{Eq:PoissonHarm}) is approximated by a Gauss-Legendre rule in the variable $\sigma\in (0,1)$ defined by $J = J_{max}(1 - \sigma^2)$, with nodes $J_a$ and weights $w_a$, $a = 1,\ldots,N_J$. This substitution concentrates the nodes at the edge $J = J_{max}$ of the support, where $R_n$ varies rapidly when $\omega$ is close to $\Omega_{min}$. The integrals over the angles in Eq.~(\ref{Eq:Mnn}) are approximated by the midpoint rule with $N_Q$ points. In order to avoid the evaluation of the kernel for all pairs of points, we assign the points of each orbit to an auxiliary radial grid $\varrho_1 < \varrho_2 < \ldots < \varrho_{N_\varrho}$ with the linear weights $W_i$ associated with its points, which gives
+\begin{equation}
+M_{nn'}(J_a,J_{a'})\approx -4\pi G L_0\sum\limits_{i,i'=1}^{N_\varrho} \frac{P_{(n,a)i}\, P_{(n',a')i'}}{\max\{ \varrho_i,\varrho_{i'} \}},\qquad
+P_{(n,a)i} := \frac{2\pi}{N_Q}\sum\limits_{b=1}^{N_Q} \cos(nQ_b)\, W_i(r(Q_b,J_a)).
+\label{Eq:MDiscrete}
+\end{equation}
+The gain $\lambda(\omega)$ is then computed as the largest eigenvalue of the symmetric matrix with the entries
+\begin{equation}
+S_{(n,a)(n',a')}(\omega) = -\sqrt{w_a |R_n(J_a;\omega)|}\; M_{nn'}(J_a,J_{a'})\,\sqrt{w_{a'} |R_{n'}(J_{a'};\omega)|},
+\label{Eq:SDiscrete}
+\end{equation}
+which has the dimension $n_{max} N_J$, and the frequency $\omega_d$ of an oscillating mode is obtained by solving Eq.~(\ref{Eq:ModeFrequency}) with a bracketing root finder. Unless otherwise stated we use $n_{max} = 6$, $N_J = 200$, $N_Q = 128$ and $N_\varrho = 2000$.
+
+For steady states with $k > 1$ the result converges rapidly. Doubling each of these resolutions changes $\lambda_{edge}$ by at most $2\times 10^{-5}$ for the Wilson model with $M_{gas}/M = 0.097$ in the isochrone potential, and by at most $2\times 10^{-4}$ and $3\times 10^{-3}$ for the polytropes with $k = 2$ and $k = 1.25$ in the Kepler potential, respectively. For $k\leq 1$, where $\lambda_{edge}$ is infinite, the largest eigenvalue of the matrix~(\ref{Eq:SDiscrete}) at $\omega = \Omega_{min}$ is finite and grows with the resolution; nevertheless, the frequency $\omega_d$ of the mode converges.
+
+For a distribution of angular momenta we use quadrature nodes in the variables $(E,L)$, and the number of orbits is much larger. In this case it is more efficient to formulate the problem on the radial grid: writing the matrix with the entries $1/\max\{ \varrho_i,\varrho_{i'} \}$ as $C C^T$ by means of a Cholesky decomposition, the nonvanishing eigenvalues of the matrix~(\ref{Eq:SDiscrete}) coincide with those of the matrix $4\pi G\, C^T P^T D(\omega) P C$, where $D(\omega)$ is the diagonal matrix which contains the products of $|R_n|$ with the quadrature weights. The dimension of this matrix is $N_\varrho$, independently of the number of orbits.
+
+
+\subsection{Frequencies and damping rates}
+\label{SubSec:Fits}
+
+The frequency $\omega$ and the damping rate $\gamma$ of the response are determined from the time series of $\chi_1(t)$, sampled at equidistant times, in the same way for the PIC simulations and for the solutions of the linearized equations. Within a given time window we fit the samples by a sum of $K$ complex exponentials,
+\begin{equation}
+\chi_1(t)\approx \sum\limits_{l=1}^K c_l\, e^{-i\omega_l t - \gamma_l t},
+\label{Eq:PencilFit}
+\end{equation}
+using the matrix pencil method~\cite{yHtS90}, and we identify $(\omega,\gamma)$ with the pair $(\omega_l,\gamma_l)$ of the term with the largest amplitude $|c_l|$. We use $K = 3$, and we estimate the uncertainty of the fit from the largest deviation among the results which are obtained with $K = 2$ and $K = 3$ for the given window and for the windows which are shortened by ten percent at either end. This quantity measures the uncertainty of the fit and not the numerical error of the underlying time series, which is assessed through the convergence tests of section~\ref{Sec:Validation}. For oscillating modes, we alternatively determine the frequency from the maximum of the periodogram of $\chi_1(t)$.
