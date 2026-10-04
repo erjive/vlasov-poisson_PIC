@@ -61,3 +61,5 @@ docs/**/*.out
 docs/**/*.toc
 docs/**/*.fls
 docs/**/*.fdb_latexmk
+docs/**/*.bbl
+docs/**/*.blg
