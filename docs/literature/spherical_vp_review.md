@@ -263,11 +263,24 @@ that collective effects reduce the diffusion tenfold. Fouvry (2022) and Fouvry a
 and only 1:1 resonances the Balescu–Lenard flux vanishes exactly: the relaxation is then
 driven by 1/N² effects (kinetic blocking).
 
-*Inference.* The fixed-|L| shell system is one-dimensional with a monotonic Ω(J). A
-resonance kΩ(J) = k′Ω(J′) with k ≠ k′ needs Ω_max/Ω_min ≥ k′/k, so the 1:2 resonance exists
-only when the band is wider than an octave. This is the single-gap condition of Hadžić et
-al. (2023). The relaxation of this system should therefore depend on the width of the band,
-close to N⁻² for narrow bands and N⁻¹ for wide ones. This is not in the papers.
+From the full text. The exact blocking of Fouvry (2022) holds for pairwise interactions
+that depend on the difference of the angles, for which only 1:1 resonances exist; the
+systems simulated are particles on a sphere and classical spins. For self-gravitating
+sheets, Roule et al. (2022) find a quasi-blocking, a flux 10⁵ times smaller than the
+diffusion coefficients, and give four reasons: with a monotonic Ω(J) the resonances k = k′
+are local and give no flux; a symmetry forbids k and k′ of different parity; the finite
+range of frequencies requires k/k′ ≤ Ω(0)/Ω(J); and the couplings fall as 1/k². What is
+blocked is the flux, the change of F(J). The diffusion of each particle is not: the local
+resonances contribute to it, and it scales as 1/N.
+
+*Inference.* The interaction between two shells, −1/max(r, r′), is not a function of the
+difference of the angles, so resonances with k ≠ k′ are allowed, and there is no parity
+rule because pericentre and apocentre are not equivalent. The third reason of Roule et al.
+applies: a resonance k:k′ needs Ω_max/Ω_min ≥ k′/k, so the 1:2 resonance exists only when
+the band is wider than an octave, which is the single-gap condition of Hadžić et al.
+(2023). The flux of this system should therefore be strongly suppressed for narrow bands
+and of order 1/N for wide ones. The band width as a control parameter is the new element;
+the mechanism is theirs.
 
 *Distance.* Very close. Each particle of the code is a shell, so the code is a realization
 of this system.
@@ -395,7 +408,7 @@ relaxation), L₀ through the width of the band, and σ_L (echo suppression).
 | a discrete mode exists if and only if λ_edge > 1; its frequency solves λ(ω) = 1 | Mathur; Hadžić et al. | done for fixed L; to do with a distribution in L |
 | binding laws near the edge, by class of k | battery η; Simon; Klaus and Simon | measure δ_d against the coupling |
 | decay t^{−(k+1)} of the edge response; bounds t^{−min(2,k)} | Hadžić et al. 2024 | slopes of the envelope, done at small mass |
-| Balescu–Lenard flux vanishes with only 1:1 resonances | Fouvry 2022 | diffusion of the actions against N for narrow and wide bands |
+| the flux in J is suppressed when no resonance k ≠ k′ fits in the band; the diffusion of each particle is not | Fouvry 2022; Roule et al. 2022 | change of F(J) against N for narrow and wide bands, with equal-mass random sampling |
 | amplification of noise by self-gravity | Weinberg 1998; Lau and Binney 2019 | power spectrum of δΦ in unperturbed runs |
 | final state after a perturbation from linear theory | Rozier and Errani 2024 | static part of the response against ε |
 | echo amplitude, and its loss with a spread in L, exp[−½k²(∂Ω/∂L)²σ_L²t*²] | Chiba et al. 2025; earlier notes | two kicks, against σ_L |
@@ -423,8 +436,8 @@ Used in the literature and available in the runs:
 
 Observables that may hold unused information in the existing runs:
 
-- the diffusion of J in the reference runs (ε = 0) against N: it measures the relaxation
-  law of Section 3.11 (`PREGUNTAS_ABIERTAS.md`, question 1, has the data);
+- the displacement of J in the reference runs (ε = 0) against N: read in Section 13; it
+  measures the breakdown of the quiet start, not the relaxation law of Section 3.11;
 - the profile in J of f₁ for the discrete modes, to compare with the eigenfunction;
 - the static part f₀(J, ∞) − f₀(J, 0) against ε: the final state of Section 3.9;
 - the second harmonic and the mean shift of J at large ε: the trapping regime.
@@ -438,6 +451,7 @@ Observables that may hold unused information in the existing runs:
 | non-stationary equilibrium | field error of order Δr²; growth from discreteness | Δr/2 at fixed Δt; 4N |
 | instability of a phase-space spiral | seeded by the grid or by Poisson noise (Halle et al.) | growth rate against N and grid; seed a known perturbation |
 | relaxation, entropy growth | discreteness (Beraldo e Silva et al.); kinetic blocking changes the N law | ensembles at several N; random and quiet starts |
+| growth of noise at late times | breakdown of the ordered start, as the multibeam instability of plasma codes (Gitomer and Adam 1976) | growth rate against the number of rows in J; random start for comparison |
 | cusp or core after collapse | softening, time step at pericentre, N^{1/3} collapse factor | L₀ and Δt scans; compare with a shell code |
 | enhanced response near a threshold | nonlinearity (ν large) | ε → 0 extrapolation |
 | loss of mass or energy | outer boundary of the grid | larger r_max |
@@ -448,10 +462,11 @@ For each gap: why it is one, and how sure that is.
 
 1. **The exact oscillation threshold.** Stated as open by Kunze (2022), Straub (2024) and
    Wolfschmidt (2023). A genuine gap. Risk: Mathur (1990) was read only in abstract.
-2. **Relaxation of shells with fixed L, and the role of the band width.** Kinetic blocking
-   is established for one-dimensional systems; this system was not found among those
-   studied. Probably genuine, but the abstracts do not list the systems that Fouvry and
-   Roule simulated. The papers must be read before any claim.
+2. **Relaxation of shells with fixed L, and the role of the band width.** The papers were
+   read. The mechanism, a finite frequency range that excludes resonances, is described by
+   Roule et al. (2022) for sheets. A system in which the band ratio is a control parameter
+   that crosses 2 was not found. A gap of moderate size: an application of a known
+   mechanism, with a clear test.
 3. **Fluctuations and relaxation across the threshold of a discrete mode.** Sellwood's
    N^{−1/2} and the cancellation of Hamilton and Heinemann point to open theory. No test in
    a system where the threshold can be crossed continuously was found. Probably genuine.
@@ -479,7 +494,7 @@ Scores from 1 to 5; cost: 5 is cheap.
 | | direction | relevance | originality | feasibility | cost | analytic support | clear result | publishable | sum |
 |---|---|---|---|---|---|---|---|---|---|
 | P1 | exact oscillation threshold of polytropes and King models | 4 | 4 | 3 | 3 | 5 | 5 | 4 | 28 |
-| P2 | relaxation of fixed-L shells: kinetic blocking, band width and the discrete mode | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 28 |
+| P2 | relaxation of fixed-L shells: kinetic blocking, band width and the discrete mode | 4 | 3 | 4 | 4 | 4 | 4 | 3 | 26 |
 | P3 | echoes and unwinding with a spread in L | 3 | 4 | 5 | 5 | 4 | 4 | 3 | 28 |
 | P4 | nonlinear evolution of modes near the threshold | 3 | 3 | 5 | 5 | 3 | 3 | 3 | 25 |
 | P5 | final state after a perturbation: linear prediction and its failure | 3 | 2 | 5 | 5 | 5 | 4 | 3 | 27 |
@@ -501,15 +516,18 @@ and numerical; high, subject to gap 1.
 **P2. Relaxation of fixed-L shells.** Question: how does a finite number of shells relax,
 and does the law change with the width of the band and with the presence of a discrete
 mode. Literature: Fouvry (2022), Fouvry and Roule (2023), Roule et al. (2022), Sellwood
-(2015), Hamilton and Heinemann (2023). Hypothesis: the diffusion of the actions scales as
-N⁻² when Ω_max/Ω_min < 2 and as N⁻¹ when it exceeds 2; near λ_edge = 1 the dressing
-enhances it. Initial data: equilibria sampled at random, with equal masses. Control
-parameters: N, the band ratio through J_t/L₀, a₀. Observables: ⟨ΔJ²⟩(t), flux in J,
-spectrum of δΦ. Expected: a change of exponent, softened by higher resonances
-(k:k+1 needs a ratio above (k+1)/k). Numerical tests: Δr, Δt, ensembles, random against
-quiet start. Interesting: two exponents, or a peak at the threshold. Uninteresting: N⁻¹
-everywhere; even then the runs calibrate the numerical relaxation of every other project.
-Novelty: physical; depends on gap 2.
+(2015), Hamilton and Heinemann (2023). Hypothesis: the flux in J, the rate of change of F(J), is of order
+1/N when Ω_max/Ω_min exceeds 2 and much smaller below, while the diffusion of each particle
+scales as 1/N in both cases; near λ_edge = 1 the dressing enhances both. Initial data:
+equilibria sampled at random, with equal masses; with unequal weights the exchange of
+energy between masses adds a flux of its own (Sellwood 2015). Control parameters: N, the
+band ratio through J_t/L₀, a₀. Observables: the change of F(J) (a Wasserstein distance
+between cumulative distributions), ⟨ΔJ²⟩(t), spectrum of δΦ. Expected: a flux that drops
+when the band closes the 1:2 resonance, softened by higher resonances (k:k+1 needs a ratio
+above (k+1)/k). Numerical tests: Δr, Δt, ensembles, random against
+quiet start. Interesting: a flux that depends on the band ratio as predicted, or a peak at the
+threshold. Uninteresting: no dependence; even then the runs calibrate the numerical
+relaxation of every other project. Novelty: physical but moderate (gap 2).
 
 **P3. Echoes with a spread in L.** As T1 of the earlier notes. Hypothesis: a spread in L
 suppresses the echo without collisions, as exp[−½k²(∂Ω/∂L)²σ_L²t*²]. Novelty: physical,
@@ -568,13 +586,47 @@ angular momentum (done with shell codes, and needs cosmology); the radial-orbit 
   the threshold for k = 1.25 (a₀ from 0.3 to 0.8).
 - Length: until ⟨ΔJ²⟩ is measurable, 10⁴ to 10⁵ time units. A run of 10⁴ particles and
   10⁵ steps takes about ten minutes; the ensembles suit the two cluster nodes.
-- Diagnostics: ⟨ΔJ²⟩(t) in the true map; exponent of the N dependence; spectrum of δΦ.
+- Diagnostics: the change of F(J) and ⟨ΔJ²⟩(t) in the true map; their N dependence;
+  spectrum of δΦ.
 - Convergence: Δr/2, Δt/2; quiet start for contrast.
-- Figures: diffusion coefficient against N for each band ratio; exponent against the band
-  ratio; diffusion against a₀ across the threshold.
-- Finding of interest: an exponent that goes from near 2 to near 1 as the band opens the
-  1:2 resonance.
-- First step at no cost: read the existing ε = 0 runs in this way.
+- Figures: flux and diffusion coefficient against N for each band ratio; flux against the
+  band ratio; both against a₀ across the threshold.
+- Finding of interest: a flux that rises when the band opens the 1:2 resonance, with a
+  diffusion coefficient that does not change.
+
+**First reading of the existing reference runs** (`reproducir/scripts/relajacion_N.py`,
+output in `exe/relajacion/`). The runs have a quiet start and unequal weights, so they do
+not test the hypothesis. They measure the noise of the scheme. d₂ is the rms change of the
+action since t = 0, weighted by mass, in units of 10⁻³ J_t; W₁ is the Wasserstein distance
+between the cumulative mass distributions in J, the net change of F(J).
+
+| run | N | d₂ at t_fin/4, t_fin/2, t_fin | growth after the first quarter |
+|---|---|---|---|
+| point mass, k = 1.25, a₀ = 1 (t_fin = 4000) | 10⁴ | 1.36, 6.27, 37.2 | t^{2.6} |
+| the same, 4N | 4 × 10⁴ | 0.50, 0.58, 2.49 | exponential, rate 6.8 × 10⁻⁴ |
+| the same, Δr/2 | 10⁴ | 1.71, 9.78, 42.5 | t^{2.4} |
+| point mass, k = 2, a₀ = 1 (no discrete mode) | 10⁴ | 1.06, 4.36, 29.9 | t^{2.8} |
+| point mass, k = 2, a₀ = 0.01 (t_fin = 8000) | 10⁴ | 0.013, 0.023, 0.036 | t^{0.74} |
+| isochrone A4, a₀ = 0.075 (t_fin = 17200) | 10⁴ | 0.25, 0.41, 0.50 | t^{0.5} |
+| the same, 4N | 4 × 10⁴ | 0.12, 0.12, 0.12 | none |
+| isochrone M5, a₀ = 0.5, Δr/2 (t_fin = 5000) | 10⁴ | 1.33, 2.15, 7.19 | exponential, rate 4.4 × 10⁻⁴ |
+| the same, 4N | 4 × 10⁴ | 0.21, 0.31, 0.40 | slow, about t^{0.5} |
+
+- At a₀ = 1 the displacement grows faster than ballistically, reaches 3.7 % of J_t at
+  t = 4000, and is the same for k = 1.25, 1.5 and 2 and with Δr/2. It does not depend on the
+  presence of a discrete mode, nor on the grid.
+- With 4N it is 12 to 15 times smaller at the end, and the run with 10⁴ particles reaches
+  the final value of the 4N run at t = 1500. A diffusion by Poisson noise would be 2 times
+  smaller. With a₀ = 0.01 it is a thousand times smaller and grows as t^{0.74}.
+- The net change of F(J) is much smaller than the displacement: W₁ = 0.86 against
+  d₂ = 37 at t = 4000 (k = 1.25, 10⁴ particles), and W₁ stays at 0.29 with 4N. The
+  particles are reshuffled. This is what diffusion gives (a change of F of second order in
+  the displacement), so it says nothing for or against blocking.
+- The growth is the breakdown of the ordered start, strong where self-gravity is strong.
+  Its dependence on the number of rows and its fast growth resemble the multibeam
+  instability of ordered loadings in plasma simulations (Gitomer and Adam 1976); this was
+  not tested. It sets the usable time of a quiet start: about t = 1500 with 10⁴ particles
+  and beyond 4000 with 4 × 10⁴ at a₀ = 1.
 
 **P3.**
 - Baseline: isochrone background, no self-gravity, spiral or two kicks, exact solution
@@ -602,22 +654,23 @@ tunable band. The nonlinear fate of radial modes. The saturation of the radial i
 times; questions in which the number of shells is the parameter; scans of hundreds of runs;
 diagnostics in angle–action variables.
 
-**D. In the runs already made.** The diffusion of J in the reference runs against N; the
+**D. In the runs already made.** The breakdown time of the quiet start against N (read: Section 13); the
 profiles f₁(J) of the discrete modes; the static response against ε; the trapping regime of
 the demo; the suppression of unwinding by σ_L.
 
-**E. First parameter to vary.** N, with random starts, in one equilibrium with a narrow band
-and one with a wide band. It is cheap and decides P2.
+**E. First parameter to vary.** N, with random equal-mass starts, in one equilibrium with a
+narrow band and one with a wide band. It is cheap and decides P2. The existing runs cannot
+do it.
 
 **F. Strongest direction.** P1, the exact threshold, with P4 as its nonlinear section and
 P2 as the finite-N counterpart.
 
-**G. First experiments.** (1) Reanalyse the ε = 0 runs for the N law. (2) Four random-start
-ensembles, two band ratios and two values of N. (3) The feasibility test of λ_edge with a
+**G. First experiments.** (1) Done: the ε = 0 runs read for the N law (Section 13). (2) Four
+random-start ensembles, two band ratios and two values of N. (3) The feasibility test of λ_edge with a
 distribution in L for k = 1 and k = 1.5.
 
-**H. Analytical prediction to test.** That the Balescu–Lenard flux vanishes when only 1:1
-resonances exist, and λ_edge(k*) = 1.
+**H. Analytical prediction to test.** That the flux in J is suppressed when no resonance
+with k ≠ k′ fits in the band, and λ_edge(k*) = 1.
 
 **I. Essential validation.** The true angle–action map; a reference run with ε = 0; scans
 in ε, N and Δr at fixed Δt; recurrence times in J and in L beyond the run; energy
@@ -630,8 +683,9 @@ answers the first part, P4 and P2 the second.
 ## 15. Limits of this review
 
 - Most statements about papers rest on abstracts.
-- The searches on trapping for radial modes and on the systems simulated by Fouvry and
-  Roule were not exhaustive; gaps 2, 4 and 5 need the papers read before any claim.
+- The search on trapping for radial modes was not exhaustive; gaps 4 and 5 need the papers
+  read before any claim. Fouvry (2022) and Roule et al. (2022) were read in full; Fouvry and
+  Roule (2023) only in abstract.
 - The literature before 1990 was reached through reference lists.
 - OpenAlex refused requests during the last part of the search; the remaining checks were
   made on arXiv and on publisher pages.
@@ -669,6 +723,7 @@ are listed in `docs/hadzic/literature_review.md`.
 - Fouvry (2022), *Kinetic theory of one-dimensional inhomogeneous long-range interacting N-body systems at order 1/N² without collective effects*, [arXiv:2207.05349](https://arxiv.org/abs/2207.05349)
 - Fouvry and Roule (2023), *Kinetic blockings in long-range interacting inhomogeneous systems*, [arXiv:2306.04613](https://arxiv.org/abs/2306.04613)
 - Fujiwara (1984), *Integration of the Collisionless Boltzmann Equation for Spherical Stellar Systems*, Publications of the Astronomical Society of Japan. [doi](https://doi.org/10.1093/pasj/35.4.547)
+- Gitomer and Adam (1976), *Multibeam instability in a Maxwellian simulation plasma*, Physics of Fluids 19, 719. [journal](https://pubs.aip.org/aip/pfl/article-abstract/19/5/719/837379/Multibeam-instability-in-a-Maxwellian-simulation)
 - Gondolo and Silk (1999), *Dark Matter Annihilation at the Galactic Center*, Physical Review Letters. [doi](https://doi.org/10.1103/physrevlett.83.1719)
 - Guo and Rein (2007), *A Non-Variational Approach to Nonlinear Stability in Stellar Dynamics Applied to the King Model*, Communications in Mathematical Physics. [doi](https://doi.org/10.1007/s00220-007-0212-8)
 - Halle, Colombi, Peirani (2019), *Phase-space structure analysis of self-gravitating collisionless spherical systems*, Astronomy and Astrophysics 621, A8, [arXiv:1701.01384](https://arxiv.org/abs/1701.01384)
