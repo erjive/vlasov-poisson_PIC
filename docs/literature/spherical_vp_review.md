@@ -666,8 +666,8 @@ do it.
 P2 as the finite-N counterpart.
 
 **G. First experiments.** (1) Done: the ε = 0 runs read for the N law (Section 13). (2) Four
-random-start ensembles, two band ratios and two values of N. (3) The feasibility test of λ_edge with a
-distribution in L for k = 1 and k = 1.5.
+random-start ensembles, two band ratios and two values of N. (3) Done: the feasibility test of λ_edge with a
+distribution in L gives k* = 1.2425 for isotropic polytropes (`docs/mathur/threshold_isotropic.md`).
 
 **H. Analytical prediction to test.** That the flux in J is suppressed when no resonance
 with k ≠ k′ fits in the band, and λ_edge(k*) = 1.
