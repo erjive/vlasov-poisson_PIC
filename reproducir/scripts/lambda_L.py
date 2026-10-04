@@ -29,6 +29,7 @@ h = g/((s - s_-)(s_+ - s)), suave. La regla del punto medio en theta converge mu
     python3 lambda_L.py politropos     lambda_borde(k) de los politropos isótropos (E0 - E)^k y k*
     python3 lambda_L.py king           lambda_borde(kappa) de los modelos de King y kappa*
     python3 lambda_L.py convergencia   k* frente a cada parámetro numérico
+    python3 lambda_L.py dispersion     L fijo frente a una dispersión en L, con k <= 1
 Las tablas quedan en exe/lambda_L/.
 """
 import os, sys, argparse, numpy as np
@@ -274,6 +275,50 @@ def modelos_king(kappas=(0.5, 1.0, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 4.0)):
     open(os.path.join(SAL, 'king.txt'), 'w').write('\n'.join(lineas) + '\n')
 
 
+def dispersion(casos=('P_k0.75_a1', 'P_k1_a1', 'P_k0.75_a0.1'), anchos=(0.0025, 0.01, 0.03, 0.1), nL=24, ne=96, q=4.0):
+    """¿Sobrevive a una dispersión en L la divergencia de lambda en el borde que da L fijo con
+    k <= 1? f0 = F(E) g(L), con g parabólica de semiancho w L0 alrededor de L0 e int g L dL = L0,
+    en el potencial total del equilibrio de L fijo (no se recalcula el potencial con la
+    dispersión). Se evalúa lambda en omega = Omega_b (1 - d), con Omega_b la menor frecuencia
+    de la órbita de energía E_t en el intervalo de L."""
+    from lambda_borde import Lazo
+    from equilibrio import borde_E, dFdE_E
+    os.makedirs(SAL, exist_ok=True)
+    base = os.path.join(AQUI, '..', '..', 'exe', 'hadzic', 'lineal')
+    ds = (1e-2, 1e-3, 1e-4, 1e-5)
+    lineas = []
+    def w_(x=''):
+        lineas.append(x); print(x, flush=True)
+    w_('lambda(Omega_b (1 - d)) con d = 1e-2, 1e-3, 1e-4, 1e-5. Masa puntual, polE, L0 = 2.')
+    xs, ws = np.polynomial.legendre.leggauss(ne); s, ws = 0.5*(xs + 1), 0.5*ws
+    xl, wl = np.polynomial.legendre.leggauss(nL)
+    for nombre in casos:
+        npz = os.path.join(base, nombre + '_equilibrio.npz'); d = np.load(npz)
+        L0, jt, k, A = float(d['L0']), float(d['J_borde']), float(d['k_borde']), float(d['A'])
+        ps = CubicSpline(d['r'], d['phi_self'])
+        phi = lambda r: -1.0/r + ps(r)
+        dphi = lambda r: 1.0/r**2 + ps(r, 1)
+        Et, T = borde_E('polE', d['E_t'], d['J_t'], jt, None)
+        z = Lazo(npz, nj=400)
+        w_(f'{nombre}: k = {k:g}, a0 = {float(d["a0"]):g}')
+        w_(f'   L fijo                                              ' + ' '.join(f'{z.lam(z.Om_min*(1 - x)):7.3f}' for x in ds))
+        rt = np.linspace(1.0001, 19.9, 20000); c = rt**3*dphi(rt)
+        for wrel in anchos:
+            Ls = L0*(1 + wrel*xl); gL = wl*(1 - xl**2)*Ls; gL = gL/gL.sum()*L0
+            E, L, w, dfdE = [], [], [], []
+            for Lm, gm in zip(Ls, gL):
+                rc = np.interp(Lm**2, c, rt); emax = Et - (phi(rc) + Lm**2/(2*rc**2)); e = emax*s**q
+                E.append(Et - e); L.append(np.full_like(e, Lm)); w.append(gm*q*emax*s**(q - 1)*ws)
+                dfdE.append(A*dFdE_E('polE', Et - e, Et, T, k))
+            E, L, w, dfdE = map(np.concatenate, (E, L, w, dfdE))
+            zl = LazoL(phi, dphi, E, L, w, dfdE, 1.0001, 19.9, kmax=6, nth=128, nr=1200)
+            Lb = L0*(1 + wrel*np.linspace(-1, 1, 41))
+            Ob = orbitas(phi, dphi, Et - np.full_like(Lb, 1e-10), Lb, 1.0001, 19.9, 256)[0]
+            w_(f'   semiancho {wrel:6.4f} L0, Omega_b(L) en [{Ob.min():.6f}, {Ob.max():.6f}]  '
+               + ' '.join(f'{zl.lam(Ob.min()*(1 - x)):7.3f}' for x in ds))
+    open(os.path.join(SAL, 'dispersion.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
 def convergencia():
     """k* frente a cada parámetro numérico."""
     os.makedirs(SAL, exist_ok=True)
@@ -294,6 +339,6 @@ def convergencia():
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['validar', 'politropos', 'king', 'convergencia'])
+    ap.add_argument('paso', choices=['validar', 'politropos', 'king', 'convergencia', 'dispersion'])
     a = ap.parse_args()
     {'king': modelos_king}.get(a.paso, globals().get(a.paso))()

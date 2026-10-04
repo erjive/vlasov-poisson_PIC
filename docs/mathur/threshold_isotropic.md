@@ -189,6 +189,31 @@ for every k > 0 (it is 13.1 at k = 0.25), so the dichotomy at k = 1 of the fixed
 theorem of Hadžić et al. (2023) becomes a threshold at finite k; and the binding near the
 threshold is linear, not a high power.
 
+**From fixed |L| to a spread in L.** The same softening appears with any spread. For three
+fixed-|L| equilibria of the point-mass setting, f₀ = F(E)g(L) with g a parabola of half-width
+wL₀ around L₀, in the potential of the fixed-|L| equilibrium (the potential is not
+recomputed), λ at Ω_b(1 − δ):
+
+| case | spread | δ = 10⁻² | 10⁻³ | 10⁻⁴ | 10⁻⁵ |
+|---|---|---|---|---|---|
+| k = 0.75, a₀ = 1 | fixed L | 1.96 | 4.03 | 7.75 | 14.39 |
+| | w = 0.0025 | 1.95 | 3.77 | 5.55 | 6.17 |
+| | w = 0.03 | 1.80 | 2.71 | 3.02 | 3.07 |
+| | w = 0.1 | 1.58 | 2.06 | 2.16 | 2.18 |
+| k = 1, a₀ = 1 | fixed L | 1.37 | 2.00 | 2.65 | 3.32 |
+| | w = 0.03 | 1.29 | 1.61 | 1.70 | 1.71 |
+| k = 0.75, a₀ = 0.1 | fixed L | 0.30 | 0.60 | 1.15 | 2.13 |
+| | w = 0.01 | 0.30 | 0.58 | 0.89 | 1.02 |
+| | w = 0.03 | 0.30 | 0.54 | 0.72 | 0.77 |
+| | w = 0.1 | 0.28 | 0.47 | 0.56 | 0.58 |
+
+With fixed L the gain diverges at the edge. With a spread it converges, because the
+frequency of the edge orbit depends on L. At a₀ = 0.1 a spread of 3 % leaves λ_edge = 0.77:
+the mode that exists at fixed L for every mass is gone. The oscillation of k ≤ 1 proved for
+fixed |L| is therefore not robust to a dispersion in L, which is consistent with the decay
+proved by Hadžić and Schrecker (2025) for a distribution in L. This regime, L within a few
+per cent of L₀, is the one that the code with a distribution in L handles.
+
 ## 7. What remains before a paper
 
 1. **Literature.** Read Mathur (1990) and the book of Kunze (2021) in full, to confirm that
@@ -213,6 +238,7 @@ From `reproducir/scripts/`, with four threads:
 | `python3 lambda_L.py politropos` | `exe/lambda_L/politropos.txt`, k* | 2 min |
 | `python3 lambda_L.py king` | `exe/lambda_L/king.txt`, κ* | 1 min |
 | `python3 lambda_L.py convergencia` | `exe/lambda_L/convergencia.txt` | 7 min |
+| `python3 lambda_L.py dispersion` | `exe/lambda_L/dispersion.txt` | 2 min |
 
 ## References
 
