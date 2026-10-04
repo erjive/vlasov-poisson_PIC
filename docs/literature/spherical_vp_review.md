@@ -692,6 +692,48 @@ answers the first part, P4 and P2 the second.
 - The inference of Section 3.11 on the band width is mine. It has not been checked against
   the kinetic equations for this system.
 
+## 16. Addendum: nonlinear questions for which the particle code is necessary
+
+Added on 4 October 2026, after the linear results. For linear questions the linearized
+solver and the operator are better tools than the particle code. For finite amplitude the
+particle code is the only tool available here, and the literature gives quantitative
+predictions that were tested only in plasmas or with toy potentials.
+
+**The arrest of damping as a critical phenomenon.** Brunetti, Califano and Pegoraro (2000)
+find, with a Vlasov code, a critical initial amplitude below which a Langmuir wave damps
+for ever and above which it does not. Ivanov, Cairns and Robinson (2004) characterize it:
+the threshold is at ω_b/γ ≈ 1 for a Maxwellian (0.84 and 0.83 for two other distributions),
+with ω_b the bounce frequency and γ the Landau rate; at the threshold the field decays
+algebraically, as t^{−3.26}; and near it the asymptotic quantities follow power laws, as
+in a second-order phase transition, with exponents that differ from those expected from
+trapping. Ivanov and Cairns (2005) attribute the arrest near the threshold to a
+second-order effect that is not trapping. All of this is for homogeneous, repulsive
+systems. No study of this threshold in a self-gravitating system was found (the search
+was not exhaustive).
+
+The demo of η already brackets it in the isochrone setting: with ν = ω_b/γ = 0.3 the mode
+damps (D2), with ν = 10 the damping is arrested and a trapped island forms whose bounce
+period agrees with the pendulum estimate to 10–20 % (D6), and with ν = 3 the late evolution
+is not converged in the number of particles (D5). The open questions are the value of ν at
+the threshold, whether there is a scaling near it, and whether the exponents are those of
+the plasma case. The structure is that of a threshold in a one-parameter family of initial
+data.
+
+**Bifurcations of inhomogeneous equilibria.** Crawford (1994) shows that a weakly unstable
+electrostatic mode saturates with the trapping scaling, amplitude ∝ γ². Barré, Métivier and
+Yamaguchi (2016) treat non-oscillating bifurcations of inhomogeneous steady states, "a
+situation occurring in galactic models": the resonances are suppressed, and the instability
+either saturates at small amplitude or produces a large modification, depending on the
+initial perturbation. Their simulations use a cosine potential. Their classification
+(2020) and a codimension-two case (Yamaguchi and Barré 2025) follow. The fixed-|L| system
+is gravitational and has an exact linear theory, which fixes the bifurcation point; it
+needs equilibria with a non-monotonic F(J).
+
+**What these need.** Noise is the limit: near a threshold the asymptotic amplitudes are
+small, and D5 was not converged with 4 × 10⁴ particles. They need 10⁵–10⁶ particles, and a
+nonlinear solver on a grid in (Q, J), an extension of `lineal.py`, as a check without
+noise; the plasma studies used grid codes for this reason.
+
 ## References
 
 All entries were verified as described in Section 1. The works on oscillation and damping
@@ -789,3 +831,10 @@ are listed in `docs/hadzic/literature_review.md`.
 - Youngkins and Miller (2000), *Gravitational phase transitions in a one-dimensional spherical system*, Physical Review E. [doi](https://doi.org/10.1103/physreve.62.4583)
 - Zukin and Bertschinger (2010), *Self-similar spherical collapse with tidal torque*, Physical Review D. [doi](https://doi.org/10.1103/physrevd.82.104044)
 - Łokas and Hoffman (2000), *Formation of Cuspy Density Profiles: A Generic Feature of Collisionless Gravitational Collapse*, The Astrophysical Journal. [doi](https://doi.org/10.1086/312928)
+- Barré, Métivier, Yamaguchi (2016), *Trapping scaling for bifurcations in Vlasov systems*, Physical Review E 93, 042207, [arXiv:1511.07645](https://arxiv.org/abs/1511.07645)
+- Barré, Métivier, Yamaguchi (2020), *Towards a classification of bifurcations in Vlasov equations*, Physical Review E 102, 052208, [arXiv:1909.11344](https://arxiv.org/abs/1909.11344)
+- Brunetti, Califano, Pegoraro (2000), *Asymptotic evolution of nonlinear Landau damping*, Physical Review E 62, 4109. [journal](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.62.4109)
+- Crawford (1994), *Universal trapping scaling on the unstable manifold for a collisionless electrostatic mode*, Physical Review Letters 73, 656, [arXiv:patt-sol/9407001](https://arxiv.org/abs/patt-sol/9407001)
+- Ivanov and Cairns (2005), *Nontrapping arrest of Langmuir wave damping near the threshold amplitude*, [arXiv:physics/0510131](https://arxiv.org/abs/physics/0510131)
+- Ivanov, Cairns, Robinson (2004), *Wave damping as a critical phenomenon*, Physics of Plasmas 11, 4649. [record](https://www.osti.gov/etdeweb/biblio/20606414)
+- Yamaguchi and Barré (2025), *Universality of discontinuous bifurcations in collisionless dynamics*, [arXiv:2503.02286](https://arxiv.org/abs/2503.02286)
