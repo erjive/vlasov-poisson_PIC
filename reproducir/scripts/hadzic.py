@@ -9,13 +9,21 @@ Pasos (cada uno reutiliza lo que ya exista):
     python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos
     python3 hadzic.py analizar   dPhi y h_1 en el mapa del equilibrio, menos eps = 0
     python3 hadzic.py figuras    figuras del informe (docs/hadzic/figuras/)
+    python3 hadzic.py videos     un video por corrida perturbada (exe/hadzic/videos/)
 
 Parámetros: L0 = 2 (su L = 4), J_t = 0.7, es decir E_t = -0.0686 sin masa propia, dentro
 de su condición de un solo hueco (-0.079 < E_t < 0; Omega_max/Omega_min = 2.46). En el
 código, BGtype = "sphere" es una bola uniforme de masa 1 y radio 1, es decir una masa
 puntual para r > 1, y la cáscara está en 2.4 < r < 12.2. Salidas en exe/hadzic/.
 """
-import os, sys, subprocess, time, argparse, numpy as np
+import os, sys, subprocess, time, argparse
+# analizar y videos reparten las corridas en cuatro procesos: un hilo de BLAS en cada uno. La
+# variable tiene que estar antes de importar numpy; puesta después, cada proceso usaba ~1.6
+# núcleos y los cuatro, unos 16 hilos en los 4 núcleos físicos.
+if len(sys.argv) > 1 and sys.argv[1] in ('analizar', 'videos'):
+    for v in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'):
+        os.environ[v] = '1'
+import numpy as np
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 
@@ -287,7 +295,6 @@ def modos():
 
 def analizar(procesos=4):
     from multiprocessing import Pool
-    os.environ['OMP_NUM_THREADS'] = '1'
     hechas = [n for n, *_ in CORRIDAS if os.path.exists(ruta(f'{n}.ok'))]
     with Pool(procesos) as pool:                 # una corrida por proceso
         series = dict(pool.map(_serie, hechas))
@@ -450,9 +457,197 @@ def figuras():
     print('figuras en', destino)
 
 
+# ------------------------------------------------------------------ videos
+# La perturbación se dibuja en ángulo-acción, a partir de sus armónicos en Q. En (r, p_r) la
+# diferencia de histogramas de D y Z está dominada por la red inicial, que se estira en
+# espirales finas: al separarse un poco las partículas de D y Z, la diferencia de celda a celda
+# es mucho mayor que la señal. En (Q, J) cada anillo de la red tiene 25 partículas igualmente
+# espaciadas en Q que giran juntas, y sus armónicos k < 12 casi no tienen ruido (como h_1).
+KMAX, NJC, SJ = 6, 100, 0.007            # armónicos, centros en J y ancho del núcleo en J
+
+
+def armonicos(nombre):
+    """f_k(J_c, t) = (dQ dJ/2pi) sum_j F_j e^{-ikQ_j} K(J_j - J_c)/N(J_c), k = 0..KMAX, con K una
+    gaussiana de ancho SJ y N su integral en [0, J_max] (corrige el borde J = 0), de modo que
+    f(Q, J) = f_0 + 2 Re sum_{k>=1} f_k e^{ikQ}. Se guarda en exe/hadzic/<nombre>/armonicos.npz."""
+    import h5py
+    from scipy.special import erf
+    from aa_numerico import MapaAA
+    sal = ruta(nombre, 'armonicos.npz')
+    if os.path.exists(sal):
+        return np.load(sal)
+    eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
+    mapa = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
+    jmx = float(eq['J_max'])
+    dQdJ = 2*np.pi/int(eq['npc'])*jmx/int(eq['nrc'])
+    Jc = (np.arange(NJC) + 0.5)*JT/NJC
+    norma = 0.5*(erf((jmx - Jc)/(np.sqrt(2)*SJ)) + erf(Jc/(np.sqrt(2)*SJ)))
+    kk = np.arange(KMAX + 1)
+    f = h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r')
+    pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
+    w = f[pasos[0]]['f'][:]
+    t, fk = [], np.empty((len(pasos), KMAX + 1, NJC), np.complex64)
+    for i, c in enumerate(pasos):
+        g = f[c]
+        Q, J, _ = mapa(g['r_part'][:], g['p_part'][:])
+        K = np.exp(-0.5*((J[:, None] - Jc[None, :])/SJ)**2)/(np.sqrt(2*np.pi)*SJ)
+        fk[i] = dQdJ/(2*np.pi)*((np.exp(-1j*np.outer(kk, Q))*w[None, :]) @ K)/norma[None, :]
+        t.append(g.attrs['time'])
+    f.close()
+    np.savez(sal, t=np.array(t), Jc=Jc, fk=fk, Fmax=w.max())
+    return np.load(sal)
+
+
+def _armonicos(nombre):
+    t0 = time.time()
+    armonicos(nombre)
+    return nombre, f'armónicos en {time.time()-t0:.0f} s'
+
+
+def borde_rp(eq):
+    """Órbita del borde del soporte, E = E(J_t), en (r, p_r >= 0), y el radio de la circular."""
+    r = np.linspace(1.0, 20.0, 8000)                        # masa puntual para r > 1
+    phi = -1.0/r + np.interp(r, eq['r'], eq['phi_self']) + L0**2/(2*r**2)
+    Eb = np.interp(JT, eq['J_t'], eq['E_t'])
+    d = Eb > phi
+    return r[d], np.sqrt(2*(Eb - phi[d])), r[np.argmin(phi)]
+
+
+class Fotogramas:
+    """Fotogramas del video de una corrida D: sus partículas en (r, p_r) coloreadas por F, el
+    armónico k = 1 de la perturbación, dF_1(Q, J) = 2 Re[(f_D - f_Z)_1(J) e^{iQ}]/eps, y |h_1(t)|.
+    F y dF van en unidades del máximo de F_eq de los pesos del código (que reescala los del dato
+    inicial por un factor constante, 0.7997 en a0 = 1).
+
+    Solo k = 1: el dato inicial es puro k = 1 y es lo que mide h_1. Con 10^4 partículas, en
+    D_k2_a1 a t = 1500 los armónicos 0 y 2 tienen un rms en J de 0.95 y 1.1 veces el máximo
+    inicial de k = 1, casi todo ruido, y sumarlos lo dobla."""
+
+    def __init__(self, nombre, k, a0, eps, ref, nq=128):
+        import h5py
+        self.nombre, self.k, self.a0, self.eps, self.ref = nombre, k, a0, eps, ref
+        eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
+        self.rb, self.pb, self.rc = borde_rp(eq)
+        self.r0, self.r1, self.p1 = self.rb.min() - 0.3, self.rb.max() + 0.3, 1.12*self.pb.max()
+        self.fD = h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r')
+        self.pasos = sorted([c for c in self.fD if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
+        self.w = self.fD[self.pasos[0]]['f'][:]
+        aD, aZ = armonicos(nombre), armonicos(ref)
+        self.Fmax, self.Jc = float(aZ['Fmax']), aZ['Jc']
+        self.dfk = (aD['fk'] - aZ['fk'])/eps/self.Fmax            # (t, k, J)
+        self.Q = (np.arange(nq) + 0.5)*2*np.pi/nq
+        self.base = 2*np.exp(1j*self.Q)                            # k = 1
+        d, z = np.load(ruta(nombre, 'serie.npz')), np.load(ruta(ref, 'serie.npz'))
+        self.t, self.h, self.hz = d['t'], np.abs((d['h1'] - z['h1'])/eps), np.abs(z['h1'])/eps
+        lin = np.load(ruta('lineal', nombre_lin(k, a0) + '.npz'))
+        self.tl, self.hl = lin['t'], np.abs(lin['h1'])
+
+    def dF(self, i):
+        """dF_1(J, Q) en el fotograma i."""
+        return np.real(self.dfk[i, 1][:, None]*self.base[None, :])
+
+    def figura(self, lim):
+        import matplotlib; matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.rcParams.update({'font.size': 10})
+        fig = plt.figure(figsize=(12.8, 7.2), dpi=100)
+        gs = fig.add_gridspec(2, 2, height_ratios=[2.2, 1], hspace=0.34, wspace=0.26,
+                              left=0.06, right=0.945, top=0.87, bottom=0.08)
+        a1, a2, a3 = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, :])
+        g = self.fD[self.pasos[0]]
+        self.orden = np.argsort(self.w)                         # los de F grande, encima
+        s = 0.6 if len(self.w) <= 10000 else 0.15
+        self.pts = a1.scatter(g['r_part'][:][self.orden], g['p_part'][:][self.orden],
+                              c=self.w[self.orden]/self.Fmax, s=s, cmap='viridis', vmin=0, vmax=1,
+                              linewidths=0, rasterized=True)
+        fig.colorbar(self.pts, ax=a1, fraction=0.04, pad=0.02, label='$F/F_{\\max}$')
+        for sg in (1, -1):
+            a1.plot(self.rb, sg*self.pb, color='0.4', lw=0.7)
+        a1.plot([self.rc], [0], '+', color='0.3', ms=6)
+        a1.set_xlim(self.r0, self.r1); a1.set_ylim(-self.p1, self.p1)
+        a1.set_xlabel('$r$'); a1.set_ylabel('$p_r$')
+        a1.set_title(f'particles of run D ({len(self.w)}); grey: edge of the support', fontsize=10)
+        self.img = a2.imshow(self.dF(0), origin='lower', aspect='auto', cmap='RdBu_r', vmin=-lim, vmax=lim,
+                             extent=(0, 2*np.pi, 0, JT), interpolation='bilinear')
+        fig.colorbar(self.img, ax=a2, fraction=0.04, pad=0.02, label='$\\delta f_1/(\\varepsilon F_{\\max})$')
+        a2.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+        a2.set_xticklabels(['0\n(pericentre)', '$\\pi/2$', '$\\pi$\n(apocentre)', '$3\\pi/2$', '$2\\pi$'])
+        a2.set_xlabel('angle $Q$'); a2.set_ylabel('action $J$')
+        a2.set_title(f'harmonic $k=1$ of the perturbation in angle–action variables '
+                     f'(smoothed over $\\Delta J={SJ}$)', fontsize=10)
+        a3.semilogy(self.tl, self.hl, 'k', lw=1.2, label='linear theory')
+        a3.semilogy(self.t, self.hz, color='0.65', lw=0.8, label='reference alone, $|h_{1,Z}|/\\varepsilon$')
+        a3.semilogy(self.t, self.h, 'C0', lw=0.9, label='PIC, $|h_{1,D}-h_{1,Z}|/\\varepsilon$')
+        self.cursor = a3.axvline(0, color='C3', lw=1)
+        a3.set_xlim(0, self.t[-1])
+        a3.set_ylim(max(1e-7, 0.3*min(self.h[1:].min(), self.hl[1:].min())), 1)
+        a3.set_xlabel('$t$'); a3.set_ylabel('$|h_1|$'); a3.grid(alpha=0.3)
+        a3.legend(fontsize=8, frameon=False, loc='upper right', ncol=3)
+        wd = modos().get((self.k, self.a0))
+        teoria = ('no discrete mode, the perturbation damps' if wd is None else
+                  f'discrete mode below the band at $\\omega_d={wd:.5f}$')
+        c = ', '.join(f'{x} = {v}' for x, v in CAMBIOS.get(self.nombre, {}).items() if x != 'ic')
+        fig.suptitle(f'Hadžić setting, run {self.nombre}:  edge exponent $k={self.k:g}$,  shell mass '
+                     f'$a_0={self.a0:g}$,  $\\varepsilon={self.eps:g}$' + (f'  ({c})' if c else ''), fontsize=12)
+        fig.text(0.5, 0.915, f'linear theory: {teoria}', ha='center', fontsize=10, color='0.25')
+        self.reloj = fig.text(0.06, 0.915, '', fontsize=11, family='monospace')
+        return fig
+
+    def poner(self, i):
+        g = self.fD[self.pasos[i]]
+        self.pts.set_offsets(np.c_[g['r_part'][:][self.orden], g['p_part'][:][self.orden]])
+        self.img.set_data(self.dF(i))
+        t = g.attrs['time']
+        self.cursor.set_xdata([t, t])
+        self.reloj.set_text(f't = {t:6.0f}')
+
+
+def video(caso, fps=25):
+    """Video de una corrida D en exe/hadzic/videos/<nombre>.mp4 (H.264, 1280 x 720, 25 fps)."""
+    from matplotlib.animation import FFMpegWriter
+    nombre = caso[0]
+    sal = ruta('videos', f'{nombre}.mp4')
+    if os.path.exists(sal):
+        return nombre, 'ya estaba'
+    t0 = time.time()
+    v = Fotogramas(*caso)
+    lim = 0.6*np.abs(v.dF(0)).max()                 # escala fija: lo que se amortigua, se apaga
+    fig = v.figura(lim)
+    escritor = FFMpegWriter(fps=fps, codec='libx264', bitrate=-1,
+                            extra_args=['-pix_fmt', 'yuv420p', '-crf', '20', '-preset', 'slow'])
+    with escritor.saving(fig, sal + '.tmp.mp4', dpi=100):
+        for i in range(len(v.pasos)):
+            v.poner(i); escritor.grab_frame()
+    os.replace(sal + '.tmp.mp4', sal)
+    return nombre, f'{len(v.pasos)} fotogramas en {time.time()-t0:.0f} s'
+
+
+def _video(caso):
+    try:
+        return video(caso)
+    except Exception as e:
+        return caso[0], f'FALLO: {e!r}'
+
+
+def videos(procesos=4):
+    """Un video por corrida D hecha, con su referencia: primero los armónicos de todas las
+    corridas (en caché) y después los videos, cuatro procesos a la vez."""
+    from multiprocessing import Pool
+    os.makedirs(ruta('videos'), exist_ok=True)
+    casos = [c for c in CORRIDAS if c[4] and os.path.exists(ruta(f'{c[0]}.ok'))
+             and os.path.exists(ruta(f'{c[4]}.ok'))]
+    nombres = sorted({n for c in casos for n in (c[0], c[4])},
+                     key=lambda n: -os.path.getsize(ruta(n, 'vlasov_output.h5')))   # las grandes primero
+    with Pool(procesos) as pool:
+        for nombre, msg in pool.imap_unordered(_armonicos, nombres):
+            print(f'{nombre:16} {msg}', flush=True)
+        for nombre, msg in pool.imap_unordered(_video, casos):
+            print(f'{nombre:16} {msg}', flush=True)
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'analizar', 'figuras'])
+    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'analizar', 'figuras', 'videos'])
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     globals()[a.paso]()
