@@ -1,6 +1,6 @@
 # Oscillation threshold of isotropic polytropes and King models from the Mathur operator
 
-6 October 2026. Feasibility test of direction P1 of `docs/literature/spherical_vp_review.md`.
+4 October 2026. Feasibility test of direction P1 of `docs/literature/spherical_vp_review.md`.
 
 ## 1. Result
 

@@ -1,6 +1,6 @@
 # Spherically symmetric Vlasov–Poisson with particle methods: literature and research directions
 
-5 October 2026
+4 October 2026
 
 The code is treated here as a tool. The aim is to find physics questions for which a
 spherical particle-in-cell (PIC) code gives new results, not to describe the code.
