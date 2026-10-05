@@ -51,7 +51,8 @@ Landau damping of $k=2$ at the predicted rate (to \SI{5}{\%}). The modes that li
 the edge ($k=1.25$ and $1.5$) lose amplitude in the runs. A scan in amplitude, grid and
 number of particles shows that this loss is a finite-amplitude effect: it grows with
 $\varepsilon$ and does not change with $\Delta r$ or $N$. With $4\times10^4$ particles the mode of
-$k=1.25$ persists up to $t=4000$ at the predicted frequency. The departure of the reference
+$k=1.25$ persists up to $t=4000$ at the predicted frequency, and with $10^5$ particles and
+$\varepsilon=0.03$ its amplitude stays within $0.90$--$1.14$ of the linear one. The departure of the reference
 runs from stationarity has two parts: an initial level set by the grid, and a later growth
 caused by the discreteness of the particles, which four times more particles remove.
 \end{abstract}
@@ -195,10 +196,12 @@ series & $k$ & $a_0$ & $\varepsilon$ & $t_{\rm fin}$, output & purpose\\
 2 & 0.75, 1, 1.25, 1.5, 2 & 1 & 0.1 (and Z) & 4000, every 5 & bound modes and the threshold\\
 3 & 0.75, 1, 1.5, 2 & 0.01 & 0.5 (Z of series 1) & 8000, every 20 & a lower floor\\
 4 & 1.25, 1.5 & 1 & 0.03, 0.3 (Z of series 2); 0.1 with $\Delta r/2$ or $4N$ (and Z) & 4000, every 5 & amplitude, grid and particles (Section~\ref{sec:borde})\\
+5 & 1.25 & 1 & 0.03 (and Z), with $1280\times80$ particles and $\Delta t=0.05$ & 4000, every 5 & a pilot with ten times more particles (Section~\ref{sec:borde})\\
 \bottomrule
 \end{tabular}
-\caption{The 34 PIC runs. Each takes \SIrange{220}{380}{s} with four threads, and
-\SIrange{840}{860}{s} with $4\times10^4$ particles. The energy is conserved to
+\caption{The 36 PIC runs. Each takes \SIrange{220}{380}{s} with four threads,
+\SIrange{840}{860}{s} with $4\times10^4$ particles, and one hour with $1.024\times10^5$ particles
+and half the time step (series 5). The energy is conserved to
 $|\Delta E/E|\le1.3\times10^{-7}$ at $a_0=0.01$ and $\le1.8\times10^{-5}$ at $a_0=1$.}
 \label{tab:corridas}
 \end{table}
@@ -383,6 +386,12 @@ doubles the resolution of the initial lattice in $J$ and $Q$). The last two have
 reference. Table~\ref{tab:borde} gives the PIC amplitude relative to the linear one, and
 Figure~\ref{fig:borde} the envelopes.
 
+Series 5 is a pilot for $k=1.25$ with $1280\times80=1.024\times10^5$ particles, the same ratio
+of rows in $J$ to points in $Q$, with $\varepsilon=0.03$ and $\Delta t=0.05$, and its own reference.
+It is the row ``$10N$'' of Tables~\ref{tab:borde} and~\ref{tab:ruidoZ}; it is not in
+Figure~\ref{fig:borde}. It changes the number of particles, the time step and $\varepsilon$ at
+once with respect to series 2, so it does not separate their effects.
+
 \begin{table}[!htbp]
 \centering
 \small
@@ -395,6 +404,7 @@ $k$ & run & $t=500$ & $1000$ & $2000$ & $3000$ & frequency, $t\ge2500$\\
  & $\varepsilon=0.3$ & 0.38 (0.09) & 0.47 (0.09) & 0.69 (0.13) & 0.48 (0.36) & 0.1531\\
  & $\Delta r/2$ & 0.88 (0.08) & 0.69 (0.23) & 1.44 (0.36) & 1.88 (1.26) & 0.1998\\
  & $4N$ & 0.84 (0.25) & 0.61 (0.24) & 0.81 (0.26) & 0.99 (0.27) & 0.1530\\
+ & $10N$, $\varepsilon=0.03$ & 0.98 (0.85) & 0.94 (0.79) & 0.91 (0.81) & 0.91 (0.81) & 0.1531\\
 \midrule
 1.5 & $\varepsilon=0.03$ & 1.02 (1.62) & 1.56 (2.56) & 6.69 (6.18) & 11.2 (12.4) & 0.2094\\
  & $\varepsilon=0.1$ & 0.86 (0.49) & 0.64 (0.77) & 2.39 (1.86) & 5.98 (3.71) & 0.2117\\
@@ -439,6 +449,22 @@ $t\approx1350$, with $10^4$ or $4\times10^4$ particles and with $\Delta r/2$, an
 $1.0$ at $t=2500$. With $\varepsilon=0.3$ the minimum is deeper and earlier, $0.32$ at $t\approx630$. In
 the run of series 2 the noise of the reference reaches the signal at $t\approx2500$ and hides
 the recovery.
+\item \textbf{With $10^5$ particles the run of $\varepsilon=0.03$ follows the linear solution up to
+$t=4000$.} Its envelope stays between $0.90$ and $1.14$ of the linear one over $100\le t\le3900$;
+with $10^4$ particles and the same $\varepsilon$ it was $1.2$ at $t=1000$ and $4.7$ at $t=3000$. The
+minimum, $0.90$, is at $t\approx2250$. With $\varepsilon=0.1$ it was $0.53$--$0.63$ at $t\approx1350$ and
+with $\varepsilon=0.3$, $0.32$ at $t\approx630$: the dip becomes shallower and later as $\varepsilon$
+decreases. A pole fitted over $300\le t\le1000$ and over $300\le t\le1500$ gives the same frequency,
+$0.15314$, with $|\gamma|\le3\times10^{-5}$; the linear solution gives $0.15330$--$0.15332$ and the
+loop gain $0.15326$. With $10^4$ and $4\times10^4$ particles the fitted frequency changed with the
+window ($0.15292$ and $0.15326$; $0.15190$ and $0.15325$). The difference
+$\max|h_1-h_1^{\rm lin}|/\max|h_1^{\rm lin}|$ is $0.10$ over $500\le t\le1000$ and $0.23$ over
+$1500\le t\le2000$, of which $0.07$ and $0.12$ are in the modulus; a frequency lower by
+$1.6\times10^{-4}$ shifts the phase by $0.16$ and $0.32$ at $t=1000$ and $2000$. The reference
+stays at $|h_{1,Z}|=1.4\times10^{-3}$ from $t=500$ to $t=3900$, and the rms displacement of the
+action of its particles is $0.46$, $0.41$ and $0.56\times10^{-3}J_t$ at $t=1000$, $2000$ and
+$4000$, against $1.4$, $6.3$ and $37$ with $10^4$ particles and $0.50$, $0.58$ and $2.5$ with
+$4\times10^4$ (\texttt{relajacion\_N.py}).
 \item \textbf{The mode of $k=1.5$ is not resolved.} It lies $\Omega_{\min}-\omega_d=1.8\times10^{-4}$
 below the edge, so it separates from the response of the edge only after
 $t\sim1/(\Omega_{\min}-\omega_d)\approx5500$, longer than the runs; the linear solution itself still
@@ -466,6 +492,7 @@ $k$ & reference & $t=0$ & $500$ & $1000$ & $2000$ & $3000$ & $3900$\\
 1.25 & $10^4$, $\Delta r=0.1$ & 1.8 & 1.5 & 1.5 & 2.3 & 6.4 & 11\\
  & $\Delta r/2$ & 0.72 & 0.44 & 1.4 & 2.1 & 7.4 & 12\\
  & $4N$ & 2.0 & 1.4 & 1.4 & 1.5 & 1.6 & 1.7\\
+ & $10N$ & 2.0 & 1.4 & 1.4 & 1.4 & 1.4 & 1.4\\
 \midrule
 1.5 & $10^4$, $\Delta r=0.1$ & 2.3 & 1.5 & 2.0 & 4.3 & 8.3 & 10\\
  & $\Delta r/2$ & 0.76 & 0.40 & 1.2 & 2.7 & 7.3 & 9.4\\
@@ -493,10 +520,13 @@ one.
 \item The PIC runs reproduce the undamped modes of $k\le1$ and the damping of $k=2$ at $a_0=1$.
 \item The loss of amplitude of the modes next to the edge in the PIC runs is a finite-amplitude
 effect: it grows with $\varepsilon$ and does not change with $\Delta r$ or $N$. With $4\times10^4$
-particles the mode of $k=1.25$ persists up to $t=4000$ at $\omega_d$.
+particles the mode of $k=1.25$ persists up to $t=4000$ at $\omega_d$. With $10^5$ particles and
+$\varepsilon=0.03$ its amplitude stays within $0.90$--$1.14$ of the linear one and its frequency is
+$0.15314$, against $0.15326$ from the loop gain.
 \item The reference runs depart from stationarity for two reasons: the error of order $\Delta r^2$
 of the PIC field sets the initial level, and the discreteness of the particles makes it grow
-after $t\approx1000$. Four times more particles remove the growth up to $t=4000$.
+after $t\approx1000$. Four times more particles remove most of the growth up to $t=4000$, and
+ten times more remove it.
 \item $\eta$ does not mark the transition in this setting.
 \end{itemize}
 
@@ -507,9 +537,11 @@ so a finite simulation sees only a slowly decaying edge response. The non-dampin
 theorem proves is not observable there; it becomes observable only at large mass.
 \item The mode of $k=1.5$ at $a_0=1$, bound by $1.8\times10^{-4}$ in frequency. Deciding whether it
 survives in the PIC runs needs $t\gtrsim10^4$ and the noise of $4N$ or less.
-\item The dip of the amplitude of $k=1.25$. It is deeper and earlier with larger $\varepsilon$, but
-whether it vanishes as $\varepsilon\to0$ is not measured: with $\varepsilon=0.03$ the noise reaches the
-signal before the minimum. A run with $\varepsilon=0.03$ and $4N$ or more would measure it.
+\item The dip of the amplitude of $k=1.25$. It is deeper and earlier with larger $\varepsilon$:
+$0.32$ at $t\approx630$, about $0.6$ at $t\approx1350$ and $0.90$ at $t\approx2250$ for
+$\varepsilon=0.3$, $0.1$ and $0.03$. The three runs differ in the number of particles, so the law
+in $\varepsilon$ is not established; runs with $\varepsilon=0.1$ and $0.01$ on the particles of
+series 5, with its reference, would give it.
 \item The noise floor at small mass, which limits the comparisons to $\sim10^3$ time units with
 $10^4$ particles. Lowering it needs more particles; at $a_0=1$, $4\times10^4$ particles extend the
 comparison to $t=4000$.
@@ -527,8 +559,9 @@ step & what it does & time\\
 \midrule
 \texttt{lineal} & the 36 equilibria, $\lambda_{\rm edge}$ (\texttt{exe/hadzic/lineal/lambda.txt}), $\eta$ (\texttt{eta.txt}) and the linear solutions of the runs & \SI{40}{min}\\
 \texttt{preparar} & initial states and \texttt{.par} files in \texttt{reproducir/corridas/13\_hadzic/} & \SI{10}{min}\\
-\texttt{correr} & the 34 PIC runs, one after another, with four threads & \SI{3.5}{h}\\
-\texttt{analizar} & $h_1$ and $\delta\Phi$ in the map of the equilibrium, envelopes, slopes, pole fits and the table of series 4 (\texttt{exe/hadzic/resumen.txt}) & \SI{3}{h}\\
+\texttt{correr} & the 36 PIC runs, one after another, with four threads & \SI{5.5}{h}\\
+\texttt{serie} & $h_1$ and $\delta\Phi$ of the named runs, with the snapshots split among several processes; used for the two runs of series 5 & \SI{1}{h}\\
+\texttt{analizar} & $h_1$ and $\delta\Phi$ in the map of the equilibrium, envelopes, slopes, pole fits and the table of series 4 and 5 (\texttt{exe/hadzic/resumen.txt}) & \SI{3}{h}\\
 \texttt{figuras} & the figures of this report & \SI{1}{min}\\
 \texttt{videos} & one video per perturbed run, in \texttt{exe/hadzic/videos/}: the particles in $(r,p_r)$, the harmonic $k=1$ of the perturbation in $(Q,J)$ and $|h_1|$ & \SI{3}{h}\\
 \bottomrule
@@ -537,7 +570,7 @@ step & what it does & time\\
 The runs of series 1 used the Courant factor 2 of the template, so they reached $t=8000$;
 their \texttt{.par} files are kept as used, and their header comment says $t_{\rm fin}=4000$.
 The runs with $\Delta r/2$ use the initial states of series 2; the dictionary \texttt{CAMBIOS} of the
-script lists the changes of each run of series 4.
+script lists the changes of each run of series 4 and 5.
 
 \section*{References}
 
