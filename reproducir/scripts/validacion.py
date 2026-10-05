@@ -17,9 +17,28 @@ En el código dt = courant dr/pmax con pmax = 2, así que courant = 2 es dt = 0.
     python3 validacion.py analizar   tablas: exe/validacion/resumen.txt
     python3 validacion.py armonico   chi_1 del bloque paso en el mapa del equilibrio (4 procesos,
                                      unos minutos): exe/validacion/armonico.txt
+    python3 validacion.py lineal     convergencia del solucionador lineal (dt/2, 2 N_Q, 2 N_J) en el
+                                     politropo k = 1.25, a0 = 1: exe/validacion/lineal.txt (5 min)
+    python3 validacion.py residuo    parte estática de h_1 con el mapa del isócrono y con el del
+                                     potencial total (corridas de exe/sg): exe/validacion/residuo.txt
+    python3 validacion.py respuesta  corridas de masa pequeña de exe/hadzic frente a la solución
+                                     lineal: exe/validacion/respuesta.txt
+    python3 validacion.py referencia corridas de referencia (eps = 0) de exe/hadzic con tres números
+                                     de partículas y dr/2: exe/validacion/referencia.txt
     python3 validacion.py figuras    figuras del artículo (docs/articulo/figuras/)
 
 Salidas en exe/validacion/. Las corridas hechas no se repiten.
+
+Los demás números de la Sección 5 salen de otros pasos:
+  - tres amplitudes con las mismas 1.024e5 partículas (kappa): hadzic.py analizar,
+    exe/hadzic/resumen.txt;
+  - frecuencia de la solución lineal frente a omega_d: hadzic.py analizar y
+    exe/hadzic/lineal/lambda.txt;
+  - ganancia con dispersión en el límite de L fijo: lambda_L.py validar;
+  - escala con dr del error del campo (modelo de Wilson, a0 = 0.5): informe de la demo,
+    docs/demo_eta, corridas E_M5*;
+  - mezcla libre, estado estacionario con los dos mapas y colapso frío del código con L:
+    VlasovPoisson_PIC_sp (reproducir/corridas/08_verificacion y 11_equilibrio, verificacion I2).
 """
 import os, sys, subprocess, time
 import numpy as np
@@ -82,10 +101,17 @@ def correr():
 
 
 # ------------------------------------------------------------------ analizar
+def coef():
+    """a_n/a_0, n = 0..4, de la parte angular de la función de prueba. El código escribe
+    a_n h_n, el término n de la suma del observable; aquí se da h_n, como en el artículo."""
+    from exact import ak_test
+    return np.array([ak_test(SQ, k)/ak_test(SQ, 0) for k in range(5)])
+
+
 def hk(nombre):
-    """t y h_k, k = 0..4, de la primera función de prueba (hk1_complex.tl)."""
+    """t y h_n, n = 0..4, con el peso B(J) de la primera función de prueba (hk1_complex.tl)."""
     a = np.loadtxt(ruta(nombre, 'hk1_complex.tl'))
-    return a[:, 0], a[:, 1::2] + 1j*a[:, 2::2]
+    return a[:, 0], (a[:, 1::2] + 1j*a[:, 2::2])/coef()
 
 
 def pasos(nombre, base=BASE):
@@ -99,9 +125,10 @@ def analizar_libre(w):
     from exact import make_hk
     hex_ = make_hk('gauss', 1.0e-4, 0.0, SJ, SQ, nJ=200001)
     t, h = hk('libre/nj400')
-    ex = np.array([hex_(k, t) for k in range(5)]).T
+    ex = np.array([hex_(k, t) for k in range(5)]).T/coef()
     h0 = abs(ex[0, 0])
-    w('Mezcla libre, pulso gaussiano. Error = max_t |h_k - h_k exacto| / h_0 en 0 <= t <= 2000.')
+    w('Mezcla libre, pulso gaussiano. h_k con el peso B(J) = J^2 exp(-J^2/sJ^2), sin el coeficiente a_k de '
+      'la función de prueba.\nError = max_t |h_k - h_k exacto| / h_0 en 0 <= t <= 2000.')
     w(f'h_0 exacto = {h0:.6e};  |h_k(0)|/h_0, k = 1..4: ' + ' '.join(f'{abs(ex[0, k])/h0:.4f}' for k in range(1, 5)))
     w(f'{"corrida":>14} {"N_J":>5} {"N_Q":>4} {"dt":>6} ' + ' '.join(f'{"k=" + str(k):>9}' for k in range(5)))
     for nombre, (_, c) in CORRIDAS.items():
@@ -129,7 +156,7 @@ def analizar_libre(w):
         tl, hl = hk('libre/largo')
         # 20001 nodos en J bastan hasta t = 10^4 (0.09 rad por nodo con k = 4) y ahorran tiempo.
         hex_ = make_hk('gauss', 1.0e-4, 0.0, SJ, SQ, nJ=20001)
-        exl = np.array([hex_(k, tl) for k in range(5)]).T
+        exl = np.array([hex_(k, tl) for k in range(5)]).T/coef()
         w('\nCorrida larga (800 x 64, dt = 0.1): |h_k|/h_0 del código y exacto, y el error máximo.')
         for a, b in ((0, 500), (500, 2000), (2000, 5000), (5000, 10000)):
             v = (tl >= a) & (tl <= b)
@@ -305,6 +332,170 @@ def armonico():
     open(ruta('armonico.txt'), 'w').write('\n'.join(lineas) + '\n')
 
 
+# ------------------------------------------------------------------ residuo estático
+def residuo():
+    """Parte estática de h_1 del pulso con autogravedad (reproducir/corridas/09_autogravedad,
+    salidas en exe/sg) según el mapa ángulo-acción: el del isócrono, que usa el código, y el del
+    potencial total promediado en t >= 2000 (aa_meseta.py). La parte estática es el promedio
+    de h_1/h_0 en 2000 <= t <= 20000; el resto, su rms en la misma ventana."""
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    SG = os.path.join(EXE, 'sg')
+    rms = lambda x: np.sqrt(np.mean(np.abs(x)**2))
+    v = lambda t: (t >= 2000.0) & (t <= 20000.0)
+    w('Pulso gaussiano con autogravedad, isócrono, L0 = 2, dt = 0.1, t <= 20000. h_1/h_0 en 2000 <= t <= 20000.')
+    w('Con el mapa del isócrono (h_1 del código):')
+    w(f'{"corrida":>23} {"N_J x N_Q":>10} {"M_gas/M":>8} {"|<h_1>|/h_0":>12} {"rms del resto":>14}')
+    for n in ('long20k_nosg', 'long_a0_1e-4', 'long_a0_1e-3', 'long_a0_1e-2', 'long20k_nrc800', 'long20k_npc50',
+              'long20k_a0_1e-2_nrc800'):
+        a = np.loadtxt(os.path.join(SG, n, 'hk1_complex.tl'))
+        t, z = a[:, 0], (a[:, 3] + 1j*a[:, 4])/(a[0, 1] + 1j*a[0, 2])
+        par = dict((x.split('=')[0].strip(), x.split('=')[1].split('#')[0].strip())
+                   for x in open(os.path.join(SG, n, 'params_usados.par')) if '=' in x and not x.startswith('#'))
+        masa = '0' if par.get('autointeraction', '.true.') == '.false.' else par['a0']
+        z = z[v(t)]
+        w(f'{n:>23} {par["Nrc"] + " x " + par["Npc"]:>10} {masa:>8} {abs(z.mean()):12.3e} {rms(z - z.mean()):14.3e}')
+    d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+    w('\nM_gas/M = 1e-3, 400 x 25 (long20k_snap, 501 instantáneas), según el mapa:')
+    w(f'{"mapa":>23} {"|<h_1>|/h_0":>12} {"rms del resto":>14}')
+    for k, nombre in (('iso', 'isócrono'), ('promedio', 'potencial promediado'), ('instante', 'potencial instantáneo')):
+        z = d[f'h1_{k}'][v(d['t'])]
+        w(f'{nombre:>23} {abs(z.mean()):12.3e} {rms(z - z.mean()):14.3e}')
+    open(ruta('residuo.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+# ------------------------------------------------------------------ corridas de referencia
+REFERENCIAS = (('Z_k1.25_a1', 'H_k1.25'), ('Zdr_k1.25_a1', 'H_k1.25_dr'), ('ZN_k1.25_a1', 'H_k1.25_N'),
+               ('ZP_k1.25_a1', 'H_k1.25_P'))
+
+
+def referencia():
+    """Corridas de referencia (eps = 0) del politropo k = 1.25, a0 = 1 (exe/hadzic): |h_1|/h_0, que
+    se anula en un estado estacionario (mayor valor en [t, t + 100]); el desplazamiento rms de la
+    acción de las partículas (exe/relajacion, de relajacion_N.py); y la energía."""
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    T, TJ = (0, 500, 1000, 2000, 3900), (1000, 2000, 4000)
+    w('Masa puntual, politropo k = 1.25, a0 = 1, eps = 0. |h_1|/h_0 (1e-3), mayor valor en [t, t + 100]; '
+      'desplazamiento rms de la acción sobre J_max (1e-3); max|E/E(0) - 1|.')
+    w(f'{"corrida":>13} {"N":>7} {"dr":>5} {"dt":>5} ' + ' '.join(f'{f"h1({a})":>9}' for a in T) + '  '
+      + ' '.join(f'{f"dJ({a})":>9}' for a in TJ) + f' {"energía":>9}')
+    for corrida, rel in REFERENCIAS:
+        z = np.load(os.path.join(EXE, 'hadzic', corrida, 'serie.npz'))
+        d = np.load(os.path.join(EXE, 'relajacion', rel + '.npz'))
+        par = dict((x.split('=')[0].strip(), x.split('=')[1].split('#')[0].strip())
+                   for x in open(os.path.join(EXE, 'hadzic', corrida, 'params_usados.par'))
+                   if '=' in x and not x.startswith('#'))
+        dr, dt = float(par['dr']), float(par['courant'])*float(par['dr'])/float(par['pmax'])
+        h = np.abs(z['h1'])
+        w(f'{corrida:>13} {int(d["N"]):7d} {dr:5g} {dt:5g} '
+          + ' '.join(f'{1e3*h[(z["t"] >= a) & (z["t"] < a + 100)].max():9.2f}' for a in T) + '  '
+          + ' '.join(f'{1e3*d["d2"][np.argmin(np.abs(d["t"] - a))]:9.2f}' for a in TJ)
+          + f' {np.max(np.abs(z["E"]/z["E"][0] - 1)):9.1e}')
+    eq = np.load(os.path.join(EXE, 'hadzic', 'ic', 'Z_k1.25_a1_equilibrio.npz'))
+    J = np.linspace(0.0, float(eq['J_borde']), 2001)
+    dom = np.abs(np.gradient(np.gradient(eq['E_t'], eq['J_t']), eq['J_t']))
+    dmax = np.max(np.interp(J, eq['J_t'], dom))
+    w(f'\nmax |dOmega/dJ| en 0 <= J <= J_max = {dmax:.3f}: recurrencia de la retícula de 400 filas en '
+      f't = 2 pi/(|dOmega/dJ| dJ) = {2*np.pi/(dmax*float(eq["J_borde"])/400):.0f} (n = 1).')
+    open(ruta('referencia.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+# ------------------------------------------------------------------ respuesta frente a la lineal
+def respuesta():
+    """Las corridas de masa pequeña (a0 = 0.01, 10^4 partículas) frente a la solución lineal, con
+    el cociente complejo de amplitudes de hadzic.ganancia (ventana de Hann de ancho 800) y la
+    diferencia punto a punto en los tiempos comunes. La comparación con a0 = 1 y tres amplitudes
+    está en exe/hadzic/resumen.txt (hadzic.py analizar)."""
+    import hadzic as H
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    T0, V = (500, 1000, 1500, 2000), ((0, 500), (500, 1000), (1000, 2000))
+    w('Masa puntual, a0 = 0.01, 400 x 25 partículas, dt = 0.1. kappa(t0) = <chi_1, chi_lin>/<chi_lin, chi_lin> '
+      'con ventana de Hann de ancho 800;\nmax|chi_1 - chi_lin|/max|chi_lin| por ventana; |chi_lin| al final '
+      'de cada ventana sobre su valor inicial; y max|chi_1 - chi_lin|/|chi_lin(0)| por ventana (abs).')
+    w(f'{"k":>5} {"eps":>4} ' + ' '.join(f'{f"|kappa|({a})":>12} {"arg":>7}' for a in T0) + '  '
+      + ' '.join(f'{f"[{a},{b}]":>11}' for a, b in V) + '  ' + ' '.join(f'{f"lin({b})":>9}' for a, b in V)
+      + '  ' + ' '.join(f'{f"abs[{a},{b}]":>15}' for a, b in V))
+    for k in (0.75, 1.0, 1.5, 2.0):
+        lin = np.load(H.ruta('lineal', H.nombre_lin(k, 0.01) + '.npz'))
+        tl, xl = lin['t'], lin['h1']
+        z = np.load(H.ruta(f'Z_k{k:g}', 'serie.npz'))
+        t = z['t']
+        _, i, j = np.intersect1d(np.round(t, 6), np.round(tl, 6), return_indices=True)
+        tc, cl = t[i], xl[j]
+        mx = lambda y, a, b: np.max(np.abs(y[(tc >= a) & (tc <= b)]))
+        cola = ' '.join(f'{mx(cl, b - 100, b)/abs(cl[0]):9.1e}' for a, b in V)
+        for nombre, eps in ((f'D_k{k:g}', 0.1), (f'D5_k{k:g}', 0.5)):
+            x = (np.load(H.ruta(nombre, 'serie.npz'))['h1'] - z['h1'])[i]/eps
+            g = [H.ganancia(tc, x, cl, a, 800.0) for a in T0]
+            w(f'{k:5g} {eps:4g} ' + ' '.join(f'{abs(v):12.4f} {np.angle(v):+7.4f}' for v in g) + '  '
+              + ' '.join(f'{mx(x - cl, a, b)/mx(cl, a, b):11.1e}' for a, b in V) + '  ' + cola
+              + '  ' + ' '.join(f'{mx(x - cl, a, b)/abs(cl[0]):15.1e}' for a, b in V))
+    open(ruta('respuesta.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+# ------------------------------------------------------------------ solucionador lineal
+EQ_LIN = os.path.join(EXE, 'hadzic', 'lineal', 'P_k1.25_a1_equilibrio.npz')
+BASE_LIN = (1600, 32, 0.5)                       # N_J, N_Q y dt de las soluciones del artículo
+VARIANTES_LIN = [(1600, 32, 0.25), (1600, 64, 0.5), (3200, 32, 0.5)]
+TFIN_LIN = 4000.0
+
+
+def _lineal(arg):
+    """h_1 de la solución lineal del politropo k = 1.25, a0 = 1 con otra resolución."""
+    from lineal import resolver
+    nj, nq, dt = arg
+    sal = ruta('lineal', f'lin_nj{nj}_nq{nq}_dt{dt:g}.npz')
+    if not os.path.exists(sal):
+        t, h1, _, _, _ = resolver(EQ_LIN, nj, nq, dt, TFIN_LIN, verboso=False, j1=0.35, sj1=0.20)
+        np.savez(sal, t=t, h1=h1)
+    return arg
+
+
+def lineal():
+    """Convergencia del solucionador lineal: la solución con dt/2, con 2 N_Q y con 2 N_J frente
+    a la del artículo (exe/hadzic/lineal/lin_k1.25_a1.npz)."""
+    from multiprocessing import Pool
+    from landau_cola import ajustar
+    from hadzic import ganancia
+    os.makedirs(ruta('lineal'), exist_ok=True)
+    with Pool(len(VARIANTES_LIN)) as pool:
+        pool.map(_lineal, VARIANTES_LIN)
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    base = np.load(os.path.join(EXE, 'hadzic', 'lineal', 'lin_k1.25_a1.npz'))
+    t, x0 = base['t'], base['h1']
+    V = ((0, 250), (250, 1000), (1000, 2000), (2000, 4000))
+    mx = lambda y, a, b: np.max(np.abs(y[(t >= a) & (t <= b)]))
+    polo = lambda x: ajustar(t, x, 300, 1500)['pencil M=3']
+    w('Solucionador lineal, politropo k = 1.25, a0 = 1, masa puntual. Base: N_J x N_Q = '
+      f'{BASE_LIN[0]} x {BASE_LIN[1]}, dt = {BASE_LIN[2]}.')
+    w('max|chi_1 - chi_1 base| / max|chi_1 base| por ventana; polo (matrix pencil, K = 3) en [300, 1500]; '
+      'media de |chi_1| en [3000, 4000];\ncociente de amplitudes con la base (mínimo y máximo de |kappa(t0)|, '
+      '300 <= t0 <= 3900) y frecuencia menos la de la base (pendiente de -arg kappa).')
+    w(f'{"N_J":>5} {"N_Q":>4} {"dt":>5} ' + ' '.join(f'{f"[{a},{b}]":>12}' for a, b in V)
+      + f' {"omega":>9} {"gamma":>9} {"|chi_1|":>9} {"amplitud":>15} {"frecuencia":>11}')
+    t0 = np.arange(300.0, 3901.0, 100.0)
+    for nj, nq, dt in [BASE_LIN] + VARIANTES_LIN:
+        if (nj, nq, dt) == BASE_LIN:
+            x, fila, cola = x0, ' '.join(f'{"":>12}' for _ in V), ''
+        else:
+            d = np.load(ruta('lineal', f'lin_nj{nj}_nq{nq}_dt{dt:g}.npz'))
+            assert np.allclose(d['t'], t)
+            x = d['h1']
+            fila = ' '.join(f'{mx(x - x0, a, b)/mx(x0, a, b):12.1e}' for a, b in V)
+            g = np.array([ganancia(t, x, x0, a) for a in t0])
+            cola = f' {abs(g).min():7.4f}-{abs(g).max():6.4f} {-np.polyfit(t0, np.unwrap(np.angle(g)), 1)[0]:+11.1e}'
+        om, ga = polo(x)
+        w(f'{nj:5d} {nq:4d} {dt:5g} {fila} {om:9.5f} {ga:+9.1e} {np.mean(np.abs(x[t >= 3000])):9.5f}{cola}')
+    open(ruta('lineal.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
 def figuras():
     """Figuras de la Sección 5 del artículo, en docs/articulo/figuras/."""
     import matplotlib; matplotlib.use('Agg')
@@ -322,7 +513,7 @@ def figuras():
     fig, axs = plt.subplots(1, 2, figsize=(7, 3.1), constrained_layout=True)
     for k, c in zip((1, 2, 3, 4), ('C0', 'C1', 'C2', 'C3')):
         axs[0].loglog(tl[1:], np.abs(hl[1:, k])/h0, color=c, lw=1.0, label=f'$n={k}$')
-        axs[0].loglog(te, np.abs(hex_(k, te))/h0, 'o', color=c, ms=3, mfc='none', mew=0.7)
+        axs[0].loglog(te, np.abs(hex_(k, te))/coef()[k]/h0, 'o', color=c, ms=3, mfc='none', mew=0.7)
     axs[0].loglog([], [], 'ko', ms=3, mfc='none', mew=0.7, label='exact')
     axs[0].set_xlim(10, 1.0e4); axs[0].set_ylim(1e-11, 3)
     axs[0].set_xlabel('$t$'); axs[0].set_ylabel('$|h_n|/h_0$'); axs[0].grid(alpha=0.3)
@@ -376,6 +567,25 @@ def figuras():
         ax.set_xlabel('$t$'); ax.set_ylabel(f'difference with $\\Delta t={ref*0.05:g}$'); ax.grid(alpha=0.3)
         ax.set_xlim(0, TFIN_PASO); ax.legend(fontsize=7, frameon=False, loc='lower right')
         fig.savefig(os.path.join(destino, 'validacion_paso.pdf')); plt.close(fig)
+    # 4. Corridas de referencia (eps = 0) del politropo k = 1.25, a0 = 1 (exe/hadzic): |h_1|/h_0, que
+    #    se anula en un estado estacionario, y el desplazamiento rms de la acción de las partículas
+    #    (relajacion_N.py), con tres números de partículas y con dr/2.
+    from hadzic import envolvente
+    HAD, REL = os.path.join(EXE, 'hadzic'), os.path.join(EXE, 'relajacion')
+    estilos = (('$N=10^4$', 'C0', '-'), ('$N=10^4$, $\\Delta r=0.05$', 'C0', '--'),
+               ('$N=4\\times10^4$', 'C1', '-'), ('$N=1.024\\times10^5$', 'C2', '-'))
+    fig, axs = plt.subplots(1, 2, figsize=(7, 3.0), constrained_layout=True)
+    for (corrida, rel), (etiqueta, c, ls) in zip(REFERENCIAS, estilos):
+        z = np.load(os.path.join(HAD, corrida, 'serie.npz'))
+        axs[0].semilogy(z['t'], envolvente(z['t'], z['h1']), color=c, ls=ls, lw=1.0, label=etiqueta)
+        d = np.load(os.path.join(REL, rel + '.npz'))
+        axs[1].semilogy(d['t'][1:], d['d2'][1:], color=c, ls=ls, lw=1.0)
+    axs[0].set_ylabel('$|h_1^{(0)}|/h_0$'); axs[1].set_ylabel('$\\Delta J_{rms}/J_{max}$')
+    axs[0].set_ylim(2e-4, 3e-2); axs[1].set_ylim(1e-4, 1e-1)
+    for ax in axs:
+        ax.set_xlabel('$t$'); ax.set_xlim(0, 4000); ax.grid(alpha=0.3)
+    axs[0].legend(fontsize=7, frameon=False, loc='upper left')
+    fig.savefig(os.path.join(destino, 'validacion_referencia.pdf')); plt.close(fig)
     print('figuras en', destino)
 
 
@@ -389,7 +599,8 @@ def analizar():
 
 
 if __name__ == '__main__':
-    pasos_ = {'correr': correr, 'analizar': analizar, 'armonico': armonico, 'figuras': figuras}
+    pasos_ = {'correr': correr, 'analizar': analizar, 'armonico': armonico, 'lineal': lineal, 'residuo': residuo,
+              'respuesta': respuesta, 'referencia': referencia, 'figuras': figuras}
     if len(sys.argv) != 2 or sys.argv[1] not in pasos_:
         sys.exit(__doc__)
     pasos_[sys.argv[1]]()
