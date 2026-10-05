@@ -18,6 +18,7 @@ if [ -n "${VP_HDF5_INC:-}" ]; then
 fi
 echo "compilador: $(command -v "$VP_FC" || echo "$VP_FC no está en el PATH")"
 echo "h5fc:       $(command -v h5fc || echo "no está; se usan VP_HDF5_INC y VP_HDF5_LIBS")"
+command -v h5fc > /dev/null && echo "h5fc -show: $(h5fc -show 2>&1 | cut -c1-160)"
 echo "make ${args[*]}"
 make clean
 make "${args[@]}"

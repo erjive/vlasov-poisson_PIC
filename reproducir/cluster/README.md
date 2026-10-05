@@ -1,8 +1,14 @@
 # Running on the cluster
 
 Scripts to build VP_PIC on a Slurm cluster and to run and analyze there the runs that are
-too large for the laptop (10⁵ to 10⁶ particles). The defaults are those of the partition
-`olin` and of the directory `/storage/cactusolin/<user>/vlasov-poisson_PIC`.
+too large for the laptop (10⁵ to 10⁶ particles). The defaults are those of
+`xook.lamod.unam.mx` and its partition `olin`: one node, `tochtli-24`, with 48 CPUs and
+128 GB, no time limit, and 2 GB of memory per job unless more is requested. In the examples
+the repository is in `$DEST`, for instance
+
+```bash
+DEST=xook.lamod.unam.mx:/storage/cactusolin/erik/newVlasov/vlasov-poisson_PIC
+```
 
 | file | purpose |
 |---|---|
@@ -23,7 +29,7 @@ Copy the repository to the cluster, with `git clone` if the cluster reaches GitH
 `rsync` otherwise:
 
 ```bash
-rsync -av --exclude exe --exclude objs --exclude .git ./ cluster:/storage/cactusolin/$USER/vlasov-poisson_PIC/
+rsync -av --exclude exe --exclude objs --exclude .git ./ $DEST/
 ```
 
 On the login node, collect the information and build:
@@ -34,10 +40,11 @@ bash reproducir/cluster/diagnostico.sh > diagnostico.txt 2>&1
 bash reproducir/cluster/compilar.sh
 ```
 
-The code needs HDF5 with its Fortran interface, built with the same compiler. If a module
-provides `h5fc`, load it in `entorno.sh` and nothing else is needed. Otherwise set
-`VP_HDF5_INC` and `VP_HDF5_LIBS` there. `compilar.sh` ends with `PASA la prueba del
-ejecutable` when the build works.
+The code needs HDF5 with its Fortran interface, built with the same compiler. On `xook`
+that is gfortran 12.2 with the module `lamod/hdf5/1.10`, which provides `h5fc`; `entorno.sh`
+loads both. The Intel module has no such HDF5. On another machine, load in `entorno.sh` a
+module that provides `h5fc`, or set `VP_HDF5_INC` and `VP_HDF5_LIBS` there. `compilar.sh`
+ends with `PASA la prueba del ejecutable` when the build works.
 
 Then measure the scaling with threads, once:
 
@@ -55,8 +62,8 @@ The initial data are generated on the laptop, where Python is set up, and copied
 
 ```bash
 python3 reproducir/scripts/hadzic.py preparar                      # laptop
-rsync -av exe/hadzic/ic/ cluster:/storage/cactusolin/$USER/vlasov-poisson_PIC/exe/hadzic/ic/
-rsync -av reproducir/ cluster:/storage/cactusolin/$USER/vlasov-poisson_PIC/reproducir/
+rsync -av exe/hadzic/ic/ $DEST/exe/hadzic/ic/
+rsync -av reproducir/ $DEST/reproducir/
 ```
 
 On the cluster:
@@ -84,8 +91,8 @@ This needs Python 3 with `numpy` and `h5py`. Then, on the laptop:
 ```bash
 for n in DP_k1.25_a1 ZP_k1.25_a1; do
   mkdir -p exe/hadzic/$n
-  rsync -av cluster:/storage/cactusolin/$USER/vlasov-poisson_PIC/exe/hadzic/$n/serie.npz exe/hadzic/$n/
-  rsync -av cluster:/storage/cactusolin/$USER/vlasov-poisson_PIC/exe/hadzic/$n.{ok,meta,log} exe/hadzic/
+  rsync -av $DEST/exe/hadzic/$n/serie.npz exe/hadzic/$n/
+  rsync -av $DEST/exe/hadzic/$n.{ok,meta,log} exe/hadzic/
 done
 python3 reproducir/scripts/hadzic.py analizar
 ```

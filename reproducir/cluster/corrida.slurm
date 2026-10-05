@@ -6,6 +6,7 @@
 #SBATCH --time=180:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
+#SBATCH --mem=4G
 
 # Una corrida de VP_PIC. Se envía desde la raíz del repositorio:
 #
@@ -14,7 +15,9 @@
 # Los argumentos son los de VP_PIC: el archivo de parámetros y, si se quiere, cambios
 # nombre=valor (el código ya no lee "< input_parameters"). Las rutas que hay dentro del .par
 # son relativas a exe/, que es desde donde corre. Las opciones de arriba (partición, tiempo,
-# hilos) se pueden cambiar al enviar: las de la línea de sbatch mandan.
+# hilos, memoria) se pueden cambiar al enviar: las de la línea de sbatch mandan. La memoria
+# se pide porque la partición da 2 GB por omisión; una corrida de 10^6 partículas usa menos
+# de 1 GB.
 #
 # Con la variable VP_OK=<prefijo>, relativo a exe/, la salida de VP_PIC va a <prefijo>.log y,
 # si la corrida termina bien, se escriben <prefijo>.ok y <prefijo>.meta. Es lo que hace
@@ -60,13 +63,14 @@ echo "fin:     $(date)   ($((SECONDS-t0)) s, código de salida $rc)"
 
 if [ $rc = 0 ] && [ -n "${VP_OK:-}" ]; then
   : > "$VP_OK.ok"
-  src=$(git -C "$RAIZ" log -1 --format=%h -- src/ 2>/dev/null)
-  [ -n "$(git -C "$RAIZ" status --porcelain src/ 2>/dev/null)" ] && src="$src+cambios"
+  g () { (cd "$RAIZ" && git "$@") 2>/dev/null; }      # el git del cluster no tiene -C
+  src=$(g log -1 --format=%h -- src/)
+  [ -n "$(g status --porcelain src/)" ] && src="$src+cambios"
   {
     echo "corrida    $(basename "$VP_OK")"
     echo "VP_PIC     $(sha256sum VP_PIC | cut -d' ' -f1)"
     echo "par        $(sha256sum "$par" | cut -d' ' -f1)  ${par#$RAIZ/}"
-    echo "HEAD       $(git -C "$RAIZ" rev-parse --short HEAD 2>/dev/null)"
+    echo "HEAD       $(g rev-parse --short HEAD)"
     echo "src/       $src"
     echo "maquina    $(hostname), $OMP_NUM_THREADS hilos, compilador $VP_FC, trabajo ${SLURM_JOB_ID:-sin Slurm}, $((SECONDS-t0)) s"
   } > "$VP_OK.meta"

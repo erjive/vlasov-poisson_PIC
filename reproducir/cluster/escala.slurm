@@ -6,6 +6,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
+#SBATCH --mem=4G
 
 # Tiempo por paso frente al número de hilos, con autogravedad y 10^5 y 10^6 partículas.
 # Sirve para elegir cuántos núcleos pedir por corrida (-c). Desde la raíz del repositorio:

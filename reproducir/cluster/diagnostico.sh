@@ -31,6 +31,7 @@ fi
 sec "antes de cargar módulos"
 ver gfortran ifort ifx h5fc python3 git make
 gfortran --version 2>/dev/null | head -1
+git --version
 
 sec "con los módulos de entorno.sh"
 source "$AQUI/entorno.sh"
@@ -42,7 +43,7 @@ gfortran --version 2>/dev/null | head -1
 echo "VP_FC=$VP_FC"
 
 sec "HDF5"
-if command -v h5fc > /dev/null 2>&1; then echo "h5fc -show:"; h5fc -show; fi
+if command -v h5fc > /dev/null 2>&1; then echo "h5fc -show:"; h5fc -show; else echo "no hay h5fc"; fi
 env | grep -i -E "^(HDF5|H5)[A-Z_]*=" | head
 ldconfig -p 2>/dev/null | grep -i hdf5 | head
 for d in /usr/lib64/gfortran/modules /usr/include /usr/include/hdf5/serial /usr/lib64/openmpi/include; do
@@ -64,24 +65,35 @@ if command -v sinfo > /dev/null 2>&1; then
   sinfo -p "$PART" -o "%P %a %l %D %c %m %f %N" 2>&1
   sinfo -p "$PART" -N -o "%N %c %m %O %T" 2>&1 | head -12
   scontrol show partition "$PART" 2>&1 | head -12
-  echo "trabajos propios:"; squeue -u "$USER" 2>&1 | head -10
+  for nodo in $(sinfo -h -p "$PART" -N -o "%N" 2>/dev/null | sort -u | head -4); do
+    echo "--- nodo $nodo:"
+    scontrol show node "$nodo" 2>&1 | grep -o -E "(CPUAlloc|CPUTot|CPULoad|Sockets|CoresPerSocket|ThreadsPerCore|RealMemory|AllocMem|FreeMem|State|Partitions|Reason)=[^ ]*" | tr '\n' ' '; echo
+    echo "trabajos en $nodo, de cualquier partición:"
+    squeue -w "$nodo" -o "%.9i %.10P %.14j %.9u %.2t %.11M %.4C %.8m %R" 2>&1 | head -25
+  done
+  echo "trabajos propios:"; squeue -u "$USER" -o "%.9i %.10P %.14j %.2t %.11M %.4C %.8m %R" 2>&1 | head -10
   sacctmgr -n show assoc user="$USER" format=account,partition,maxjobs,maxsubmit,grptres%40 2>/dev/null | head -5
 else
   echo "no hay sinfo"
 fi
 
+RAIZ="$(cd "$AQUI/../.." && pwd)"
+g () { (cd "$RAIZ" && git "$@"); }          # el git 1.8 de CentOS 7 no tiene -C
+
 sec "almacenamiento"
 df -h "$HOME" 2>/dev/null | tail -1
-[ -d "/storage/cactusolin/$USER" ] && df -h "/storage/cactusolin/$USER" | tail -1
+df -h "$RAIZ" 2>/dev/null | tail -1
 quota -s 2>/dev/null | tail -3
 ulimit -s | sed 's/^/pila (ulimit -s): /'
 
 sec "copia del código en el cluster"
-RAIZ="$(cd "$AQUI/../.." && pwd)"
 echo "$RAIZ"
-git -C "$RAIZ" status -sb 2>&1 | head -3
-git -C "$RAIZ" log -1 --format="%h %ad %s" --date=short 2>&1
+g status -sb 2>&1 | head -3
+g log -1 --format="%h %ad %s" --date=short 2>&1
+g log -1 --format="src/: %h %ad" --date=short -- src/ 2>&1
 ls -la "$RAIZ/exe/VP_PIC" 2>&1
 
 sec "acceso a GitHub desde aquí"
-timeout 15 git ls-remote "$(git -C "$RAIZ" remote get-url origin 2>/dev/null)" HEAD 2>&1 | head -2 || echo "sin acceso (o sin remoto)"
+url=$(g config --get remote.origin.url 2>/dev/null)
+echo "remoto: ${url:-ninguno}"
+[ -n "$url" ] && { timeout 15 git ls-remote "$url" HEAD 2>&1 | head -2 || echo "sin acceso"; }
