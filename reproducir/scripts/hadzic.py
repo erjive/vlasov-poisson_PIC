@@ -5,11 +5,13 @@ k > 1 y no si 1/2 < k <= 1. Aquí se estudia con la teoría lineal y con el cód
 
 Pasos (cada uno reutiliza lo que ya exista):
     python3 hadzic.py lineal     mapa de lambda_edge(k, a0) y soluciones lineales en el tiempo
+    python3 hadzic.py rebote     frecuencia de rebote de las órbitas del borde en cada modo (a0 = 1)
     python3 hadzic.py preparar   estados iniciales (equilibrio.py) y .par de las corridas
     python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos
     python3 hadzic.py serie [-j N] <corrida> ...   serie.npz de esas corridas, con N procesos
                                  (para el cluster: reproducir/cluster/serie.slurm)
     python3 hadzic.py analizar   dPhi y h_1 en el mapa del equilibrio, menos eps = 0
+    python3 hadzic.py orbitas    acción de las partículas del borde (tras rebote)
     python3 hadzic.py figuras    figuras del informe (docs/hadzic/figuras/)
     python3 hadzic.py videos     un video por corrida perturbada (exe/hadzic/videos/)
 
@@ -22,7 +24,7 @@ import os, sys, subprocess, time, argparse
 # analizar y videos reparten las corridas en cuatro procesos: un hilo de BLAS en cada uno. La
 # variable tiene que estar antes de importar numpy; puesta después, cada proceso usaba ~1.6
 # núcleos y los cuatro, unos 16 hilos en los 4 núcleos físicos.
-if len(sys.argv) > 1 and sys.argv[1] in ('serie', 'analizar', 'videos'):
+if len(sys.argv) > 1 and sys.argv[1] in ('rebote', 'serie', 'analizar', 'orbitas', 'videos'):
     for v in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'):
         os.environ[v] = '1'
 import numpy as np
@@ -375,7 +377,8 @@ def analizar(procesos=4):
                                         np.log([env(x, tt, a) for a in ventanas[2:]]), 1)[0]
         dE = max(np.max(np.abs(d['E']/d['E'][0] - 1)), np.max(np.abs(z['E']/z['E'][0] - 1)))
         eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
-        om_min = float(np.gradient(eq['E_t'], eq['J_t'])[np.searchsorted(eq['J_t'], JT)])
+        # Omega en J_t, interpolada: el nodo siguiente de la tabla da 4e-5 menos.
+        om_min = float(np.interp(JT, eq['J_t'], np.gradient(eq['E_t'], eq['J_t'])))
         m = wd.get((k, a0))
         w(f'{nombre}: k = {k:g}, a0 = {a0:g}, eps = {eps:g}   max|dE/E| = {dE:.1e}   Omega_min = {om_min:.5f}'
           f'   omega_d = {"--" if m is None else f"{m:.5f}"}')
@@ -413,7 +416,290 @@ def analizar(procesos=4):
             (w1, g1), (w2, g2) = polos[nombre, 300, 1000], polos[nombre, 300, 1500]
             w(f'{nombre:>15} {k:5g} {eps:5g} {c:>36} {w1:8.5f} {g1:+8.1e} {w2:8.5f} {g2:+8.1e} '
               f'{zv[0]:10.1e} {zv[1]:10.1e}')
+    barrido_eps(series, w)
+    perdida_rebote(series, w)
     open(ruta('resumen.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+# ------------------------------------------------------------------ rebote en el modo
+# Una órbita de acción J ve del modo el término resonante 2 eps |c_+(J)| cos(Q - omega_d t), donde
+# c_+ es la parte e^{-i omega_d t} del primer armónico en Q del potencial de la perturbación,
+# Phi_1(J, t), por unidad de eps. Es un péndulo con frecuencia de rebote
+#     omega_b = sqrt(2 eps |c_+| |Omega'(J)|)
+# y una isla de semiancho 2 omega_b en frecuencia. La resonancia Omega = omega_d queda fuera de la
+# distribución, a Omega_min - omega_d del borde: la isla alcanza a las órbitas del borde si
+# 2 omega_b > Omega_min - omega_d, es decir si eps > eps_c = (Omega_min - omega_d)^2/(8 |c_+| |Omega'|).
+K_REBOTE = [0.75, 1.0, 1.25, 1.5]
+V_REBOTE = ((1000, 2000), (2000, 4000))          # ventanas del ajuste de c_+
+
+
+def _rebote(k):
+    from lineal import resolver
+    t, h1, _, _, _, (J, om, ph) = resolver(ruta('lineal', f'P_k{k:g}_a1_equilibrio.npz'), 1600, 32, 0.5,
+                                           TFIN[1.0], verboso=False, j1=J1, sj1=SJ1, phi1=True)
+    lin = np.load(ruta('lineal', nombre_lin(k, 1.0) + '.npz'))
+    assert np.array_equal(h1, lin['h1']), 'la solución lineal no es la guardada'
+    wd = modos()[(k, 1.0)]
+    cp = []
+    for a, b in V_REBOTE:                        # Phi_1 = c_+ e^{-i wd t} + c_- e^{+i wd t} en el borde
+        v = (t >= a) & (t <= b)
+        M = np.stack([np.exp(-1j*wd*t[v]), np.exp(1j*wd*t[v])], axis=1)
+        c = np.linalg.lstsq(M, ph[v, -1], rcond=None)[0]
+        cp.append((c[0], np.sqrt(np.sum(np.abs(ph[v, -1] - M @ c)**2)/np.sum(np.abs(ph[v, -1])**2))))
+    return k, wd, abs(np.gradient(om, J)[-1]), cp
+
+
+def rebote(procesos=4):
+    """Frecuencia de rebote de las órbitas del borde en el modo discreto de cada k con a0 = 1."""
+    from multiprocessing import Pool
+    om_min = {}
+    for l in open(ruta('lineal', 'lambda.txt')).readlines()[2:]:
+        p = l.split()
+        if len(p) == 10 and float(p[1]) == 1.0:
+            om_min[float(p[0])] = float(p[3])
+    with Pool(procesos) as pool:
+        res = pool.map(_rebote, K_REBOTE)
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    w(f'a0 = 1. c_+ en el borde, ajustado en t = {V_REBOTE[0]} y {V_REBOTE[1]}, con el residuo relativo del '
+      'ajuste; omega_b/sqrt(eps) y eps_c con el de la primera ventana; s = 2 omega_b/(Omega_min - omega_d).')
+    w(f'{"k":>5} {"Omega_min":>9} {"omega_d":>8} {"hueco":>8} {"|dOm/dJ|":>8} {"|c_+|":>9} {"res":>6} {"|c_+|":>9} '
+      f'{"res":>6} {"w_b/sqrt(eps)":>13} {"eps_c":>8} ' + ' '.join(f'{f"s({e:g})":>7}' for e in (0.01, 0.03, 0.1, 0.3)))
+    tabla = []
+    for k, wd, dom, cp in res:
+        hueco = om_min[k] - wd
+        wb1 = np.sqrt(2*abs(cp[0][0])*dom)
+        tabla.append((k, wb1, hueco, dom, wd, cp[0][0]))
+        w(f'{k:5g} {om_min[k]:9.5f} {wd:8.5f} {hueco:8.5f} {dom:8.4f} {abs(cp[0][0]):9.2e} {cp[0][1]:6.3f} '
+          f'{abs(cp[1][0]):9.2e} {cp[1][1]:6.3f} {wb1:13.5f} {(hueco/(2*wb1))**2:8.4f} '
+          + ' '.join(f'{2*wb1*np.sqrt(e)/hueco:7.2f}' for e in (0.01, 0.03, 0.1, 0.3)))
+    open(ruta('lineal', 'rebote.txt'), 'w').write('\n'.join(lineas) + '\n')
+    np.savez(ruta('lineal', 'rebote.npz'), **{x: np.array([f[n] for f in tabla])
+                                              for n, x in enumerate(('k', 'wb1', 'hueco', 'dom', 'wd', 'cmas'))})
+
+
+def pendulo(k, eps):
+    """Del paso rebote, para el modo de k (a0 = 1) con amplitud eps: omega_b; s = 2 omega_b/hueco;
+    la acción resonante J_r = J_t + hueco/|Omega'|; el semiancho de la separatriz en J,
+    2 omega_b/|Omega'|; la mayor acción que alcanza una órbita del borde (la cima de la
+    separatriz si s > 1; si no, el mayor acercamiento a J_r de una órbita que pasa); la fase
+    del punto O, -arg c_+, y omega_d."""
+    rb = np.load(ruta('lineal', 'rebote.npz'))
+    wb1, hueco, dom, wd, cmas = (rb[x][rb['k'] == k][0] for x in ('wb1', 'hueco', 'dom', 'wd', 'cmas'))
+    wb = float(wb1)*np.sqrt(eps)
+    d, dJs = float(hueco/dom), 2*wb/float(dom)
+    jmax = JT + d + dJs if dJs > d else JT + d - np.sqrt(d**2 - dJs**2)
+    return dict(wb=wb, s=2*wb/float(hueco), Jr=JT + d, dJs=dJs, Jmax=jmax, fase_O=-float(np.angle(cmas)),
+                wd=float(wd))
+
+
+def perdida_rebote(series, w):
+    """|rho| de todas las corridas con modo (a0 = 1, k <= 1.5) en tiempos iguales en unidades del
+    rebote, omega_b t0 = 1, 2, 3 y 4, junto a s = 2 omega_b/(Omega_min - omega_d)."""
+    if not os.path.exists(ruta('lineal', 'rebote.npz')):
+        return
+    w('\nPérdida de amplitud en unidades del rebote (a0 = 1): |rho(t0)| en omega_b t0 = 1, 2, 3, 4 '
+      '(-- si t0 > 3900).')
+    w(f'{"corrida":>15} {"k":>5} {"eps":>5} {"s":>6} {"omega_b":>8} ' + ' '.join(f'{f"t0":>6} {"|rho|":>6}' for _ in range(4)))
+    filas = []
+    for nombre, k, a0, eps, ref in CORRIDAS:
+        if a0 != 1.0 or not ref or k not in K_REBOTE or nombre not in series or ref not in series:
+            continue
+        pd = pendulo(k, eps)
+        t, chis, tl, hl, i, j = chi_familia(series, ref, [(nombre, eps)], k)
+        txt = ' '.join(f'{x/pd["wb"]:6.0f} ' + (f'{abs(ganancia(t[i], chis[0][i], hl[j], x/pd["wb"])):6.3f}'
+                                                 if x/pd['wb'] <= 3900 else f'{"--":>6}') for x in (1, 2, 3, 4))
+        filas.append((k, pd['s'], f'{nombre:>15} {k:5g} {eps:5g} {pd["s"]:6.2f} {pd["wb"]:8.5f} {txt}'))
+    for _, _, f in sorted(filas):
+        w(f)
+
+
+# ------------------------------------------------------------------ órbitas del borde
+J_ORB = 0.6                                # se siguen las partículas con J(0) > J_ORB,
+T_ORB = np.arange(0.0, 4000.1, 100.0)      # en estos tiempos
+
+
+def _orbitas(nombre):
+    """Ángulo y acción, en el mapa del equilibrio, de las partículas de las filas exteriores
+    (J(0) > J_ORB) cada 100 unidades de tiempo: exe/hadzic/<nombre>/orbitas.npz."""
+    import h5py
+    from aa_numerico import MapaAA
+    sal = ruta(nombre, 'orbitas.npz')
+    if not os.path.exists(sal):
+        eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
+        mapa = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
+        with h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r') as f:
+            pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
+            tt = np.array([f[c].attrs['time'] for c in pasos])
+            g = f[pasos[0]]
+            w = g['f'][:]
+            sel = np.nonzero(mapa(g['r_part'][:], g['p_part'][:])[1] > J_ORB)[0]
+            t, Q, J = [], [], []
+            for a in T_ORB:
+                g = f[pasos[int(np.argmin(np.abs(tt - a)))]]
+                q, j, _ = mapa(g['r_part'][:][sel], g['p_part'][:][sel])
+                t.append(g.attrs['time']); Q.append(q); J.append(j)
+        np.savez(sal, t=np.array(t), Q=np.array(Q), J=np.array(J), w=w[sel], masa=w.sum())
+    return nombre
+
+
+# Grupos de corridas del paso orbitas: k, descripción y corridas con su eps (la primera, la referencia).
+ORBITAS = [
+    (1.25, 'serie 5, 1.024 x 10^5 partículas', [('ZP_k1.25_a1', 0.0), ('DPe01_k1.25_a1', 0.01),
+                                                ('DP_k1.25_a1', 0.03), ('DPe1_k1.25_a1', 0.1)]),
+    (1.25, 'serie 2, 10^4 partículas', [('Z_k1.25_a1', 0.0), ('D_k1.25_a1', 0.1)]),
+    (1.0, 'serie 2, 10^4 partículas', [('Z_k1_a1', 0.0), ('D_k1_a1', 0.1)]),
+    (0.75, 'serie 2, 10^4 partículas', [('Z_k0.75_a1', 0.0), ('D_k0.75_a1', 0.1)]),
+]
+
+
+def orbitas(procesos=4):
+    """Las partículas del borde: la mayor acción que alcanzan, junto a la del péndulo del paso
+    rebote, y la masa que cruza el borde."""
+    from multiprocessing import Pool
+    with Pool(procesos) as pool:
+        pool.map(_orbitas, [n for _, _, casos in ORBITAS for n, _ in casos])
+    lineas = []
+    def w(x=''):
+        lineas.append(x); print(x, flush=True)
+    T = (500, 1000, 1500, 2000, 3000, 4000)
+    w(f'Partículas con J(0) > {J_ORB}: la mayor acción en cada tiempo y en toda la corrida. J_t = {JT}.')
+    for k, titulo, casos in ORBITAS:
+        w(f'\nk = {k:g}, {titulo}; J_r = {pendulo(k, 1.0)["Jr"]:.4f}')
+        w(f'{"eps":>6} {"s":>5} {"J_max péndulo":>13} ' + ' '.join(f'{f"t = {a}":>9}' for a in T)
+          + f' {"máximo":>8} {"en t":>6} {"M(J > J_t + 0.003)/M, máx":>26}')
+        for nombre, eps in casos:
+            o = np.load(ruta(nombre, 'orbitas.npz'))
+            jm = o['J'].max(axis=1)
+            fuera = np.array([o['w'][j > JT + 0.003].sum() for j in o['J']])/o['masa']
+            p = pendulo(k, eps) if eps else dict(s=0.0, Jmax=JT)
+            w(f'{eps:6g} {p["s"]:5.2f} {p["Jmax"]:13.4f} '
+              + ' '.join(f'{jm[np.argmin(np.abs(o["t"] - a))]:9.4f}' for a in T)
+              + f' {jm.max():8.4f} {o["t"][jm.argmax()]:6.0f} {fuera.max():26.1e}')
+    open(ruta('orbitas.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+# Familias de corridas con las mismas partículas y la misma referencia, que solo cambian eps.
+FAMILIAS_EPS = [
+    ('10^4 partículas, dt = 0.1', 1.25, 'Z_k1.25_a1',
+     [('De03_k1.25_a1', 0.03), ('D_k1.25_a1', 0.1), ('De3_k1.25_a1', 0.3)]),
+    ('1.024 x 10^5 partículas, dt = 0.05', 1.25, 'ZP_k1.25_a1',
+     [('DPe01_k1.25_a1', 0.01), ('DP_k1.25_a1', 0.03), ('DPe1_k1.25_a1', 0.1)]),
+]
+VENTANAS_EPS = [(0, 250), (250, 500), (500, 1000), (1000, 1500), (1500, 2000), (2000, 3000), (3000, 4000)]
+
+
+def chi_familia(series, ref, corridas, k):
+    """chi = (h_1(D) - h_1(Z))/eps de cada corrida de la familia y la solución lineal.
+    Devuelve t y la lista de chi; tl y chi_lin; y los índices i, j de los tiempos comunes
+    (t[i] = tl[j]). La solución lineal se guarda cada 2 y las corridas cada 5: la comparación
+    punto a punto se hace en los tiempos comunes, sin interpolar (la interpolación lineal de
+    la solución lineal tiene un error de 1.2e-2, mayor que la diferencia que se mide en
+    t < 250)."""
+    lin = np.load(ruta('lineal', nombre_lin(k, 1.0) + '.npz'))
+    z = series[ref]
+    t, tl = z['t'], lin['t']
+    _, i, j = np.intersect1d(np.round(t, 6), np.round(tl, 6), return_indices=True)
+    return t, [(series[n]['h1'] - z['h1'])/e for n, e in corridas], tl, lin['h1'], i, j
+
+
+def ganancia(t, x, xl, t0, ancho=200.0):
+    """Ganancia compleja de x respecto de xl alrededor de t0, con ventana de Hann W de ancho
+    total `ancho`: rho = sum W x conj(xl) / sum W |xl|^2. |rho| es el cociente de amplitudes y
+    -d arg(rho)/dt la frecuencia de x menos la de xl. Es lineal en x y no depende del muestreo:
+    con instantáneas cada 5 o cada 10 cambia menos de 3e-4 (serie 5, t <= 3000)."""
+    s = np.abs(t - t0) <= ancho/2
+    W = np.cos(np.pi*(t[s] - t0)/ancho)**2
+    return np.sum(W*x[s]*np.conj(xl[s]))/np.sum(W*np.abs(xl[s])**2)
+
+
+def extrapolar(eps, xs):
+    """Extrapolaciones a eps = 0 de una cantidad lineal en chi: con una recta por los dos eps
+    menores y con una parábola por los tres."""
+    (e1, e2, e3), (x1, x2, x3) = eps, xs
+    recta = x1 - e1*(x2 - x1)/(e2 - e1)
+    parabola = (x1*e2*e3/((e1 - e2)*(e1 - e3)) + x2*e1*e3/((e2 - e1)*(e2 - e3))
+                + x3*e1*e2/((e3 - e1)*(e3 - e2)))
+    return recta, parabola
+
+
+def barrido_eps(series, w):
+    """Con N y la referencia fijos, cómo depende de eps la diferencia con la teoría lineal.
+    Un término de chi lineal en eps es no lineal de segundo orden; uno independiente de eps es
+    error de discretización de la respuesta lineal; uno que crece como 1/eps es ruido."""
+    from landau_cola import ajustar
+    VPOLO = ((300, 1000), (300, 1500))
+    T0 = (250, 500, 1000, 1500, 2000, 2500, 3000, 3500)
+    mx = lambda y, tt, a, b: np.max(np.abs(y[(tt >= a) & (tt <= b)]))
+    env = lambda y, tt, a: np.max(np.abs(y[(tt >= a) & (tt < a + 100)]))
+    for titulo, k, ref, corridas in FAMILIAS_EPS:
+        if ref not in series or any(n not in series for n, _ in corridas):
+            continue
+        t, chis, tl, hl, i, j = chi_familia(series, ref, corridas, k)
+        tc, cl = t[i], hl[j]
+        eps = [e for _, e in corridas]
+        x0, x00 = extrapolar(eps, chis)
+        nom = [format(e, 'g') for e in eps]
+        casos = list(zip(nom, chis)) + [('0 (recta)', x0), ('0 (parábola)', x00)]
+        w(f'\nBarrido en eps con las mismas partículas ({titulo}; k = {k:g}, referencia {ref}). Las '
+          f'filas eps = 0 son extrapolaciones: recta por eps = {eps[0]:g} y {eps[1]:g}, y parábola por los tres.')
+
+        w('Envolvente de |chi| sobre la de la lineal (máximo en [t, t+100] de las instantáneas guardadas), '
+          'entre paréntesis la de Z/eps, y frecuencia en t >= 2500:')
+        zh = series[ref]['h1']
+        for (n, e), x in zip(corridas, chis):
+            w(f'{e:>13g} ' + ' & '.join(f'{env(x, t, a)/env(hl, tl, a):.2f} ({env(zh/e, t, a)/env(hl, tl, a):.2f})'
+                                       for a in (500, 1000, 2000, 3000)) + f' & {frecuencia(t, x, 2500.0):.4f}')
+
+        w('Ganancia rho(t0) = <chi, chi_lin>/<chi_lin, chi_lin> con ventana de Hann de ancho 200, en los '
+          'tiempos comunes: |rho| y arg(rho).')
+        w(f'{"eps":>13} ' + ' '.join(f'{f"t0 = {a}":>14}' for a in T0))
+        for e, x in casos:
+            r = [ganancia(tc, x[i], cl, a) for a in T0]
+            w(f'{e:>13} ' + ' '.join(f'{abs(v):6.3f} {np.angle(v):+7.3f}' for v in r))
+        w('Mínimo de |rho| en 100 <= t0 <= 3900 (cada 50), y mínimo antes de que |rho| vuelva a subir 0.02:')
+        centros = np.arange(100, 3901, 50)
+        hay_rebote = os.path.exists(ruta('lineal', 'rebote.npz'))       # si se corrió el paso rebote
+        for (e, x), ev in zip(casos, eps + [0.0, 0.0]):
+            r = np.abs([ganancia(tc, x[i], cl, a) for a in centros])
+            sube = np.nonzero(r > np.minimum.accumulate(r) + 0.02)[0]
+            m1 = np.argmin(r[:sube[0]]) if len(sube) else np.argmin(r)
+            txt = ''
+            if hay_rebote and ev:
+                pd = pendulo(k, ev)
+                txt = f';  omega_b = {pd["wb"]:.5f}, s = {pd["s"]:.2f}, omega_b t0 = {pd["wb"]*centros[m1]:.2f}'
+            w(f'{e:>13}  {r.min():.3f} en t0 = {centros[r.argmin()]};  primero {r[m1]:.3f} en t0 = {centros[m1]}{txt}')
+        w('Ruido de rho: rms de las segundas diferencias de rho(t0), con t0 cada 100, sobre raíz de 6, en '
+          '500 <= t0 <= 2000 y en 2000 <= t0 <= 3900:')
+        c100 = np.arange(100, 3901, 100)
+        for e, x in casos:
+            r = np.array([ganancia(tc, x[i], cl, a) for a in c100])
+            d2 = np.abs(r[2:] - 2*r[1:-1] + r[:-2])/np.sqrt(6)
+            w(f'{e:>13}  ' + '  '.join(f'{np.sqrt(np.mean(d2[(c100[1:-1] >= a) & (c100[1:-1] <= b)]**2)):.4f}'
+                                       for a, b in ((500, 2000), (2000, 3900))))
+        w(f'Linealidad en eps de rho: |rho({nom[2]}) - rho({nom[1]})| / |rho({nom[1]}) - rho({nom[0]})|; '
+          f'término lineal: {(eps[2] - eps[1])/(eps[1] - eps[0]):.2f}, cuadrático: '
+          f'{(eps[2]**2 - eps[1]**2)/(eps[1]**2 - eps[0]**2):.2f}')
+        rr = [[ganancia(tc, x[i], cl, a) for a in T0] for x in chis]
+        w(f'{"":>13} ' + ' '.join(f'{abs(c - b)/abs(b - a):14.2f}' for a, b, c in zip(*rr)))
+
+        cab = ' '.join(f'{f"[{a},{b}]":>15}' for a, b in VENTANAS_EPS)
+        w('max|chi - chi_lin| / max|chi_lin| por ventana, en los tiempos comunes, y entre paréntesis lo '
+          'mismo con los módulos:')
+        w(f'{"eps":>13} {cab}')
+        for e, x in casos:
+            w(f'{e:>13} ' + ' '.join(f'{mx(x[i] - cl, tc, a, b)/mx(cl, tc, a, b):6.3f} '
+                                     f'({mx(np.abs(x[i]) - np.abs(cl), tc, a, b)/mx(cl, tc, a, b):6.3f})'
+                                     for a, b in VENTANAS_EPS))
+        w(f'max|chi({nom[2]}) - chi({nom[1]})| / max|chi({nom[1]}) - chi({nom[0]})| por ventana:')
+        w(f'{"":>13} ' + ' '.join(f'{mx(chis[2] - chis[1], t, a, b)/mx(chis[1] - chis[0], t, a, b):15.2f}'
+                                   for a, b in VENTANAS_EPS))
+
+        w('Polo (matrix pencil, M = 3) en [300, 1000] y [300, 1500]:')
+        for e, tt, x in [(e, t, x) for e, x in casos] + [('lineal', tl, hl)]:
+            (w1, g1), (w2, g2) = (ajustar(tt, x, lo, hi)['pencil M=3'] for lo, hi in VPOLO)
+            w(f'{e:>13}  omega = {w1:.5f} y {w2:.5f}, gamma = {g1:+.1e} y {g2:+.1e}')
 
 
 def envolvente(t, x, ancho=100.0):
@@ -507,7 +793,66 @@ def figuras():
         for l in ax.legend(fontsize=7, frameon=False, loc=donde, ncol=nc).get_lines():
             l.set_linewidth(1.6)
     fig.savefig(os.path.join(destino, 'pic_barrido.pdf')); plt.close(fig)
+    figura_eps(destino)
     print('figuras en', destino)
+
+
+def figura_eps(destino=None):
+    """Serie 5: k = 1.25, a0 = 1, tres amplitudes con las mismas 1.024e5 partículas y la misma
+    referencia. pic_eps.pdf: módulo y fase de la ganancia de la respuesta PIC respecto de la
+    lineal. pic_orbitas.pdf (si se corrieron los pasos rebote y orbitas): las partículas del
+    borde en (Q - omega_d t, J) cerca de medio periodo de rebote, con la separatriz del péndulo,
+    y la mayor acción que alcanzan."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    destino = destino or os.path.join(RAIZ, 'docs', 'hadzic', 'figuras')
+    plt.rcParams.update({'font.size': 9})
+    titulo, k, ref, corridas = FAMILIAS_EPS[1]
+    colores = ('C2', 'C1', 'C0')
+    series = {n: np.load(ruta(n, 'serie.npz')) for n in [ref] + [c for c, _ in corridas]}
+    t, chis, tl, hl, i, j = chi_familia(series, ref, corridas, k)
+    tc, cl = t[i], hl[j]
+    eps = [e for _, e in corridas]
+    t0 = np.arange(100, 3901, 10)
+    fig, axs = plt.subplots(1, 2, figsize=(7, 2.9), constrained_layout=True, sharex=True)
+    for x, e, c in zip(chis, eps, colores):
+        r = np.array([ganancia(tc, x[i], cl, a) for a in t0])
+        axs[0].plot(t0, np.abs(r), color=c, lw=1.0, label=f'$\\varepsilon={e:g}$')
+        axs[1].plot(t0, np.unwrap(np.angle(r)), color=c, lw=1.0)
+    r = np.array([ganancia(tc, extrapolar(eps, chis)[0][i], cl, a) for a in t0])
+    axs[0].plot(t0, np.abs(r), 'k--', lw=0.9, label='$\\varepsilon\\to0$')
+    axs[1].plot(t0, np.unwrap(np.angle(r)), 'k--', lw=0.9)
+    axs[0].set_ylabel('$|\\rho|$'); axs[1].set_ylabel('$\\arg\\rho$')
+    for ax in axs:
+        ax.set_xlabel('$t$'); ax.set_xlim(0, 4000); ax.grid(alpha=0.3)
+    axs[0].legend(fontsize=7, frameon=False, loc='lower left')
+    fig.savefig(os.path.join(destino, 'pic_eps.pdf')); plt.close(fig)
+
+    if not (os.path.exists(ruta('lineal', 'rebote.npz')) and os.path.exists(ruta(ref, 'orbitas.npz'))):
+        return
+    fig, axs = plt.subplots(2, 2, figsize=(7, 5.2), constrained_layout=True)
+    ph = np.linspace(-np.pi, np.pi, 401)
+    for ax, (nombre, e), c in zip(axs.flat, corridas, colores):
+        o, pd = np.load(ruta(nombre, 'orbitas.npz')), pendulo(k, e)
+        n = int(np.argmin(np.abs(o['t'] - np.pi/pd['wb'])))        # medio periodo de rebote
+        fase = (o['Q'][n] - pd['wd']*o['t'][n] - pd['fase_O'] + np.pi) % (2*np.pi) - np.pi
+        ax.plot(fase, o['J'][n], '.', color=c, ms=1.0, rasterized=True)
+        for sg in (1, -1):
+            ax.plot(ph, pd['Jr'] + sg*pd['dJs']*np.abs(np.cos(ph/2)), 'k', lw=0.8)
+        ax.axhline(JT, color='0.4', lw=0.7, ls='--')
+        ax.set_xlim(-np.pi, np.pi); ax.set_ylim(0.62, 0.78)
+        ax.set_xlabel('$Q-\\omega_dt-\\varphi_O$'); ax.set_ylabel('$J$')
+        ax.set_title(f'$\\varepsilon={e:g}$, $t={o["t"][n]:.0f}$', fontsize=9)
+    ax = axs[1, 1]
+    for (nombre, e), c in zip([(ref, 0.0)] + list(corridas), ('0.55',) + colores):
+        o = np.load(ruta(nombre, 'orbitas.npz'))
+        ax.plot(o['t'], o['J'].max(axis=1), color=c, lw=1.0, label=f'$\\varepsilon={e:g}$')
+        if e:
+            ax.axhline(pendulo(k, e)['Jmax'], color=c, lw=0.8, ls=':')
+    ax.axhline(JT, color='0.4', lw=0.7, ls='--')
+    ax.set_xlabel('$t$'); ax.set_ylabel('largest $J$'); ax.set_xlim(0, 4000); ax.set_ylim(0.69, 0.79)
+    ax.legend(fontsize=7, frameon=False, loc='upper center', ncol=4, columnspacing=1.0, handlelength=1.5)
+    fig.savefig(os.path.join(destino, 'pic_orbitas.pdf'), dpi=300); plt.close(fig)
 
 
 # ------------------------------------------------------------------ videos
@@ -700,7 +1045,8 @@ def videos(procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'serie', 'analizar', 'figuras', 'videos'])
+    ap.add_argument('paso', choices=['lineal', 'rebote', 'preparar', 'correr', 'serie', 'analizar', 'orbitas',
+                                     'figuras', 'videos'])
     ap.add_argument('nombres', nargs='*', help='corridas del paso serie')
     ap.add_argument('-j', '--procesos', type=int, default=4, help='procesos del paso serie')
     a = ap.parse_intermixed_args()          # acepta "-j N" antes o después de los nombres

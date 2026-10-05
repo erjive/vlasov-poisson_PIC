@@ -100,7 +100,10 @@ def radios(eqf, nj, nq, cache):
 
 
 def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, verboso=True,
-             j1=J1, sj1=SJ1, pb=2.0):
+             j1=J1, sj1=SJ1, pb=2.0, phi1=False):
+    """Devuelve t, h_1, h_2, los radios de dPhi y dPhi(t, r). Con phi1 = True devuelve además
+    (J, Omega(J), Phi_1(t, J)), donde Phi_1 = (1/NQ) sum_Q dPhi(r(Q, J)) e^{-iQ} es el primer
+    armónico en Q del potencial de la perturbación sobre la órbita de acción J."""
     B = prueba(j1, sj1, pb)
     eq = np.load(eqf)
     A = float(eq['A'])
@@ -154,15 +157,18 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
     pasos = int(round(tmax/dt)); nsal = int(round(cada/dt))
     ts, h1, h2 = [], [], []
     rmed = np.linspace(3, 15, 121)
-    dphi_r = []
+    dphi_r, ph1 = [], []
     t0 = time.time()
     for n in range(pasos + 1):
         if n % nsal == 0:
             ts.append(n*dt)
             h1.append(np.sum(dF*B(Jn)[:, None]*eQ[None, :])/norma)
             h2.append(np.sum(dF*B(Jn)[:, None]*(eQ**2)[None, :])/norma)
-            ph = dPhi(dF).ravel()[orden]
+            P = dPhi(dF)
+            ph = P.ravel()[orden]
             dphi_r.append(np.interp(rmed, rs, ph))
+            if phi1:
+                ph1.append(np.sum(P*eQ[None, :], axis=1)/nq)
         if n == pasos:
             break
         dF = golpe(dF, 0.5*dt)
@@ -170,6 +176,8 @@ def resolver(eqf, nj=1600, nq=32, dt=0.5, tmax=3000.0, libre=False, cada=2.0, ve
         dF = golpe(dF, 0.5*dt)
     if verboso:
         print(f'  {pasos} pasos en {time.time()-t0:.0f} s (NJ={nj}, NQ={nq}, dt={dt}, libre={libre})')
+    if phi1:
+        return np.array(ts), np.array(h1), np.array(h2), rmed, np.array(dphi_r), (Jn, om, np.array(ph1))
     return np.array(ts), np.array(h1), np.array(h2), rmed, np.array(dphi_r)
 
 
