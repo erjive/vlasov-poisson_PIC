@@ -111,6 +111,12 @@ ifeq ($(HDF5_WRAPPER),)
   HDF5_LIBS ?= -L/usr/lib/x86_64-linux-gnu/hdf5/serial \
                -Wl,-rpath,/usr/lib/x86_64-linux-gnu/hdf5/serial \
                -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5
+else
+  # The wrapper supplies both. Some environment modules export HDF5_INC as a
+  # bare directory, which would otherwise reach the compiler as a stray
+  # argument ("linker input file unused") on every file.
+  HDF5_INC  :=
+  HDF5_LIBS :=
 endif
 
 # Threads for "make run". OMP_PLACES/OMP_PROC_BIND put one thread per physical
