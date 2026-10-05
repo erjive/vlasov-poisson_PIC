@@ -34,6 +34,17 @@ done
 sec "trabajos que se ven en $PART"
 squeue -p "$PART" -o "%.9i %.10P %.14j %.9u %.2t %.11M %.11l %.4C %.20S %R" 2>&1 | head -30
 
+# Con sched/builtin (sin relleno de huecos) y priority/basic (orden de llegada), un trabajo
+# en espera cierra todos los nodos de su partición a los trabajos más nuevos, también a los
+# de otra partición que comparta nodos. Los que van delante son los de número menor.
+sec "todos los trabajos en espera, del más antiguo al más nuevo"
+squeue -a -t PD --sort=i -o "%.9i %.10P %.14j %.10u %.11l %.5C %.5D %.20S %R" 2>&1 | head -40
+
+sec "permisos y nodos de todas las particiones"
+for p in $(sinfo -h -o "%R" 2>/dev/null | sort -u); do
+  scontrol show partition "$p" 2>&1 | grep -o -E "(PartitionName|AllowGroups|AllowAccounts|MaxTime|PriorityTier|Nodes)=[^ ]*" | tr '\n' ' '; echo
+done
+
 sec "trabajos propios, con la estimación de inicio"
 squeue -u "$USER" -o "%.9i %.10P %.14j %.2t %.11M %.11l %.4C %.20S %R" 2>&1
 squeue -u "$USER" --start 2>&1

@@ -19,6 +19,7 @@ DEST=xook.lamod.unam.mx:/storage/cactusolin/erik/newVlasov/vlasov-poisson_PIC
 | `corrida.slurm` | one run: `sbatch -J name corrida.slurm file.par [name=value ...]` |
 | `enviar.sh` | submits runs of `reproducir/scripts/hadzic.py`, one job each |
 | `escala.slurm` | time per step against the number of threads, to choose `-c` |
+| `cola.sh` | why a job waits: partitions, the node, jobs ahead, estimated start, scheduler |
 | `serie.slurm` | computes `serie.npz` of finished runs, so that only that file is copied back |
 
 All commands are given from the root of the repository.
@@ -102,9 +103,12 @@ python3 reproducir/scripts/hadzic.py analizar
 - The node of `olin` has 24 cores with two threads each, and Slurm counts threads: `-c 16`
   gives 16 logical CPUs. The jobs start one OpenMP thread per physical core among the CPUs
   they were given (`vp_nucleos` in `entorno.sh`); `VP_HILOS` sets another number.
-- That node also belongs to the partition `icn`. A job of `olin` waits while the CPUs it
-  asks for are taken or held for other jobs. Ask for the time the run needs
-  (`enviar.sh -t`), not for the maximum: a short limit lets Slurm fit the job in a gap.
+- That node also belongs to the partition `icn`, and the cluster schedules in order of
+  arrival without filling gaps (`sched/builtin`, `priority/basic`). While an older job of
+  `icn` waits for resources, every node of `icn`, this one included, is closed to newer
+  jobs. A job of `olin` can then wait with free CPUs on its node, and neither a short time
+  limit nor fewer CPUs change that. `cola.sh` shows the jobs ahead and the start time that
+  Slurm estimates.
 - The code reads a parameter file given as an argument, `./VP_PIC file.par [name=value ...]`.
   The old form `./VP_PIC < input_parameters` no longer exists.
 - Results obtained with another compiler agree with those of the laptop to rounding, not bit
