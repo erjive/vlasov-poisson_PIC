@@ -77,11 +77,14 @@ for k in [1.25, 1.5]:
 #           (courant = 1), con su propia referencia. Con eps = 0.1 la respuesta deja de ser
 #           lineal desde t ~ 300, y con eps = 0.03 y 10^4 partículas el ruido la tapa desde
 #           t ~ 1000: ¿con menos ruido se sigue la respuesta lineal hasta t_fin?
+#           Después, sobre las mismas partículas y con la misma referencia, eps = 0.1 y 0.01:
+#           con N fijo, ¿cómo depende de eps lo que queda frente a la teoría lineal?
 for k in [1.25]:
     b = f'k{k:g}_a1'
     CORRIDAS += [(f'DP_{b}', k, 1.0, 0.03, f'ZP_{b}'), (f'ZP_{b}', k, 1.0, 0.0, None)]
-    for x in 'DZ':
-        CAMBIOS[f'{x}P_{b}'] = {'Nrc': '1280', 'Npc': '80', 'courant': '1.0'}
+    CORRIDAS += [(f'DPe1_{b}', k, 1.0, 0.1, f'ZP_{b}'), (f'DPe01_{b}', k, 1.0, 0.01, f'ZP_{b}')]
+    for x in ('DP', 'ZP', 'DPe1', 'DPe01'):
+        CAMBIOS[f'{x}_{b}'] = {'Nrc': '1280', 'Npc': '80', 'courant': '1.0'}
 
 
 def ic_de(nombre):
@@ -399,7 +402,8 @@ def analizar(procesos=4):
     datos = dict((n, (e, r)) for n, _, _, e, r in CORRIDAS)
     for k in [1.25, 1.5]:
         b = f'k{k:g}_a1'
-        for nombre in (f'D_{b}', f'De03_{b}', f'De3_{b}', f'Ddr_{b}', f'DN_{b}', f'DP_{b}'):
+        for nombre in (f'D_{b}', f'De03_{b}', f'De3_{b}', f'Ddr_{b}', f'DN_{b}', f'DPe01_{b}',
+                       f'DP_{b}', f'DPe1_{b}'):
             if (nombre, 300, 1500) not in polos:
                 continue
             eps, ref = datos[nombre]
