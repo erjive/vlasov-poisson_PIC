@@ -70,6 +70,16 @@ for k in [1.25, 1.5]:
         CORRIDAS += [(f'D{s}_{b}', k, 1.0, 0.1, f'Z{s}_{b}'), (f'Z{s}_{b}', k, 1.0, 0.0, None)]
         for x in 'DZ':
             CAMBIOS[f'{x}{s}_{b}'] = dict(c, ic=f'{x}_{b}') if s == 'dr' else c
+#  serie 5, piloto con diez veces más partículas: k = 1.25, a0 = 1, eps = 0.03, 1280 x 80
+#           partículas (la proporción N_J/N_Q = 16 de 400 x 25 y de 800 x 50) y dt = 0.05
+#           (courant = 1), con su propia referencia. Con eps = 0.1 la respuesta deja de ser
+#           lineal desde t ~ 300, y con eps = 0.03 y 10^4 partículas el ruido la tapa desde
+#           t ~ 1000: ¿con menos ruido se sigue la respuesta lineal hasta t_fin?
+for k in [1.25]:
+    b = f'k{k:g}_a1'
+    CORRIDAS += [(f'DP_{b}', k, 1.0, 0.03, f'ZP_{b}'), (f'ZP_{b}', k, 1.0, 0.0, None)]
+    for x in 'DZ':
+        CAMBIOS[f'{x}P_{b}'] = {'Nrc': '1280', 'Npc': '80', 'courant': '1.0'}
 
 
 def ic_de(nombre):
@@ -170,10 +180,13 @@ def tabla_eta():
 def escribir_par(nombre, k, a0, eps, destino=PARDIR):
     """.par de la corrida a partir de la plantilla de 11_landau, con los cambios de CAMBIOS."""
     c = CAMBIOS.get(nombre, {})
-    # Todas las corridas tienen dt = courant dr/pmax = 0.1 (pmax = 2): Nt y la salida no cambian.
-    assert abs(float(c.get('courant', COURANT))*float(c.get('dr', 0.1))/2.0 - DT) < 1e-12
-    sal = str(SALIDA[a0])
-    valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN[a0]/DT))), 'time_output': sal,
+    # dt = courant dr/pmax (pmax = 2): 0.1 en todas las corridas salvo las de la serie 5. Las
+    # instantáneas salen en los mismos tiempos con cualquier dt, cada SALIDA[a0] DT.
+    dt = float(c.get('courant', COURANT))*float(c.get('dr', 0.1))/2.0
+    cada = SALIDA[a0]*DT/dt
+    assert abs(cada - round(cada)) < 1e-9 and abs(TFIN[a0]/dt - round(TFIN[a0]/dt)) < 1e-6
+    sal = str(int(round(cada)))
+    valores = {'courant': str(COURANT), 'Nt': str(int(round(TFIN[a0]/dt))), 'time_output': sal,
                'spatial_output': sal, 'field_output': sal,
                'Nrc': str(NRC), 'Npc': str(NPC), 'Lfix': str(L0),
                'directory': f'hadzic/{nombre}', 'a0': str(a0), 'BGtype': 'sphere',
@@ -342,23 +355,24 @@ def analizar(procesos=4):
                 polos[nombre, lo, hi] = (wp, gp)
                 w(f'   polo en [{lo}, {hi}]: PIC omega = {wp:.5f}, gamma = {gp:+.1e};  lineal omega = '
                   f'{wl:.5f}, gamma = {gl:+.1e}')
-    # Serie 4: el polo de cada variante junto al de la corrida base, y el ruido de la referencia.
-    w('\nSerie 4 (a0 = 1): polo de (D - Z)/eps en [300, 1000] y [300, 1500], y |h_1| de la referencia Z '
-      '(máximo en ventanas de 100).')
-    w(f'{"corrida":>15} {"k":>5} {"eps":>5} {"cambio":>18} {"omega":>8} {"gamma":>8} {"omega":>8} '
+    # Series 4 y 5: el polo de cada variante junto al de la corrida base, y el ruido de la
+    # referencia.
+    w('\nSeries 4 y 5 (a0 = 1): polo de (D - Z)/eps en [300, 1000] y [300, 1500], y |h_1| de la '
+      'referencia Z (máximo en ventanas de 100).')
+    w(f'{"corrida":>15} {"k":>5} {"eps":>5} {"cambio":>36} {"omega":>8} {"gamma":>8} {"omega":>8} '
       f'{"gamma":>8} {"|Z| t=1000":>10} {"|Z| t=3900":>10}')
+    datos = dict((n, (e, r)) for n, _, _, e, r in CORRIDAS)
     for k in [1.25, 1.5]:
         b = f'k{k:g}_a1'
-        for nombre in (f'D_{b}', f'De03_{b}', f'De3_{b}', f'Ddr_{b}', f'DN_{b}'):
+        for nombre in (f'D_{b}', f'De03_{b}', f'De3_{b}', f'Ddr_{b}', f'DN_{b}', f'DP_{b}'):
             if (nombre, 300, 1500) not in polos:
                 continue
-            eps = {f'De03_{b}': 0.03, f'De3_{b}': 0.3}.get(nombre, 0.1)
+            eps, ref = datos[nombre]
             c = ', '.join(f'{x} = {v}' for x, v in CAMBIOS.get(nombre, {}).items() if x != 'ic') or '--'
-            ref = dict((n, r) for n, _, _, _, r in CORRIDAS)[nombre]
             zt, zh = series[ref]['t'], np.abs(series[ref]['h1'])
             zv = [zh[(zt >= a) & (zt < a + 100)].max() for a in (1000, 3900)]
             (w1, g1), (w2, g2) = polos[nombre, 300, 1000], polos[nombre, 300, 1500]
-            w(f'{nombre:>15} {k:5g} {eps:5g} {c:>18} {w1:8.5f} {g1:+8.1e} {w2:8.5f} {g2:+8.1e} '
+            w(f'{nombre:>15} {k:5g} {eps:5g} {c:>36} {w1:8.5f} {g1:+8.1e} {w2:8.5f} {g2:+8.1e} '
               f'{zv[0]:10.1e} {zv[1]:10.1e}')
     open(ruta('resumen.txt'), 'w').write('\n'.join(lineas) + '\n')
 
