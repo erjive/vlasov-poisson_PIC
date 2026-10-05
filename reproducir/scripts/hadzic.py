@@ -699,7 +699,7 @@ if __name__ == '__main__':
     ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'serie', 'analizar', 'figuras', 'videos'])
     ap.add_argument('nombres', nargs='*', help='corridas del paso serie')
     ap.add_argument('-j', '--procesos', type=int, default=4, help='procesos del paso serie')
-    a = ap.parse_args()
+    a = ap.parse_intermixed_args()          # acepta "-j N" antes o después de los nombres
     os.makedirs(BASE, exist_ok=True)
     if a.paso == 'serie':
         series_de(a.nombres, a.procesos)
