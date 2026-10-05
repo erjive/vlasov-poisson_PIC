@@ -34,6 +34,7 @@ NMUESTRA = 41                                 # instantáneas por corrida
 CORRIDAS = [
     ('H_k1.25',    'hadzic/Z_k1.25_a1',    'hadzic/ic/Z_k1.25_a1',  'masa puntual, k=1.25, a0=1'),
     ('H_k1.25_N',  'hadzic/ZN_k1.25_a1',   'hadzic/ic/ZN_k1.25_a1', 'idem, 4N'),
+    ('H_k1.25_P',  'hadzic/ZP_k1.25_a1',   'hadzic/ic/ZP_k1.25_a1', 'idem, 10N (1280 x 80) y dt/2'),
     ('H_k1.25_dr', 'hadzic/Zdr_k1.25_a1',  'hadzic/ic/Z_k1.25_a1',  'idem, dr/2'),
     ('H_k1.5',     'hadzic/Z_k1.5_a1',     'hadzic/ic/Z_k1.5_a1',   'masa puntual, k=1.5, a0=1'),
     ('H_k1.5_N',   'hadzic/ZN_k1.5_a1',    'hadzic/ic/ZN_k1.5_a1',  'idem, 4N'),

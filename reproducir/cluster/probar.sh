@@ -4,7 +4,8 @@
 # "srun -p olin -c 2 bash reproducir/cluster/probar.sh".
 #
 #  1. salida ascii: |h_0| ... |h_4| del final frente a los del portátil (gfortran 13.3).
-#     Otro compilador no da los mismos bits; se pide acuerdo relativo a 1e-8.
+#     Otro compilador no da los mismos bits; se pide acuerdo relativo a 1e-10. En el cluster
+#     de LAMOD (gfortran 12.2, CentOS 7) la diferencia fue de 4.4e-16.
 #  2. salida hdf5: que la corrida termine y escriba el archivo (comprueba el enlace con HDF5).
 #  3. salida raw: lo mismo.
 
@@ -16,7 +17,7 @@ export OMP_NUM_THREADS=2 OMP_PLACES=cores OMP_PROC_BIND=close
 ulimit -s unlimited 2>/dev/null
 
 # Última línea de hk1.tl (t y |h_0| ... |h_4|) de esta misma corrida en el portátil.
-REF="__REFERENCIA__"
+REF="4.0000000000000298E+01  2.3454497237236343E-05  1.8864224087602536E-05  1.0389749004067114E-05  4.1788631000868525E-06  1.2890760909246304E-06"
 
 corre () {      # corre <formato>
   rm -rf "cluster_prueba_$1"
@@ -34,7 +35,7 @@ elif [ -s cluster_prueba_ascii/hk1.tl ]; then
     { n = split(ref, r, " "); peor = 0
       for (i = 1; i <= n; i++) { d = ($i - r[i])/(r[i] == 0 ? 1 : r[i]); if (d < 0) d = -d; if (d > peor) peor = d }
       printf "  ascii: diferencia relativa máxima con el portátil %.1e\n", peor
-      exit (peor < 1e-8 ? 0 : 1) }' || fallos=$((fallos+1))
+      exit (peor < 1e-10 ? 0 : 1) }' || fallos=$((fallos+1))
 else
   echo "  ascii: la corrida falló"; tail -5 cluster_prueba_ascii.log; fallos=$((fallos+1))
 fi

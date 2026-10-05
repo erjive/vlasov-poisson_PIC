@@ -7,6 +7,8 @@ Pasos (cada uno reutiliza lo que ya exista):
     python3 hadzic.py lineal     mapa de lambda_edge(k, a0) y soluciones lineales en el tiempo
     python3 hadzic.py preparar   estados iniciales (equilibrio.py) y .par de las corridas
     python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos
+    python3 hadzic.py serie [-j N] <corrida> ...   serie.npz de esas corridas, con N procesos
+                                 (para el cluster: reproducir/cluster/serie.slurm)
     python3 hadzic.py analizar   dPhi y h_1 en el mapa del equilibrio, menos eps = 0
     python3 hadzic.py figuras    figuras del informe (docs/hadzic/figuras/)
     python3 hadzic.py videos     un video por corrida perturbada (exe/hadzic/videos/)
@@ -20,7 +22,7 @@ import os, sys, subprocess, time, argparse
 # analizar y videos reparten las corridas en cuatro procesos: un hilo de BLAS en cada uno. La
 # variable tiene que estar antes de importar numpy; puesta después, cada proceso usaba ~1.6
 # núcleos y los cuatro, unos 16 hilos en los 4 núcleos físicos.
-if len(sys.argv) > 1 and sys.argv[1] in ('analizar', 'videos'):
+if len(sys.argv) > 1 and sys.argv[1] in ('serie', 'analizar', 'videos'):
     for v in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'):
         os.environ[v] = '1'
 import numpy as np
@@ -255,34 +257,67 @@ def correr():
 
 
 # ------------------------------------------------------------------ analizar
-def serie(nombre):
+def _tramo(arg):
+    """t, h_1 sin normalizar, dPhi y energía de un tramo de instantáneas de una corrida."""
+    import h5py
+    from aa_numerico import MapaAA
+    nombre, primero, pasos = arg
+    eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
+    mapa = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
+    t, h1, dphi, E = [], [], [], []
+    with h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r') as f:
+        rg = f['grid']['r'][:]
+        fondo = -1.0/rg + np.interp(rg, eq['r'], eq['phi_self'])
+        w = f[primero]['f'][:]
+        for c in pasos:
+            g = f[c]
+            Q, J, _ = mapa(g['r_part'][:], g['p_part'][:])
+            B = J**2*np.exp(-(J - J1)**2/SJ1**2)
+            t.append(g.attrs['time']); E.append(g.attrs['total_energy'])
+            h1.append(np.sum(w*B*np.exp(-1j*Q)))
+            dphi.append(g['potential'][:] - fondo)
+    return t, h1, dphi, E
+
+
+def serie(nombre, procesos=1):
     """t, h_1 (en el mapa del equilibrio), dPhi(r, t) en la malla, y la energía total;
-    se guarda en exe/hadzic/<nombre>/serie.npz."""
+    se guarda en exe/hadzic/<nombre>/serie.npz. Con procesos > 1 las instantáneas se
+    reparten en tramos, uno por proceso; el resultado es el mismo."""
     import h5py
     from aa_numerico import MapaAA
     sal = ruta(nombre, 'serie.npz')
     if os.path.exists(sal):
         return np.load(sal)
+    with h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r') as f:
+        pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
+        rg = f['grid']['r'][:]
+        w = f[pasos[0]]['f'][:]
+    n = max(1, min(procesos, len(pasos)))
+    tramos = [(nombre, pasos[0], [str(c) for c in tr]) for tr in np.array_split(np.array(pasos), n)]
+    if n > 1:
+        from multiprocessing import Pool
+        with Pool(n) as pool:
+            res = pool.map(_tramo, tramos)
+    else:
+        res = [_tramo(tramos[0])]
+    t, h1, dphi, E = (sum((list(r[i]) for r in res), []) for i in range(4))
     eq = np.load(ruta('ic', f'{ic_de(nombre)}_equilibrio.npz'))
     mapa = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
-    f = h5py.File(ruta(nombre, 'vlasov_output.h5'), 'r')
-    pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
-    rg = f['grid']['r'][:]
-    fondo = -1.0/rg + np.interp(rg, eq['r'], eq['phi_self'])
-    w = f[pasos[0]]['f'][:]
-    t, h1, dphi, E = [], [], [], []
-    for c in pasos:
-        g = f[c]
-        Q, J, _ = mapa(g['r_part'][:], g['p_part'][:])
-        B = J**2*np.exp(-(J - J1)**2/SJ1**2)
-        t.append(g.attrs['time']); E.append(g.attrs['total_energy'])
-        h1.append(np.sum(w*B*np.exp(-1j*Q)))
-        dphi.append(g['potential'][:] - fondo)
-    f.close()
     Q0, J0, _ = mapa(*np.loadtxt(ruta('ic', f'{ic_de(nombre)}.dat'), usecols=(0, 1), unpack=True))
     norma = np.sum(w*J0**2*np.exp(-(J0 - J1)**2/SJ1**2))
     np.savez(sal, t=np.array(t), h1=np.array(h1)/norma, dphi=np.array(dphi), r=rg, E=np.array(E))
     return np.load(sal)
+
+
+def series_de(nombres, procesos=4):
+    """Paso serie: serie.npz de las corridas pedidas, una detrás de otra."""
+    for nombre in nombres:
+        if not os.path.exists(ruta(nombre, 'vlasov_output.h5')):
+            print(f'{nombre}: no hay vlasov_output.h5', flush=True)
+            continue
+        t0 = time.time()
+        serie(nombre, procesos)
+        print(f'{nombre}: serie.npz ({time.time()-t0:.0f} s)', flush=True)
 
 
 def _serie(nombre):
@@ -661,7 +696,12 @@ def videos(procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'analizar', 'figuras', 'videos'])
+    ap.add_argument('paso', choices=['lineal', 'preparar', 'correr', 'serie', 'analizar', 'figuras', 'videos'])
+    ap.add_argument('nombres', nargs='*', help='corridas del paso serie')
+    ap.add_argument('-j', '--procesos', type=int, default=4, help='procesos del paso serie')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
-    globals()[a.paso]()
+    if a.paso == 'serie':
+        series_de(a.nombres, a.procesos)
+    else:
+        globals()[a.paso]()
