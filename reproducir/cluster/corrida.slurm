@@ -33,8 +33,16 @@ if [ ! -x "$RAIZ/exe/VP_PIC" ]; then
 fi
 source "$RAIZ/reproducir/cluster/entorno.sh"
 
-# Un hilo por núcleo pedido, cada uno fijo en su núcleo.
-export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-${OMP_NUM_THREADS:-1}}"
+# Un hilo por núcleo físico asignado, cada uno fijo en su núcleo (vp_nucleos, en
+# entorno.sh), sin pasar de las CPUs pedidas. VP_HILOS fija otro número. Fuera de Slurm
+# manda OMP_NUM_THREADS.
+if [ -n "${SLURM_CPUS_PER_TASK:-}" ]; then
+  hilos=$(vp_nucleos)
+  [ "$hilos" -gt "$SLURM_CPUS_PER_TASK" ] && hilos=$SLURM_CPUS_PER_TASK
+else
+  hilos="${OMP_NUM_THREADS:-1}"
+fi
+export OMP_NUM_THREADS="${VP_HILOS:-$hilos}"
 export OMP_PLACES=cores OMP_PROC_BIND=close
 
 # analysish reserva en la pila arreglos del tamaño del número de partículas (20 MB con un
@@ -48,6 +56,7 @@ case "$par" in /*) ;; *) par="$RAIZ/$par" ;; esac
 
 cd "$RAIZ/exe" || exit 1
 echo "máquina: $(hostname)   trabajo: ${SLURM_JOB_ID:-sin Slurm}   hilos: $OMP_NUM_THREADS"
+echo "CPUs asignadas: $(taskset -cp $$ 2>/dev/null | sed 's/.*: *//')   núcleos físicos: $(vp_nucleos)"
 echo "inicio:  $(date)"
 echo "corrida: ./VP_PIC $par $*"
 t0=$SECONDS

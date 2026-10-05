@@ -99,6 +99,12 @@ python3 reproducir/scripts/hadzic.py analizar
 
 ## Notes
 
+- The node of `olin` has 24 cores with two threads each, and Slurm counts threads: `-c 16`
+  gives 16 logical CPUs. The jobs start one OpenMP thread per physical core among the CPUs
+  they were given (`vp_nucleos` in `entorno.sh`); `VP_HILOS` sets another number.
+- That node also belongs to the partition `icn`. A job of `olin` waits while the CPUs it
+  asks for are taken or held for other jobs. Ask for the time the run needs
+  (`enviar.sh -t`), not for the maximum: a short limit lets Slurm fit the job in a gap.
 - The code reads a parameter file given as an argument, `./VP_PIC file.par [name=value ...]`.
   The old form `./VP_PIC < input_parameters` no longer exists.
 - Results obtained with another compiler agree with those of the laptop to rounding, not bit
