@@ -23,7 +23,7 @@
 \title{Damping versus oscillations in the setting of Hadžić, Rein,\\ Schrecker and Straub\\[0.3em]
        \large Loop gain, linear theory and particle-in-cell runs}
 \author{Working notes}
-\date{3 October 2026}
+\date{3 October 2026, revised 5 October}
 
 \begin{document}
 \maketitle
@@ -50,9 +50,15 @@ undamped mode of $k=0.75$ and $k=1$ at the predicted frequency (to about $10^{-3
 Landau damping of $k=2$ at the predicted rate (to \SI{5}{\%}). The modes that lie just below
 the edge ($k=1.25$ and $1.5$) lose amplitude in the runs. A scan in amplitude, grid and
 number of particles shows that this loss is a finite-amplitude effect: it grows with
-$\varepsilon$ and does not change with $\Delta r$ or $N$. With $4\times10^4$ particles the mode of
-$k=1.25$ persists up to $t=4000$ at the predicted frequency, and with $10^5$ particles and
-$\varepsilon=0.03$ its amplitude stays within $0.90$--$1.14$ of the linear one. The departure of the reference
+$\varepsilon$ and does not change with $\Delta r$ or $N$. Three amplitudes with the same $10^5$
+particles give, for $k=1.25$, an amplitude within \SI{2.5}{\%} of the linear one up to $t=2000$ with
+$\varepsilon=0.01$, a loss of \SI{9}{\%} with $0.03$ and of \SI{44}{\%} with $0.1$. The cause is the
+resonance of the mode, which lies outside the distribution, at $\Omega_{\min}-\omega_d$ from the
+edge in frequency: the orbits of the edge are trapped in it when their bounce frequency
+$\omega_b\propto\sqrt{\varepsilon}$ exceeds half that distance. A pendulum estimate built from the
+potential of the linear mode, with nothing fitted, gives the threshold ($\varepsilon_c=0.015$ for
+$k=1.25$) and the separatrix that the particles follow; the first minimum of the amplitude is
+at $\omega_bt\approx4$. The departure of the reference
 runs from stationarity has two parts: an initial level set by the grid, and a later growth
 caused by the discreteness of the particles, which four times more particles remove.
 \end{abstract}
@@ -196,12 +202,12 @@ series & $k$ & $a_0$ & $\varepsilon$ & $t_{\rm fin}$, output & purpose\\
 2 & 0.75, 1, 1.25, 1.5, 2 & 1 & 0.1 (and Z) & 4000, every 5 & bound modes and the threshold\\
 3 & 0.75, 1, 1.5, 2 & 0.01 & 0.5 (Z of series 1) & 8000, every 20 & a lower floor\\
 4 & 1.25, 1.5 & 1 & 0.03, 0.3 (Z of series 2); 0.1 with $\Delta r/2$ or $4N$ (and Z) & 4000, every 5 & amplitude, grid and particles (Section~\ref{sec:borde})\\
-5 & 1.25 & 1 & 0.03 (and Z), with $1280\times80$ particles and $\Delta t=0.05$ & 4000, every 5 & a pilot with ten times more particles (Section~\ref{sec:borde})\\
+5 & 1.25 & 1 & 0.01, 0.03, 0.1 (and Z), with $1280\times80$ particles and $\Delta t=0.05$ & 4000, every 5 & amplitude with ten times more particles (Section~\ref{sec:rebote})\\
 \bottomrule
 \end{tabular}
-\caption{The 36 PIC runs. Each takes \SIrange{220}{380}{s} with four threads,
-\SIrange{840}{860}{s} with $4\times10^4$ particles, and one hour with $1.024\times10^5$ particles
-and half the time step (series 5). The energy is conserved to
+\caption{The 38 PIC runs. Each takes \SIrange{220}{380}{s} with four threads,
+\SIrange{840}{860}{s} with $4\times10^4$ particles, and \SIrange{50}{60}{min} with $1.024\times10^5$
+particles and half the time step (series 5). The energy is conserved to
 $|\Delta E/E|\le1.3\times10^{-7}$ at $a_0=0.01$ and $\le1.8\times10^{-5}$ at $a_0=1$.}
 \label{tab:corridas}
 \end{table}
@@ -386,11 +392,11 @@ doubles the resolution of the initial lattice in $J$ and $Q$). The last two have
 reference. Table~\ref{tab:borde} gives the PIC amplitude relative to the linear one, and
 Figure~\ref{fig:borde} the envelopes.
 
-Series 5 is a pilot for $k=1.25$ with $1280\times80=1.024\times10^5$ particles, the same ratio
-of rows in $J$ to points in $Q$, with $\varepsilon=0.03$ and $\Delta t=0.05$, and its own reference.
-It is the row ``$10N$'' of Tables~\ref{tab:borde} and~\ref{tab:ruidoZ}; it is not in
-Figure~\ref{fig:borde}. It changes the number of particles, the time step and $\varepsilon$ at
-once with respect to series 2, so it does not separate their effects.
+Series 5 has $1280\times80=1.024\times10^5$ particles for $k=1.25$, the same ratio of rows in $J$
+to points in $Q$, and $\Delta t=0.05$. Its three runs, $\varepsilon=0.01$, $0.03$ and $0.1$, share
+the particles and the reference run, so they differ only in the amplitude. They are the rows
+``$10N$'' of Tables~\ref{tab:borde} and~\ref{tab:ruidoZ} and the subject of
+Section~\ref{sec:rebote}; they are not in Figure~\ref{fig:borde}.
 
 \begin{table}[!htbp]
 \centering
@@ -404,7 +410,9 @@ $k$ & run & $t=500$ & $1000$ & $2000$ & $3000$ & frequency, $t\ge2500$\\
  & $\varepsilon=0.3$ & 0.38 (0.09) & 0.47 (0.09) & 0.69 (0.13) & 0.48 (0.36) & 0.1531\\
  & $\Delta r/2$ & 0.88 (0.08) & 0.69 (0.23) & 1.44 (0.36) & 1.88 (1.26) & 0.1998\\
  & $4N$ & 0.84 (0.25) & 0.61 (0.24) & 0.81 (0.26) & 0.99 (0.27) & 0.1530\\
+ & $10N$, $\varepsilon=0.01$ & 0.99 (2.55) & 0.99 (2.38) & 0.99 (2.43) & 1.03 (2.43) & 0.1532\\
  & $10N$, $\varepsilon=0.03$ & 0.98 (0.85) & 0.94 (0.79) & 0.91 (0.81) & 0.91 (0.81) & 0.1531\\
+ & $10N$, $\varepsilon=0.1$ & 0.84 (0.25) & 0.61 (0.24) & 0.79 (0.24) & 0.82 (0.24) & 0.1531\\
 \midrule
 1.5 & $\varepsilon=0.03$ & 1.02 (1.62) & 1.56 (2.56) & 6.69 (6.18) & 11.2 (12.4) & 0.2094\\
  & $\varepsilon=0.1$ & 0.86 (0.49) & 0.64 (0.77) & 2.39 (1.86) & 5.98 (3.71) & 0.2117\\
@@ -417,7 +425,10 @@ $k$ & run & $t=500$ & $1000$ & $2000$ & $3000$ & frequency, $t\ge2500$\\
 linear one, and in parentheses that of the reference run alone, $|h_{1,Z}|/\varepsilon$, divided
 by the same linear value. The last column is the frequency of $h_1$ over $2500\le t\le4000$. In
 linear theory it is $0.15325$ for $k=1.25$ and $0.15745$ for $k=1.5$; the band starts at
-$\Omega_{\min}=0.15597$ and $0.15769$.}
+$\Omega_{\min}=0.15601$ and $0.15774$. The largest value is taken over the stored outputs, every 5
+time units in the runs and every 2 in the linear solution. Resampling the series every $0.25$
+with a quintic spline changes 43 of the 52 ratios by less than \SI{2}{\%} and three of them by
+\SIrange{7}{11}{\%}, all at $t\ge2000$.}
 \label{tab:borde}
 \end{table}
 
@@ -465,9 +476,9 @@ stays at $|h_{1,Z}|=1.4\times10^{-3}$ from $t=500$ to $t=3900$, and the rms disp
 action of its particles is $0.46$, $0.41$ and $0.56\times10^{-3}J_t$ at $t=1000$, $2000$ and
 $4000$, against $1.4$, $6.3$ and $37$ with $10^4$ particles and $0.50$, $0.58$ and $2.5$ with
 $4\times10^4$ (\texttt{relajacion\_N.py}).
-\item \textbf{The mode of $k=1.5$ is not resolved.} It lies $\Omega_{\min}-\omega_d=1.8\times10^{-4}$
+\item \textbf{The mode of $k=1.5$ is not resolved.} It lies $\Omega_{\min}-\omega_d=2.3\times10^{-4}$
 below the edge, so it separates from the response of the edge only after
-$t\sim1/(\Omega_{\min}-\omega_d)\approx5500$, longer than the runs; the linear solution itself still
+$t\sim1/(\Omega_{\min}-\omega_d)\approx4300$, longer than the runs; the linear solution itself still
 decays at $t=4000$. With $4N$ the PIC amplitude is $0.4$--$0.7$ of the linear one for
 $1000\le t\le2000$ and rises to $1.3$ by $t=3000$, at the frequency $0.1584$, while the noise of
 the reference is $0.6$--$0.7$ of the linear amplitude. That is above
@@ -504,6 +515,223 @@ $[t,t+100]$).}
 \label{tab:ruidoZ}
 \end{table}
 
+\subsection{Amplitude and trapping of the edge orbits}
+\label{sec:rebote}
+
+The three runs of series 5 differ only in the amplitude. We compare them with the linear
+solution through the complex gain
+\[
+  \rho(t_0)=\frac{\sum_jW(t_j-t_0)\,\chi(t_j)\,\overline{\chi_{\rm lin}(t_j)}}
+                 {\sum_jW(t_j-t_0)\,|\chi_{\rm lin}(t_j)|^2},\qquad
+  \chi=\frac{h_{1,D}-h_{1,Z}}{\varepsilon},
+\]
+where $\chi_{\rm lin}$ is $h_1$ of the linear solution, $W$ is a Hann window of total width 200
+and $t_j$ are the output times common to the runs and to the linear solution (every 10).
+$|\rho|$ is the ratio of the amplitudes, and $-d\arg\rho/dt$ is the frequency of the run minus
+that of the linear solution. The gain is linear in $h_1$ and does not depend on the sampling:
+with the outputs every 5 it changes by less than $3\times10^{-4}$ for $t_0\le3000$. The linear
+solution is not interpolated, because linear interpolation between its outputs has an error
+of \SI{1.2}{\%}, larger than the difference measured at $t<250$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+$\varepsilon$ & $t_0=500$ & $1000$ & $1500$ & $2000$ & $2500$ & $3000$\\
+\midrule
+0.01 & 0.992 & 0.990 & 0.986 & 0.978 & 1.004 & 0.997\\
+0.03 & 0.976 & 0.946 & 0.923 & 0.908 & 0.924 & 0.906\\
+0.1 & 0.869 & 0.614 & 0.591 & 0.762 & 0.913 & 0.830\\
+\midrule
+$\to0$, straight line & 1.000 & 1.013 & 1.020 & 1.017 & 1.048 & 1.048\\
+$\to0$, parabola & 0.997 & 1.004 & 1.017 & 1.024 & 1.064 & 1.063\\
+\bottomrule
+\end{tabular}
+\caption{$|\rho(t_0)|$ for the three amplitudes of series 5 ($k=1.25$, $a_0=1$,
+$1.024\times10^5$ particles) and for the extrapolations of $\chi$ to $\varepsilon=0$: a straight
+line through $\varepsilon=0.01$ and $0.03$, and a parabola through the three.}
+\label{tab:eps}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{pic_eps.pdf}
+\caption{Gain of the PIC response relative to the linear solution for the three amplitudes of
+series 5: modulus (left) and phase (right). Dashed: the extrapolation to $\varepsilon=0$ with a
+straight line.}
+\label{fig:eps}
+\end{figure}
+
+Table~\ref{tab:eps} and Figure~\ref{fig:eps} give the result. With $\varepsilon=0.01$ the
+amplitude stays within $0.977$--$1.005$ of the linear one up to $t_0=2000$ and within
+$0.95$--$1.06$ up to $t_0=3900$. With $\varepsilon=0.03$ it falls to $0.907$ at $t_0=2050$ and stays
+at $0.89$--$0.95$ up to $t_0=3400$. With $\varepsilon=0.1$ it has a minimum of $0.558$ at $t_0=1300$, returns to $0.92$ at
+$t_0=2650$ and is $0.61$ at $t_0=3900$. The run of series 2 with the same $\varepsilon$ and $10^4$
+particles gives the same gain for as long as its noise allows: $0.951$, $0.871$ and $0.629$ at
+$t_0=250$, $500$ and $1000$, against $0.948$, $0.869$ and $0.614$. The ratio
+$|\rho(0.1)-\rho(0.03)|/|\rho(0.03)-\rho(0.01)|$ is $4.3$--$5.7$ for $t_0\le1000$; a correction to
+$\rho$ linear in $\varepsilon$ gives $3.5$ and a quadratic one $11.4$. Extrapolated to
+$\varepsilon=0$, the amplitude is $1.00$--$1.05$ of the linear one up to $t_0=2000$ with the
+straight line and $0.99$--$1.06$ with the parabola.
+
+Over $250\le t_0\le2000$, $\arg\rho$ grows at $5.8\times10^{-5}$ per unit time for $\varepsilon=0.01$
+and at $1.3\times10^{-4}$ for $\varepsilon=0.03$, and at $2.5\times10^{-5}$ in the extrapolation with
+the straight line ($0.7\times10^{-5}$ with the parabola). The frequency of the PIC response is
+therefore lower than that of the linear solution by an amount that grows with the amplitude,
+about $3.5\times10^{-3}\varepsilon$, and the two agree to $2.5\times10^{-5}$ at zero amplitude.
+
+The fluctuation of $\rho$ from one window to the next (the rms second difference at steps of
+100 in $t_0$, divided by $\sqrt6$) is $0.009$, $0.003$ and $0.005$ for $\varepsilon=0.01$, $0.03$ and
+$0.1$ over $500\le t_0\le2000$, and $0.04$, $0.06$ and $0.03$ over $2000\le t_0\le3900$. With
+$\varepsilon=0.01$ the reference run alone is $2.4$--$2.6$ times the linear signal
+(Table~\ref{tab:borde}); the difference of the two runs recovers the signal with a fluctuation
+of \SI{1}{\%} up to $t=2000$.
+
+\paragraph{Bounce frequency.} In the angle--action variables of the equilibrium a particle
+moves with the Hamiltonian $H_0(J)+\varepsilon\,\delta\Phi(Q,J,t)$, where $\delta\Phi$ is the
+potential of the perturbation per unit $\varepsilon$, evaluated on the orbit. Let
+$\Phi_1(J,t)=(2\pi)^{-1}\int\delta\Phi\,e^{-iQ}\,dQ$ be its first harmonic in $Q$. For the discrete
+mode $\Phi_1=c_+(J)\,e^{-i\omega_dt}+c_-(J)\,e^{i\omega_dt}$, and the part of $\varepsilon\,\delta\Phi$ that
+varies slowly on an orbit with $\Omega(J)\approx\omega_d$ is
+$2\varepsilon|c_+|\cos(Q-\omega_dt+\arg c_+)$. Around the resonant action $J_r$, where
+$\Omega(J_r)=\omega_d$, the motion in $\varphi=Q-\omega_dt$ is that of a pendulum,
+\[
+  K=\tfrac12\,\Omega'\,(J-J_r)^2+2\varepsilon|c_+|\cos(\varphi+\arg c_+),
+\]
+with bounce frequency and half-width of the separatrix
+\[
+  \omega_b=\sqrt{2\varepsilon\,|c_+|\,|\Omega'|},\qquad \Delta J_s=\frac{2\omega_b}{|\Omega'|}.
+\]
+Since $\Omega'<0$, the centre of the island is at $\varphi_O=-\arg c_+$ and the separatrix is
+$J=J_r\pm\Delta J_s|\cos((\varphi-\varphi_O)/2)|$. The resonance lies outside the distribution, at
+$J_r=J_t+(\Omega_{\min}-\omega_d)/|\Omega'|$. The island reaches the orbits of the edge when
+$\Delta J_s>J_r-J_t$, that is, when
+\[
+  s\equiv\frac{2\omega_b}{\Omega_{\min}-\omega_d}>1,\qquad\text{or}\qquad
+  \varepsilon>\varepsilon_c=\frac{(\Omega_{\min}-\omega_d)^2}{8\,|c_+|\,|\Omega'|}.
+\]
+An orbit that starts at the edge is then trapped for the phases with
+$|\cos((\varphi-\varphi_O)/2)|>1/s$, and it librates up to $J_r+\Delta J_s$ at most. For $s<1$ it
+passes below the resonance and reaches $J_t+(J_r-J_t)(1-\sqrt{1-s^2})$ at most.
+
+The linear solver stores $\Phi_1(J,t)$ on its rows of $J$. The step \texttt{rebote} of the
+script fits $c_\pm$ on the last row, $J=J_t(1-1/3200)$, by least squares over
+$1000\le t\le2000$, and takes $\Omega_{\min}$ and $\omega_d$ from the loop gain
+(Table~\ref{tab:rebote}). Over $2000\le t\le4000$ the fit gives a $|c_+|$ that differs by less
+than \SI{2}{\%} for $k\le1.25$ and by \SI{7}{\%} for $k=1.5$, whose mode is not yet established
+in the linear solution.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+$k$ & $\Omega_{\min}-\omega_d$ & $|c_+|$ & $|\Omega'|$ & $\omega_b/\sqrt{\varepsilon}$ & $\varepsilon_c$ & $J_r$\\
+\midrule
+0.75 & $9.90\times10^{-3}$ & $7.51\times10^{-4}$ & 0.1422 & 0.01461 & 0.115 & 0.7696\\
+1 & $6.14\times10^{-3}$ & $5.76\times10^{-4}$ & 0.1475 & 0.01303 & 0.056 & 0.7416\\
+1.25 & $2.75\times10^{-3}$ & $4.06\times10^{-4}$ & 0.1520 & 0.01111 & 0.0153 & 0.7181\\
+1.5 & $2.3\times10^{-4}$ & $1.45\times10^{-4}$ & 0.1557 & 0.00672 & $3\times10^{-4}$ & 0.7015\\
+\bottomrule
+\end{tabular}
+\caption{Pendulum estimate for the discrete mode at $a_0=1$ ($J_t=0.7$): distance of the mode
+below the band, first harmonic of the mode potential and $|\Omega'|$ at the edge, bounce
+frequency, threshold amplitude and resonant action.}
+\label{tab:rebote}
+\end{table}
+
+\paragraph{The particles.} The step \texttt{orbitas} follows the particles with $J(0)>0.6$ in
+the map of the equilibrium, every 100 time units. Table~\ref{tab:orbitas} gives the largest
+action that they reach, and Figure~\ref{fig:orbitas} shows them in the plane
+$(\varphi-\varphi_O,J)$ near half a bounce period, with the separatrix of the pendulum. Nothing is
+fitted: $\omega_d$, $J_r$, $\Delta J_s$ and $\varphi_O$ come from the loop gain and the linear solver.
+With $\varepsilon=0.03$ and $0.1$ ($s=1.40$ and $2.55$) the particles of the edge rise along the
+separatrix and reach $J=0.747$ and $0.767$; the estimate gives $J_r+\Delta J_s=0.743$ and
+$0.764$. With $\varepsilon=0.01$ ($s=0.81$) they stay below the island, at $J\le0.710$, against
+$0.707$ from the estimate; in the reference run they reach $0.703$. The mass above $J_t+0.003$
+is at most $1.5\times10^{-4}$, $1.6\times10^{-5}$ and $1.7\times10^{-6}$ of the total for
+$\varepsilon=0.1$, $0.03$ and $0.01$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+$\varepsilon$ & $s$ & estimate & $t=500$ & $1000$ & $1500$ & $2000$ & $3000$ & $4000$\\
+\midrule
+0 & -- & 0.7000 & 0.7020 & 0.7033 & 0.7028 & 0.7016 & 0.7023 & 0.7027\\
+0.01 & 0.81 & 0.7074 & 0.7059 & 0.7093 & 0.7099 & 0.7066 & 0.7056 & 0.7095\\
+0.03 & 1.40 & 0.7434 & 0.7143 & 0.7268 & 0.7401 & 0.7449 & 0.7454 & 0.7443\\
+0.1 & 2.55 & 0.7643 & 0.7454 & 0.7593 & 0.7536 & 0.7573 & 0.7647 & 0.7592\\
+\bottomrule
+\end{tabular}
+\caption{Largest action of the particles of series 5 at several times, and the value of the
+pendulum estimate: $J_r+\Delta J_s$ for $s>1$ and $J_t+(J_r-J_t)(1-\sqrt{1-s^2})$ for $s<1$.}
+\label{tab:orbitas}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{pic_orbitas.pdf}
+\caption{Particles of series 5 with $J(0)>0.6$ in the plane $(Q-\omega_dt-\varphi_O,\,J)$ at the
+output nearest to half a bounce period, $t=\pi/\omega_b$, for the three amplitudes. Black: the
+separatrix of the pendulum estimate; dashed: the edge $J_t$. Bottom right: largest action of
+those particles against time for the three amplitudes and for the reference run (grey);
+dotted: the values of the estimate.}
+\label{fig:orbitas}
+\end{figure}
+
+The runs of series 2 ($\varepsilon=0.1$, $10^4$ particles) test other distances to the band. For
+$k=1$ ($s=1.34$) the particles reach $J=0.794$ at $t=1000$ and $0.801$ at $t=1500$, against
+$0.798$ from the estimate. For $k=0.75$ ($s=0.93$) they reach $0.728$ up to $t=2000$, against
+$0.745$: just below $s=1$ the estimate is steep in $s$, and $s=0.80$ would give the measured
+value. With $10^4$ particles the edge particles of the reference runs diffuse to
+$J=0.73$--$0.75$ by $t=3000$, so these comparisons end at $t=2000$.
+
+\paragraph{Time and depth of the loss.} The first minimum of $|\rho|$ is at $\omega_bt_0=3.9$ for
+$\varepsilon=0.03$ and at $4.6$ for $\varepsilon=0.1$ in series 5, and at $4.0$ for $\varepsilon=0.1$ and
+$0.3$ with $10^4$ particles. With $\varepsilon=0.1$ the following maximum is at $\omega_bt_0=9.3$.
+Table~\ref{tab:perdida} gives $|\rho|$ of the runs with a mode at equal values of $\omega_bt_0$.
+The four runs of $k=1.25$ with $\varepsilon=0.1$ have $10^4$, $4\times10^4$ and $1.024\times10^5$
+particles, $\Delta r=0.1$ and $0.05$, and $\Delta t=0.1$ and $0.05$; they agree to $0.01$ at
+$\omega_bt_0=1$ and to $0.03$ at $\omega_bt_0=2$ and $3$. The loss is ordered by $s$. Two runs with
+different $k$ and $\varepsilon$ and nearly the same $s$ ($k=1$ with $\varepsilon=0.1$, and $k=1.25$ with
+$\varepsilon=0.03$) give $0.939$ and $0.944$ at $\omega_bt_0=2$, and $0.935$ and $0.920$ at
+$\omega_bt_0=3$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\begin{tabular}{llllrrrr}
+\toprule
+$k$ & $\varepsilon$ & run & $s$ & $\omega_bt_0=1$ & $2$ & $3$ & $4$\\
+\midrule
+1.25 & 0.01 & $10N$ & 0.81 & 0.985 & 1.005 & 0.992 & 1.055\\
+0.75 & 0.1 & series 2 & 0.93 & 0.967 & 0.988 & 0.985 & 0.988\\
+1 & 0.1 & series 2 & 1.34 & 0.956 & 0.939 & 0.935 & 0.977\\
+1.25 & 0.03 & $10N$ & 1.40 & 0.975 & 0.944 & 0.920 & 0.911\\
+1.25 & 0.1 & series 2 & 2.55 & 0.943 & 0.838 & 0.677 & 0.520\\
+ & & $\Delta r/2$ & & 0.949 & 0.864 & 0.705 & 0.610\\
+ & & $4N$ & & 0.941 & 0.835 & 0.681 & 0.568\\
+ & & $10N$ & & 0.940 & 0.838 & 0.684 & 0.570\\
+1.25 & 0.3 & series 4 & 4.42 & 0.866 & 0.667 & 0.419 & 0.310\\
+\bottomrule
+\end{tabular}
+\caption{$|\rho(t_0)|$ at equal times in units of the bounce time. The value $\omega_bt_0=4$
+corresponds to $t_0=866$, $971$ and $1139$ in the runs of series 2 and to $t_0=3602$ in the first
+row, where the noise of those runs is no longer small. The run of $k=1.25$ with $\varepsilon=0.03$
+and $10^4$ particles is omitted: its noise exceeds the loss.}
+\label{tab:perdida}
+\end{table}
+
+$\varepsilon_c$ is proportional to $(\Omega_{\min}-\omega_d)^2$, so the amplitude that a run may use
+falls quickly as the mode approaches the band: $0.115$, $0.056$ and $0.015$ for $k=0.75$, $1$
+and $1.25$, and $3\times10^{-4}$ for $k=1.5$. With $s=0.81$ the loss was within the noise and with
+$s=1.4$ it was \SI{9}{\%}. For $k=1.5$, $s=0.8$ means $\varepsilon=2\times10^{-4}$, fifty times less
+than the smallest amplitude run here, for which the reference alone is already $2.5$ times the
+signal.
+
 \section{Discussion}
 \label{sec:discusion}
 
@@ -519,10 +747,18 @@ $\omega_d$, to $4\times10^{-5}$ for $k\le1.25$, where $\lambda_{\rm edge}>1$, an
 one.
 \item The PIC runs reproduce the undamped modes of $k\le1$ and the damping of $k=2$ at $a_0=1$.
 \item The loss of amplitude of the modes next to the edge in the PIC runs is a finite-amplitude
-effect: it grows with $\varepsilon$ and does not change with $\Delta r$ or $N$. With $4\times10^4$
-particles the mode of $k=1.25$ persists up to $t=4000$ at $\omega_d$. With $10^5$ particles and
-$\varepsilon=0.03$ its amplitude stays within $0.90$--$1.14$ of the linear one and its frequency is
-$0.15314$, against $0.15326$ from the loop gain.
+effect: it grows with $\varepsilon$ and does not change with $\Delta r$, $\Delta t$ or $N$. With
+$4\times10^4$ particles the mode of $k=1.25$ persists up to $t=4000$ at $\omega_d$. With the same
+$1.024\times10^5$ particles its amplitude stays within $0.977$--$1.005$ of the linear one up to
+$t=2000$ for $\varepsilon=0.01$, falls to $0.91$ for $\varepsilon=0.03$ and to $0.56$ for
+$\varepsilon=0.1$; extrapolated to $\varepsilon=0$ it is $1.00$--$1.05$. The frequency is lower than
+the linear one by about $3.5\times10^{-3}\varepsilon$.
+\item The loss comes from the resonance of the mode, which lies outside the distribution at
+$\Omega_{\min}-\omega_d$ from the edge. The pendulum estimate of Section~\ref{sec:rebote}, with
+nothing fitted, gives the threshold $s=2\omega_b/(\Omega_{\min}-\omega_d)=1$, the separatrix that the
+particles of the edge follow and the largest action that they reach when trapped (to $0.004$,
+for $k=1$ and $1.25$). The first minimum of the amplitude is at $\omega_bt\approx4$, and the loss
+at equal $\omega_bt$ is ordered by $s$ across $k$ and $\varepsilon$.
 \item The reference runs depart from stationarity for two reasons: the error of order $\Delta r^2$
 of the PIC field sets the initial level, and the discreteness of the particles makes it grow
 after $t\approx1000$. Four times more particles remove most of the growth up to $t=4000$, and
@@ -535,13 +771,15 @@ ten times more remove it.
 \item At small mass the discrete mode of $k\le1$ is bound by less than $10^{-6}$ band widths,
 so a finite simulation sees only a slowly decaying edge response. The non-damping that the
 theorem proves is not observable there; it becomes observable only at large mass.
-\item The mode of $k=1.5$ at $a_0=1$, bound by $1.8\times10^{-4}$ in frequency. Deciding whether it
-survives in the PIC runs needs $t\gtrsim10^4$ and the noise of $4N$ or less.
-\item The dip of the amplitude of $k=1.25$. It is deeper and earlier with larger $\varepsilon$:
-$0.32$ at $t\approx630$, about $0.6$ at $t\approx1350$ and $0.90$ at $t\approx2250$ for
-$\varepsilon=0.3$, $0.1$ and $0.03$. The three runs differ in the number of particles, so the law
-in $\varepsilon$ is not established; runs with $\varepsilon=0.1$ and $0.01$ on the particles of
-series 5, with its reference, would give it.
+\item The mode of $k=1.5$ at $a_0=1$, bound by $2.3\times10^{-4}$ in frequency. Deciding whether it
+survives in the PIC runs needs $t\gtrsim10^4$, the noise of $4N$ or less and, by
+Section~\ref{sec:rebote}, an amplitude below $\varepsilon_c=3\times10^{-4}$.
+\item The depth of the loss. The pendulum estimate gives the threshold and the scale of time,
+not the amplitude of the mode once the edge orbits are trapped; Table~\ref{tab:perdida} only
+tabulates it against $s$.
+\item The estimate for $s$ just below one. For $k=0.75$ with $\varepsilon=0.1$ the particles of
+the edge reach $J=0.728$, against $0.745$. The estimate uses $c_+$ and $\Omega'$ at the edge,
+and there the resonance is $J_r-J_t=0.07$ beyond it.
 \item The noise floor at small mass, which limits the comparisons to $\sim10^3$ time units with
 $10^4$ particles. Lowering it needs more particles; at $a_0=1$, $4\times10^4$ particles extend the
 comparison to $t=4000$.
@@ -558,10 +796,12 @@ Everything is produced by \texttt{reproducir/scripts/hadzic.py} from that direct
 step & what it does & time\\
 \midrule
 \texttt{lineal} & the 36 equilibria, $\lambda_{\rm edge}$ (\texttt{exe/hadzic/lineal/lambda.txt}), $\eta$ (\texttt{eta.txt}) and the linear solutions of the runs & \SI{40}{min}\\
+\texttt{rebote} & bounce frequency of the edge orbits in the mode of each $k$ at $a_0=1$ (\texttt{exe/hadzic/lineal/rebote.txt}); needed by \texttt{analizar}, \texttt{orbitas} and \texttt{figuras} & \SI{2}{min}\\
 \texttt{preparar} & initial states and \texttt{.par} files in \texttt{reproducir/corridas/13\_hadzic/} & \SI{10}{min}\\
-\texttt{correr} & the 36 PIC runs, one after another, with four threads & \SI{5.5}{h}\\
-\texttt{serie} & $h_1$ and $\delta\Phi$ of the named runs, with the snapshots split among several processes; used for the two runs of series 5 & \SI{1}{h}\\
-\texttt{analizar} & $h_1$ and $\delta\Phi$ in the map of the equilibrium, envelopes, slopes, pole fits and the table of series 4 and 5 (\texttt{exe/hadzic/resumen.txt}) & \SI{3}{h}\\
+\texttt{correr} & the 38 PIC runs, one after another, with four threads & \SI{7}{h}\\
+\texttt{serie} & $h_1$ and $\delta\Phi$ of the named runs, with the snapshots split among several processes; used for the four runs of series 5 & \SI{2}{h}\\
+\texttt{analizar} & $h_1$ and $\delta\Phi$ in the map of the equilibrium, envelopes, slopes, pole fits, the table of series 4 and 5, the gain of the amplitude scans and the loss in units of the bounce time (\texttt{exe/hadzic/resumen.txt}) & \SI{3}{h}\\
+\texttt{orbitas} & action of the particles of the edge in series 5 and in three pairs of series 2 (\texttt{exe/hadzic/orbitas.txt}) & \SI{1}{min}\\
 \texttt{figuras} & the figures of this report & \SI{1}{min}\\
 \texttt{videos} & one video per perturbed run, in \texttt{exe/hadzic/videos/}: the particles in $(r,p_r)$, the harmonic $k=1$ of the perturbation in $(Q,J)$ and $|h_1|$ & \SI{3}{h}\\
 \bottomrule
