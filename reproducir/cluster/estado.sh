@@ -21,12 +21,24 @@ cambios=$(git status --porcelain 2>/dev/null | grep -v '^??' | head -n 5)
 [ -x exe/VP_PIC ] && echo "exe/VP_PIC: $(sha256sum exe/VP_PIC | cut -c1-16), $(date -r exe/VP_PIC '+%Y-%m-%d %H:%M')" \
                   || echo "no hay exe/VP_PIC"
 
-titulo "trabajos de $USER en los últimos $dias días (sacct)"
+# Trabajos recientes. Si el cluster no guarda la contabilidad (sacct), se listan las salidas de
+# Slurm de los últimos días, con su fecha y su última línea (la de "fin:" si la tiene).
+titulo "trabajos de $USER en los últimos $dias días"
+historia=""
 if command -v sacct > /dev/null 2>&1; then
-  sacct -X -u "$USER" -S "now-${dias}days" \
-        --format=JobID,JobName%22,Partition%9,AllocCPUS%5,State%12,Elapsed,Start,End,ExitCode 2>&1 | head -n 80
+  historia=$(sacct -X -u "$USER" -S "now-${dias}days" \
+             --format=JobID,JobName%22,Partition%9,AllocCPUS%5,State%12,Elapsed,Start,End,ExitCode 2>&1 | head -n 80)
+fi
+if [ -n "$historia" ] && ! echo "$historia" | grep -qi 'disabled\|error'; then
+  echo "$historia"
 else
-  echo "no hay sacct"
+  echo "sin contabilidad de Slurm (${historia:-no hay sacct}); salidas de Slurm recientes:"
+  salidas=$( { find . -maxdepth 1 -name 'log.*.out' -mtime "-$dias"; find exe/hadzic -maxdepth 1 -name 'slurm_*.out' -mtime "-$dias"; } 2>/dev/null | sort)
+  [ -n "$salidas" ] || echo "  ninguna"
+  for f in $salidas; do
+    fin=$(grep '^fin:' "$f" | tail -n 1); [ -n "$fin" ] || fin=$(tail -n 1 "$f")
+    printf "  %-44s %s  %s\n" "${f#./}" "$(date -r "$f" '+%m-%d %H:%M')" "$fin"
+  done
 fi
 
 titulo "en cola o corriendo (squeue)"
@@ -104,8 +116,14 @@ for f in $(find . -maxdepth 1 -name 'log.vp_serie.*.out' -mtime "-$dias" 2>/dev/
 done
 [ $hay = 0 ] && echo "no hay"
 
-titulo "espacio"
-echo "exe/hadzic: $(du -sh exe/hadzic 2>/dev/null | cut -f1)"
+titulo "datos iniciales y espacio"
+if [ -d exe/hadzic/ic ]; then
+  echo "exe/hadzic/ic: $(ls exe/hadzic/ic/*.dat 2>/dev/null | wc -l) archivos .dat"
+  ls exe/hadzic/ic/*.dat 2>/dev/null | sed 's|.*/||; s|\.dat$||' | tr '\n' ' ' | fold -s -w 100; echo
+else
+  echo "exe/hadzic/ic no existe: faltan los datos iniciales (mkdir -p exe/hadzic/ic y rsync desde el portátil)"
+fi
+[ -d exe/hadzic ] && echo "exe/hadzic ocupa $(du -sh exe/hadzic 2>/dev/null | cut -f1)"
 
 if [ -n "$sin_serie" ]; then
   titulo "siguiente paso"
