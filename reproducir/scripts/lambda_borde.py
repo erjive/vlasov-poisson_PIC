@@ -18,10 +18,20 @@ la matriz simétrica y positiva |R|^{1/2} (-M) |R|^{1/2}. lambda(omega) es su ma
 crece con omega, y lambda_borde = lambda(Omega_min). Con F_eq' de signo variable (familia
 hueca) se usa el mayor autovalor real de K.
 
-Discretización: J = J_t (1 - s^2) con Gauss-Legendre en s (quita la raíz del borde), Q en
-nq puntos medios, r(Q,J) con el mapa inverso del equilibrio (equilibrio.invertir), y las
-integrales en Q depositando cada punto de la órbita en una malla radial de nr nodos con
-pesos lineales; entonces M = 4 pi L0 P G P^T, con G = -1/max(r_m, r_n) en la malla.
+Discretización: J = J_t (1 - s^p) con Gauss-Legendre en s, Q en nq puntos medios, r(Q,J)
+con el mapa inverso del equilibrio (equilibrio.invertir), y las integrales en Q depositando
+cada punto de la órbita en una malla radial de nr nodos con pesos lineales; entonces
+M = 4 pi L0 P G P^T, con G = -1/max(r_m, r_n) en la malla. Con un borde (E_t - E)^g, en
+omega = Omega_min el integrando va como s^(p (g-1) - 1) ds: p = 2 lo deja regular si
+g >= 1.5, y con 1 < g < 1.5 se toma p = 1/(g-1). Con g <= 1 la integral diverge en el borde
+y p = 4 acerca los nodos a él, para resolver lambda hasta 1e-12 anchos de banda del borde.
+E_t - E y Omega - Omega_min se evalúan en los nodos en función de la distancia al borde,
+J_t - J = J_t s^p, sin restar números casi iguales (borde='spline'). borde='tabla' es la
+aritmética anterior al 2026-10-07: E_t con la interpolación lineal de equilibrio.borde_E,
+que queda ~1e-9 por debajo del spline que da E en los nodos; F se anula entonces ~1e-8
+anchos de banda antes de Omega_min, y ese corte redondea la singularidad del borde. El
+efecto en lambda_borde es 0.025 con g = 1.25 (masa puntual, a0 = 1), 3e-4 con g = 1.5 y
+menor que 1e-6 con g >= 2; omega_d no cambia (menos de 1e-8).
 
     python3 lambda_borde.py [--casos A4 L5 ...] [--nj 200] [--kmax 6] [--nq 128] [--nr 2000]
                             [--borde] [--debil]
@@ -45,23 +55,49 @@ DIR = os.path.join(AQUI, '..', '..', 'exe', 'eta_lineal')
 class Lazo:
     """El operador del lazo de un equilibrio, listo para evaluar lambda(omega)."""
 
-    def __init__(self, npz, nj=200, kmax=6, nq=128, nr=2000):
+    def __init__(self, npz, nj=200, kmax=6, nq=128, nr=2000, pot=None, borde='spline'):
         d = np.load(npz)
         self.a0, L0, jt = float(d['a0']), float(d['L0']), float(d['J_borde'])
         forma, g = str(d['forma']), float(d['k_borde'])
+        if pot is None:                 # J_t - J = J_t s^pot: |R_1| ds ~ s^(pot (g-1) - 1) ds en el borde
+            pot = 2 if forma not in FORMAS_E or borde == 'tabla' or g >= 1.5 else 4 if g <= 1 else 1/(g - 1)
+        self.pot = pot
         sp = CubicSpline(d['J_t'], d['E_t'])
         Omf = sp.derivative()
         x, w = np.polynomial.legendre.leggauss(nj)
         s, ws = 0.5*(x + 1), 0.5*w
-        J = jt*(1 - s**2)
-        self.wJ = ws*2*jt*s
-        E, self.Om = sp(J), Omf(J)
         self.Om_min, self.Om_max = float(Omf(jt)), float(Omf(0.0))
         A = float(d['A'])
-        if forma in FORMAS_E:
+        self.dOm = None
+        if borde == 'tabla':            # la aritmética anterior al 2026-10-07, bit a bit
+            assert pot == 2
+            J = jt*(1 - s**2)
+            self.wJ = ws*2*jt*s
+            E, self.Om = sp(J), Omf(J)
+        else:
+            xb = jt*s**pot              # distancia al borde, J_t - J, sin resta
+            J = jt - xb
+            self.wJ = ws*pot*jt*s**(pot - 1)
+            E, self.Om = sp(J), Omf(J)
+            # E_t - E y Omega - Omega_min. Dentro del último tramo del spline se desarrolla su
+            # polinomio en J_t, y así no hay cancelación en los nodos pegados al borde.
+            i = int(np.clip(np.searchsorted(d['J_t'], jt, side='left') - 1, 0, len(d['J_t']) - 2))
+            a, (c0, c1, c2) = jt - float(d['J_t'][i]), (float(c) for c in sp.c[:3, i])
+            dentro = xb <= a
+            self.uE = np.where(dentro, (c0*(3*a**2 - 3*a*xb + xb**2) + c1*(2*a - xb) + c2)*xb, float(sp(jt)) - E)
+            self.dOm = np.where(dentro, (3*c0*xb - (6*c0*a + 2*c1))*xb, self.Om - self.Om_min)
+        if forma in FORMAS_E and borde == 'tabla':
             Et, T = borde_E(forma, d['E_t'], d['J_t'], jt, float(d['w0']))
             F = A*F_E(forma, E, Et, T, g)
             self.dF = A*dFdE_E(forma, E, Et, T, g)*self.Om
+        elif forma in FORMAS_E:
+            # La energía del borde es la del spline en J_t, el mismo que da E en los nodos.
+            # equilibrio.borde_E la interpola linealmente en la tabla y queda ~1e-9 por debajo:
+            # con ella F se anula ~1e-8 anchos de banda antes de Omega_min, y ese corte redondea
+            # la singularidad del borde (con k = 1.25 y a0 = 1, lambda_borde baja de 1.583 a 1.558).
+            T = (float(sp(jt)) - float(d['E_t'][0]))/float(d['w0']) if forma == 'maxwell' else None
+            F = A*F_E(forma, -self.uE, 0.0, T, g)
+            self.dF = A*dFdE_E(forma, -self.uE, 0.0, T, g)*self.Om
         else:
             m = float(d['m_borde'])
             F = A*F_perfil(J, forma, None if forma != 'gauss' else float(d['sigma_J']), jt, g, m)
@@ -98,7 +134,12 @@ class Lazo:
     def R(self, omega):
         """R_k(J; omega) en el orden (k-1) nj + i, por los pesos de la cuadratura en J."""
         Om = self.Om[None, :]
-        return (2*self.k2*Om*self.dF[None, :]/(self.k2*Om**2 - omega**2)*self.wJ[None, :]).ravel()
+        if self.dOm is None:
+            return (2*self.k2*Om*self.dF[None, :]/(self.k2*Om**2 - omega**2)*self.wJ[None, :]).ravel()
+        n = np.sqrt(self.k2)
+        menos = n*Om - omega                        # n Omega - omega;
+        menos[0] = self.dOm + (self.Om_min - omega)  # con n = 1, sin cancelación junto al borde
+        return (2*self.k2*Om*self.dF[None, :]/(menos*(n*Om + omega))*self.wJ[None, :]).ravel()
 
     def lam(self, omega):
         D = self.R(omega)

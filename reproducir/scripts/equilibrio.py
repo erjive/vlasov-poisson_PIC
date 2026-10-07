@@ -394,6 +394,8 @@ if __name__ == '__main__':
     ap.add_argument('--metodo', default='picard', choices=['picard', 'edo'],
                     help='picard: iteración de punto fijo; edo: Poisson como ecuación '
                          'diferencial ordinaria (solo forma maxwell; ver equilibrio_edo.py)')
+    ap.add_argument('--maxit', type=int, default=60,
+                    help='tope de iteraciones de Picard (con masa grande el cociente q se acerca a 1)')
     ap.add_argument('--salida', required=True)
     arg = ap.parse_args()
     if arg.metodo == 'edo' and arg.forma != 'maxwell':
@@ -427,7 +429,7 @@ if __name__ == '__main__':
                     forma=arg.forma, jt=arg.jt, k=arg.k, m=arg.m, w0=arg.w0, fondo=arg.fondo)
     extra = {}
     if arg.metodo == 'picard':
-        eq.iterar()
+        eq.iterar(maxit=arg.maxit)
     else:
         from equilibrio_edo import EquilibrioEDO, adoptar
         edo = EquilibrioEDO(arg.a0, arg.jt, arg.k, arg.w0, arg.l0).resolver(verboso=True)
