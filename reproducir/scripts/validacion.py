@@ -350,36 +350,98 @@ def armonico():
 
 
 # ------------------------------------------------------------------ residuo estático
+SG = os.path.join(EXE, 'sg')
+SP_EQ = os.path.join(RAIZ, '..', 'VlasovPoisson_PIC_sp', 'exe', 'rep', '11_equilibrio', 'eq_e0')
+
+
+def par_de(carpeta):
+    """params_usados.par de una corrida como diccionario de cadenas."""
+    return dict((x.split('=')[0].strip(), x.split('=')[1].split('#')[0].strip())
+                for x in open(os.path.join(carpeta, 'params_usados.par')) if '=' in x and not x.startswith('#'))
+
+
+def razon_a(carpeta):
+    """a_1/a_0 de la parte angular de la función de prueba de la corrida (su ancho es sq1). El
+    código escribe a_n h_n; dividir h_1/h_0 por este factor da el h_1/h_0 del artículo."""
+    from exact import ak_test
+    sq1 = float(par_de(carpeta)['sq1'])
+    return ak_test(sq1, 1)/ak_test(sq1, 0)
+
+
+def h1_tl(carpeta, archivo='hk1_complex.tl'):
+    """t y h_1/h_0(0) de una serie del código (o de hk_numerico.py), como en el artículo."""
+    a = np.loadtxt(os.path.join(carpeta, archivo))
+    return a[:, 0], (a[:, 3] + 1j*a[:, 4])/(a[0, 1] + 1j*a[0, 2])/razon_a(carpeta)
+
+
 def residuo():
     """Parte estática de h_1 del pulso con autogravedad (reproducir/corridas/09_autogravedad,
     salidas en exe/sg) según el mapa ángulo-acción: el del isócrono, que usa el código, y el del
     potencial total promediado en t >= 2000 (aa_meseta.py). La parte estática es el promedio
-    de h_1/h_0 en 2000 <= t <= 20000; el resto, su rms en la misma ventana."""
+    de h_1/h_0 en 2000 <= t <= 20000; el resto, su rms en la misma ventana. h_1 es el del
+    artículo: se quita el factor a_1/a_0 de la función de prueba que lleva la salida del código.
+    El peso es B(J) = J^2 exp(-(J - j1)^2/sj1^2) con j1 = sj1 = 0.1."""
     lineas = []
     def w(x=''):
         lineas.append(x); print(x, flush=True)
-    SG = os.path.join(EXE, 'sg')
     rms = lambda x: np.sqrt(np.mean(np.abs(x)**2))
     v = lambda t: (t >= 2000.0) & (t <= 20000.0)
-    w('Pulso gaussiano con autogravedad, isócrono, L0 = 2, dt = 0.1, t <= 20000. h_1/h_0 en 2000 <= t <= 20000.')
+    w('Pulso gaussiano con autogravedad, isócrono, L0 = 2, dt = 0.1, t <= 20000. h_1/h_0 en 2000 <= t <= 20000,')
+    w(f'sin el factor a_1/a_0 = {razon_a(os.path.join(SG, "long20k_snap")):.5f} de la función de prueba (sq1 = 0.4).')
     w('Con el mapa del isócrono (h_1 del código):')
     w(f'{"corrida":>23} {"N_J x N_Q":>10} {"M_gas/M":>8} {"|<h_1>|/h_0":>12} {"rms del resto":>14}')
     for n in ('long20k_nosg', 'long_a0_1e-4', 'long_a0_1e-3', 'long_a0_1e-2', 'long20k_nrc800', 'long20k_npc50',
               'long20k_a0_1e-2_nrc800'):
-        a = np.loadtxt(os.path.join(SG, n, 'hk1_complex.tl'))
-        t, z = a[:, 0], (a[:, 3] + 1j*a[:, 4])/(a[0, 1] + 1j*a[0, 2])
-        par = dict((x.split('=')[0].strip(), x.split('=')[1].split('#')[0].strip())
-                   for x in open(os.path.join(SG, n, 'params_usados.par')) if '=' in x and not x.startswith('#'))
+        par = par_de(os.path.join(SG, n))
+        t, z = h1_tl(os.path.join(SG, n))
         masa = '0' if par.get('autointeraction', '.true.') == '.false.' else par['a0']
         z = z[v(t)]
         w(f'{n:>23} {par["Nrc"] + " x " + par["Npc"]:>10} {masa:>8} {abs(z.mean()):12.3e} {rms(z - z.mean()):14.3e}')
     d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+    fa = razon_a(os.path.join(SG, 'long20k_snap'))
     w('\nM_gas/M = 1e-3, 400 x 25 (long20k_snap, 501 instantáneas), según el mapa:')
     w(f'{"mapa":>23} {"|<h_1>|/h_0":>12} {"rms del resto":>14}')
     for k, nombre in (('iso', 'isócrono'), ('promedio', 'potencial promediado'), ('instante', 'potencial instantáneo')):
-        z = d[f'h1_{k}'][v(d['t'])]
+        z = d[f'h1_{k}'][v(d['t'])]/fa
         w(f'{nombre:>23} {abs(z.mean()):12.3e} {rms(z - z.mean()):14.3e}')
+    ac = accion()
+    w('\nAcción de dos partículas (long_fino, 1500 <= t <= 2000, cada 4): media y variación pico a pico relativa')
+    w('con el mapa del isócrono y con el del potencial total promediado en t >= 1500.')
+    m = ac['t'] >= 1500.0
+    for c, n in enumerate(ac['sel']):
+        a_, b_ = ac['J_ext'][m, c], ac['J_tot'][m, c]
+        w(f'   partícula {n}: J = {a_.mean():.4f};  isócrono {np.ptp(a_)/a_.mean():.2e};  total {np.ptp(b_)/b_.mean():.2e}')
+    if os.path.exists(os.path.join(SP_EQ, 'hk1_numerico_eq.tl')):
+        w('\nEstado estacionario con distribución en L (VlasovPoisson_PIC_sp, 11_equilibrio/eq_e0, a0 = 1e-2): |h_1|/h_0')
+        ti, zi = h1_tl(SP_EQ); tn, zn = h1_tl(SP_EQ, 'hk1_numerico_eq.tl')
+        w(f'   mapa del isócrono: entre {np.abs(zi).min():.3e} y {np.abs(zi).max():.3e} en 0 <= t <= {ti[-1]:g}')
+        w('   mapa del equilibrio: ' + ', '.join(f'{abs(zn[np.argmin(np.abs(tn - a_))]):.1e} en t = {a_}' for a_ in (0, 50, 100)))
     open(ruta('residuo.txt'), 'w').write('\n'.join(lineas) + '\n')
+
+
+def accion():
+    """Acción de dos partículas del pulso con autogravedad (exe/sg/long_fino: a0 = 1e-3, una
+    instantánea cada 4 unidades hasta t = 2000) con el mapa del isócrono y con el del potencial
+    total, isócrono más el potencial propio promediado en t >= 1500. Se guarda en
+    exe/validacion/accion.npz."""
+    sal = ruta('accion.npz')
+    if os.path.exists(sal):
+        return np.load(sal)
+    import h5py
+    from aa_numerico import MapaAA, phi_iso
+    from df0 import rp_to_QJ
+    sel = np.array([1674, 4978])        # la de mayor peso (fila de J = 0.1) y una de J = 0.3
+    with h5py.File(os.path.join(SG, 'long_fino', 'vlasov_output.h5'), 'r') as f:
+        st = sorted([k for k in f if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
+        t = np.array([f[k].attrs['time'] for k in st])
+        rg = f['grid']['r'][:]
+        ps = np.mean([f[k]['potential'][:] - phi_iso(rg) for k, tt in zip(st, t) if tt >= 1500.0], axis=0)
+        mapa = MapaAA(rg, ps)
+        rp = [(f[k]['r_part'][:][sel], f[k]['p_part'][:][sel]) for k in st]
+    J_ext = np.array([rp_to_QJ(r, p)[1] for r, p in rp])
+    J_tot = np.array([mapa(r, p)[1] for r, p in rp])
+    np.savez(sal, t=t, J_ext=J_ext, J_tot=J_tot, sel=sel)
+    return np.load(sal)
 
 
 # ------------------------------------------------------------------ corridas de referencia
@@ -603,6 +665,51 @@ def figuras():
         ax.set_xlabel('$t$'); ax.set_xlim(0, 4000); ax.grid(alpha=0.3)
     axs[0].legend(fontsize=7, frameon=False, loc='upper left')
     fig.savefig(os.path.join(destino, 'validacion_referencia.pdf')); plt.close(fig)
+    # 5. Variables de acción-ángulo del potencial total (Sección 5.B), con el pulso con autogravedad
+    #    de exe/sg: (a) |h_1|/h_0 con el mapa del isócrono según la masa; (b) Re h_1/h_0 con los
+    #    dos mapas, a0 = 1e-3; (c) acción de una partícula con los dos mapas; (d) |h_1|/h_0 de un
+    #    estado estacionario con distribución en L (código _sp), con los dos mapas.
+    fig, axs = plt.subplots(2, 2, figsize=(7, 5.2), constrained_layout=True)
+    ax = axs[0, 0]
+    for n, etiqueta, c in (('long_a0_1e-2', '$M_{gas}/M=10^{-2}$', 'C3'), ('long_a0_1e-3', '$10^{-3}$', 'C1'),
+                           ('long_a0_1e-4', '$10^{-4}$', 'C0'), ('long20k_nosg', '$0$', '0.35')):
+        t, z = h1_tl(os.path.join(SG, n))
+        ax.loglog(t[1:], np.abs(z[1:]), color=c, lw=0.7, label=etiqueta)
+    ax.set_xlim(10, 2.0e4); ax.set_ylim(1e-9, 3)
+    ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.grid(alpha=0.3)
+    for l in ax.legend(fontsize=7, frameon=False, loc='lower left').get_lines():
+        l.set_linewidth(1.4)
+    ax = axs[0, 1]
+    d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+    fa = razon_a(os.path.join(SG, 'long20k_snap'))
+    ax.plot(d['t'], 1e3*d['h1_iso'].real/fa, color='C1', lw=0.8, label='variables of $\\Phi_{ext}$')
+    ax.plot(d['t'], 1e3*d['h1_promedio'].real/fa, color='C2', lw=0.8,
+            label='variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')
+    ax.axhline(0, color='k', lw=0.5)
+    ax.set_xlim(2000, 2.0e4); ax.set_ylim(-1.2, 4.0)        # antes de t = 2000 el pulso aún se mezcla
+    ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,\\mathrm{Re}\\,h_1/h_0$'); ax.grid(alpha=0.3)
+    ax.legend(fontsize=7, frameon=False, loc='upper right')
+    ax = axs[1, 0]
+    ac = accion()
+    m = ac['t'] >= 1500.0
+    for clave, c, etiqueta in (('J_ext', 'C1', 'variables of $\\Phi_{ext}$'),
+                               ('J_tot', 'C2', 'variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')):
+        J = ac[clave][m, 0]
+        ax.plot(ac['t'][m], 1e3*(J/J.mean() - 1), color=c, lw=0.9, label=etiqueta)
+    ax.set_xlim(1500, 2000); ax.set_ylim(-4.5, 6.5)
+    ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,(J/\\langle J\\rangle-1)$'); ax.grid(alpha=0.3)
+    ax.legend(fontsize=7, frameon=False, loc='upper right')
+    ax = axs[1, 1]
+    if os.path.exists(os.path.join(SP_EQ, 'hk1_numerico_eq.tl')):
+        ti, zi = h1_tl(SP_EQ); tn, zn = h1_tl(SP_EQ, 'hk1_numerico_eq.tl')
+        ax.semilogy(ti, np.abs(zi), color='C1', lw=0.9, label='variables of $\\Phi_{ext}$')
+        ax.semilogy(tn, np.maximum(np.abs(zn), 1e-17), 'o-', color='C2', ms=3, lw=0.9, label='variables of $\\Phi_{eq}$')
+        ax.set_xlim(0, 100); ax.set_ylim(1e-17, 1)
+        ax.legend(fontsize=7, frameon=False, loc='center right')
+    ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.grid(alpha=0.3)
+    for ax, letra in zip(axs.flat, 'abcd'):
+        ax.text(0.03, 0.95, f'({letra})', transform=ax.transAxes, va='top', fontsize=9)
+    fig.savefig(os.path.join(destino, 'validacion_mapa.pdf')); plt.close(fig)
     print('figuras en', destino)
 
 
