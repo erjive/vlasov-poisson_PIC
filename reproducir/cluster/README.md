@@ -20,7 +20,10 @@ DEST=xook.lamod.unam.mx:/storage/cactusolin/erik/newVlasov/vlasov-poisson_PIC
 | `enviar.sh` | submits runs of `reproducir/scripts/hadzic.py`, one job each |
 | `escala.slurm` | time per step against the number of threads, to choose `-c` |
 | `cola.sh` | why a job waits: partitions, the node, jobs ahead, estimated start, scheduler |
+| `estado.sh` | what has run: recent jobs, the scaling table, and the state of each run |
 | `serie.slurm` | computes `serie.npz` of finished runs, so that only that file is copied back |
+| `traer.sh` | on the laptop: fetches the small files of finished runs |
+| `comparar.py` | on the laptop: a run made on the cluster against the same run made on the laptop |
 
 All commands are given from the root of the repository.
 
@@ -78,6 +81,22 @@ squeue -u $USER
 Each run writes to `exe/hadzic/<name>/`, its log to `exe/hadzic/<name>.log`, and
 `exe/hadzic/<name>.ok` when it ends well, as `hadzic.py correr` does on the laptop.
 
+The runs listed in `EN_CLUSTER` of `hadzic.py` are meant for the cluster: `hadzic.py preparar`
+writes their initial data and `.par` files, and `hadzic.py correr` skips them on the laptop.
+At present they are the nine runs of series 6 (`DP`, `DPe1` and `ZP` for `k0.75_a1`, `k1_a1`
+and `k2_a1`).
+
+To see what has run, on the cluster:
+
+```bash
+bash reproducir/cluster/estado.sh > estado.txt 2>&1
+```
+
+It prints the recent jobs of the user, the scaling table and, for each run with recent
+activity, whether it ended well, its number of particles, time step, final time, threads,
+seconds, size and whether `serie.npz` exists. For the finished runs without `serie.npz` it
+ends with the `sbatch` line of the next section.
+
 ## 3. Analysis
 
 The snapshots of a run with 10⁶ particles take 17 GB. The analysis only needs the time series
@@ -90,13 +109,25 @@ sbatch reproducir/cluster/serie.slurm DP_k1.25_a1 ZP_k1.25_a1
 This needs Python 3 with `numpy` and `h5py`. Then, on the laptop:
 
 ```bash
-for n in DP_k1.25_a1 ZP_k1.25_a1; do
-  mkdir -p exe/hadzic/$n
-  rsync -av $DEST/exe/hadzic/$n/serie.npz exe/hadzic/$n/
-  rsync -av $DEST/exe/hadzic/$n.{ok,meta,log} exe/hadzic/
-done
+export VP_CLUSTER=$DEST                       # with user@ in front if the user names differ
+reproducir/cluster/traer.sh -d exe/hadzic DP_k1_a1 DPe1_k1_a1 ZP_k1_a1
 python3 reproducir/scripts/hadzic.py analizar
 ```
+
+`traer.sh` copies `serie.npz`, the `.tl` series, `params_usados.par`, and the `.ok`, `.meta`,
+`.log` and Slurm output of each run, in one connection; `-g` adds `vlasov_output.h5`. With
+`-d exe/hadzic` the runs land where `hadzic.py analizar` expects them, and the script refuses
+to overwrite a run that already exists on the laptop. Without `-d` they go to
+`exe/cluster/hadzic/`, which is the place for a run that was made on both machines:
+
+```bash
+reproducir/cluster/traer.sh DP_k1.25_a1 ZP_k1.25_a1
+python3 reproducir/cluster/comparar.py --eps 0.03 DP_k1.25_a1 ZP_k1.25_a1
+```
+
+`comparar.py` gives the difference between the two machines for the series written by the
+code and for `h_1`, the time at which it exceeds 10⁻¹², 10⁻⁹, 10⁻⁶ and 10⁻³, and the same for
+the response `(D - Z)/eps`.
 
 ## Notes
 
