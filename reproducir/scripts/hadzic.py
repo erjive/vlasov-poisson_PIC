@@ -332,14 +332,18 @@ def serie(nombre, procesos=1):
 
 
 def series_de(nombres, procesos=4):
-    """Paso serie: serie.npz de las corridas pedidas, una detrás de otra."""
+    """Paso serie: serie.npz y orbitas.npz de las corridas pedidas, una detrás de otra. Son los
+    dos archivos pequeños que necesita el análisis; así las corridas hechas en el cluster se
+    analizan en el portátil sin traer vlasov_output.h5."""
     for nombre in nombres:
         if not os.path.exists(ruta(nombre, 'vlasov_output.h5')):
             print(f'{nombre}: no hay vlasov_output.h5', flush=True)
             continue
         t0 = time.time()
         serie(nombre, procesos)
-        print(f'{nombre}: serie.npz ({time.time()-t0:.0f} s)', flush=True)
+        t1 = time.time()
+        _orbitas(nombre)
+        print(f'{nombre}: serie.npz ({t1-t0:.0f} s) y orbitas.npz ({time.time()-t1:.0f} s)', flush=True)
 
 
 def _serie(nombre):

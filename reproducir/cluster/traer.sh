@@ -11,8 +11,8 @@
 # -g       trae también vlasov_output.h5 (1.6 GB por corrida de 10^5 partículas).
 # -n       muestra lo que traería, sin copiar.
 #
-# Sin -g trae los archivos pequeños: serie.npz, las series .tl, params_usados.par, y el .ok,
-# el .meta, el .log y la salida de Slurm de cada corrida. Una sola conexión para todas.
+# Sin -g trae los archivos pequeños: serie.npz, orbitas.npz, las series .tl, params_usados.par,
+# y el .ok, el .meta, el .log y la salida de Slurm de cada corrida. Una sola conexión para todas.
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RAIZ="$(cd "$AQUI/../.." && pwd)"
@@ -39,7 +39,8 @@ mkdir -p "$destino"
 filtros=()
 for n in "$@"; do
   filtros+=(--include="/$n.ok" --include="/$n.meta" --include="/$n.log" --include="/slurm_${n}_*"
-            --include="/$n/" --include="/$n/serie.npz" --include="/$n/*.tl" --include="/$n/params_usados.par")
+            --include="/$n/" --include="/$n/serie.npz" --include="/$n/orbitas.npz" --include="/$n/*.tl"
+            --include="/$n/params_usados.par")
   [ $grande = 1 ] && filtros+=(--include="/$n/vlasov_output.h5")
 done
 rsync -av $seco --prune-empty-dirs "${filtros[@]}" --exclude='*' "$origen/exe/hadzic/" "$destino/"

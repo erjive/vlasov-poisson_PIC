@@ -21,7 +21,7 @@ DEST=xook.lamod.unam.mx:/storage/cactusolin/erik/newVlasov/vlasov-poisson_PIC
 | `escala.slurm` | time per step against the number of threads, to choose `-c` |
 | `cola.sh` | why a job waits: partitions, the node, jobs ahead, estimated start, scheduler |
 | `estado.sh` | what has run: recent jobs, the scaling table, and the state of each run |
-| `serie.slurm` | computes `serie.npz` of finished runs, so that only that file is copied back |
+| `serie.slurm` | computes `serie.npz` and `orbitas.npz` of finished runs, so that only those files are copied back |
 | `traer.sh` | on the laptop: fetches the small files of finished runs |
 | `comparar.py` | on the laptop: a run made on the cluster against the same run made on the laptop |
 
@@ -99,8 +99,10 @@ ends with the `sbatch` line of the next section.
 
 ## 3. Analysis
 
-The snapshots of a run with 10⁶ particles take 17 GB. The analysis only needs the time series
-of each run, 1.3 MB, which is computed on the cluster:
+The snapshots of a run with 10⁶ particles take 17 GB. The analysis only needs two small files
+of each run, which are computed on the cluster: `serie.npz`, the time series (1.3 MB), and
+`orbitas.npz`, the angle and action of the particles near the edge every 100 time units
+(10 MB for 10⁵ particles):
 
 ```bash
 sbatch reproducir/cluster/serie.slurm DP_k1.25_a1 ZP_k1.25_a1
@@ -114,7 +116,7 @@ reproducir/cluster/traer.sh -d exe/hadzic DP_k1_a1 DPe1_k1_a1 ZP_k1_a1
 python3 reproducir/scripts/hadzic.py analizar
 ```
 
-`traer.sh` copies `serie.npz`, the `.tl` series, `params_usados.par`, and the `.ok`, `.meta`,
+`traer.sh` copies `serie.npz`, `orbitas.npz`, the `.tl` series, `params_usados.par`, and the `.ok`, `.meta`,
 `.log` and Slurm output of each run, in one connection; `-g` adds `vlasov_output.h5`. With
 `-d exe/hadzic` the runs land where `hadzic.py analizar` expects them, and the script refuses
 to overwrite a run that already exists on the laptop. Without `-d` they go to
