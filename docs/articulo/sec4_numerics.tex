@@ -37,7 +37,7 @@ at the grid points and which is constant for $0\leq r\leq R_1$. The denominator 
 \item[(iii)] The mass function $m(t,r)$ and the potential are obtained by integrating the equations $\partial m/\partial r = 4\pi r^2\rho$ and $\partial\Phi_{gas}/\partial r = G m/r^2$ outwards from the center. Since $\rho$ is linear on each interval $[R_{i-1},R_i]$, both integrals are computed in closed form, such that no further discretization error is introduced. The additive constant in $\Phi_{gas}$ is fixed by requiring that $\Phi_{gas} + r\,\partial\Phi_{gas}/\partial r = 0$ at the outermost grid point, which matches the potential to the exterior solution $-G M_{gas}/r$.
 \item[(iv)] The potential and its gradient are interpolated from the grid points to the positions of the computational particles with the same weights as in Eq.~(\ref{Eq:Deposit}).
 \end{enumerate}
-For particles which lie within the distance $\Delta r$ from the center, the weights in steps (i) and (iv) are complemented by those of their mirror images at $-r_j$, in accordance with the regularity of the density at the center, and beyond the outermost grid point the exterior solution is used. Neither of these situations plays a role for the configurations considered in this article, in which the gas occupies a shell that lies well inside the grid.
+For particles which lie within the distance $\Delta r$ from the center, the weights in steps (i) and (iv) are complemented by those of their mirror images at $-r_j$, in accordance with the regularity of the density at the center, and beyond the outermost grid point the exterior solution is used. Neither of these situations plays a role for the configurations considered in these notes, in which the gas occupies a shell that lies well inside the grid.
 
 Note that the potential which acts on a computational particle includes the contribution of the particle itself. In PIC schemes based on Cartesian coordinates the use of the same weights for the assignment and for the interpolation guarantees that a particle exerts no force on itself~\cite{BirdsallLangdon-Book,HockneyEastwood-Book}. In spherical symmetry this is not the case, and it should not be: a thin shell of mass $m$ and radius $r$ is subject to the mean value of the gravitational fields on its two sides, that is, to the force $-G m/(2r^2)$ per unit mass. This is the self-gravity of the shell; the scheme reproduces it up to a correction of the order $\Delta r/r$, and we do not subtract it. In fact, we have verified that subtracting it reduces the order of convergence with respect to $1/N$ from two to one in the collapse of a cold homogeneous sphere, for which the exact solution is known.
 
@@ -60,7 +60,7 @@ B(J) = J^2\exp\left[ -\frac{(J - J_1)^2}{\sigma_1^2} \right],
 \end{equation}
 with parameters $J_1$ and $\sigma_1$ which are specified below. The factor $J^2$ makes the function $B(J)e^{-inQ}$ continuous at the circular orbit for $|n|\leq 4$.
 
-We have implemented this method in two codes, one for the reduced model and one for a general distribution of the angular momenta, which share the algorithm described above. Unless otherwise stated, the simulations of this article use $\Delta r = 0.1$, a grid which extends to $r = 20$, a time step $\Delta t = 0.05$ or $0.1$, and $N = 10^4$ computational particles. \EJ{To be decided: whether the codes and the scripts which reproduce the results are made public, in which case the repository should be cited here.}
+We have implemented this method in two codes, one for the reduced model and one for a general distribution of the angular momenta, which share the algorithm described above. Unless otherwise stated, the simulations of these notes use $\Delta r = 0.1$, a grid which extends to $r = 20$, a time step $\Delta t = 0.05$ or $0.1$, and $N = 10^4$ computational particles. \EJ{To be decided: whether the codes and the scripts which reproduce the results are made public, in which case the repository should be cited here.}
 
 
 \subsection{Self-consistent steady states}
@@ -91,7 +91,7 @@ For a DF with a distribution of angular momenta the same iteration is used, with
 \subsection{Initial data and response to a perturbation}
 \label{SubSec:QuietStart}
 
-The initial data considered in this article consist of a self-consistent steady state and a small perturbation. In the reduced model they are of the form
+The initial data considered in these notes consist of a self-consistent steady state and a small perturbation. In the reduced model they are of the form
 \begin{equation}
 \mathcal{F}_0(0,Q,J) = \mathcal{F}_{0,eq}(J)\left[ 1 + \varepsilon\, s(J)\cos Q \right],\qquad
 s(J) := \left( \frac{J}{J_{max}} \right)^{3/2},
