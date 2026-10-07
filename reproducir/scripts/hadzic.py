@@ -7,7 +7,8 @@ Pasos (cada uno reutiliza lo que ya exista):
     python3 hadzic.py lineal     mapa de lambda_edge(k, a0) y soluciones lineales en el tiempo
     python3 hadzic.py rebote     frecuencia de rebote de las órbitas del borde en cada modo (a0 = 1)
     python3 hadzic.py preparar   estados iniciales (equilibrio.py) y .par de las corridas
-    python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos
+    python3 hadzic.py correr     corridas PIC, una detrás de otra, 4 hilos (las de EN_CLUSTER no:
+                                 esas se envían con reproducir/cluster/enviar.sh)
     python3 hadzic.py serie [-j N] <corrida> ...   serie.npz de esas corridas, con N procesos
                                  (para el cluster: reproducir/cluster/serie.slurm)
     python3 hadzic.py analizar   dPhi y h_1 en el mapa del equilibrio, menos eps = 0
@@ -87,6 +88,19 @@ for k in [1.25]:
     CORRIDAS += [(f'DPe1_{b}', k, 1.0, 0.1, f'ZP_{b}'), (f'DPe01_{b}', k, 1.0, 0.01, f'ZP_{b}')]
     for x in ('DP', 'ZP', 'DPe1', 'DPe01'):
         CAMBIOS[f'{x}_{b}'] = {'Nrc': '1280', 'Npc': '80', 'courant': '1.0'}
+#  serie 6, para el cluster: los modos bien ligados (k = 0.75 y 1) y el caso amortiguado (k = 2)
+#           con las partículas y el paso de la serie 5, cada uno con eps = 0.03 y 0.1 sobre la
+#           misma referencia. Con eps = 0.03, s = 2 omega_b/(Omega_min - omega_d) vale 0.51 y
+#           0.74 para k = 0.75 y 1, bajo el umbral del atrapamiento; con eps = 0.1, 0.93 y 1.34.
+#           El modo de k = 1.5 no entra: pediría eps ~ 2e-4.
+EN_CLUSTER = set()                      # corridas que el paso correr no lanza en el portátil
+for k in [0.75, 1.0, 2.0]:
+    b = f'k{k:g}_a1'
+    CORRIDAS += [(f'DP_{b}', k, 1.0, 0.03, f'ZP_{b}'), (f'ZP_{b}', k, 1.0, 0.0, None),
+                 (f'DPe1_{b}', k, 1.0, 0.1, f'ZP_{b}')]
+    for x in ('DP', 'ZP', 'DPe1'):
+        CAMBIOS[f'{x}_{b}'] = {'Nrc': '1280', 'Npc': '80', 'courant': '1.0'}
+        EN_CLUSTER.add(f'{x}_{b}')
 
 
 def ic_de(nombre):
@@ -250,6 +264,9 @@ def correr():
     env = dict(os.environ, OMP_NUM_THREADS='4', OMP_PLACES='cores', OMP_PROC_BIND='close')
     for nombre, *_ in CORRIDAS:
         if os.path.exists(ruta(f'{nombre}.ok')):
+            continue
+        if nombre in EN_CLUSTER:
+            print(f'      {nombre}: va al cluster (reproducir/cluster/enviar.sh)', flush=True)
             continue
         par = os.path.join(PARDIR, f'hadzic__{nombre}.par')
         t0 = time.time()
