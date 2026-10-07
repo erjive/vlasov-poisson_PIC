@@ -15,13 +15,21 @@ When the last term in the second equation in~(\ref{Eq:EOM}) is omitted, the comp
 \sigma_Q = \sigma_J = 0.1,
 \label{Eq:Pulse}
 \end{equation}
-which describes a gas cloud whose particles are concentrated near the pericenters of their orbits (see Fig.~\ref{Fig:Pulse}), and we choose the weight function $B(J) = J^2\exp(-J^2/\sigma_J^2)$, that is, Eq.~(\ref{Eq:BDef}) with $J_1 = 0$ and $\sigma_1 = \sigma_J$. The Fourier coefficients of the DF~(\ref{Eq:Pulse}) with respect to the angle variable are
+which describes a gas cloud whose particles are concentrated near the pericenters of their orbits (see Fig.~\ref{Fig:Pulse}), and we choose the weight function $B(J) = J^2\exp(-J^2/\sigma_J^2)$, that is, Eq.~(\ref{Eq:BDef}) with $J_1 = 0$ and $\sigma_1 = \sigma_J$.
+
+The dependency of the DF~(\ref{Eq:Pulse}) on the angle variable has been chosen such that it is smooth and $2\pi$-periodic and such that its Fourier coefficients~(\ref{Eq:FourierF}) are known explicitly. In fact, the identity $\sin^2(Q/2) = (1 - \cos Q)/2$ yields
 \begin{equation}
-\hat{F}_n(J) = \alpha\, e^{-z} I_n(z)\, J^2\exp\left( -\frac{J^2}{\sigma_J^2} \right),\qquad
+\exp\left[ -\frac{\sin^2(Q/2)}{\sigma_Q^2} \right] = e^{-z} e^{z\cos Q}
+ = e^{-z}\sum\limits_{n\in\Integer} I_n(z) e^{inQ},\qquad
 z := \frac{1}{2\sigma_Q^2},
+\label{Eq:BesselExpansion}
+\end{equation}
+where $I_n$ denotes the modified Bessel function of the first kind of order $n$, which satisfies $I_{-n} = I_n$. The second equality in Eq.~(\ref{Eq:BesselExpansion}) is the generating function of these functions, see Eq.~(10.35.2) in Ref.~\cite{DLMF}; equivalently, $I_n(z)$ is the $n$-th Fourier coefficient of the function $e^{z\cos Q}$ (Eq.~(10.32.3) in Ref.~\cite{DLMF}). Consequently, the Fourier coefficients of the DF~(\ref{Eq:Pulse}) with respect to the angle variable are
+\begin{equation}
+\hat{F}_n(J) = \alpha\, e^{-z} I_n(z)\, J^2\exp\left( -\frac{J^2}{\sigma_J^2} \right).
 \label{Eq:PulseFourier}
 \end{equation}
-with $I_n$ the modified Bessel functions of the first kind. Hence, $|h_n(0)|/h_0 = I_n(z)/I_0(z)$, which is equal to $0.990$, $0.960$, $0.913$ and $0.851$ for $n = 1,2,3,4$, and Eq.~(\ref{Eq:hnFree}) reduces to an integral over $J$, which we compute with the trapezoidal rule on $2\times 10^5$ subintervals of $0\leq J\leq 6\sigma_J$. The computational particles are placed on a lattice of the form~(\ref{Eq:Lattice}), consisting of $N_J$ rows which cover the interval $0 < J < 6\sigma_J$ and of $N_Q$ points per row, their masses are proportional to the values of the DF~(\ref{Eq:Pulse}) at the lattice points, and their radii and momenta are obtained from the explicit action-angle map of the isochrone potential.
+For $\sigma_Q = 0.1$ one has $z = 50$, and in this case $I_n(z)/I_0(z)$ differs from $e^{-n^2/(2z)}$ by less than one percent for $|n|\leq 16$. Hence, the narrower the pulse is in the angle variable, the more harmonics it contains: here the amplitudes of those with $|n|\leq 2\sqrt{z}\approx 14$ are larger than $e^{-2}\approx 0.14$ times the one of the harmonic $n = 0$. It follows from Eqs.~(\ref{Eq:hnFree},\ref{Eq:PulseFourier}) that $|h_n(0)|/h_0 = I_n(z)/I_0(z)$, which is equal to $0.990$, $0.960$, $0.913$ and $0.851$ for $n = 1,2,3,4$, and that $h_n(t)$ is given by an integral over $J$, which we compute with the trapezoidal rule on $2\times 10^5$ subintervals of $0\leq J\leq 6\sigma_J$. The computational particles are placed on a lattice of the form~(\ref{Eq:Lattice}), consisting of $N_J$ rows which cover the interval $0 < J < 6\sigma_J$ and of $N_Q$ points per row, their masses are proportional to the values of the DF~(\ref{Eq:Pulse}) at the lattice points, and their radii and momenta are obtained from the explicit action-angle map of the isochrone potential.
 
 \begin{figure}[htp]
 \centerline{\includegraphics[width=0.85\textwidth]{figuras/validacion_pulso.pdf}}
@@ -61,7 +69,16 @@ e_n := \frac{1}{h_0}\max\limits_{0\leq t\leq 2000} \left| h_n(t) - h_n^{exact}(t
 \end{equation}
 for different lattices and time steps. For $N_J\times N_Q = 400\times 64$ and $\Delta t = 0.1$ it does not exceed $6\times 10^{-9}$ for $n\leq 4$. In this case the error is dominated by the time integration. In fact, when the Yoshida integrator is replaced with the exact advance $Q_j\mapsto Q_j + \Omega(J_j)\Delta t$ of the angle variables of the particles, the error drops to less than $3\times 10^{-11}$, and the difference with respect to this solution decreases by the factors $16.0$, $16.0$ and $15.4$ each time $\Delta t$ is halved between $0.2$ and $0.025$ (for $n = 1$), as expected for a fourth-order method.
 
-The remaining rows of Table~\ref{Tab:FreeMixing} show the effect of the lattice. Since the sum~(\ref{Eq:hnPIC}) is a midpoint rule for an integral whose integrand is smooth and, with respect to $Q$, periodic, the error decreases rapidly when $N_J$ or $N_Q$ increase, until it reaches the one of the time integration. However, for a given lattice the sum is only reliable over a finite time span. The reason is that the phases $n\Omega(J_a)t$ of two neighboring rows differ by $n|\Omega'(J)|\Delta J\, t$, with $\Delta J$ the spacing between the rows. When this difference reaches $2\pi$ the rows are in phase again, such that $h_n$ exhibits a spurious recurrence~\cite{BirdsallLangdon-Book} at the time
+The remaining rows of Table~\ref{Tab:FreeMixing} show the effect of the lattice. Since the sum~(\ref{Eq:hnPIC}) is a midpoint rule for an integral whose integrand is smooth and, with respect to $Q$, periodic, the error decreases rapidly when $N_J$ or $N_Q$ increase, until it reaches the one of the time integration.
+
+With respect to the angle variable the error of the lattice can be computed explicitly. On a lattice with $N_Q$ points per row the harmonics $n + mN_Q$, $m\in\Integer$, cannot be distinguished from the harmonic $n$, such that the sum over the points $Q_b$ yields $\sum_m (-1)^m\hat{F}_{n+mN_Q}$ instead of $\hat{F}_n$, where the signs are due to the fact that the $Q_b$ are the midpoints of the subintervals. Since the transport does not mix different harmonics, this factor is independent of time. Taking into account that the masses of the computational particles are normalized such that their sum is equal to $M_{gas}$, Eq.~(\ref{Eq:PulseFourier}) gives
+\begin{equation}
+e_n = \left| \frac{\sum_m (-1)^m I_{n+mN_Q}(z)}{\sum_m (-1)^m I_{mN_Q}(z)} - \frac{I_n(z)}{I_0(z)} \right| ,
+\label{Eq:Aliasing}
+\end{equation}
+where the sums extend over all $m\in\Integer$. This expression reproduces the values in the rows with $N_Q = 16$ and $N_Q = 32$ of Table~\ref{Tab:FreeMixing} to nine significant digits, and for $N_Q = 64$ it is smaller than $5\times 10^{-15}$. Hence, the number of points per row has to be a few times larger than the number $2\sqrt{z}$ of harmonics contained in the DF.
+
+With respect to the action variable the situation is different, since for a given lattice the sum is only reliable over a finite time span. The reason is that the phases $n\Omega(J_a)t$ of two neighboring rows differ by $n|\Omega'(J)|\Delta J\, t$, with $\Delta J$ the spacing between the rows. When this difference reaches $2\pi$ the rows are in phase again, such that $h_n$ exhibits a spurious recurrence~\cite{BirdsallLangdon-Book} at the time
 \begin{equation}
 t_{rec} = \frac{2\pi}{n|\Omega'(J)|\Delta J}.
 \label{Eq:Recurrence}

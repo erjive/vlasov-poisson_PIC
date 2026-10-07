@@ -139,6 +139,23 @@ def analizar_libre(w):
         err = np.max(np.abs(h1 - ex), axis=0)/h0
         dt = 'exacto' if c.get('integrator') == 'analytic' else f'{c["courant"]*0.05:g}'
         w(f'{nombre[6:]:>14} {c["Nrc"]:5d} {c["Npc"]:4d} {dt:>6} ' + ' '.join(f'{e:9.1e}' for e in err))
+    # Error de la retícula en Q: con N_Q puntos medios la suma da sum_m (-1)^m F_{n+mN_Q} en vez
+    # de F_n, y las masas se normalizan con la suma de n = 0. Con F_n ~ e^{-z} I_n(z),
+    # z = 1/(2 sQ^2), el error es |sum_m (-1)^m I_{n+mN_Q} / sum_m (-1)^m I_{mN_Q} - I_n/I_0|.
+    from scipy.special import ive
+    z = 1.0/(2.0*SQ**2)
+    w('\nError de la retícula en Q: medido y el de la fórmula de alias con los coeficientes e^{-z} I_n(z), '
+      f'z = {z:g}.')
+    for nq in (16, 32, 64):
+        nombre = f'libre/nq{nq}' if nq < 64 else 'libre/nj400'
+        if not os.path.exists(ruta(nombre + '.ok')):
+            continue
+        med = np.max(np.abs(hk(nombre)[1] - ex), axis=0)/h0
+        s_ = np.array([sum((-1)**m*ive(abs(k + m*nq), z) for m in range(-8, 9)) for k in range(5)])
+        pred = np.abs(s_/s_[0] - np.array([ive(k, z) for k in range(5)])/ive(0, z))
+        w(f'   N_Q = {nq}: medido  ' + ' '.join(f'{x:.4e}' for x in med[1:]))
+        w(f'   {"":>8}  fórmula ' + ' '.join(f'{x:.4e}' for x in pred[1:])
+          + ('' if nq == 64 else f'   diferencia relativa <= {np.max(np.abs(med[1:]/pred[1:] - 1)):.0e}'))
     # Error de la dinámica: frente al avance exacto de los mismos nodos.
     if os.path.exists(ruta('libre/exacto.ok')):
         _, ha = hk('libre/exacto')
