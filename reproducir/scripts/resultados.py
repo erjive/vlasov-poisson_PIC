@@ -85,19 +85,6 @@ def eq_p(k, a0):
 
 
 # ------------------------------------------------------------------ estados estacionarios
-def delta_modo(z, dmin=1e-12):
-    """Distancia del modo al borde, delta_d = (Omega_min - omega_d)/(Omega_max - Omega_min), de
-    lambda(omega_d) = 1, buscada en log(delta) para resolver modos pegados al borde. None si
-    lambda < 1 hasta dmin anchos de banda del borde."""
-    from scipy.optimize import brentq
-    an = z.Om_max - z.Om_min
-    f = lambda x: z.lam(z.Om_min - 10**x*an) - 1
-    a, b = np.log10(dmin), np.log10(z.Om_min/an)            # hasta omega = 0
-    if f(a) <= 0 or z.lam(0.0) >= 1:
-        return None
-    return 10**brentq(f, a, b, xtol=1e-9)
-
-
 def _estado(arg):
     """Un estado estacionario: banda, extensión radial, lambda(0), lambda a 1e-3, 1e-6, 1e-9 y
     1e-12 anchos de banda del borde, lambda_edge (infinito si g <= 1), el segundo autovalor en
@@ -112,7 +99,7 @@ def _estado(arg):
         return np.linalg.eigvalsh(h[:, None]*(-z.M)*h[None, :])[-2:]
     l3, l6, l9, l12 = (z.lam(z.Om_min - x*an) for x in (1e-3, 1e-6, 1e-9, 1e-12))
     e = dos(z.Om_min if g > 1 else z.Om_min - 1e-12*an)
-    dd = delta_modo(z)
+    dd = z.delta_modo()
     r = d['r'][d['rho'] > 1e-10*d['rho'].max()]
     return dict(fam=fam, caso=etiqueta, a0=z.a0, g=g, jt=float(d['J_borde']), om_min=z.Om_min, om_max=z.Om_max,
                 rin=r.min(), rout=r.max(), phi=float(np.abs(d['phi_self']).max()), lam0=z.lam(0.0), l3=l3, l6=l6,

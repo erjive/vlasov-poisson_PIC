@@ -149,6 +149,18 @@ class Lazo:
         ev = np.linalg.eigvals(self.M*D[None, :])
         return float(np.max(ev[np.abs(ev.imag) < 1e-9*np.abs(ev).max()].real))
 
+    def delta_modo(self, dmin=1e-12):
+        """Distancia del modo al borde, delta_d = (Omega_min - omega_d)/(Omega_max - Omega_min),
+        de lambda(omega_d) = 1 con F_eq monótona. La raíz se busca en log(delta), para resolver
+        los modos pegados al borde (g <= 1 con masa pequeña). None si lambda < 1 hasta dmin
+        anchos de banda del borde, o si lambda(0) >= 1."""
+        an = self.Om_max - self.Om_min
+        f = lambda x: self.lam(self.Om_min - 10**x*an) - 1
+        a, b = np.log10(dmin), np.log10(self.Om_min/an)        # hasta omega = 0
+        if f(a) <= 0 or self.lam(0.0) >= 1:
+            return None
+        return 10**brentq(f, a, b, xtol=1e-9)
+
     def omega_modo(self):
         """Frecuencia del modo discreto, lambda(omega) = 1 bajo la banda, si lo hay. Se busca
         el primer cruce desde abajo en 2 anchos de banda; si F_eq' cambia de signo lambda no

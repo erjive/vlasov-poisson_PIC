@@ -20,21 +20,26 @@ mode below the edge.
 
 | k \ a₀ | 0.01 | 0.03 | 0.1 | 0.3 | 0.6 | 1.0 |
 |---|---|---|---|---|---|---|
-| 0.75 | ∞ | ∞ (δ_d ≈ 2×10⁻⁶) | ∞ (δ_d ≈ 10⁻⁴) | ∞ (δ_d = 0.004) | ∞ (δ_d = 0.027) | ∞ (δ_d = 0.075) |
-| 1 | ∞ | ∞ | ∞ | ∞ (δ_d = 0.0002) | ∞ (δ_d = 0.0085) | ∞ (δ_d = 0.044) |
-| 1.25 | 0.025 | 0.075 | 0.240 | 0.643 | 1.112 (δ_d = 0.0001) | 1.558 (δ_d = 0.019) |
-| 1.5 | 0.018 | 0.054 | 0.170 | 0.454 | 0.759 | 1.050 (δ_d = 0.0015) |
+| 0.75 | ∞ (δ_d = 2.0×10⁻⁸) | ∞ (δ_d = 1.5×10⁻⁶) | ∞ (δ_d = 1.3×10⁻⁴) | ∞ (δ_d = 0.0044) | ∞ (δ_d = 0.027) | ∞ (δ_d = 0.075) |
+| 1 | ∞ (δ_d ~ 10⁻⁹⁸) | ∞ (δ_d ~ 10⁻³³) | ∞ (δ_d = 4×10⁻¹¹) | ∞ (δ_d = 0.00016) | ∞ (δ_d = 0.0085) | ∞ (δ_d = 0.044) |
+| 1.25 | 0.026 | 0.076 | 0.242 | 0.649 | 1.122 (δ_d = 0.00013) | 1.583 (δ_d = 0.019) |
+| 1.5 | 0.018 | 0.054 | 0.170 | 0.448 | 0.759 | 1.051 (δ_d = 0.0015) |
 | 2 | 0.016 | 0.046 | 0.145 | 0.371 | 0.609 | 0.820 |
 | 3 | 0.016 | 0.047 | 0.145 | 0.358 | 0.567 | 0.738 |
+
+Values of 7 October 2026. The first version had λ_edge too low for 1 < k < 1.5 (1.558 for
+k = 1.25 at a₀ = 1), because the quadrature cut the support 3×10⁻⁸ band widths before the
+edge; see Section 2.2 of `hadzic_informe.pdf`. The two values with ~ are extrapolations.
 
 - **The dichotomy holds at small mass.** For k > 1, λ_edge ∝ a₀ (0.016–0.025 at a₀ = 0.01),
   as their bound M_λ ≤ Cε says, so there is no discrete mode. For k ≤ 1, λ diverges at the
   edge: as ln(1/δ) for k = 1 and as a power for k = 0.75. The mode exists, but at small mass
-  it is bound by very little: δ_d < 10⁻⁶ for k = 0.75 at a₀ = 0.01 and for k = 1 up to
-  a₀ = 0.1.
-- **The threshold ε₀(k), which the theorem does not estimate.** Interpolating λ_edge = 1:
-  a₀ ≈ 0.53 for k = 1.25 and a₀ ≈ 0.93 for k = 1.5. For k = 2 and 3 there is no discrete
-  mode even with a shell as massive as the central mass (λ_edge = 0.82 and 0.74 at a₀ = 1).
+  it is bound by very little: δ_d = 2×10⁻⁸ for k = 0.75 at a₀ = 0.01, and 4×10⁻¹¹ or less
+  for k = 1 up to a₀ = 0.1.
+- **The threshold ε₀(k), which the theorem does not estimate.** Solving λ_edge = 1 with
+  equilibria at intermediate masses: a₀ = 0.514 for k = 1.25 and a₀ = 0.920 for k = 1.5. For
+  k = 2 and 3 there is no discrete mode even with a shell as massive as the central mass
+  (λ_edge = 0.82 and 0.74 at a₀ = 1); their thresholds are a₀ = 1.53 and 2.38.
   In the isochrone, with a narrow band, the threshold for the Wilson model (g = 2) was
   a₀ ≈ 0.091: the wide band of the point mass mixes much more strongly.
 - **Their hypotheses.** The frequency Ω(J) is monotonic in all 36 equilibria. The
@@ -54,7 +59,10 @@ algebraic decay for every k. The slope of the envelope against ln t over 1000 �
 | 2 | −3.00 | −2.59 |
 
 The decay is close to t^{−(k+1)}, the tail of an edge at which the weight vanishes as
-(J_t − J)ᵏ (battery η, Section 1.4). The sharper the edge, the slower the decay. For k ≤ 1
+(J_t − J)ᵏ (battery η, Section 1.4). The sharper the edge, the slower the decay. (Note of
+7 October 2026: this is the law of the mixing in a fixed potential. With self-gravity the
+tail becomes t^{−k} at late times, for k > 1; at this mass the crossover is at t ≈ 3.5×10⁴
+or later. See Section 3.3 of `hadzic_informe.pdf`.) For k ≤ 1
 the discrete mode is too weakly bound to show up in this time. Their bound for pure
 transport, ∂ₜU ≲ t^{−min(2,k)} [HRSS24], is an upper bound; the data used here vanish at the
 circular orbit (s = (J/J_t)^{3/2}), which removes the limitation of the elliptic point.

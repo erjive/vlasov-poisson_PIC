@@ -143,9 +143,10 @@ def lineal():
         K_MAPA_, A0_MAPA_ = [], []
     else:
         K_MAPA_, A0_MAPA_ = K_MAPA, A0_MAPA
-    w(f'Masa puntual, polE, J_t = {JT}, L0 = {L0}. delta en anchos de banda bajo Omega_min.')
+    w(f'Masa puntual, polE, J_t = {JT}, L0 = {L0}. delta en anchos de banda bajo Omega_min; '
+      'lambda_edge = inf si k <= 1; x_d = -delta_d (modo buscado hasta 1e-12 del borde).')
     w(f'{"k":>5} {"a0":>6} {"iter":>5} {"Omega_min":>10} {"Omax/Omin":>9} {"lambda_edge":>12} '
-      f'{"l(1e-3)":>8} {"l(1e-6)":>8} {"omega_d":>9} {"x_d":>8}')
+      f'{"l(1e-3)":>8} {"l(1e-6)":>8} {"omega_d":>9} {"x_d":>9}')
     for k in K_MAPA_:
         for a0 in A0_MAPA_:
             npz = ruta('lineal', f'P_k{k:g}_a{a0:g}_equilibrio.npz')
@@ -157,9 +158,10 @@ def lineal():
             it = log.count('iteración')
             z = Lazo(npz)
             an = z.Om_max - z.Om_min
-            lb, l3, l6 = (z.lam(z.Om_min - d*an) for d in (0.0, 1e-3, 1e-6))
-            wd = z.omega_modo()
-            txt = f'{wd:9.5f} {(wd - z.Om_min)/an:+8.4f}' if wd is not None else f'{"--":>9} {"--":>8}'
+            l3, l6 = (z.lam(z.Om_min - d*an) for d in (1e-3, 1e-6))
+            lb = z.lam(z.Om_min) if k > 1 else float('inf')        # con k <= 1 diverge en el borde
+            dd = z.delta_modo()
+            txt = f'{z.Om_min - dd*an:9.5f} {-dd:+9.2e}' if dd is not None else f'{"--":>9} {"--":>9}'
             w(f'{k:5g} {a0:6g} {it:5d} {z.Om_min:10.5f} {z.Om_max/z.Om_min:9.3f} {lb:12.4f} '
               f'{l3:8.4f} {l6:8.4f} {txt}')
     if K_MAPA_:
