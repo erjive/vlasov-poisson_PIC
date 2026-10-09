@@ -295,6 +295,14 @@ amplitude the trapping of resonant particles leads to oscillations of the wave a
 and "it is not clear whether the amplitude will necessarily decay to zero". He calls the
 examples of Mathur "somewhat artificial" and announces an extension to spherical geometry.
 
+The works that cite these three papers were listed with OpenAlex on 8 October 2026: 26 for
+Mathur, 60 for Weinberg and 11 for Louis. Those that treat radial oscillations of spheres
+are Sellwood and Pryor (1998), an N-body study according to S24, and Namboodiri (2000),
+neither of which was accessed, Vandervoort (2004), and the Bayreuth–London line. Most of the
+works that cite Weinberg (1991) concern the bending and breathing waves of the Galactic disc.
+Among them, Darling and Widrow (2024)† treat the phase mixing of a non-interacting
+distribution in a quartic potential with a Koopman representation in a finite basis.
+
 Widrow and Bonner (2015), read in the text, state the role of the gap. In the untruncated
 Spitzer sheet the orbital frequencies range from Ω_c down to zero, there are no gaps, and
 "all coherent oscillations of the Spitzer sheet are damped"; they compute these oscillations
@@ -721,6 +729,7 @@ Astrophysics:
 - Chiba, Schönrich, MNRAS 513, 768 (2022), [arXiv:2109.10910](https://arxiv.org/abs/2109.10910)
 - Hamilton, Tolman, Arzamasskiy, Duarte, [arXiv:2208.03855](https://arxiv.org/abs/2208.03855)
 - Chiba, Ding, Hamilton, Kunz, Tremaine, MNRAS (2025), [arXiv:2506.16512](https://arxiv.org/abs/2506.16512)
+- † Darling, Widrow, MNRAS 533, 79 (2024), [arXiv:2402.16252](https://arxiv.org/abs/2402.16252)
 - † Miller, Manfredi, Pirjol, Rouet, Class. Quantum Grav. 40, 073001 (2023), [journal](https://iopscience.iop.org/article/10.1088/1361-6382/acb8fb)
 - Colombi, Touma, [arXiv:1404.5175](https://arxiv.org/abs/1404.5175); Joyce, Worrakitpoonpon, [arXiv:1012.5042](https://arxiv.org/abs/1012.5042)
 - García-Perciante, Guerrero, Núñez, Sarbach, [arXiv:2610.06913](https://arxiv.org/abs/2610.06913): phase space mixing in an integrable axisymmetric potential, with N-particle simulations and without self-gravity
