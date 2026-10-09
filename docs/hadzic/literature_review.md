@@ -35,8 +35,9 @@ S24, the two theses and Kunze's lecture notes, and, in the revision, for Moreno 
 (2023), Nguyen (2023), Chaturvedi and Luk (2024), Barré et al. (2011), Barré and Yamaguchi
 (2013), Widrow and Bonner (2015), Fouvry and Prunet (2022), Petersen et al. (2024),
 Polyachenko and Shukhman (2026), Stucchi and Lauber (2025), Burov (2012), Karpov et al.
-(2021), and the three papers on which the criterion rests in one dimension, Mathur (1990),
-Weinberg (1991) and Louis (1992). All other works were read in abstract only. The works marked with † in the list of
+(2021), the three papers on which the criterion rests in one dimension, Mathur (1990),
+Weinberg (1991) and Louis (1992), and Hénon (1973) and Louis and Gerhard (1988). All other
+works were read in abstract only. The works marked with † in the list of
 references were seen only through the summary of the abstract returned by a search engine,
 and must be checked before they are cited. Not accessed: the full text of Klaus and Simon
 (1980) and of Sellwood and Pryor (1998), and Kunze's book.
@@ -157,16 +158,24 @@ conclude that it seems to be the neutral translation mode, not converged, and fi
 damped mode with l = 1 to 4 in the isotropic isochrone and Plummer models. That number
 should not be quoted as a physical mode.
 
-**N-body studies of radial oscillations.** Hénon (1973)† uses the concentric-shell model to
-test polytropes against spherical perturbations and finds them stable almost down to the
-index n = 1/2. Miller and Smith (1994)† report normal-mode oscillations that continue
+**N-body studies of radial oscillations.** Hénon (1973), read in the scan, uses 1000 concentric
+shells to test polytropes against spherical perturbations and finds them stable almost down
+to the index n = 1/2; at n = 1/2 he sees collective oscillations and judges the case
+slightly unstable. He states that in his
+earlier papers (Hénon 1967, 1968) all the shells had the same angular momentum, so that the
+plane of radius and radial velocity described the system completely, and that the stratified
+sampling of the initial data, which he had already used in 1968, is similar to the quiet
+start of plasma simulations. According to Louis and Gerhard (1988), Hénon (1968) found
+virtually undamped oscillations of such a system of shells under certain circumstances. The
+papers of 1967 and 1968 were not accessed. Miller and Smith (1994)† report normal-mode oscillations that continue
 undamped long after the initial transients, with the kinetic energy oscillating by up to
 10 % of its mean; Wachlin and Muzzio (1997)† confirm them with a perturbation-particle
 method. David and Theuns (1989)† find long-lived radial pulsations whose lifetime depends
 strongly on the number of particles. S24 cites Sweatman (1993) for damped oscillations near
 the Plummer sphere and Namboodiri (2000) for polytropes; these two were not accessed.
 
-**The model with fixed |L|.** Klinko and Miller (2002) simulate N concentric mass shells with
+**The model with fixed |L|.** The model goes back to Hénon (1967, 1968), as described above.
+Klinko and Miller (2002) simulate N concentric mass shells with
 a fixed magnitude of the angular momentum, the particle version of the fixed-|L| model; the
 abstract mentions no external potential. Their subject is a phase transition between
 quasi-uniform and core–halo states. They report that the equilibration follows a power law
@@ -197,10 +206,14 @@ eigenmodes. Jalali and Tremaine (2011) compute the normal modes of near-Kepleria
 finite elements: slow modes exist for an arbitrarily small disc mass as long as the
 self-gravity of the disc dominates the apsidal precession.
 
-**Finite amplitude and resonant trapping.** The distribution function that Louis and Gerhard
-(1988)† construct for a nonlinear spherical mode of the isochrone has gaps in phase space at
-the resonant orbit families, and they conclude that such oscillations are difficult to set
-up. Vandervoort (2003) builds stationary oscillations of small finite amplitude by canonical
+**Finite amplitude and resonant trapping.** Louis and Gerhard (1988), read in the text,
+construct a self-consistent distribution function for a radial oscillation of the isochrone
+sphere with an amplitude of 10 % in the central density. Many orbits are trapped by the
+resonant families, in which the frequency of the perturbation is a multiple of the radial
+frequency. The stable closed resonant orbits oscillate against the perturbation and damp it,
+and the non-resonant orbits support it. The self-consistent solution therefore has holes in
+the energy distribution around the resonances, which a distribution with df/dE < 0 does not
+have, and they conclude that such oscillations are difficult to set up. Vandervoort (2003) builds stationary oscillations of small finite amplitude by canonical
 perturbation theory. Chiba and Schönrich (2022) describe the orbits trapped at the
 resonances of a slowly evolving bar: the libration frequency falls towards the separatrix,
 the trapped density winds up into a spiral, and the torque oscillates and damps. Hamilton et
@@ -538,9 +551,9 @@ leaves no gap.
 | R3. Edge law λ_edge − λ(Ω_min − δ) ∝ δ^{min(k−1,1)} and the binding laws, with c the coupling (proportional to the mass): δ_d ∝ c^{1/(1−k)} for k < 1, exp(−const/c) for k = 1, (λ_edge − 1)^{1/(k−1)} for 1 < k < 2 | the divergence for k ≤ 1 is in the proof of HRSS23; the laws are those of Simon and Klaus–Simon with d = 2k; Nguyen 2023 in homogeneous plasmas. Mathur (1990): logarithmic divergence at the edge for a distribution that vanishes linearly, the case k = 1. Weinberg (1991): a sharp edge favours a mode and a smooth one hinders it. In beam physics the threshold depends on the exponent μ of the binomial distribution (Karpov et al. 2021) and on the form of the distribution where the mode emerges (Burov 2012) | the analogy and the laws do not appear in HRS22, HRSS23, Kunze's notes, Straub's thesis or Moreno et al. (no occurrence of "weak coupling", "coupling constant" or Klaus). The qualitative role of the edge is known since 1990 for the slab, and in beam physics. The laws themselves, with the exponent min(k − 1, 1) and the binding laws, were not found; the mathematics is classical |
 | R4. Observability: the mode separates from the edge after t ≈ 1/(Ω_min − ω_d); at small mass the modes of k ≤ 1 lie less than 10⁻⁶ band widths below the edge | Louis 1992: the modes are so close to the continuum that an error of 1 % in the frequency prevents locating where they cross. Karpov et al. 2021: the damping time diverges at the threshold, so that the damping "can be effectively lost even below the threshold" | apparently new for the gravitational thresholds, and it explains open problem 2: near the threshold the binding is a high power of the distance to it, so no time integration can decide |
 | R5. Algebraic tails: t^{−(k+1)} for the free mixing of a perturbation proportional to F_eq, and t^{−k} with self-gravity at late times. Corrected on 7 October: the earlier statement, t^{−(k+1)} with self-gravity, holds only as a transient at small mass | HRSS24, Theorem 1.3: t^{−min(2,k)} for pure transport with data \|φ′(E)\| g₀, which vanish at the edge like F_eq′. Barré et al. 2011 and Barré, Yamaguchi 2013: the tail is set by the strongest branch singularity of the response function or of the initial datum. HS25 | the exponent −k is not new as a rate. What appears to be new is that self-gravity turns the tail of a perturbation proportional to F_eq from t^{−(k+1)} into t^{−k}, with the numerical evidence. It bears on open problems 6 and 7. The derivation is formal |
-| R6. PIC results: quiet start in angle–action variables with the D − Z subtraction; grid and particle noise separated; finite-amplitude loss of the modes next to the edge, described by a pendulum at the resonance | quiet starts (Sellwood 1983), weighted particles (Barré et al. 2011), perturbation particles (Leeuwin et al. 1993), δf methods. Weinberg 1991: the amplitude of a mode close to the continuum is limited by its nonlinear broadening (3 % and 0.5 % in two cases), with a beat at the difference frequency. Louis 1992: trapping leads to oscillations of the amplitude. Also O'Neil 1965; Ivanov et al. 2004 (critical amplitude); Balmforth et al. 2001 (vortices); Louis and Gerhard 1988 (gaps at the resonant orbits); Chiba and Schönrich 2022 (pendulum, oscillating torque); Karpov et al. 2021 (residual amplitude) | known ideas; supporting material. That the closeness to the continuum limits the amplitude is in Weinberg (1991), as a conjecture supported by two runs. A formula for the threshold amplitude was not found in this search |
+| R6. PIC results: quiet start in angle–action variables with the D − Z subtraction; grid and particle noise separated; finite-amplitude loss of the modes next to the edge, described by a pendulum at the resonance | quiet starts (Hénon 1968, as described in Hénon 1973; Sellwood 1983), weighted particles (Barré et al. 2011), perturbation particles (Leeuwin et al. 1993), δf methods. Weinberg 1991: the amplitude of a mode close to the continuum is limited by its nonlinear broadening (3 % and 0.5 % in two cases), with a beat at the difference frequency. Louis 1992: trapping leads to oscillations of the amplitude. Louis and Gerhard 1988: the resonant orbits oscillate against the perturbation and damp it. Also O'Neil 1965; Ivanov et al. 2004 (critical amplitude); Balmforth et al. 2001 (vortices); Chiba and Schönrich 2022 (pendulum, oscillating torque); Karpov et al. 2021 (residual amplitude) | known ideas; supporting material. That the closeness to the continuum limits the amplitude is in Weinberg (1991), as a conjecture supported by two runs. A formula for the threshold amplitude was not found in this search |
 | R7. η is not universal | Darling, Widrow 2019 use a similar ratio (external potential to self-gravity, about 4:1) | a negative result; useful as a remark: such a ratio cannot be the criterion |
-| R8. The reduced model: shells with fixed \|L\| in an external central potential | Mathur 1990: shells with a narrow distribution of L in an external field, as the limit that reduces the radial problem to one dimension. Klinko and Miller 2002 simulate concentric shells with fixed \|L\| and report long-lived collective oscillations; Hénon 1973 (shell model); HRSS23 and HRSS24 (analysis) | the model has precedents, as a limit in Mathur (1990) and as a simulation. No numerical linear analysis or threshold was found for it |
+| R8. The reduced model: shells with fixed \|L\| in an external central potential | Hénon 1967, 1968: shells that all have the same angular momentum, with virtually undamped oscillations under certain circumstances (through Hénon 1973 and Louis and Gerhard 1988). Mathur 1990: shells with a narrow distribution of L in an external field, as the limit that reduces the radial problem to one dimension. Klinko and Miller 2002 simulate concentric shells with fixed \|L\| and report long-lived collective oscillations; Hénon 1973 (shell model); HRSS23 and HRSS24 (analysis) | the model is that of Hénon (1967, 1968), and it is the limit used by Mathur (1990). No numerical linear analysis or threshold was found for it |
 
 Dynamic mode decomposition and a neural-network classifier have both been applied to this
 problem (Darling and Widrow 2019; Straub and Wolfschmidt 2024), so neither would be new as a
@@ -580,6 +593,9 @@ its validation is done. A feasibility test on isotropic polytropes decides it.
   it is our reading and should be checked by a second reader. None of the three evaluates the
   criterion for spherical systems; Louis announces it as future work, and no such work by him
   was found.
+- The papers of Hénon of 1967 and 1968, in which the shells with the same angular momentum
+  appear, were not accessed; what is said about them comes from Hénon (1973) and from Louis
+  and Gerhard (1988).
 - Kunze's book was not read; the lecture notes, written a year later, still ask for
   numerics.
 - The citing lists come from two indexes that disagree (OpenAlex finds 6 citing works for
@@ -636,7 +652,7 @@ Statistical physics:
 Astrophysics:
 
 - Weinberg, ApJ 373, 391 (1991), [ADS](https://ui.adsabs.harvard.edu/abs/1991ApJ...373..391W/abstract), [scan](https://articles.adsabs.harvard.edu/pdf/1991ApJ...373..391W); ApJ 421, 481 (1994), [arXiv:astro-ph/9306020](https://arxiv.org/abs/astro-ph/9306020)
-- † Louis, Gerhard, MNRAS 233, 337 (1988), [journal](https://academic.oup.com/mnras/article/233/2/337/969454)
+- Louis, Gerhard, MNRAS 233, 337 (1988), [journal](https://academic.oup.com/mnras/article/233/2/337/969454), [scan](https://articles.adsabs.harvard.edu/pdf/1988MNRAS.233..337L)
 - Louis, MNRAS 258, 552 (1992), [journal](https://academic.oup.com/mnras/article/258/3/552/1081867), [scan](https://articles.adsabs.harvard.edu/pdf/1992MNRAS.258..552L)
 - Sellwood, Pryor, Highlights of Astronomy 11 (1998), [chapter](https://link.springer.com/chapter/10.1007/978-94-011-4778-1_10)
 - Vandervoort, MNRAS 339, 537 (2003), [arXiv:astro-ph/0207259](https://arxiv.org/abs/astro-ph/0207259); MNRAS (2004), [doi](https://doi.org/10.1111/j.1365-2966.2004.07361.x)
@@ -686,7 +702,8 @@ Statistical physics, oscillators and trapped gases:
 
 Astrophysics:
 
-- † Hénon, Astron. Astrophys. 24, 229 (1973), [record](https://www.osti.gov/biblio/4381418)
+- Hénon, Astron. Astrophys. 24, 229 (1973), [record](https://www.osti.gov/biblio/4381418), [scan](https://articles.adsabs.harvard.edu/pdf/1973A%26A....24..229H)
+- Hénon, Mém. Soc. R. Sci. Liège (5) 15, 243 (1967); Bull. Astron. Paris (3) 3, 241 (1968): taken from the reference list of Hénon (1973), not accessed
 - † Miller, Smith, Celest. Mech. Dyn. Astron. 59, 161 (1994), [journal](https://link.springer.com/article/10.1007/BF00692131)
 - † Wachlin, Muzzio, Celest. Mech. Dyn. Astron. 67, 225 (1997), [record](http://sedici.unlp.edu.ar/handle/10915/137950?show=full)
 - † David, Theuns, MNRAS (1989), [record](https://www.osti.gov/etdeweb/biblio/7242590)
