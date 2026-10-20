@@ -191,6 +191,29 @@ def resumen():
     print(open(ruta('resumen.txt')).read())
 
 
+def transicion(solo=None):
+    """Tabla de la transición: mu, |h1| tardío (potencial del instante y del isócrono desnudo) y
+    fracción de la masa con J < 0.06 al final (el núcleo, con el mismo corte que la demo).
+    Escribe exe/demo_eta/bulto/transicion.txt."""
+    filas = []
+    for n in info:
+        if (solo and n not in solo) or not os.path.exists(ruta(n, 'bulto.npz')):
+            continue
+        d = cargar(n); t = d['t']; hk = np.asarray(d['hk']); hkd = np.asarray(d['hk_desnudo'])
+        w = np.asarray(d['w']); Jf = np.asarray(d['J'][-1]); ok = np.isfinite(Jf)
+        v = (t >= 10*TAU1) & (t <= 20*TAU1); u = t >= 20*TAU1
+        mu = escalas(n)[2] if info[n]['sg'] else 0.0
+        nucleo = w[ok & (Jf < 0.06)].sum()/w.sum()
+        filas.append((info[n]['a0'] if info[n]['sg'] else 0.0, n, mu, np.abs(hk[v, 1]).mean(), np.abs(hk[u, 1]).mean(),
+                      np.abs(hkd[v, 1]).mean(), nucleo, info[n]['npc']))
+    filas.sort()
+    with open(ruta('transicion.txt'), 'w') as fo:
+        fo.write('corrida  a0       Npc   mu     |h1| 10-20 tau1   |h1| 20-31 tau1   ídem desnudo 10-20   masa con J<0.06\n')
+        for a0, n, mu, h1, h1b, h1d, nuc, npc in filas:
+            fo.write(f'{n:7}  {a0:<7g}  {npc:<4}  {mu:5.2f}  {h1:14.3e}  {h1b:16.3e}  {h1d:18.3e}  {nuc:12.3f}\n')
+    print(open(ruta('transicion.txt')).read())
+
+
 def colores(w):
     return np.log10(np.maximum(w/w.max(), 1e-4))
 
@@ -305,9 +328,9 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos'])
+    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     print(f'=== {a.paso}', flush=True)
-    globals()[a.paso](a.solo) if a.paso in ('analizar', 'videos') else globals()[a.paso]()
+    globals()[a.paso](a.solo) if a.paso in ('analizar', 'videos', 'transicion') else globals()[a.paso]()
