@@ -55,7 +55,67 @@ CORRIDAS += [
     ('B02q', 0.02, 100, True, r'$a_0=0.02$, $N_{pc}=100$'),
 ]
 CAMBIOS = {'B2j': {'Nrc': '800'}}              # cambios en el .par fuera de los de preparar()
+# Tercera tanda (2026-10-19): si la transición cae en el mismo mu cuando cambia el ancho del bulto
+# en ángulo (sp = s_Q) o en acción (sr = s_J), y el mismo dato en el potencial de Kepler (el de
+# Chaturvedi y Luk), con las partículas colocadas desde Python en sus variables de ángulo-acción.
+for sq, npc, masas in ((0.2, 50, (0.01, 0.02, 0.04, 0.08)), (0.4, 25, (0.01, 0.02, 0.04, 0.08))):
+    for m in masas:
+        n = f'Q{int(sq*10)}_{m:g}'
+        CORRIDAS.append((n, m, npc, True, rf'$s_Q={sq:g}$, $a_0={m:g}$'))
+        CAMBIOS[n] = {'sp': str(sq)}
+for sj, nrc, masas in ((0.05, 400, (0.005, 0.01, 0.02)), (0.2, 800, (0.02, 0.04, 0.08))):
+    for m in masas:
+        n = f'J{int(round(sj*100)):02d}_{m:g}'
+        CORRIDAS.append((n, m, 25, True, rf'$s_J={sj:g}$, $a_0={m:g}$'))
+        CAMBIOS[n] = {'sr': str(sj), 'Nrc': str(nrc)}
+        if sj < 0.1:                           # banda más estrecha, tau_1 = 589: el doble de tiempo
+            CAMBIOS[n]['Nt'] = str(2*int(round(TFIN/DT)))
+FONDO = {}                                     # 'puntual': masa puntual (BGtype = sphere, r > 1)
+for m in (0.01, 0.02, 0.04, 0.08):
+    n = f'K_{m:g}'
+    CORRIDAS.append((n, m, 25, True, rf'Kepler, $a_0={m:g}$'))
+    CAMBIOS[n] = {'BGtype': 'sphere', 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
+    FONDO[n] = 'puntual'
 info = {c[0]: dict(a0=c[1], npc=c[2], sg=c[3], desc=c[4]) for c in CORRIDAS}
+
+
+def parametro(n, k, defecto):
+    return type(defecto)(CAMBIOS.get(n, {}).get(k, defecto))
+
+
+def banda(n):
+    """(Omega_min, Omega_max, ancho del soporte en J, tau_1) del fondo desnudo para el bulto n.
+    Con s_J = 0.1 en el isócrono son las constantes de siempre."""
+    sr, fondo = parametro(n, 'sr', 0.1), FONDO.get(n, 'isocrono')
+    if sr == 0.1 and fondo == 'isocrono':
+        return OM_MIN, OM_MAX, DJ_SOP, TAU1
+    from scipy.optimize import brentq
+    g = lambda x: x*np.exp(1 - x) - 0.01                  # (J/s_J)^2 e^{1-(J/s_J)^2} = 0.01
+    xlo, xhi = brentq(g, 1e-9, 1.0), brentq(g, 1.0, 50.0)
+    jlo, jhi = sr*np.sqrt(xlo), sr*np.sqrt(xhi)
+    c = 0.5*(2.0 + np.sqrt(8.0)) if fondo == 'isocrono' else 2.0   # Omega = (J + c)^-3, L = 2
+    omin, omax = (jhi + c)**-3, (jlo + c)**-3
+    return omin, omax, jhi - jlo, 2*np.pi/(omax - omin)
+
+
+def dato_kepler(n):
+    """Estado inicial del bulto en el potencial de Kepler (GM = 1, L = 2): la misma F0(Q, J) que
+    aa_quad, en una retícula de puntos medios de las variables de ángulo-acción de Kepler,
+    J en [0, 6 s_J] y Q en [0, 2 pi); anomalía media Q = eta - e sin(eta)."""
+    nrc, npc = parametro(n, 'Nrc', 400), info[n]['npc']
+    sr, sp, L = parametro(n, 'sr', 0.1), parametro(n, 'sp', 0.1), 2.0
+    J = (np.arange(nrc) + 0.5)*6*sr/nrc
+    Q = (np.arange(npc) + 0.5)*2*np.pi/npc
+    JJ, QQ = np.meshgrid(J, Q, indexing='ij')
+    a = (JJ + L)**2
+    e = np.sqrt(np.clip(1 - L**2/a, 0, None))
+    eta = QQ.copy()
+    for _ in range(60):
+        eta = eta - (eta - e*np.sin(eta) - QQ)/(1 - e*np.cos(eta))
+    r = a*(1 - e*np.cos(eta))
+    p = np.sqrt(a)*e*np.sin(eta)/r
+    F = np.exp(-np.sin(0.5*QQ)**2/sp**2)*np.exp(-JJ**2/sr**2)*JJ**2
+    return r.ravel(), p.ravel(), F.ravel(), QQ.ravel(), JJ.ravel()
 
 
 def ruta(*p):
@@ -80,7 +140,15 @@ def preparar():
                 continue
             k = l.split('=')[0].strip()
             out.append(f'{k:<16} = {v[k]}' if k in v else l)
+        claves = {l.split('=')[0].strip() for l in lineas0 if '=' in l and not l.startswith('#')}
+        out += [f'{k:<16} = {x}' for k, x in CAMBIOS.get(n, {}).items() if k not in claves]
         open(os.path.join(PARDIR, f'bulto__{n}.par'), 'w').write('\n'.join(out) + '\n')
+    for n in FONDO:
+        f = os.path.join(EXE, CAMBIOS[n]['checkpointfile'])
+        if not os.path.exists(f):
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            r, p, F, _, _ = dato_kepler(n)
+            np.savetxt(f, np.column_stack([r, p, F]), fmt='%.17e')
     print('preparado:', len(CORRIDAS))
 
 
@@ -101,16 +169,20 @@ def correr():
 def _mapear(tarea):
     import h5py
     from aa_numerico import MapaAA, phi_iso
-    h5, claves, sg = tarea
+    h5, claves, sg, fondo = tarea
     f = h5py.File(h5, 'r')
     rg = f['grid']['r'][:]
-    desnudo = MapaAA(L=2.0)
+    desnudo = MapaAA(L=2.0, fondo=fondo)
+    # potencial de fondo del código: isócrono, o BGtype = sphere (esfera homogénea de radio 1)
+    phib = phi_iso(rg) if fondo == 'isocrono' else np.where(np.abs(rg) < 1, 0.5*(rg**2 - 3), -1/np.maximum(np.abs(rg), 1e-12))
     sal = []
     for k in claves:
         g = f[k]
         r, p = g['r_part'][:], g['p_part'][:]
-        ps = g['potential'][:] - phi_iso(rg) if sg else np.zeros_like(rg)
-        Q, J, E = (MapaAA(rg, ps, L=2.0) if sg else desnudo)(r, p)
+        ps = g['potential'][:] - phib if sg else np.zeros_like(rg)
+        if fondo != 'isocrono':
+            ps = np.where(rg < 1, ps[np.argmin(np.abs(rg - 1))], ps)   # las órbitas no bajan de r = 1
+        Q, J, E = (MapaAA(rg, ps, L=2.0, fondo=fondo) if sg else desnudo)(r, p)
         Qd, Jd = (desnudo(r, p)[:2] if sg else (Q, J))
         sal.append((g.attrs['time'], r, p, Q, J, ps, Qd, Jd))
     f.close()
@@ -129,7 +201,7 @@ def analizar(solo=None, procesos=4):
         pasos = sorted([k for k in f if k.startswith('step_')], key=lambda k: int(k.split('_')[1]))
         rg, w = f['grid']['r'][:], f[pasos[0]]['f'][:]
         f.close()
-        grupos = [(h5, pasos[i:i+25], info[n]['sg']) for i in range(0, len(pasos), 25)]
+        grupos = [(h5, pasos[i:i+25], info[n]['sg'], FONDO.get(n, 'isocrono')) for i in range(0, len(pasos), 25)]
         with Pool(procesos) as pool:
             res = [x for b in pool.map(_mapear, grupos) for x in b]
         t = np.array([x[0] for x in res])
@@ -163,11 +235,12 @@ def escalas(n):
     """omega_b del bulto a partir de la oscilación de su potencial en la primera
     vuelta radial, y mu = omega_b/Delta Omega con la banda del isócrono."""
     t, rg, ps, media, fl, esc = potencial(n)
-    v = t <= 2*np.pi/OM_MIN
+    omin, omax, djs, _ = banda(n)
+    v = t <= 2*np.pi/omin
     z = (rg >= RVENT[0]) & (rg <= RVENT[1])
     A = 0.5*(ps[v][:, z].max(0) - ps[v][:, z].min(0)).max()
-    wb = np.sqrt((OM_MAX - OM_MIN)/DJ_SOP*A)
-    return A, wb, wb/(OM_MAX - OM_MIN)
+    wb = np.sqrt((omax - omin)/djs*A)
+    return A, wb, wb/(omax - omin)
 
 
 def resumen():
@@ -201,16 +274,17 @@ def transicion(solo=None):
             continue
         d = cargar(n); t = d['t']; hk = np.asarray(d['hk']); hkd = np.asarray(d['hk_desnudo'])
         w = np.asarray(d['w']); Jf = np.asarray(d['J'][-1]); ok = np.isfinite(Jf)
-        v = (t >= 10*TAU1) & (t <= 20*TAU1); u = t >= 20*TAU1
+        tau = banda(n)[3]
+        v = (t >= 10*tau) & (t <= 20*tau); u = t >= 20*tau
         mu = escalas(n)[2] if info[n]['sg'] else 0.0
         nucleo = w[ok & (Jf < 0.06)].sum()/w.sum()
         filas.append((info[n]['a0'] if info[n]['sg'] else 0.0, n, mu, np.abs(hk[v, 1]).mean(), np.abs(hk[u, 1]).mean(),
                       np.abs(hkd[v, 1]).mean(), nucleo, info[n]['npc']))
     filas.sort()
     with open(ruta('transicion.txt'), 'w') as fo:
-        fo.write('corrida  a0       Npc   mu     |h1| 10-20 tau1   |h1| 20-31 tau1   ídem desnudo 10-20   masa con J<0.06\n')
+        fo.write('corrida   a0       Npc   mu     |h1| 10-20 tau1   |h1| desde 20 tau1   ídem desnudo 10-20   masa con J<0.06   tau1\n')
         for a0, n, mu, h1, h1b, h1d, nuc, npc in filas:
-            fo.write(f'{n:7}  {a0:<7g}  {npc:<4}  {mu:5.2f}  {h1:14.3e}  {h1b:16.3e}  {h1d:18.3e}  {nuc:12.3f}\n')
+            fo.write(f'{n:8}  {a0:<7g}  {npc:<4}  {mu:5.2f}  {h1:14.3e}  {h1b:18.3e}  {h1d:18.3e}  {nuc:12.3f}   {banda(n)[3]:6.0f}\n')
     print(open(ruta('transicion.txt')).read())
 
 
