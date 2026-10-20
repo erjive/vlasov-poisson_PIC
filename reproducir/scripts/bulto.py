@@ -41,6 +41,20 @@ CORRIDAS = [
     ('B5', 0.3, 25, True, r'$a_0=0.3$'),
     ('B4q', 0.1, 100, True, r'$a_0=0.1$, $N_{pc}=100$'),
 ]
+# Segunda tanda (2026-10-19): la transición en masa entre a0 = 0.01 y 0.1, y la convergencia
+# del residuo de B2 (|h1| ~ 3e-3, 40 veces la mezcla libre) y de un caso de la transición.
+CORRIDAS += [
+    ('B015', 0.015, 25, True, r'$a_0=0.015$'),
+    ('B02', 0.02, 25, True, r'$a_0=0.02$'),
+    ('B025', 0.025, 25, True, r'$a_0=0.025$'),
+    ('B04', 0.04, 25, True, r'$a_0=0.04$'),
+    ('B05', 0.05, 25, True, r'$a_0=0.05$'),
+    ('B07', 0.07, 25, True, r'$a_0=0.07$'),
+    ('B2q', 0.01, 100, True, r'$a_0=10^{-2}$, $N_{pc}=100$'),
+    ('B2j', 0.01, 25, True, r'$a_0=10^{-2}$, $N_{rc}=800$'),
+    ('B02q', 0.02, 100, True, r'$a_0=0.02$, $N_{pc}=100$'),
+]
+CAMBIOS = {'B2j': {'Nrc': '800'}}              # cambios en el .par fuera de los de preparar()
 info = {c[0]: dict(a0=c[1], npc=c[2], sg=c[3], desc=c[4]) for c in CORRIDAS}
 
 
@@ -56,8 +70,11 @@ def preparar():
              'time_output': str(SALIDA), 'spatial_output': str(SALIDA), 'field_output': str(SALIDA),
              'directory': f'demo_eta/bulto/{n}', 'a0': str(a0),
              'autointeraction': '.true.' if sg else '.false.'}
+        v.update(CAMBIOS.get(n, {}))
         out = [f'# Bulto {n}: el dato de 09_autogravedad (aa_quad, gauss, sr = sp = 0.1),',
                f'# a0 = {a0}, Npc = {npc}, autogravedad = {sg}. Generado por bulto.py.']
+        if n in CAMBIOS:
+            out.append('# Cambios: ' + ', '.join(f'{k} = {x}' for k, x in CAMBIOS[n].items()) + '.')
         for l in lineas0:
             if l.startswith('#') or '=' not in l:
                 continue
