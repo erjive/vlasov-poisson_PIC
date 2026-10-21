@@ -37,8 +37,10 @@ Los demás números de la Sección 5 salen de otros pasos:
   - ganancia con dispersión en el límite de L fijo: lambda_L.py validar;
   - escala con dr del error del campo (modelo de Wilson, a0 = 0.5): informe de la demo,
     docs/demo_eta, corridas E_M5*;
-  - mezcla libre, estado estacionario con los dos mapas y colapso frío del código con L:
-    VlasovPoisson_PIC_sp (reproducir/corridas/08_verificacion y 11_equilibrio, verificacion I2).
+  - colapso frío (necesita L = 0, así que se hizo con el código con L, que calcula el campo
+    con el mismo algoritmo): VlasovPoisson_PIC_sp (verificacion I2).
+El panel (d) de validacion_mapa.pdf (estado estacionario con los dos mapas) era del código con L
+hasta el 2026-10-21; ahora sale de la corrida de referencia Z_k2 de exe/hadzic (paso residuo).
 """
 import os, sys, subprocess, time
 import numpy as np
@@ -351,7 +353,6 @@ def armonico():
 
 # ------------------------------------------------------------------ residuo estático
 SG = os.path.join(EXE, 'sg')
-SP_EQ = os.path.join(RAIZ, '..', 'VlasovPoisson_PIC_sp', 'exe', 'rep', '11_equilibrio', 'eq_e0')
 
 
 def par_de(carpeta):
@@ -411,11 +412,13 @@ def residuo():
     for c, n in enumerate(ac['sel']):
         a_, b_ = ac['J_ext'][m, c], ac['J_tot'][m, c]
         w(f'   partícula {n}: J = {a_.mean():.4f};  isócrono {np.ptp(a_)/a_.mean():.2e};  total {np.ptp(b_)/b_.mean():.2e}')
-    if os.path.exists(os.path.join(SP_EQ, 'hk1_numerico_eq.tl')):
-        w('\nEstado estacionario con distribución en L (VlasovPoisson_PIC_sp, 11_equilibrio/eq_e0, a0 = 1e-2): |h_1|/h_0')
-        ti, zi = h1_tl(SP_EQ); tn, zn = h1_tl(SP_EQ, 'hk1_numerico_eq.tl')
-        w(f'   mapa del isócrono: entre {np.abs(zi).min():.3e} y {np.abs(zi).max():.3e} en 0 <= t <= {ti[-1]:g}')
-        w('   mapa del equilibrio: ' + ', '.join(f'{abs(zn[np.argmin(np.abs(tn - a_))]):.1e} en t = {a_}' for a_ in (0, 50, 100)))
+    e = estacionario()
+    w('\nEstado estacionario del modelo reducido (exe/hadzic/Z_k2: politropo k = 2, a0 = 0.01, Kepler, eps = 0),')
+    w('|h_1|/h_0 con B = J^2 exp(-(J - 0.35)^2/0.2^2):')
+    w(f'   mapa de la masa puntual: entre {np.abs(e["h1_ext"]).min():.3e} y {np.abs(e["h1_ext"]).max():.3e}'
+      f' en 0 <= t <= {e["t"][-1]:g}')
+    w(f'   mapa del equilibrio: {abs(e["h1_eq"][0]):.1e} en t = 0 y a lo sumo {np.abs(e["h1_eq"][1:]).max():.1e}'
+      f' en 0 < t <= {e["t"][-1]:g}')
     open(ruta('residuo.txt'), 'w').write('\n'.join(lineas) + '\n')
 
 
@@ -441,6 +444,50 @@ def accion():
     J_ext = np.array([rp_to_QJ(r, p)[1] for r, p in rp])
     J_tot = np.array([mapa(r, p)[1] for r, p in rp])
     np.savez(sal, t=t, J_ext=J_ext, J_tot=J_tot, sel=sel)
+    return np.load(sal)
+
+
+HADZIC = os.path.join(EXE, 'hadzic')
+
+
+def _estacionario(pasos):
+    """(t, (Q, J) del equilibrio, (Q, J) de la masa puntual) de unas instantáneas de Z_k2."""
+    import h5py
+    from aa_numerico import MapaAA
+    eq = np.load(os.path.join(HADZIC, 'ic', 'Z_k2_equilibrio.npz'))
+    m_eq = MapaAA(eq['r'], eq['phi_self'], L=float(eq['L0']), fondo='puntual')
+    m_ext = MapaAA(L=float(eq['L0']), fondo='puntual')
+    sal = []
+    with h5py.File(os.path.join(HADZIC, 'Z_k2', 'vlasov_output.h5'), 'r') as f:
+        for c in pasos:
+            r, p = f[c]['r_part'][:], f[c]['p_part'][:]
+            sal.append((f[c].attrs['time'], m_eq(r, p)[:2], m_ext(r, p)[:2]))
+    return sal
+
+
+def estacionario(procesos=4):
+    """|h_1|/h_0 de un estado estacionario del modelo reducido con las variables de ángulo-acción
+    de la masa puntual y con las del potencial total: la corrida de referencia Z_k2 de exe/hadzic
+    (politropo k = 2, a0 = 0.01, Kepler, eps = 0, 400 x 25, dt = 0.1, t <= 8000), con el peso
+    B = J^2 exp(-(J - 0.35)^2/0.2^2) de la Sección 6. Se guarda en exe/validacion/estacionario.npz;
+    con el mapa del equilibrio coincide con el h_1 de exe/hadzic/Z_k2/serie.npz."""
+    sal = ruta('estacionario.npz')
+    if os.path.exists(sal):
+        return np.load(sal)
+    import h5py
+    from multiprocessing import Pool
+    with h5py.File(os.path.join(HADZIC, 'Z_k2', 'vlasov_output.h5'), 'r') as f:
+        pasos = sorted([c for c in f if c.startswith('step_')], key=lambda c: int(c.split('_')[1]))
+        w = f[pasos[0]]['f'][:]
+    with Pool(procesos) as pool:
+        res = [x for b in pool.map(_estacionario, [[str(c) for c in a] for a in np.array_split(np.array(pasos), 4*procesos)])
+               for x in b]
+
+    def h1(Q, J):
+        B = J**2*np.exp(-(J - 0.35)**2/0.2**2)
+        return np.sum(w*B*np.exp(-1j*Q))/np.sum(w*B)
+    np.savez(sal, t=np.array([x[0] for x in res]), h1_eq=np.array([h1(*x[1]) for x in res]),
+             h1_ext=np.array([h1(*x[2]) for x in res]))
     return np.load(sal)
 
 
@@ -667,8 +714,9 @@ def figuras():
     fig.savefig(os.path.join(destino, 'validacion_referencia.pdf')); plt.close(fig)
     # 5. Variables de acción-ángulo del potencial total (Sección 5.B), con el pulso con autogravedad
     #    de exe/sg: (a) |h_1|/h_0 con el mapa del isócrono según la masa; (b) Re h_1/h_0 con los
-    #    dos mapas, a0 = 1e-3; (c) acción de una partícula con los dos mapas; (d) |h_1|/h_0 de un
-    #    estado estacionario con distribución en L (código _sp), con los dos mapas.
+    #    dos mapas, a0 = 1e-3; (c) acción de una partícula con los dos mapas; (d) |h_1|/h_0 del
+    #    estado estacionario de la corrida de referencia Z_k2 (politropo k = 2, a0 = 0.01), con los
+    #    dos mapas.
     fig, axs = plt.subplots(2, 2, figsize=(7, 5.2), constrained_layout=True)
     ax = axs[0, 0]
     for n, etiqueta, c in (('long_a0_1e-2', '$M_{gas}/M=10^{-2}$', 'C3'), ('long_a0_1e-3', '$10^{-3}$', 'C1'),
@@ -700,12 +748,12 @@ def figuras():
     ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,(J/\\langle J\\rangle-1)$'); ax.grid(alpha=0.3)
     ax.legend(fontsize=7, frameon=False, loc='upper right')
     ax = axs[1, 1]
-    if os.path.exists(os.path.join(SP_EQ, 'hk1_numerico_eq.tl')):
-        ti, zi = h1_tl(SP_EQ); tn, zn = h1_tl(SP_EQ, 'hk1_numerico_eq.tl')
-        ax.semilogy(ti, np.abs(zi), color='C1', lw=0.9, label='variables of $\\Phi_{ext}$')
-        ax.semilogy(tn, np.maximum(np.abs(zn), 1e-17), 'o-', color='C2', ms=3, lw=0.9, label='variables of $\\Phi_{eq}$')
-        ax.set_xlim(0, 100); ax.set_ylim(1e-17, 1)
-        ax.legend(fontsize=7, frameon=False, loc='center right')
+    e = estacionario()
+    ax.semilogy(e['t'], np.abs(e['h1_ext']), color='C1', lw=0.9, label='variables of $\\Phi_{ext}$')
+    ax.semilogy(e['t'], np.abs(e['h1_eq']), color='C2', lw=0.9, label='variables of $\\Phi_{eq}$')
+    ax.semilogy(e['t'][:1], np.abs(e['h1_eq'][:1]), 'o', color='C2', ms=4)       # t = 0
+    ax.set_xlim(-150, 8000); ax.set_ylim(1e-11, 1)
+    ax.legend(fontsize=7, frameon=False, loc='lower right')
     ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.grid(alpha=0.3)
     for ax, letra in zip(axs.flat, 'abcd'):
         ax.text(0.03, 0.95, f'({letra})', transform=ax.transAxes, va='top', fontsize=9)
