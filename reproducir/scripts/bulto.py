@@ -288,6 +288,107 @@ def transicion(solo=None):
     print(open(ruta('transicion.txt')).read())
 
 
+# Familias de corridas para la Sección 7 de las notas (docs/articulo): nombre, corridas con la
+# resolución por omisión y corridas de convergencia (N_Q = 100 o N_J = 800).
+FAMILIAS = [
+    (r'$\sigma_Q=\sigma_J=0.1$', ['B0', 'B1', 'B2', 'B015', 'B02', 'B025', 'B3', 'B04', 'B05', 'B07', 'B4', 'B5'],
+     ['B2q', 'B2j', 'B02q', 'B4q']),
+    (r'$\sigma_J=0.05$', ['J05_0.005', 'J05_0.01', 'J05_0.02'], []),
+    (r'$\sigma_J=0.2$', ['J20_0.02', 'J20_0.04', 'J20_0.08'], []),
+    (r'$\sigma_Q=0.2$', ['Q2_0.01', 'Q2_0.02', 'Q2_0.04', 'Q2_0.08'], []),
+    (r'$\sigma_Q=0.4$', ['Q4_0.01', 'Q4_0.02', 'Q4_0.04', 'Q4_0.08'], []),
+    ('Kepler', ['K_0.01', 'K_0.02', 'K_0.04', 'K_0.08'], []),
+]
+
+
+def h1_ventana(n, a=10, b=20):
+    """Media de |h_1| (mapa del potencial del instante) en a <= t/tau_1 <= b, con el tau_1 de la corrida."""
+    d = cargar(n); t = d['t']; hk = np.asarray(d['hk'])
+    tau = banda(n)[3]
+    v = (t >= a*tau) & (t <= b*tau)
+    return np.abs(hk[v, 1]).mean()
+
+
+def articulo():
+    """Figuras de la Sección 7 de las notas, en docs/articulo/figuras/: bulto_fase.pdf (espacio de
+    fases de B2 y B4), bulto_series.pdf (|h_1| y fluctuación del potencial de la familia de
+    referencia) y bulto_transicion.pdf (|h_1| tardío frente a mu, todas las familias)."""
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    destino = os.path.join(RAIZ, 'docs', 'articulo', 'figuras')
+    plt.rcParams.update({'font.size': 9})
+    # 1. Espacio de fases (r, p_r) de B2 (se mezcla) y B4 (se autoatrapa).
+    fig, ax = plt.subplots(2, 4, figsize=(7.2, 3.9), constrained_layout=True, sharex=True, sharey=True)
+    for i, n in enumerate(('B2', 'B4')):
+        d = cargar(n); t = d['t']; c = colores(np.asarray(d['w'])); orden = np.argsort(c)
+        mu = escalas(n)[2]
+        for k, x in enumerate((0, 0.5*TAU1, 3*TAU1, t[-1])):
+            m = int(np.argmin(np.abs(t - x)))
+            sc = ax[i, k].scatter(np.asarray(d['R'][m])[orden], np.asarray(d['P'][m])[orden], c=c[orden], s=0.5,
+                                  cmap='magma_r', vmin=-4, vmax=0, lw=0, rasterized=True)
+            ax[i, k].set_xlim(2, 16); ax[i, k].set_ylim(-0.3, 0.3)
+            if i == 0:
+                ax[i, k].set_title(f'$t/\\tau_1={t[m]/TAU1:.1f}$')
+            if i == 1:
+                ax[i, k].set_xlabel('$r$')
+        ax[i, 0].set_ylabel('$p_r$')
+        ax[i, 0].text(0.97, 0.95, f'$M_{{gas}}/M={info[n]["a0"]:g}$\n$\\mu={mu:.2f}$', transform=ax[i, 0].transAxes,
+                      fontsize=7, va='top', ha='right')
+    fig.colorbar(sc, ax=ax, label='$\\log_{10}$ of the relative mass', shrink=0.85)
+    fig.savefig(os.path.join(destino, 'bulto_fase.pdf'), dpi=200); plt.close(fig)
+    # 2. |h_1| y fluctuación del potencial propio, familia de referencia.
+    sel = ['B1', 'B2', 'B02', 'B025', 'B3', 'B4', 'B5']
+    mus = {n: escalas(n)[2] for n in sel}
+    cmap = plt.get_cmap('viridis')
+    fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.4), layout='constrained')
+    d = cargar('B0'); t = d['t']
+    ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), 'k--', lw=1.0, label='no self-gravity')
+    for n in sel:
+        col = cmap(0.85*mus[n]/1.16)
+        d = cargar(n); t = d['t']
+        ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0,
+                       label=f'$\\mu={mus[n]:.2f}$')
+        tt, _, _, _, fl, _ = potencial(n)
+        ax[1].semilogy(tt/TAU1, envolvente(fl, tt), color=col, lw=1.0)
+        q = {'B2': 'B2q', 'B02': 'B02q', 'B4': 'B4q'}.get(n)
+        if q:
+            d = cargar(q); t = d['t']
+            ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0, ls=':')
+    ax[0].set_ylabel('$|h_1|/h_0$'); ax[0].set_ylim(1e-5, 2)
+    ax[1].set_ylabel('$\\|\\Phi-\\langle\\Phi\\rangle\\|/\\max|\\langle\\Phi_{gas}\\rangle|$')
+    for a in ax:
+        a.set_xlabel('$t/\\tau_1$'); a.set_xlim(0, TFIN/TAU1); a.grid(alpha=0.3)
+    ley = fig.legend(*ax[0].get_legend_handles_labels(), loc='outside upper center', ncol=8, fontsize=7, frameon=False,
+                     handlelength=1.6, columnspacing=1.0)
+    for l in ley.get_lines():
+        l.set_linewidth(2.0)
+    for a, l in zip(ax, 'ab'):
+        a.text(0.97, 0.95, f'({l})', transform=a.transAxes, ha='right', va='top')
+    fig.savefig(os.path.join(destino, 'bulto_series.pdf')); plt.close(fig)
+    # 3. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 frente a mu.
+    estilos = [('o', 'k'), ('v', '#0072B2'), ('^', '#009E73'), ('s', '#E69F00'), ('D', '#CC79A7'), ('*', '#D55E00')]
+    fig, ax = plt.subplots(figsize=(4.6, 3.3), constrained_layout=True)
+    ax.axvspan(0.43, 0.48, color='0.85', lw=0)
+    filas = []
+    for (nombre, base, conv), (mk, col) in zip(FAMILIAS, estilos):
+        x = [escalas(n)[2] if info[n]['sg'] else 0.0 for n in base]
+        y = [h1_ventana(n) for n in base]
+        ax.semilogy(x, y, mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
+        if conv:
+            ax.semilogy([escalas(n)[2] for n in conv], [h1_ventana(n) for n in conv], mk, color=col, mfc='none', ms=6.5,
+                        ls='none', label='$N_Q=100$ or $N_J=800$')
+        filas += list(zip(base + conv, x + [escalas(n)[2] for n in conv], y + [h1_ventana(n) for n in conv]))
+    ax.set_xlabel('$\\mu$'); ax.set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$')
+    ax.set_xlim(-0.03, 1.2); ax.set_ylim(3e-5, 2); ax.grid(alpha=0.3)
+    ax.legend(fontsize=6.5, loc='lower right', frameon=False)
+    fig.savefig(os.path.join(destino, 'bulto_transicion.pdf')); plt.close(fig)
+    with open(ruta('articulo.txt'), 'w') as fo:
+        fo.write('corrida      mu     |h1| en 10-20 tau_1\n')
+        for n, x, y in sorted(filas, key=lambda r: (r[1], r[0])):
+            fo.write(f'{n:10} {x:5.2f}  {y:.3e}\n')
+    print('figuras en', destino)
+
+
 def colores(w):
     return np.log10(np.maximum(w/w.max(), 1e-4))
 
@@ -402,7 +503,7 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion'])
+    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion', 'articulo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
