@@ -1,0 +1,29 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Numerical computation of the action-angle variables}
+\label{App:ActionAngle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this appendix we describe the numerical evaluation of the action-angle variables defined in Eqs.~(\ref{Eq:AreaFunction},\ref{Eq:TDef},\ref{Eq:JQDef}) for a potential of the form $\Phi = \Phi_{ext} + \Phi_{gas}$, in which $\Phi_{gas}$ is only known on a radial grid. This is required for the construction of the self-consistent steady states, for the generation of the initial data and for the computation of the observables $h_n(t)$.
+
+The values of $\Phi_{gas}$ on the grid are interpolated with a natural cubic spline, and beyond the last grid point we set $\Phi_{gas} = -G M_{gas}/r$. Given a point $(r,p_r,L)$ we compute its energy $E$ from Eq.~(\ref{Eq:EDef}), locate the minimum $r_{min}(L)$ of the effective potential $V_L$, and determine the turning points $r_1 < r_{min}(L) < r_2$ by solving the equation $V_L(r) = E$ with the bisection method on either side of the minimum. The integrand in Eq.~(\ref{Eq:AreaFunction}) behaves like a square root at the turning points and the one in Eq.~(\ref{Eq:TDef}) like an inverse square root, which spoils the convergence of standard quadrature rules. We avoid this problem by means of the substitution
+\begin{equation}
+r = r_m + r_a\sin\theta,\qquad
+r_m := \frac{r_1 + r_2}{2},\quad r_a := \frac{r_2 - r_1}{2},\qquad
+-\frac{\pi}{2}\leq \theta\leq \frac{\pi}{2}.
+\label{Eq:ThetaSubstitution}
+\end{equation}
+Since for a non-circular orbit the zeros of the function $E - V_L$ at the turning points are simple, one has $E - V_L(r) = r_a^2\cos^2\theta\, u(\theta)$ with a smooth and positive function $u$, and it follows that
+\begin{equation}
+A(E,L) = 2r_a^2\int\limits_{-\pi/2}^{\pi/2} \cos^2\theta\,\sqrt{2u(\theta)}\, d\theta,\qquad
+T(E,L) = 2\int\limits_{-\pi/2}^{\pi/2} \frac{d\theta}{\sqrt{2u(\theta)}}.
+\label{Eq:ATSmooth}
+\end{equation}
+Both integrands are smooth, and we evaluate the integrals with a Gauss-Legendre rule with $64$ nodes. The angle variable is obtained in the same way from
+\begin{equation}
+Q = \frac{2\pi}{T(E,L)}\int\limits_{-\pi/2}^{\theta(r)} \frac{d\theta'}{\sqrt{2u(\theta')}},\qquad
+\theta(r) := \arcsin\left( \frac{r - r_m}{r_a} \right),
+\label{Eq:QSmooth}
+\end{equation}
+when $p_r\geq 0$, and from $2\pi$ minus the right-hand side of Eq.~(\ref{Eq:QSmooth}) when $p_r < 0$. For the isochrone potential without self-gravity, for which the exact expressions~(\ref{Eq:AreaIsochrone},\ref{Eq:OmegaIsochrone}) are available, this procedure yields the action variable with an error of the order of $10^{-14}$ and the period with an error of the order of $10^{-11}$. Without the substitution~(\ref{Eq:ThetaSubstitution}) the corresponding errors are $2\times 10^{-6}$ and $9\times 10^{-3}$, and they only decrease like the third and the first inverse power of the number of nodes, respectively.
+
+For the inverse map $(Q,J)\mapsto (r,p_r)$ at fixed $L$ we tabulate the function $J = A(E,L)/2\pi$ for $4000$ values of the energy between $E_{min}(L)$ and a value slightly above the cutoff energy, and obtain $E(J,L)$ by interpolation. Next, we determine the turning points and find, by bisection in $\theta$, the point of the orbit at which the time elapsed since the passage through the pericenter is equal to $QT(E,L)/2\pi$ when $Q\leq \pi$ and to $(2\pi - Q)T(E,L)/2\pi$ otherwise. This gives the radius $r$, and the momentum is $p_r = \pm\sqrt{2(E - V_L(r))}$, with the positive sign when $Q\leq \pi$. Applying the direct map to the result reproduces the points of the lattice~(\ref{Eq:Lattice}) with errors which are smaller than $10^{-8}$ in $J$ and $5\times 10^{-7}$ in $Q$. The frequency is obtained from $\Omega = 2\pi/T(E,L)$.

@@ -1,0 +1,93 @@
+\documentclass[prd,aps,showpacs,nofootinbib,superscriptaddress,amsmath,amssymb]{revtex4}
+\usepackage{amssymb,graphicx}
+\usepackage{mathrsfs}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage[bookmarks]{hyperref}
+\usepackage{multirow, array}
+\usepackage{float}
+
+\newcommand{\Natural}{\mathbb{N}}
+\newcommand{\Integer}{\mathbb{Z}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\Complex}{\mathbb{C}}
+\newcommand{\re}{\mbox{Re}}
+\newcommand{\im}{\mbox{Im}}
+\newcommand{\supp}{\mbox{supp}\,}
+
+% Comments of the authors. Remove before submission.
+\newcommand{\EJ}[1]{{\color{red}~\textsf{[(Erik) #1]}}}
+\newcommand{\OS}[1]{{\color{blue}~\textsf{[(Olivier) #1]}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\graphicspath{{../articulo/}}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\title{Perturbations of steady states of a self-gravitating spherical gas in a central potential: damping, oscillating modes and trapping}
+
+\author{Erik Jim\'enez-V\'azquez}
+\affiliation{\EJ{Affiliation to be completed.}}
+
+\author{Olivier Sarbach}
+\affiliation{Instituto de F\'isica y Matem\'aticas,
+Universidad Michoacana de San Nicol\'as de Hidalgo,
+Edificio C-3, Ciudad Universitaria, 58040 Morelia, Michoac\'an, M\'exico}
+
+
+\begin{abstract}
+\EJ{Provisional title and abstract.}
+These notes are devoted to the numerical study of small perturbations of the steady states of a spherically symmetric, collisionless kinetic gas which is trapped in an external central potential and whose self-gravity is taken into account, for the reduced model in which all the gas particles have the same magnitude of the angular momentum. In the absence of self-gravity, such perturbations relax through phase space mixing. Our study is based on a particle-in-cell code, on a numerical solution of the linearized equations in action-angle variables, and on the numerical computation of the gain of the self-consistent loop, a spectral quantity which characterizes the existence of oscillating modes. We find that the perturbations are damped as long as the mass of the gas lies below a threshold, first exponentially and later algebraically, with an exponent which is reduced by the self-gravity of the perturbation, whereas above the threshold they give rise to an oscillation which is not damped. The threshold and the frequency of the oscillation are accurately predicted by the gain. Finally, we show that the oscillating modes which lie close to the edge of the frequency band trap the gas particles near the edge of the steady state above a critical amplitude, which we estimate by means of a pendulum model.
+\end{abstract}
+
+\date{\today}
+
+\pacs{05.20.Dd, 98.10.+z, 02.60.Cb}
+% 05.20.Dd: Kinetic theory
+% 98.10.+z: Stellar dynamics and kinematics
+% 02.60.Cb: Numerical simulation; solution of equations
+
+\maketitle
+
+
+\input{sec1_introduction}
+
+
+\input{sec2_vp_spherical}
+
+
+\input{sec3_linear}
+
+
+\input{sec4_numerics}
+
+
+\input{sec5_validation}
+
+
+\input{sec6_fixedL}
+
+
+\input{sec7_conclusions}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%   ACKNOWLEDGMENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\acknowledgments
+
+\EJ{To be written.}
+
+
+\appendix
+
+\input{appA_action_angle}
+
+
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+\end{document}
