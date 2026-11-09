@@ -19,8 +19,9 @@ Pasos, en este orden (cada uno reutiliza lo que ya exista en exe/resultados/):
                                      colas algebraicas con y sin autogravedad) y frecuencias de
                                      los modos con tres métodos (respuesta.txt; la primera vez
                                      resuelve 23 problemas lineales, unos 50 min)
-    python3 resultados.py modos      el péndulo de las órbitas del borde en cada modo: omega_b,
-                                     eps_c, J_r (modos.txt; 3 min)
+    python3 resultados.py modos      la frecuencia omega_d de cada modo (matrix pencil de la solución
+                                     lineal) y el péndulo de las órbitas del borde: omega_b, eps_c,
+                                     J_r (modos.txt; 5 min)
     python3 resultados.py finita     corridas con modo: s, mayor acción frente a la del péndulo
                                      y cociente de amplitudes kappa (finita.txt)
     python3 resultados.py figuras    figuras de la Sección 6 (docs/articulo/figuras/)
@@ -34,6 +35,10 @@ demo_eta.py y hadzic.py ya analizadas. De dónde sale cada número de la Secció
     6.D        mesetas y frecuencias de los modos                        respuesta
     6.E        péndulo, eps_c, mayor acción y pérdida de amplitud,
                saturación del amortiguamiento                            modos, finita, respuesta
+Desde el 2026-11-08 las notas no usan la ganancia lambda(omega): la frecuencia omega_d de los modos,
+delta_d y el péndulo salen de la solución lineal (omega_lineal). Los pasos estados, umbrales y
+ganancia, y la columna de lambda en respuesta, quedan para la versión de la etiqueta
+notas-estados-estacionarios.
 """
 import os, sys, subprocess
 for v in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'):
@@ -635,13 +640,37 @@ def respuesta():
 
 
 # ------------------------------------------------------------------ modos y péndulo
+def omega_lineal():
+    """Frecuencia omega_d de cada modo: matrix pencil (K = 3) de la solución lineal en la ventana
+    de FRECUENCIAS; para k = 1.5, la solución larga de colas_datos en [8000, 14000], cuando el modo
+    ya se ha separado del borde. Es la columna de la solución lineal en la tabla de los modos.
+    Devuelve {caso: omega}, con caso 'L5', 'L6', 'M5' o 'k<k>' (politropos con a0 = 1); se guarda
+    en exe/resultados/omega_lineal.npz."""
+    sal = ruta('omega_lineal.npz')
+    if not os.path.exists(sal):
+        om = {}
+        for fam, caso, vl, _ in FRECUENCIAS:
+            if fam == 'P' and caso == 1.5:
+                c = colas_datos()
+                om['k1.5'] = D.polo_con_error(np.arange(len(c['largo']))*2.0, c['largo'], 8000, 14000)[0]
+                continue
+            (_, _), (tl, xl) = serie_w(MODOS_W[caso][0], comun=False) if fam == 'W' else \
+                serie_p(f'D_k{caso:g}_a1', comun=False)
+            om[caso if fam == 'W' else f'k{caso:g}'] = D.polo_con_error(tl, xl, *vl)[0]
+        os.makedirs(BASE, exist_ok=True)
+        np.savez(sal, **om)
+    d = np.load(sal)
+    return {k: float(d[k]) for k in d.files}
+
+
 def _modo_w(caso):
     """c_+ en el borde de un modo de la familia W: la parte e^{-i omega_d t} del primer armónico
     del potencial de la perturbación en la fila del borde (lineal.resolver con phi1), ajustada
-    en dos ventanas."""
+    en dos ventanas, con omega_d de omega_lineal."""
     from lineal import resolver
     corrida, ventanas = MODOS_W[caso]
     e = next(x for x in estados_datos() if x['caso'] == caso)
+    wd = omega_lineal()[caso]
     lin = np.load(D.ruta('lineal', caso + '.npz'))
     t, h1, _, _, _, (J, om, ph) = resolver(D.ruta('ic', f'{corrida}_equilibrio.npz'), 1600, 32, 0.5,
                                            float(lin['t'][-1]), verboso=False, j1=D.J1, sj1=D.J1, phi1=True)
@@ -649,10 +678,10 @@ def _modo_w(caso):
     cs, res = [], []
     for a, b in ventanas:
         v = (t >= a) & (t <= b)
-        M = np.stack([np.exp(-1j*e['wd']*t[v]), np.exp(1j*e['wd']*t[v])], axis=1)
+        M = np.stack([np.exp(-1j*wd*t[v]), np.exp(1j*wd*t[v])], axis=1)
         c = np.linalg.lstsq(M, ph[v, -1], rcond=None)[0]
         cs.append(c[0]); res.append(np.sqrt(np.sum(np.abs(ph[v, -1] - M @ c)**2)/np.sum(np.abs(ph[v, -1])**2)))
-    return dict(caso=caso, masa=e['a0'], om_min=e['om_min'], om_max=e['om_max'], wd=e['wd'],
+    return dict(caso=caso, masa=e['a0'], om_min=e['om_min'], om_max=e['om_max'], wd=wd,
                 dom=abs(np.gradient(om, J)[-1]), cmas=cs[0], cmas2=cs[1], res=res[0], res2=res[1])
 
 
@@ -661,7 +690,7 @@ def modos_w():
     sal = ruta('modos_w.npz')
     if not os.path.exists(sal):
         from multiprocessing import Pool
-        estados_datos()
+        estados_datos(); omega_lineal()
         with Pool(len(MODOS_W)) as pool:
             res = pool.map(_modo_w, list(MODOS_W))
         np.savez(sal, **{k: np.array([r[k] for r in res]) for k in res[0]})
@@ -669,19 +698,50 @@ def modos_w():
     return {str(c): {k: d[k][i] for k in d.files} for i, c in enumerate(d['caso'])}
 
 
+def _modo_p(k):
+    """Lo mismo para el politropo k con a0 = 1 (como hadzic._rebote, con omega_d de omega_lineal en
+    lugar de la raíz de lambda = 1)."""
+    from lineal import resolver
+    t, h1, _, _, _, (J, om, ph) = resolver(H.ruta('lineal', f'P_k{k:g}_a1_equilibrio.npz'), 1600, 32, 0.5,
+                                           H.TFIN[1.0], verboso=False, j1=H.J1, sj1=H.SJ1, phi1=True)
+    lin = np.load(H.ruta('lineal', H.nombre_lin(k, 1.0) + '.npz'))
+    assert np.array_equal(h1, lin['h1']), 'la solución lineal no es la guardada'
+    e = next(x for x in estados_datos() if x['fam'] == 'P' and x['g'] == k and x['a0'] == 1.0)
+    wd = omega_lineal()[f'k{k:g}']
+    cs, res = [], []
+    for a, b in H.V_REBOTE:
+        v = (t >= a) & (t <= b)
+        M = np.stack([np.exp(-1j*wd*t[v]), np.exp(1j*wd*t[v])], axis=1)
+        c = np.linalg.lstsq(M, ph[v, -1], rcond=None)[0]
+        cs.append(c[0]); res.append(np.sqrt(np.sum(np.abs(ph[v, -1] - M @ c)**2)/np.sum(np.abs(ph[v, -1])**2)))
+    return dict(caso=f'k={k:g}', k=k, masa=1.0, om_min=e['om_min'], om_max=e['om_max'], wd=wd,
+                dom=abs(np.gradient(om, J)[-1]), cmas=cs[0], cmas2=cs[1], res=res[0], res2=res[1])
+
+
+def modos_p():
+    """Los modos de los politropos con a0 = 1 (se calculan una vez; exe/resultados/modos_p.npz)."""
+    sal = ruta('modos_p.npz')
+    if not os.path.exists(sal):
+        from multiprocessing import Pool
+        estados_datos(); omega_lineal()
+        with Pool(len(H.K_REBOTE)) as pool:
+            res = pool.map(_modo_p, H.K_REBOTE)
+        np.savez(sal, **{k: np.array([r[k] for r in res]) for k in res[0]})
+    d = np.load(sal)
+    return {float(c): {k: d[k][i] for k in d.files} for i, c in enumerate(d['k'])}
+
+
 def pendulo(familia, caso, eps):
     """Péndulo de las órbitas del borde en el modo de un estado estacionario, con amplitud eps:
     omega_b, s = 2 omega_b/(Omega_min - omega_d), J_r, semiancho de la separatriz, la mayor
     acción que alcanza una órbita del borde, la fase del punto O y omega_d. familia 'P':
     caso = k (hadzic.pendulo); familia 'W': caso = 'L5', 'L6' o 'M5'."""
-    if familia == 'P':
-        return H.pendulo(caso, eps)
-    m = modos_w()[caso]
+    m, jt = (modos_p()[float(caso)], JT_P) if familia == 'P' else (modos_w()[caso], JT_W)
     hueco, dom = float(m['om_min'] - m['wd']), float(m['dom'])
     wb = float(np.sqrt(2*abs(m['cmas'])*dom*eps))
     d, dJs = hueco/dom, 2*wb/dom
-    jmax = JT_W + d + dJs if dJs > d else JT_W + d - np.sqrt(d**2 - dJs**2)
-    return dict(wb=wb, s=2*wb/hueco, Jr=JT_W + d, dJs=dJs, Jmax=jmax, fase_O=-float(np.angle(m['cmas'])),
+    jmax = jt + d + dJs if dJs > d else jt + d - np.sqrt(d**2 - dJs**2)
+    return dict(wb=wb, s=2*wb/hueco, Jr=jt + d, dJs=dJs, Jmax=jmax, fase_O=-float(np.angle(m['cmas'])),
                 wd=float(m['wd']))
 
 
@@ -690,24 +750,20 @@ def modos():
     lineas = []
     def w(x=''):
         lineas.append(x); print(x, flush=True)
+    w('Frecuencia de los modos: omega_d de la solución lineal (omega_lineal); delta_d = (Omega_min - omega_d)/'
+      '(Omega_max - Omega_min).')
     w('Péndulo de las órbitas del borde. hueco = Omega_min - omega_d; c_+ en el borde (dos ventanas, con el residuo '
       'del ajuste); omega_b = sqrt(2 eps |c_+| |Omega\'|); eps_c = hueco^2/(8 |c_+| |Omega\'|); J_r = J_max + hueco/|Omega\'|.')
-    w(f'{"fam":>3} {"caso":>7} {"masa":>6} {"Omega_min":>9} {"omega_d":>9} {"hueco":>9} {"|dOm/dJ|":>8} {"|c_+|":>9} '
-      f'{"res":>6} {"|c_+| 2":>9} {"res":>6} {"w_b/sqrt(eps)":>13} {"eps_c":>8} {"J_r":>7} {"J_r/J_max":>9}')
-    for caso, m in modos_w().items():
-        hueco = float(m['om_min'] - m['wd'])
-        wb1 = np.sqrt(2*abs(m['cmas'])*m['dom'])
-        w(f'{"W":>3} {caso:>7} {float(m["masa"]):6g} {float(m["om_min"]):9.6f} {float(m["wd"]):9.6f} {hueco:9.2e} '
-          f'{float(m["dom"]):8.4f} {abs(m["cmas"]):9.2e} {float(m["res"]):6.3f} {abs(m["cmas2"]):9.2e} '
-          f'{float(m["res2"]):6.3f} {wb1:13.5f} {(hueco/(2*wb1))**2:8.4f} {JT_W + hueco/float(m["dom"]):7.4f} '
-          f'{1 + hueco/float(m["dom"])/JT_W:9.4f}')
-    rb = np.load(H.ruta('lineal', 'rebote.npz'))
-    om_min = {e['g']: e['om_min'] for e in estados_datos() if e['fam'] == 'P' and e['a0'] == 1.0}
-    for i, k in enumerate(rb['k']):
-        hueco, wb1, dom = float(rb['hueco'][i]), float(rb['wb1'][i]), float(rb['dom'][i])
-        w(f'{"P":>3} {f"k={k:g}":>7} {1:6g} {om_min[float(k)]:9.6f} {float(rb["wd"][i]):9.6f} {hueco:9.2e} {dom:8.4f} '
-          f'{abs(rb["cmas"][i]):9.2e} {"":>6} {"":>9} {"":>6} {wb1:13.5f} {(hueco/(2*wb1))**2:8.4f} '
-          f'{JT_P + hueco/dom:7.4f} {1 + hueco/dom/JT_P:9.4f}')
+    w(f'{"fam":>3} {"caso":>7} {"masa":>6} {"Omega_min":>9} {"omega_d":>9} {"delta_d":>8} {"hueco":>9} {"|dOm/dJ|":>8} '
+      f'{"|c_+|":>9} {"res":>6} {"|c_+| 2":>9} {"res":>6} {"w_b/sqrt(eps)":>13} {"eps_c":>8} {"J_r":>7} {"J_r/J_max":>9}')
+    for fam, modos_, jt in (('W', modos_w(), JT_W), ('P', modos_p(), JT_P)):
+        for m in modos_.values():
+            hueco, dom = float(m['om_min'] - m['wd']), float(m['dom'])
+            wb1 = np.sqrt(2*abs(m['cmas'])*dom)
+            w(f'{fam:>3} {str(m["caso"]):>7} {float(m["masa"]):6g} {float(m["om_min"]):9.6f} {float(m["wd"]):9.6f} '
+              f'{hueco/float(m["om_max"] - m["om_min"]):8.5f} {hueco:9.3e} {dom:8.4f} {abs(m["cmas"]):9.3e} '
+              f'{float(m["res"]):6.3f} {abs(m["cmas2"]):9.3e} {float(m["res2"]):6.3f} {wb1:13.5f} '
+              f'{(hueco/(2*wb1))**2:8.5f} {jt + hueco/dom:7.4f} {1 + hueco/dom/jt:9.4f}')
     escribir('modos.txt', lineas)
 
 
