@@ -309,6 +309,29 @@ def h1_ventana(n, a=10, b=20):
     return np.abs(hk[v, 1]).mean()
 
 
+def campo_particulas(n):
+    """Desviación del potencial que genera el gas respecto a su promedio en la segunda mitad,
+    D(t) = ||Phi_gas(t) - <Phi_gas>|| / max|<Phi_gas>| en 3 <= r <= 15, con Phi_gas calculado desde
+    las partículas (potencial exacto de cascarones, -sum_j m_j/max(r, r_j)). Sin autogravedad (B0)
+    es el potencial que el gas generaría sin actuar sobre sí mismo. Coincide con el del código a
+    1.5e-3 en las corridas con autogravedad. Se guarda en <n>/campo.npz."""
+    sal = ruta(n, 'campo.npz')
+    if not os.path.exists(sal):
+        d = cargar(n); t = d['t']; w = np.asarray(d['w'], float); R = np.asarray(d['R'], float)
+        r = np.linspace(RVENT[0], RVENT[1], 121)
+        P = np.empty((len(t), len(r)))
+        for m in range(len(t)):
+            o = np.argsort(R[m]); Rs, ws = R[m][o], w[o]
+            mc = np.concatenate([[0], np.cumsum(ws)])                       # masa con r_j < r
+            pc = np.concatenate([np.cumsum((ws/Rs)[::-1])[::-1], [0]])      # sum_{r_j >= r} m_j/r_j
+            k = np.searchsorted(Rs, r)
+            P[m] = -(mc[k]/r + pc[k])
+        media = P[t >= t[-1]/2].mean(0)
+        np.savez(sal, t=t, D=np.sqrt(np.mean((P - media)**2, axis=1))/np.abs(media).max())
+    d = np.load(sal)
+    return d['t'], d['D']
+
+
 def articulo():
     """Figuras de la Sección 7 de las notas, en docs/articulo/figuras/: bulto_fase.pdf (espacio de
     fases de B2 y B4), bulto_series.pdf (|h_1| y fluctuación del potencial de la familia de
@@ -343,19 +366,24 @@ def articulo():
     fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.4), layout='constrained')
     d = cargar('B0'); t = d['t']
     ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), 'k--', lw=1.0, label='no self-gravity')
+    tc, Dc = campo_particulas('B0')
+    ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), 'k--', lw=1.0)
     for n in sel:
         col = cmap(0.85*mus[n]/1.16)
         d = cargar(n); t = d['t']
         ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0,
                        label=f'$\\mu={mus[n]:.2f}$')
-        tt, _, _, _, fl, _ = potencial(n)
-        ax[1].semilogy(tt/TAU1, envolvente(fl, tt), color=col, lw=1.0)
+        tc, Dc = campo_particulas(n)
+        ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), color=col, lw=1.0)
         q = {'B2': 'B2q', 'B02': 'B02q', 'B4': 'B4q'}.get(n)
         if q:
             d = cargar(q); t = d['t']
             ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0, ls=':')
+            tc, Dc = campo_particulas(q)
+            ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), color=col, lw=1.0, ls=':')
     ax[0].set_ylabel('$|h_1|/h_0$'); ax[0].set_ylim(1e-5, 2)
-    ax[1].set_ylabel('$\\|\\Phi-\\langle\\Phi\\rangle\\|/\\max|\\langle\\Phi_{gas}\\rangle|$')
+    ax[1].set_ylabel('$\\|\\Phi_{gas}-\\langle\\Phi_{gas}\\rangle\\|/\\max|\\langle\\Phi_{gas}\\rangle|$')
+    ax[1].set_ylim(1e-5, 0.3)
     for a in ax:
         a.set_xlabel('$t/\\tau_1$'); a.set_xlim(0, TFIN/TAU1); a.grid(alpha=0.3)
     ley = fig.legend(*ax[0].get_legend_handles_labels(), loc='outside upper center', ncol=8, fontsize=7, frameon=False,
@@ -386,6 +414,16 @@ def articulo():
         fo.write('corrida      mu     |h1| en 10-20 tau_1\n')
         for n, x, y in sorted(filas, key=lambda r: (r[1], r[0])):
             fo.write(f'{n:10} {x:5.2f}  {y:.3e}\n')
+        fo.write('\nRelajación del potencial que genera el gas (campo_particulas): primera vez que la envolvente\n'
+                 '(ventana de +-50) de D baja de 1e-2, 1e-3 y 3e-4, en unidades de tau_1, y media de D en 10-20 tau_1.\n')
+        for n in ['B0', 'B1', 'B2', 'B2q', 'B015', 'B02', 'B02q', 'B025', 'B3', 'B04', 'B05', 'B07', 'B4', 'B4q', 'B5']:
+            tc, Dc = campo_particulas(n)
+            k = int(round(50/(tc[1] - tc[0])))
+            env = np.array([Dc[max(0, i - k):i + k + 1].max() for i in range(len(Dc))])
+            cruces = [f'{tc[np.argmax(env < x)]/TAU1:6.2f}' if (env < x).any() else f'{"--":>6}' for x in (1e-2, 1e-3, 3e-4)]
+            v = (tc >= 10*TAU1) & (tc <= 20*TAU1)
+            mu = escalas(n)[2] if info[n]['sg'] else 0.0
+            fo.write(f'{n:6} mu = {mu:4.2f}  ' + ' '.join(cruces) + f'   D en 10-20 tau_1: {Dc[v].mean():.2e}\n')
     print('figuras en', destino)
 
 

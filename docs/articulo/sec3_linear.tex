@@ -1,13 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Mixing and linear response}
+\section{Phase space mixing in the absence of self-gravity}
 \label{Sec:Linear}
+\label{SubSec:FreeMixing}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this section we first review the mixing phenomenon in the absence of self-gravity, for an arbitrary initial DF, and discuss the rate at which the observables introduced in the previous section decay. Next, we linearize the Vlasov-Poisson system about a self-consistent steady state, which describes initial data close to that steady state, and we discuss the oscillating modes, which prevent the mixing from being completed in the linear regime, as well as the damped oscillations. We end the section with the role played by the edge of the support of the steady state. The derivations in this section are formal; for rigorous statements we refer the reader to Refs.~\cite{cM19,pRoS20} regarding the mixing property and to Refs.~\cite{mHgRcS22,Kunze-Book,mHgRmScS25,mMpRhV26} regarding the linearized system.
-
-
-\subsection{Mixing in the absence of self-gravity}
-\label{SubSec:FreeMixing}
+In this section we review the mixing phenomenon in the absence of self-gravity, for an arbitrary initial DF, and discuss the rate at which the observables introduced in the previous section decay. The derivations are formal; for rigorous statements we refer the reader to Refs.~\cite{cM19,pRoS20}.
 
 When the self-gravity of the gas is neglected, $\Phi = \Phi_{ext}$ is independent of time, and the solution of Eq.~(\ref{Eq:VlasovAA}) is
 \begin{equation}
@@ -27,7 +24,7 @@ h_n(t) = 16\pi^3\int\limits_0^\infty\int\limits_0^\infty \hat{F}_n(J,L) B(J,L) e
 \end{equation}
 Hence, $h_0$ is constant in time, whereas for $n\neq 0$ the function $h_n(t)$ is a superposition of oscillations whose frequencies $n\Omega(J,L)$ vary from one orbit to the other. Provided that the gradient of $\Omega$ with respect to $(J,L)$ is different from zero for almost all $(J,L)$ (in the reduced model, provided that $\partial\Omega/\partial J\neq 0$ for almost all $J$), it follows from the Riemann-Lebesgue lemma and its generalizations (cf. Refs.~\cite{cM19,pRoS20}) that $h_n(t)\to 0$ for $t\to \infty$ and all $n\neq 0$. As a consequence, the observables~(\ref{Eq:NphiSum}) converge to the ones which belong to the angle-averaged DF $\hat{F}_0(J,L)$, which is a steady state according to the remark below Eq.~(\ref{Eq:VlasovAA}). This is the phase space mixing property, and $\hat{F}_0$ is the final state of the gas. For the isochrone and the Kepler potentials, Eq.~(\ref{Eq:OmegaIsochrone}) gives $\partial\Omega/\partial J = -3[J + c(L)]^{-4} < 0$, such that the non-degeneracy condition is satisfied.
 
-The rate at which $h_n(t)$ decays is not universal. It depends on the regularity of the function $\hat{F}_n B$ and on its behavior at the boundary of its support. If this function is smooth and vanishes together with all its derivatives at the boundary, repeated integration by parts in Eq.~(\ref{Eq:hnFree}) shows that $h_n(t)$ decays faster than any inverse power of $t$. A different situation, which is the relevant one for most of the initial data considered in these notes, arises in the reduced model when the DF has its support in an interval $0\leq J\leq J_{max}$ and vanishes like a power at the outer edge, such that
+The rate at which $h_n(t)$ decays is not universal. It depends on the regularity of the function $\hat{F}_n B$ and on its behavior at the boundary of its support. If this function is smooth and vanishes together with all its derivatives at the boundary, repeated integration by parts in Eq.~(\ref{Eq:hnFree}) shows that $h_n(t)$ decays faster than any inverse power of $t$. A different situation arises in the reduced model when the DF has its support in an interval $0\leq J\leq J_{max}$ and vanishes like a power at the outer edge, such that
 \begin{equation}
 \hat{F}_n(J) B(J) = (J_{max} - J)^k g(J)
 \label{Eq:EdgeBehavior}
@@ -41,55 +38,4 @@ where $\Omega_{min} := \Omega(J_{max})$ is the frequency of the outermost orbit 
 
 When the angular momenta of the gas particles are distributed, the integration over $L$ in Eq.~(\ref{Eq:hnFree}) provides an additional source of decay, since $\Omega$ depends on $L$ as well. For the isochrone and the Kepler potentials, Eq.~(\ref{Eq:OmegaIsochrone}) yields $\partial\Omega/\partial L = c'(L)\,\partial\Omega/\partial J$ with $1/2 < c'(L)\leq 1$, such that a dispersion in $L$ is almost as efficient for the mixing as a dispersion of the same magnitude in $J$. In these notes we restrict ourselves to the reduced model.
 
-
-\subsection{Linearization about a self-consistent steady state}
-\label{SubSec:Linearization}
-
-When the self-gravity of the gas is taken into account, the potential depends on time, and there is no longer a fixed set of action-angle variables in which the motion of the gas particles is trivial. If the initial DF is close to a self-consistent steady state $(\mathcal{F}_{eq},\Phi_{eq})$, it is convenient to use the action-angle variables $(Q,J)$ which belong to the potential $\Phi_{eq}$, such that $\mathcal{F}_{eq}$ is a function of $(J,L)$ only. We write
-\begin{equation}
-\mathcal{F} = \mathcal{F}_{eq} + \delta\mathcal{F},\qquad
-\Phi = \Phi_{eq} + \delta\Phi,
-\end{equation}
-with $\delta\Phi$ the perturbation of the potential defined in Eq.~(\ref{Eq:deltaPhi}). The motion of the gas particles is determined by the Hamiltonian $H = E(J,L) + \delta\Phi(t,r(Q,J,L))$, where $r(Q,J,L)$ denotes the radius as a function of the action-angle variables. Since for each fixed $L$ the variables $(Q,J)$ are canonical, the Vlasov equation~(\ref{Eq:VlasovSph}) is equivalent to
-\begin{equation}
-\frac{\partial\delta\mathcal{F}}{\partial t} + \Omega\frac{\partial\delta\mathcal{F}}{\partial Q} - \frac{\partial\mathcal{F}_{eq}}{\partial J}\frac{\partial\delta\Phi}{\partial Q}
- = \frac{\partial\delta\Phi}{\partial Q}\frac{\partial\delta\mathcal{F}}{\partial J} - \frac{\partial\delta\Phi}{\partial J}\frac{\partial\delta\mathcal{F}}{\partial Q},
-\label{Eq:VlasovPert}
-\end{equation}
-where no approximation has been made so far. The right-hand side is quadratic in the deviation from the steady state, and neglecting it yields the linearized equation
-\begin{equation}
-\frac{\partial\delta\mathcal{F}}{\partial t} + \Omega(J,L)\frac{\partial\delta\mathcal{F}}{\partial Q} - \frac{\partial\mathcal{F}_{eq}}{\partial J}(J,L)\frac{\partial\delta\Phi}{\partial Q} = 0.
-\label{Eq:LinVlasov}
-\end{equation}
-The potential is determined by Eqs.~(\ref{Eq:PoissonSph},\ref{Eq:PhigasSol},\ref{Eq:PSVolumeForm}), which give
-\begin{equation}
-\delta\Phi(t,r) = -8\pi^2 G\int\limits_0^\infty\int\limits_0^\infty\int\limits_0^{2\pi} \frac{\delta\mathcal{F}(t,Q',J',L')}{\max\{ r,r(Q',J',L') \}}\, dQ'\, dJ'\, L' dL'.
-\label{Eq:LinPoisson}
-\end{equation}
-The second term on the left-hand side of Eq.~(\ref{Eq:LinVlasov}) describes the transport along the orbits of the steady state discussed in the previous subsection. The third term describes the reaction of the steady state to the perturbation of the potential: the latter changes the action variables of the gas particles at the rate $\dot{J} = -\partial\delta\Phi/\partial Q$, and this displaces mass along the gradient of $\mathcal{F}_{eq}$. Through this term, which is absent when self-gravity is neglected, all the orbits are coupled to each other. When the initial data are far from any steady state, as in section~\ref{Sec:FarFromEq}, the right-hand side of Eq.~(\ref{Eq:VlasovPert}) is not small, and the evolution has to be followed with the nonlinear equations.
-
-Since the support of $\mathcal{F}_{eq}$ is bounded, the frequencies $\Omega(J,L)$ of the orbits which are populated by the steady state fill an interval $[\Omega_{min},\Omega_{max}]$ with $0 < \Omega_{min} < \Omega_{max}$, which will be referred to as the frequency band in what follows. Without the third term in Eq.~(\ref{Eq:LinVlasov}), the $n$-th Fourier coefficient of $\delta\mathcal{F}$ with respect to $Q$ oscillates with the frequencies $n\Omega(J,L)$, which lie in the interval $n[\Omega_{min},\Omega_{max}]$. These intervals constitute the essential spectrum of the linearized system, which is not altered by the self-gravity of the perturbation~\cite{mHgRcS22,mHgRmScS25}.
-
-
-\subsection{Oscillating modes and damped oscillations}
-\label{SubSec:Modes}
-
-In the linear regime, the mixing of a deviation from the steady state is not completed if the linearized system possesses solutions of the form $\delta\mathcal{F} = a(Q,J,L) e^{-i\omega t} + c.c.$ with a real frequency $\omega > 0$, where $c.c.$ denotes the complex conjugate of the preceding term. Such a solution describes a perturbation which oscillates without being damped, and it will be called an oscillating mode in what follows. Expanding $a(Q,J,L) = \sum_n a_n(J,L) e^{inQ}$, and the potential along the orbits in the same way, with coefficients $\phi_n(J,L) = \phi_{-n}(J,L)$, Eq.~(\ref{Eq:LinVlasov}) yields
-\begin{equation}
-\left[ n\Omega(J,L) - \omega \right] a_n(J,L) = n\frac{\partial\mathcal{F}_{eq}}{\partial J}(J,L)\,\phi_n(J,L),\qquad n\in\Integer.
-\label{Eq:ModeEq}
-\end{equation}
-If $\omega$ lies below the frequency band, $0 < \omega < \Omega_{min}$, none of the gas particles is in resonance with the perturbation, and Eq.~(\ref{Eq:ModeEq}) determines the coefficients $a_n$ in terms of the potential, which in turn is determined by the coefficients $a_n$ through Eq.~(\ref{Eq:LinPoisson}). Whether this self-consistency problem has a nontrivial solution is decided by the criterion of Refs.~\cite{mHgRcS22,Kunze-Book,mK22}, which is based on the Birman-Schwinger principle that was first applied to this problem by Mathur~\cite{sM90}, see section~\ref{Sec:Introduction}. In these notes we do not evaluate this criterion. Instead, we determine whether a steady state admits an oscillating mode, and the frequency $\omega_d$ of the mode, from the numerical solution of the linearized equations: when a mode is present, the part of the response which does not belong to the mode decays by mixing, and the response settles down to an oscillation with constant amplitude and a frequency $\omega_d < \Omega_{min}$.
-
-When the steady state admits no oscillating mode, the deviation from it decays in all the examples of section~\ref{Sec:FixedL}. When the self-gravity of the gas is not too weak, the response to an initial deviation is dominated at intermediate times by a damped oscillation proportional to $e^{-i\omega t - \gamma t}$ with a frequency $\omega$ inside the band and a damping rate $\gamma > 0$, which is followed at late times by an algebraic tail. The damped oscillation is the analogue of Landau damping in a plasma~\cite{lL46}. It does not correspond to an eigenvalue of the linearized system; instead, $\omega - i\gamma$ is a zero of the analytic continuation of the dispersion function of the linearized system from the upper to the lower half of the complex plane, see for instance Refs.~\cite{BinneyTremaine-Book,mW94,jFsP22}. We do not compute this continuation in these notes; instead, we determine $\omega$ and $\gamma$ by fitting the time series which are obtained from the numerical solution of the linearized equations and from the PIC code, as described in section~\ref{Sec:Numerics}.
-
-
-\subsection{Behavior at the edge of the frequency band}
-\label{SubSec:Edge}
-
-The edge of the support of the steady state controls both the tail of the mixing, Eq.~(\ref{Eq:Tail}), and the existence of oscillating modes at small masses. Consider the reduced model and a steady state whose DF has a cutoff at the energy $E_0$ and behaves like
-\begin{equation}
-\mathcal{F}_{0,eq}\simeq \alpha (E_0 - E)^k,\qquad E\to E_0,
-\label{Eq:PolytropeEdge}
-\end{equation}
-with constants $\alpha > 0$ and $k > 1/2$, as is the case for the polytropes considered in Ref.~\cite{mHgRmScS25}. Let $J_{max}$ be the action variable of the orbit with energy $E_0$, such that $\Omega_{min} = \Omega(J_{max})$. Then $\partial\mathcal{F}_{0,eq}/\partial J$, which couples the orbits to each other in Eq.~(\ref{Eq:LinVlasov}), is proportional to $(J_{max} - J)^{k-1}$ near the edge. For the polytropes of small mass, the dichotomy of Ref.~\cite{mHgRmScS25} states that the solutions of the linearized system are damped if $k > 1$, whereas an oscillating mode exists if $1/2 < k\leq 1$. When the frequency $\omega_d$ of a mode lies close to the edge of the band, a time of the order of $(\Omega_{min} - \omega_d)^{-1}$ is required to distinguish the mode from the response of the orbits close to the edge, which oscillates with a frequency close to $\Omega_{min}$ and decays algebraically.
+When the self-gravity of the gas is taken into account, the potential depends on time, and there is no longer a fixed set of action-angle variables in which the motion of the gas particles is trivial. If the initial DF is close to a self-consistent steady state, the deviation from that state can be described by the equations linearized about it, as in the works on Landau damping and oscillating modes cited in section~\ref{Sec:Introduction}. The initial data of these notes are far from any steady state, and their evolution has to be followed with the nonlinear Vlasov-Poisson system, which we solve with the PIC method described in the next section. In this case we compute the observables~(\ref{Eq:hk}) with the action-angle variables of the instantaneous potential, see section~\ref{SubSec:Observables}.

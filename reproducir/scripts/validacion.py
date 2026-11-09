@@ -717,36 +717,38 @@ def figuras():
     #    dos mapas, a0 = 1e-3; (c) acción de una partícula con los dos mapas; (d) |h_1|/h_0 del
     #    estado estacionario de la corrida de referencia Z_k2 (politropo k = 2, a0 = 0.01), con los
     #    dos mapas.
+    def paneles_abc(axa, axb, axc, fs=7):
+        ax = axa
+        for n, etiqueta, c in (('long_a0_1e-2', '$M_{gas}/M=10^{-2}$', 'C3'), ('long_a0_1e-3', '$10^{-3}$', 'C1'),
+                               ('long_a0_1e-4', '$10^{-4}$', 'C0'), ('long20k_nosg', '$0$', '0.35')):
+            t, z = h1_tl(os.path.join(SG, n))
+            ax.loglog(t[1:], np.abs(z[1:]), color=c, lw=0.7, label=etiqueta)
+        ax.set_xlim(10, 2.0e4); ax.set_ylim(1e-9, 3)
+        ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.grid(alpha=0.3)
+        for l in ax.legend(fontsize=fs, frameon=False, loc='lower left').get_lines():
+            l.set_linewidth(1.4)
+        ax = axb
+        d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
+        fa = razon_a(os.path.join(SG, 'long20k_snap'))
+        ax.plot(d['t'], 1e3*d['h1_iso'].real/fa, color='C1', lw=0.8, label='variables of $\\Phi_{ext}$')
+        ax.plot(d['t'], 1e3*d['h1_promedio'].real/fa, color='C2', lw=0.8,
+                label='variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')
+        ax.axhline(0, color='k', lw=0.5)
+        ax.set_xlim(2000, 2.0e4); ax.set_ylim(-1.2, 4.0)        # antes de t = 2000 el pulso aún se mezcla
+        ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,\\mathrm{Re}\\,h_1/h_0$'); ax.grid(alpha=0.3)
+        ax.legend(fontsize=fs, frameon=False, loc='upper right')
+        ax = axc
+        ac = accion()
+        m = ac['t'] >= 1500.0
+        for clave, c, etiqueta in (('J_ext', 'C1', 'variables of $\\Phi_{ext}$'),
+                                   ('J_tot', 'C2', 'variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')):
+            J = ac[clave][m, 0]
+            ax.plot(ac['t'][m], 1e3*(J/J.mean() - 1), color=c, lw=0.9, label=etiqueta)
+        ax.set_xlim(1500, 2000); ax.set_ylim(-4.5, 6.5)
+        ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,(J/\\langle J\\rangle-1)$'); ax.grid(alpha=0.3)
+        ax.legend(fontsize=fs, frameon=False, loc='upper right')
     fig, axs = plt.subplots(2, 2, figsize=(7, 5.2), constrained_layout=True)
-    ax = axs[0, 0]
-    for n, etiqueta, c in (('long_a0_1e-2', '$M_{gas}/M=10^{-2}$', 'C3'), ('long_a0_1e-3', '$10^{-3}$', 'C1'),
-                           ('long_a0_1e-4', '$10^{-4}$', 'C0'), ('long20k_nosg', '$0$', '0.35')):
-        t, z = h1_tl(os.path.join(SG, n))
-        ax.loglog(t[1:], np.abs(z[1:]), color=c, lw=0.7, label=etiqueta)
-    ax.set_xlim(10, 2.0e4); ax.set_ylim(1e-9, 3)
-    ax.set_xlabel('$t$'); ax.set_ylabel('$|h_1|/h_0$'); ax.grid(alpha=0.3)
-    for l in ax.legend(fontsize=7, frameon=False, loc='lower left').get_lines():
-        l.set_linewidth(1.4)
-    ax = axs[0, 1]
-    d = np.load(os.path.join(SG, 'long20k_snap', 'aa_meseta.npz'))
-    fa = razon_a(os.path.join(SG, 'long20k_snap'))
-    ax.plot(d['t'], 1e3*d['h1_iso'].real/fa, color='C1', lw=0.8, label='variables of $\\Phi_{ext}$')
-    ax.plot(d['t'], 1e3*d['h1_promedio'].real/fa, color='C2', lw=0.8,
-            label='variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')
-    ax.axhline(0, color='k', lw=0.5)
-    ax.set_xlim(2000, 2.0e4); ax.set_ylim(-1.2, 4.0)        # antes de t = 2000 el pulso aún se mezcla
-    ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,\\mathrm{Re}\\,h_1/h_0$'); ax.grid(alpha=0.3)
-    ax.legend(fontsize=7, frameon=False, loc='upper right')
-    ax = axs[1, 0]
-    ac = accion()
-    m = ac['t'] >= 1500.0
-    for clave, c, etiqueta in (('J_ext', 'C1', 'variables of $\\Phi_{ext}$'),
-                               ('J_tot', 'C2', 'variables of $\\Phi_{ext}+\\langle\\Phi_{gas}\\rangle$')):
-        J = ac[clave][m, 0]
-        ax.plot(ac['t'][m], 1e3*(J/J.mean() - 1), color=c, lw=0.9, label=etiqueta)
-    ax.set_xlim(1500, 2000); ax.set_ylim(-4.5, 6.5)
-    ax.set_xlabel('$t$'); ax.set_ylabel('$10^3\\,(J/\\langle J\\rangle-1)$'); ax.grid(alpha=0.3)
-    ax.legend(fontsize=7, frameon=False, loc='upper right')
+    paneles_abc(axs[0, 0], axs[0, 1], axs[1, 0])
     ax = axs[1, 1]
     e = estacionario()
     ax.semilogy(e['t'], np.abs(e['h1_ext']), color='C1', lw=0.9, label='variables of $\\Phi_{ext}$')
@@ -758,6 +760,12 @@ def figuras():
     for ax, letra in zip(axs.flat, 'abcd'):
         ax.text(0.03, 0.95, f'({letra})', transform=ax.transAxes, va='top', fontsize=9)
     fig.savefig(os.path.join(destino, 'validacion_mapa.pdf')); plt.close(fig)
+    # Las notas sobre la nube (docs/articulo) usan solo los paneles (a) a (c).
+    fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.6), constrained_layout=True)
+    paneles_abc(*axs, fs=6)
+    for ax, letra in zip(axs, 'abc'):
+        ax.text(0.03, 0.95, f'({letra})', transform=ax.transAxes, va='top', fontsize=9)
+    fig.savefig(os.path.join(destino, 'validacion_mapa_nube.pdf')); plt.close(fig)
     print('figuras en', destino)
 
 
