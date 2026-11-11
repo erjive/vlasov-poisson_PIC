@@ -332,33 +332,173 @@ def campo_particulas(n):
     return d['t'], d['D']
 
 
+# Estado tardío junto a la órbita circular (Sección 6 de las notas). Franjas de J/sigma_J del perfil.
+XPERFIL = (0, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0, 1.5, 2.0, 3.0)
+VENTANAS = ((1, 2), (2, 4), (4, 7), (7, 10), (10, 15), (15, 20), (20, 1e9))
+
+
+def nucleo(n):
+    """Estado tardío de la corrida n junto a la órbita circular, con las acciones del potencial del
+    instante. Se guarda en <n>/nucleo.npz:
+      perfil   densidad promediada en ángulo, dm/(2 pi dJ), en las franjas XPERFIL sigma_J, media en
+               t >= 20 tau_1, en unidades del máximo Fbar_max de la densidad promediada en ángulo del
+               dato inicial (el mayor valor que puede alcanzar un gas que se mezcla sin cambiar de
+               acción); un trozo de la nube sin mezclar puede llegar a f_max/Fbar_max = 1/(e^-z I_0(z));
+      rho_c    lo mismo en J < 0.025 sigma_J, en cada instante;
+      m02      masa con J < 0.2 sigma_J en cada instante (fracción del total);
+      mnuc     masa dentro de una elipse del espacio de fases (r, p_r) de área 2 pi 0.05 sigma_J
+               centrada en el máximo de densidad, media en t >= 20 tau_1; rho_p es la densidad media
+               en esa elipse en unidades de Fbar_max (un gas mezclado da ~1, con ruido 0.8-1.2);
+      rc, dr   radio medio y ancho rms, en cada instante, de las partículas que están en esa elipse
+               en la última instantánea: la oscilación del núcleo."""
+    sal = ruta(n, 'nucleo.npz')
+    if os.path.exists(sal):
+        return np.load(sal)
+    d = np.load(ruta(n, 'bulto.npz'))
+    t, w = d['t'], d['w'].astype(float)
+    J, R, P = d['J'], d['R'], d['P']
+    W = w.sum()
+    sj, tau = parametro(n, 'sr', 0.1), banda(n)[3]
+    n0max = np.exp(-1.0)/(sj*np.sqrt(np.pi)/4)            # máximo de la masa por unidad de J del dato inicial
+    tarde = np.where(t >= 20*tau)[0]
+    x = np.array(XPERFIL)*sj
+    H = np.mean([np.histogram(J[m], bins=x, weights=w)[0] for m in tarde[::5]], axis=0)/W
+    jc = 0.025*sj
+    rho_c = np.array([w[J[m] < jc].sum() for m in range(len(t))])/W/jc/n0max
+    m02 = np.array([w[J[m] < 0.2*sj].sum() for m in range(len(t))])/W
+    # Elipse de acción 0.05 sigma_J alrededor del máximo de densidad en (r, p_r); kappa es la
+    # frecuencia de la órbita circular del potencial externo.
+    kappa = (0.5*(2.0 + np.sqrt(8.0)) if FONDO.get(n, 'isocrono') == 'isocrono' else 2.0)**-3
+    ar, ap = np.sqrt(2*0.05*sj/kappa), np.sqrt(2*0.05*sj*kappa)
+    br, bp = np.arange(2.0, 20.0 + ar, 0.5*ar), np.arange(-0.5, 0.5 + ap, 0.5*ap)
+
+    def elipse(m):
+        r, p = R[m].astype(float), P[m].astype(float)
+        h = np.histogram2d(r, p, bins=(br, bp), weights=w)[0]
+        k = h.copy()
+        k[1:] += h[:-1]; k[:-1] += h[1:]                   # suma con las celdas vecinas en r
+        k2 = k.copy()
+        k2[:, 1:] += k[:, :-1]; k2[:, :-1] += k[:, 1:]     # y en p
+        i, j = np.unravel_index(np.argmax(k2), k2.shape)
+        r0, p0 = 0.5*(br[i] + br[i + 1]), 0.5*(bp[j] + bp[j + 1])
+        for _ in range(8):
+            sel = ((r - r0)/ar)**2 + ((p - p0)/ap)**2 < 1
+            if w[sel].sum() == 0:
+                break
+            r0, p0 = np.average(r[sel], weights=w[sel]), np.average(p[sel], weights=w[sel])
+        return ((r - r0)/ar)**2 + ((p - p0)/ap)**2 < 1, (r0, p0)
+
+    mnuc = np.mean([w[elipse(m)[0]].sum() for m in tarde[::5]])/W
+    sel, centro = elipse(len(t) - 1)
+    ms = w[sel]
+    rc = (R[:, sel].astype(float) @ ms)/ms.sum()
+    dr = np.sqrt((((R[:, sel].astype(float) - rc[:, None])**2) @ ms)/ms.sum())
+    np.savez(sal, t=t, x=np.array(XPERFIL), perfil=H/np.diff(x)/n0max, rho_c=rho_c, m02=m02, mnuc=mnuc, rc=rc, dr=dr,
+             msel=ms.sum()/W, centro=np.array(centro), rho_p=mnuc/(0.05*sj*n0max))
+    return np.load(sal)
+
+
+def amplitudes(n):
+    """Semiamplitud de la oscilación radial del núcleo en las ventanas VENTANAS (en tau_1)."""
+    d = nucleo(n); t, rc = d['t'], d['rc']; tau = banda(n)[3]
+    return [0.5*np.ptp(rc[(t >= a*tau) & (t <= b*tau)]) for a, b in VENTANAS]
+
+
+def amortiguamiento(n, a=2.0, b=14.0):
+    """Tiempo de caída a 1/e (en tau_1) de la oscilación radial del núcleo, de un ajuste exponencial
+    de su envolvente en a <= t/tau_1 <= b, y el cociente entre la envolvente en b y en a."""
+    d = nucleo(n); t = d['t']; tau = banda(n)[3]
+    k = int(round(45/(t[1] - t[0])))
+    media = np.array([d['rc'][max(0, i - k):i + k + 1].mean() for i in range(len(t))])
+    env = envolvente(np.abs(d['rc'] - media), t)
+    v = (t >= a*tau) & (t <= b*tau)
+    p = np.polyfit(t[v]/tau, np.log(env[v]), 1)
+    return -1/p[0], env[np.argmin(np.abs(t - b*tau))]/env[np.argmin(np.abs(t - a*tau))]
+
+
+def estado(solo=None):
+    """Tabla del estado tardío de todas las corridas: exe/demo_eta/bulto/estado.txt."""
+    from scipy.special import ive
+    filas = []
+    for n in info:
+        if (solo and n not in solo) or not os.path.exists(ruta(n, 'bulto.npz')):
+            continue
+        d = nucleo(n); t = d['t']; tau = banda(n)[3]
+        u = t >= 20*tau
+        mu = escalas(n)[2] if info[n]['sg'] else 0.0
+        filas.append((FONDO.get(n, 'isocrono'), parametro(n, 'sp', 0.1), parametro(n, 'sr', 0.1), mu, n, info[n]['npc'],
+                      h1_ventana(n), d['rho_c'][u].mean(), d['m02'][u].mean(), float(d['mnuc']), float(d['rho_p']), amplitudes(n),
+                      d['dr'][u].mean(), 1/ive(0, 0.5/parametro(n, 'sp', 0.1)**2)))
+    with open(ruta('estado.txt'), 'w') as fo:
+        fo.write('Estado tardío (t >= 20 tau_1) de cada corrida. rho_c: densidad promediada en ángulo en J < 0.025 sigma_J,\n'
+                 'en unidades de Fbar_max (un gas mezclado sin cambio de acción no pasa de 1; f_max/Fbar_max en la última\n'
+                 'columna). m02: masa con J < 0.2 sigma_J. mnuc: masa en la elipse de acción 0.05 sigma_J alrededor del\n'
+                 'máximo de densidad, y rho_p la densidad media en ella en unidades de Fbar_max. amp: semiamplitud de la oscilación radial del núcleo en las ventanas\n'
+                 + ', '.join(f'[{a}, {b if b < 1e8 else "fin"}]' for a, b in VENTANAS) + ' tau_1. dr: ancho rms del núcleo.\n')
+        fo.write(f'{"corrida":10} {"mu":>5} {"N_Q":>4} {"|h1|":>9} {"rho_c":>6} {"m02":>6} {"mnuc":>6} {"rho_p":>6}  '
+                 + ' '.join(f'{"amp":>5}' for _ in VENTANAS) + f' {"dr":>5} {"fmax/Fb":>7}\n')
+        for fondo, sq, sj, mu, n, npc, h1, rc, m02, mn, rp, amp, dr, cont in sorted(filas):
+            fo.write(f'{n:10} {mu:5.2f} {npc:4d} {h1:9.2e} {rc:6.2f} {m02:6.3f} {mn:6.3f} {rp:6.2f}  '
+                     + ' '.join(f'{x:5.2f}' for x in amp) + f' {dr:5.2f} {cont:7.1f}\n')
+        fo.write('\nOscilación del núcleo en las corridas que se relajan con núcleo: tiempo de caída a 1/e de su envolvente\n'
+                 '(ajuste en 2 <= t/tau_1 <= 14) y cociente entre la envolvente en 14 y en 2 tau_1.\n')
+        for n in ('B02', 'B02q', 'Q2_0.02', 'J20_0.04', 'B025', 'B3', 'B04'):
+            if os.path.exists(ruta(n, 'bulto.npz')) and (not solo or n in solo):
+                te, q = amortiguamiento(n)
+                fo.write(f'{n:10} mu = {escalas(n)[2]:4.2f}   tiempo = {te:6.2f} tau_1   cociente = {q:.3f}\n')
+    print(open(ruta('estado.txt')).read())
+
+
 def articulo():
-    """Figuras de la Sección 7 de las notas, en docs/articulo/figuras/: bulto_fase.pdf (espacio de
-    fases de B2 y B4), bulto_series.pdf (|h_1| y fluctuación del potencial de la familia de
-    referencia) y bulto_transicion.pdf (|h_1| tardío frente a mu, todas las familias)."""
+    """Figuras de la Sección 6 de las notas, en docs/articulo/figuras/: bulto_fase.pdf (espacio de
+    fases de B2q, B02q y B4q), bulto_series.pdf (|h_1| y fluctuación del potencial de la familia de
+    referencia), bulto_estado.pdf (perfil de densidad junto a la órbita circular y oscilación del
+    núcleo) y bulto_transicion.pdf (|h_1| tardío y densidad máxima frente a mu, todas las familias)."""
     import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     destino = os.path.join(RAIZ, 'docs', 'articulo', 'figuras')
     plt.rcParams.update({'font.size': 9})
-    # 1. Espacio de fases (r, p_r) de B2 (se mezcla) y B4 (se autoatrapa).
-    fig, ax = plt.subplots(2, 4, figsize=(7.2, 3.9), constrained_layout=True, sharex=True, sharey=True)
-    for i, n in enumerate(('B2', 'B4')):
-        d = cargar(n); t = d['t']; c = colores(np.asarray(d['w'])); orden = np.argsort(c)
+    # 1. Espacio de fases (r, p_r) de tres nubes con N_Q = 100: se mezcla (B2q), deja un núcleo en
+    #    reposo (B02q) y deja un núcleo que oscila (B4q). La última columna amplía el entorno del
+    #    máximo de densidad en la última instantánea.
+    fig = plt.figure(figsize=(7.2, 4.9), layout='constrained')
+    gs = fig.add_gridspec(3, 5)
+    for i, n in enumerate(('B2q', 'B02q', 'B4q')):
+        d = np.load(ruta(n, 'bulto.npz')); t = d['t']; c = colores(d['w']); orden = np.argsort(c)
+        R, P = d['R'], d['P']
         mu = escalas(n)[2]
         for k, x in enumerate((0, 0.5*TAU1, 3*TAU1, t[-1])):
+            a = fig.add_subplot(gs[i, k])
             m = int(np.argmin(np.abs(t - x)))
-            sc = ax[i, k].scatter(np.asarray(d['R'][m])[orden], np.asarray(d['P'][m])[orden], c=c[orden], s=0.5,
-                                  cmap='magma_r', vmin=-4, vmax=0, lw=0, rasterized=True)
-            ax[i, k].set_xlim(2, 16); ax[i, k].set_ylim(-0.3, 0.3)
+            sc = a.scatter(R[m][orden], P[m][orden], c=c[orden], s=0.3, cmap='magma_r', vmin=-4, vmax=0, lw=0,
+                           rasterized=True)
+            a.set_xlim(2, 16); a.set_ylim(-0.3, 0.3)
             if i == 0:
-                ax[i, k].set_title(f'$t/\\tau_1={t[m]/TAU1:.1f}$')
-            if i == 1:
-                ax[i, k].set_xlabel('$r$')
-        ax[i, 0].set_ylabel('$p_r$')
-        ax[i, 0].text(0.97, 0.95, f'$M_{{gas}}/M={info[n]["a0"]:g}$\n$\\mu={mu:.2f}$', transform=ax[i, 0].transAxes,
-                      fontsize=7, va='top', ha='right')
-    fig.colorbar(sc, ax=ax, label='$\\log_{10}$ of the relative mass', shrink=0.85)
-    fig.savefig(os.path.join(destino, 'bulto_fase.pdf'), dpi=200); plt.close(fig)
+                a.set_title(f'$t/\\tau_1={t[m]/TAU1:.1f}$', fontsize=8)
+            if i == 2:
+                a.set_xlabel('$r$')
+            else:
+                a.set_xticklabels([])
+            if k:
+                a.set_yticklabels([])
+            else:
+                a.set_ylabel('$p_r$')
+                a.text(0.97, 0.95, f'$\\mu={mu:.2f}$', transform=a.transAxes, fontsize=7, va='top', ha='right')
+        nu = nucleo(n)
+        if nu['rho_p'] > 1.5:                              # hay núcleo: se amplía su entorno
+            r0, p0 = nu['centro']
+        else:                                              # no lo hay: el entorno de la órbita circular
+            r0, p0 = float(R[-1][np.argmin(d['J'][-1])]), 0.0
+        a = fig.add_subplot(gs[i, 4])
+        a.scatter(R[-1][orden], P[-1][orden], c=c[orden], s=1.5, cmap='magma_r', vmin=-4, vmax=0, lw=0, rasterized=True)
+        a.set_xlim(r0 - 1.2, r0 + 1.2); a.set_ylim(p0 - 0.08, p0 + 0.08)
+        a.tick_params(labelsize=6); a.yaxis.tick_right()
+        if i == 0:
+            a.set_title(f'$t/\\tau_1={t[-1]/TAU1:.1f}$, zoom', fontsize=8)
+        if i == 2:
+            a.set_xlabel('$r$')
+    fig.colorbar(sc, ax=fig.axes, label='$\\log_{10}$ of the relative mass', shrink=0.7, pad=0.06)
+    fig.savefig(os.path.join(destino, 'bulto_fase.pdf'), dpi=220); plt.close(fig)
     # 2. |h_1| y fluctuación del potencial propio, familia de referencia.
     sel = ['B1', 'B2', 'B02', 'B025', 'B3', 'B4', 'B5']
     mus = {n: escalas(n)[2] for n in sel}
@@ -393,22 +533,55 @@ def articulo():
     for a, l in zip(ax, 'ab'):
         a.text(0.97, 0.95, f'({l})', transform=a.transAxes, ha='right', va='top')
     fig.savefig(os.path.join(destino, 'bulto_series.pdf')); plt.close(fig)
-    # 3. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 frente a mu.
+    # 3. Estado tardío: perfil de densidad promediada en ángulo junto a la órbita circular, y
+    #    oscilación radial del núcleo.
+    from scipy.special import ive
+    fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.2), layout='constrained')
+    xs = np.geomspace(1e-2, 3, 200)
+    ax[0].loglog(xs*0.1, xs**2*np.exp(1 - xs**2), color='0.6', lw=2.5, label='initial')
+    for n in ('B0', 'B2q', 'B015', 'B02q', 'B3', 'B05'):
+        d = nucleo(n); mu = escalas(n)[2] if info[n]['sg'] else 0.0
+        xc = 0.5*(d['x'][1:] + d['x'][:-1])*parametro(n, 'sr', 0.1)
+        ax[0].loglog(xc, d['perfil'], marker='o', ms=2.5, lw=1.0, color='k' if n == 'B0' else cmap(0.85*mu/1.16),
+                     ls='--' if n == 'B0' else '-', label='no self-gravity' if n == 'B0' else f'$\\mu={mu:.2f}$')
+    ax[0].axhline(1, color='k', lw=0.6, ls=':'); ax[0].axhline(1/ive(0, 50.0), color='k', lw=0.6, ls=':')
+    ax[0].text(0.28, 1.15, '$\\hat{F}_{max}$', fontsize=7, ha='right'); ax[0].text(0.28, 20.5, '$F_{max}$', fontsize=7, ha='right')
+    ax[0].set_xlim(5e-4, 0.3); ax[0].set_ylim(1e-3, 40)
+    ax[0].set_xlabel('$J$'); ax[0].set_ylabel('angle-averaged DF$/\\hat{F}_{max}$')
+    ax[0].legend(fontsize=6.5, frameon=False, loc='lower right')
+    for n, ls in (('B02', '-'), ('B02q', ':'), ('B025', '-'), ('B3', '-'), ('B07', '-'), ('B4q', ':')):
+        d = nucleo(n); t = d['t']; mu = escalas(n)[2]
+        k = int(round(45/(t[1] - t[0])))
+        media = np.array([d['rc'][max(0, i - k):i + k + 1].mean() for i in range(len(t))])
+        ax[1].semilogy(t/TAU1, envolvente(np.abs(d['rc'] - media), t), color=cmap(0.85*mu/1.16), ls=ls, lw=1.0,
+                       label=f'$\\mu={mu:.2f}$' + (', $N_Q=100$' if ls == ':' else ''))
+    ax[1].set_xlim(0, TFIN/TAU1); ax[1].set_ylim(1.5e-3, 2)
+    ax[1].set_xlabel('$t/\\tau_1$'); ax[1].set_ylabel('amplitude $a_c$ of the oscillation of the core')
+    ax[1].legend(fontsize=6, frameon=False, loc='lower left', ncol=1)
+    for a, l in zip(ax, 'ab'):
+        a.grid(alpha=0.3); a.set_title(f'({l})', loc='left', fontsize=9)
+    fig.savefig(os.path.join(destino, 'bulto_estado.pdf')); plt.close(fig)
+    # 4. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 y densidad en torno al máximo, frente a mu.
     estilos = [('o', 'k'), ('v', '#0072B2'), ('^', '#009E73'), ('s', '#E69F00'), ('D', '#CC79A7'), ('*', '#D55E00')]
-    fig, ax = plt.subplots(figsize=(4.6, 3.3), constrained_layout=True)
-    ax.axvspan(0.43, 0.48, color='0.85', lw=0)
+    fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.2), layout='constrained')
     filas = []
     for (nombre, base, conv), (mk, col) in zip(FAMILIAS, estilos):
         x = [escalas(n)[2] if info[n]['sg'] else 0.0 for n in base]
-        y = [h1_ventana(n) for n in base]
-        ax.semilogy(x, y, mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
-        if conv:
-            ax.semilogy([escalas(n)[2] for n in conv], [h1_ventana(n) for n in conv], mk, color=col, mfc='none', ms=6.5,
-                        ls='none', label='$N_Q=100$ or $N_J=800$')
-        filas += list(zip(base + conv, x + [escalas(n)[2] for n in conv], y + [h1_ventana(n) for n in conv]))
-    ax.set_xlabel('$\\mu$'); ax.set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$')
-    ax.set_xlim(-0.03, 1.2); ax.set_ylim(3e-5, 2); ax.grid(alpha=0.3)
-    ax.legend(fontsize=6.5, loc='lower right', frameon=False)
+        xc = [escalas(n)[2] for n in conv]
+        for a, fun in zip(ax, (h1_ventana, lambda n: float(nucleo(n)['rho_p']))):
+            a.semilogy(x, [fun(n) for n in base], mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
+            if conv:
+                a.semilogy(xc, [fun(n) for n in conv], mk, color=col, mfc='none', ms=6.5, ls='none',
+                           label='$N_Q=100$ or $N_J=800$')
+        filas += [(n, m, h1_ventana(n)) for n, m in zip(base + conv, x + xc)]
+    ax[0].set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$'); ax[0].set_ylim(3e-5, 2)
+    ax[1].set_ylabel('$m_c/m_{mix}$ for $t\\geq 20\\tau_1$'); ax[1].set_ylim(0.5, 30)
+    ax[1].axhline(1, color='k', lw=0.6, ls=':')
+    for a, l in zip(ax, 'ab'):
+        a.axvspan(0.43, 0.48, color='0.85', lw=0)
+        a.set_xlabel('$\\mu$'); a.set_xlim(-0.03, 1.2); a.grid(alpha=0.3)
+        a.set_title(f'({l})', loc='left', fontsize=9)
+    ax[0].legend(fontsize=6.5, loc='lower right', frameon=False)
     fig.savefig(os.path.join(destino, 'bulto_transicion.pdf')); plt.close(fig)
     with open(ruta('articulo.txt'), 'w') as fo:
         fo.write('corrida      mu     |h1| en 10-20 tau_1\n')
@@ -541,9 +714,9 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion', 'articulo'])
+    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion', 'estado', 'articulo'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     print(f'=== {a.paso}', flush=True)
-    globals()[a.paso](a.solo) if a.paso in ('analizar', 'videos', 'transicion') else globals()[a.paso]()
+    globals()[a.paso](a.solo) if a.paso in ('analizar', 'videos', 'transicion', 'estado') else globals()[a.paso]()
