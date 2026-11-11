@@ -9,6 +9,8 @@ mezcla de fases.
 
 Corridas: B0 sin autogravedad (la mezcla libre), B1..B5 con a0 = 1e-3 ... 0.3 y
 Npc = 25 como el original, y B4q (a0 = 0.1, Npc = 100) para la resolución en Q.
+Las tandas posteriores (transición en masa, otras anchuras, Kepler y las pruebas
+numéricas en la transición) están comentadas junto a CORRIDAS.
 
 Pasos: preparar, correr, analizar, figuras, videos (como demo_eta.py). Todo
 queda en exe/demo_eta/bulto/; figuras en docs/demo_eta/figuras/bulto_*; videos en
@@ -76,6 +78,38 @@ for m in (0.01, 0.02, 0.04, 0.08):
     CORRIDAS.append((n, m, 25, True, rf'Kepler, $a_0={m:g}$'))
     CAMBIOS[n] = {'BGtype': 'sphere', 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
     FONDO[n] = 'puntual'
+
+def recorte_reticula(nj, nq, umbral, sj=0.1, sq=0.1):
+    """Filas J_a y columnas Q_b de la retícula de puntos medios con nj filas en [0, 6 s_J] y nq
+    columnas en [0, 2 pi) cuyo factor del dato inicial, relativo a su máximo, no baja de umbral."""
+    J = (np.arange(nj) + 0.5)*6*sj/nj
+    Q = (np.arange(nq) + 0.5)*2*np.pi/nq
+    fj = (J/sj)**2*np.exp(1 - (J/sj)**2)
+    fq = np.exp(-np.sin(0.5*Q)**2/sq**2)
+    return J[fj >= umbral], Q[fq >= umbral]
+
+
+# Cuarta tanda (2026-11-11): pruebas numéricas a ambos lados de la transición, B02 (mu = 0.43) y
+# B025 (mu = 0.48), con un solo cambio cada vez respecto a la corrida base: doble de filas (j),
+# mitad del paso radial con el mismo paso de tiempo (r) y mitad del paso de tiempo (t). Además la
+# retícula fina (h): filas con dJ = 6 s_J/3200 y columnas con dQ = 2 pi/100, sin las partículas cuyo
+# peso es menor que 1e-7 del máximo en alguno de los dos factores (quedan 2379 x 26, colocadas desde
+# Python). El número efectivo de partículas, (sum w)^2/sum w^2, es 243 con 400 x 25, 892 con
+# 400 x 100 y unas 7000 con la retícula fina; la recurrencia de las filas se retrasa ocho veces.
+RETICULA = {}                                  # corrida: (filas y columnas de la retícula completa, umbral)
+for base, m in (('B02', 0.02), ('B025', 0.025)):
+    CORRIDAS.append((base + 'j', m, 25, True, rf'$a_0={m:g}$, $N_{{rc}}=800$'))
+    CAMBIOS[base + 'j'] = {'Nrc': '800'}
+    CORRIDAS.append((base + 'r', m, 25, True, rf'$a_0={m:g}$, $\Delta r=0.05$'))
+    CAMBIOS[base + 'r'] = {'dr': '0.05', 'courant': '2.0'}
+    CORRIDAS.append((base + 't', m, 25, True, rf'$a_0={m:g}$, $\Delta t=0.025$'))
+    CAMBIOS[base + 't'] = {'courant': '0.5', 'Nt': str(2*int(round(TFIN/DT))), 'time_output': str(2*SALIDA),
+                           'spatial_output': str(2*SALIDA), 'field_output': str(2*SALIDA)}
+    n = base + 'h'
+    RETICULA[n] = (3200, 100, 1e-7)
+    filas, columnas = recorte_reticula(*RETICULA[n])
+    CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, fine lattice ($3200\times 100$, truncated)'))
+    CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
 info = {c[0]: dict(a0=c[1], npc=c[2], sg=c[3], desc=c[4]) for c in CORRIDAS}
 
 
@@ -118,6 +152,29 @@ def dato_kepler(n):
     return r.ravel(), p.ravel(), F.ravel(), QQ.ravel(), JJ.ravel()
 
 
+def dato_isocrono(n, reticula=None):
+    """Estado inicial del bulto en el isócrono (G = M = b = 1, L = 2) en la retícula recortada de la
+    corrida n (RETICULA), o en la retícula (nj, nq, umbral) que se pase: la misma F0(Q, J) y la misma
+    inversión que el estado aa_quad del código (Binney y Tremaine, sección 3.5.2):
+    s = 2 + c (1 - e cos eta), r^2 = s (s - 2), Q = eta - e c/(c + 1) sin eta, c = (J + c_L)^2 - 1."""
+    nj, nq, umbral = reticula or RETICULA[n]
+    sr, sp, L = parametro(n, 'sr', 0.1), parametro(n, 'sp', 0.1), 2.0
+    J, Q = recorte_reticula(nj, nq, umbral, sr, sp)
+    JJ, QQ = np.meshgrid(J, Q, indexing='ij')
+    E = -0.5/(JJ + 0.5*(L + np.sqrt(L*L + 4)))**2
+    c = -0.5/E - 1.0
+    e = np.sqrt(np.clip(1 - (L*L/c)*(1 + 1/c), 0, None))
+    k = e*c/(c + 1)
+    eta = QQ.copy()
+    for _ in range(60):
+        eta = eta - (eta - k*np.sin(eta) - QQ)/(1 - k*np.cos(eta))
+    s_ = 2 + c*(1 - e*np.cos(eta))
+    r = np.sqrt(s_*(s_ - 2))
+    p = np.sqrt(np.clip(2*(E + 1/(1 + np.sqrt(1 + r*r)) - 0.5*L*L/(r*r)), 0, None))*np.where(np.sin(eta) >= 0, 1.0, -1.0)
+    F = np.exp(-np.sin(0.5*QQ)**2/sp**2)*np.exp(-JJ**2/sr**2)*JJ**2
+    return r.ravel(), p.ravel(), F.ravel(), QQ.ravel(), JJ.ravel()
+
+
 def ruta(*p):
     return os.path.join(BASE, *p)
 
@@ -149,13 +206,19 @@ def preparar():
             os.makedirs(os.path.dirname(f), exist_ok=True)
             r, p, F, _, _ = dato_kepler(n)
             np.savetxt(f, np.column_stack([r, p, F]), fmt='%.17e')
+    for n in RETICULA:
+        f = os.path.join(EXE, CAMBIOS[n]['checkpointfile'])
+        if not os.path.exists(f):
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            r, p, F, _, _ = dato_isocrono(n)
+            np.savetxt(f, np.column_stack([r, p, F]), fmt='%.17e')
     print('preparado:', len(CORRIDAS))
 
 
-def correr():
+def correr(solo=None):
     env = dict(os.environ, OMP_NUM_THREADS='4', OMP_PLACES='cores', OMP_PROC_BIND='close')
     for n, *_ in CORRIDAS:
-        if os.path.exists(ruta(f'{n}.ok')):
+        if (solo and n not in solo) or os.path.exists(ruta(f'{n}.ok')):
             continue
         t0 = time.time()
         r = subprocess.run(['./VP_PIC', os.path.join(PARDIR, f'bulto__{n}.par')], cwd=EXE,
@@ -202,17 +265,23 @@ def analizar(solo=None, procesos=4):
         rg, w = f['grid']['r'][:], f[pasos[0]]['f'][:]
         f.close()
         grupos = [(h5, pasos[i:i+25], info[n]['sg'], FONDO.get(n, 'isocrono')) for i in range(0, len(pasos), 25)]
+        # Las sumas h_k se hacen en doble precisión con cada instantánea y las partículas se guardan
+        # en precisión simple al vuelo: con 6e4 partículas las mil instantáneas en doble precisión
+        # no caben en la memoria.
+        t, R, P, Q, J, ps, hk, hkd = ([] for _ in range(8))
         with Pool(procesos) as pool:
-            res = [x for b in pool.map(_mapear, grupos) for x in b]
-        t = np.array([x[0] for x in res])
-        R, P, Q, J, ps, Qd, Jd = (np.array([x[i] for x in res]) for i in range(1, 8))
-        hk = np.stack([np.sum(w*np.exp(-1j*m*Q), axis=1) for m in range(6)], axis=1)
+            for b in pool.imap(_mapear, grupos):
+                for ti, r, p, q, j, pot, qd, jd in b:
+                    t.append(ti); ps.append(pot)
+                    hk.append([np.sum(w*np.exp(-1j*m*q)) for m in range(6)])
+                    hkd.append([np.sum(w*np.exp(-1j*m*qd)) for m in range(6)])
+                    R.append(r.astype(np.float32)); P.append(p.astype(np.float32))
+                    Q.append(q.astype(np.float32)); J.append(j.astype(np.float32))
+        t, ps, hk, hkd = np.array(t), np.array(ps), np.array(hk), np.array(hkd)
         hk = hk/hk[:, :1].real
-        hkd = np.stack([np.sum(w*np.exp(-1j*m*Qd), axis=1) for m in range(6)], axis=1)
         hkd = hkd/hkd[:, :1].real
         np.savez(ruta(n, 'bulto.npz'), t=t, hk=hk, hk_desnudo=hkd, phi_self=ps, r=rg, w=w,
-                 R=R.astype(np.float32), P=P.astype(np.float32), Q=Q.astype(np.float32),
-                 J=J.astype(np.float32))
+                 R=np.array(R), P=np.array(P), Q=np.array(Q), J=np.array(J))
         print(f'  analizado {n}: {len(t)} instantáneas ({time.time()-t0:.0f} s)', flush=True)
 
 
@@ -719,4 +788,4 @@ if __name__ == '__main__':
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     print(f'=== {a.paso}', flush=True)
-    globals()[a.paso](a.solo) if a.paso in ('analizar', 'videos', 'transicion', 'estado') else globals()[a.paso]()
+    globals()[a.paso](a.solo) if a.paso in ('correr', 'analizar', 'videos', 'transicion', 'estado') else globals()[a.paso]()
