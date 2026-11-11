@@ -110,6 +110,16 @@ for base, m in (('B02', 0.02), ('B025', 0.025)):
     filas, columnas = recorte_reticula(*RETICULA[n])
     CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, fine lattice ($3200\times 100$, truncated)'))
     CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
+# Quinta tanda (2026-11-11): masas intermedias de la familia de referencia entre B02 (mu = 0.43) y
+# B025 (mu = 0.48), para distinguir un umbral de un cruce continuo. Retícula de 400 filas y columnas
+# con dQ = 2 pi/100, recortada como en la cuarta tanda (quedan 299 x 26): con a0 = 0.02 la retícula
+# de 400 x 100 da lo mismo que la fina en tres cifras, y recortada cuesta lo que una corrida base.
+for m in (0.021, 0.022, 0.023, 0.024):
+    n = f'B{int(round(m*1000)):03d}'
+    RETICULA[n] = (400, 100, 1e-7)
+    filas, columnas = recorte_reticula(*RETICULA[n])
+    CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, lattice $400\times 100$, truncated'))
+    CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
 info = {c[0]: dict(a0=c[1], npc=c[2], sg=c[3], desc=c[4]) for c in CORRIDAS}
 
 
