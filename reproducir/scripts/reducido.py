@@ -225,22 +225,17 @@ def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g
     return t, X, Y, M.m, inv
 
 
-def diagnosticos(nombre, rehacer=False):
-    """Las mismas medidas que bulto.nucleo() hace sobre el PIC, en el plano de fase del modelo:
-    h1 (peso 1 y peso J^2 exp(-J^2/s_J^2)), m02 (masa con J < 0.2 s_J), rho_c (densidad en
-    J < 0.025 s_J en unidades de Fbar_max), mnuc (masa en el disco de acción 0.05 s_J centrado en el
-    máximo de densidad, media en t >= 20 tau_1), ac (amplitud radial del centro de las partículas que
-    están en ese disco en la última instantánea, |Z_c|/sqrt(kappa)) y dr (su ancho radial rms)."""
-    import bulto as B
-    sal = os.path.join(DATOS, f'{nombre}_diag.npz')
-    if os.path.exists(sal) and not rehacer:
-        return np.load(sal)
-    d = np.load(os.path.join(DATOS, f'{nombre}.npz'))
-    t, m = d['t'], d['m']; par = d['par']; sj = float(par[5]); W = m.sum()
-    c, kappa = (float(par[8]), float(par[9])) if len(par) > 8 else (C_L, KAPPA)
-    l0 = float(par[12]) if len(par) > 12 else LFIX
-    tau = tau1(sj, 'kepler' if abs(c - l0) < 1e-12 else 'isocrono')
-    X, Y = d['X'], d['Y']
+def medidas_plano(t, X, Y, m, sj, tau, kappa):
+    """Medidas del estado de la nube en el plano de zeta = sqrt(2J) exp(i Q): X e Y son las partes
+    real e imaginaria de zeta de cada partícula en cada instante (instantes x partículas) y m sus masas.
+    Son las medidas que bulto.nucleo() hace sobre el PIC de L fija: h1 (peso 1 y peso
+    J^2 exp(-J^2/s_J^2)), m02 (masa con J < 0.2 s_J), rho_c (densidad en J < 0.025 s_J en unidades de
+    Fbar_max), mnuc (masa en el disco de acción 0.05 s_J centrado en el máximo de densidad, media en
+    t >= 20 tau_1), ac (amplitud radial del centro de las partículas que están en ese disco en la última
+    instantánea, |Z_c|/sqrt(kappa)) y dr (su ancho radial rms). Ninguna depende de una rotación común del
+    plano, así que valen igual con zeta en el marco que rota con kappa_0 (el modelo reducido) y sin él
+    (el PIC, también con L distribuido: VlasovPoisson_PIC_sp/reproducir/scripts/nube_L.py)."""
+    W = m.sum()
     n0max = np.exp(-1.0)/(sj*np.sqrt(np.pi)/4)
     rad = np.sqrt(2*0.05*sj); b = np.arange(-1.8, 1.8 + rad, 0.5*rad)
     nt = len(t)
@@ -275,8 +270,22 @@ def diagnosticos(nombre, rehacer=False):
     ms = m[sel]
     Zc = ((X[:, sel].astype(float) + 1j*Y[:, sel].astype(float)) @ ms)/ms.sum()
     d2 = ((np.abs(X[:, sel].astype(float) + 1j*Y[:, sel].astype(float) - Zc[:, None])**2) @ ms)/ms.sum()
-    np.savez(sal, t=t, tau=tau, h1=h1, hB=hB, m02=m02, rho_c=rho_c, mnuc=mnuc, rho_p=mnuc/(0.05*sj*n0max),
-             msel=ms.sum()/W, Zc=Zc, ac=np.abs(Zc)/np.sqrt(kappa), dr=np.sqrt(d2/(2*kappa)), centro=np.array(centro))
+    return dict(t=t, tau=tau, h1=h1, hB=hB, m02=m02, rho_c=rho_c, mnuc=mnuc, rho_p=mnuc/(0.05*sj*n0max),
+                msel=ms.sum()/W, Zc=Zc, ac=np.abs(Zc)/np.sqrt(kappa), dr=np.sqrt(d2/(2*kappa)), centro=np.array(centro))
+
+
+def diagnosticos(nombre, rehacer=False):
+    """Las medidas de medidas_plano() sobre la corrida <nombre> del modelo reducido; se guardan en
+    <nombre>_diag.npz."""
+    sal = os.path.join(DATOS, f'{nombre}_diag.npz')
+    if os.path.exists(sal) and not rehacer:
+        return np.load(sal)
+    d = np.load(os.path.join(DATOS, f'{nombre}.npz'))
+    par = d['par']; sj = float(par[5])
+    c, kappa = (float(par[8]), float(par[9])) if len(par) > 8 else (C_L, KAPPA)
+    l0 = float(par[12]) if len(par) > 12 else LFIX
+    tau = tau1(sj, 'kepler' if abs(c - l0) < 1e-12 else 'isocrono')
+    np.savez(sal, **medidas_plano(d['t'], d['X'], d['Y'], d['m'], sj, tau, kappa))
     return np.load(sal)
 
 
