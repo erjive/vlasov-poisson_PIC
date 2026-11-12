@@ -144,19 +144,16 @@ sbatch reproducir/cluster/reducido.slurm Lb control
 ```
 
 The job asks for 16 CPUs (8 cores), runs the missing runs of each series one after the other
-with one thread per core, and then computes their measures (`<name>_diag.npz`). With
-`sbatch -c 48` it takes the whole node, which is faster but only starts when the node is empty. It compiles
-`reducido.c` and `reducidof.c` with gcc the first time and needs Python 3 with `numpy` and
-`scipy`. The time of each run is printed in `log.reducido.<job>.out`. The results are written to
-`exe/demo_eta/reducido/`, 8 kB per particle and run (1.5 GB for the series `Lb`). On the
-laptop:
+with one thread per core, and then computes their measures, `<name>_diag.npz` and
+`<name>_capas.npz` (a few hundred kB each). With `sbatch -c 48` it takes the whole node, which
+is faster but only starts when the node is empty. It compiles `reducido.c` and `reducidof.c`
+with gcc the first time and needs Python 3 with `numpy` and `scipy`. The time of each run is
+printed in `log.reducido.<job>.out`. The runs themselves are written to `exe/demo_eta/reducido/`,
+8 kB per particle and run (1.5 GB for the series `Lb`).
 
-```bash
-rsync -av --include='rL*b_*' --include='rL020[fk]_*' --exclude='*' $DEST/exe/demo_eta/reducido/ exe/demo_eta/reducido/
-```
-
-The PIC runs of the same clouds are made with the other code, `VlasovPoisson_PIC_sp`, which has
-its own scripts in `reproducir/cluster/` and uses `entorno.sh` of this folder.
+The PIC runs of the same clouds are made with the other code, `VlasovPoisson_PIC_sp`. Its script
+`reproducir/cluster/todo.sh` submits this job together with them, and its `traer.sh -r` brings
+the measures of the model back to the laptop.
 
 ## Notes
 

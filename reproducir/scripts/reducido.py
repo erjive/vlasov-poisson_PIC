@@ -297,6 +297,36 @@ def diagnosticos(nombre, rehacer=False):
     return np.load(sal)
 
 
+def capas(nombre):
+    """Primer armónico de cada capa de L de la corrida <nombre>, h_l(t) = sum_{i en l} m_i e^{-i theta_i} /
+    sum_{i en l} m_i, y la masa W_l de cada capa (con L igual, una sola capa). Se guarda en
+    <nombre>_capas.npz, que junto con <nombre>_diag.npz basta para comparar con el PIC sin el archivo
+    de la corrida. Sin ninguno de los dos devuelve None."""
+    sal = os.path.join(DATOS, f'{nombre}_capas.npz')
+    if os.path.exists(sal):
+        return np.load(sal)
+    fuente = os.path.join(DATOS, f'{nombre}.npz')
+    if not os.path.exists(fuente):
+        return None
+    d = np.load(fuente)
+    t, m = d['t'], d['m']
+    if 'L' in d.files and len(d['L']) == len(m):
+        L = d['L']
+    else:                                       # L igual: el archivo guarda solo l0
+        L = np.full(len(m), float(d['L'][0]) if 'L' in d.files else LFIX)
+    v, inv = np.unique(L, return_inverse=True)
+    inv = inv.ravel()
+    W = np.bincount(inv, weights=m)
+    X, Y = d['X'], d['Y']
+    h = np.empty((len(t), len(v)), complex)
+    for k in range(len(t)):
+        z = X[k].astype(float) + 1j*Y[k].astype(float)
+        e = np.conj(z)/(np.abs(z) + 1e-300)
+        h[k] = (np.bincount(inv, weights=m*e.real) + 1j*np.bincount(inv, weights=m*e.imag))/W
+    np.savez(sal, t=t, L=v, W=W, h=h)
+    return np.load(sal)
+
+
 TS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 20, 25, 30]
 
 

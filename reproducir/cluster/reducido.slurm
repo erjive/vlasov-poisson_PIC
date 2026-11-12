@@ -42,15 +42,15 @@ for s in "$@"; do
   echo "== serie $s"
   python3 reducido.py serie "$s" || rc=1
 done
-# Las medidas de cada corrida (<nombre>_diag.npz), con un solo hilo: así el resultado no depende
-# del número de hilos del producto de matrices.
+# Las medidas de cada corrida (<nombre>_diag.npz y <nombre>_capas.npz, pequeños), con un solo hilo:
+# así el resultado no depende del número de hilos del producto de matrices.
 OMP_NUM_THREADS=1 python3 - "$@" <<'PY' || rc=1
 import os, sys
 import reducido as R
 for s in sys.argv[1:]:
     for n, *_ in R.SERIES[s]:
         if os.path.exists(os.path.join(R.DATOS, n + '.npz')):
-            R.diagnosticos(n)
+            R.diagnosticos(n); R.capas(n)
             print('medidas de', n, flush=True)
         else:
             print('FALTA', n, flush=True)
