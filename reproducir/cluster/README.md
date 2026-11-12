@@ -143,8 +143,9 @@ the four cores of the laptop, belong on the cluster:
 sbatch reproducir/cluster/reducido.slurm Lb control
 ```
 
-The job asks for the whole node, runs the missing runs of each series one after the other with
-one thread per core, and then computes their measures (`<name>_diag.npz`). It compiles
+The job asks for 16 CPUs (8 cores), runs the missing runs of each series one after the other
+with one thread per core, and then computes their measures (`<name>_diag.npz`). With
+`sbatch -c 48` it takes the whole node, which is faster but only starts when the node is empty. It compiles
 `reducido.c` and `reducidof.c` with gcc the first time and needs Python 3 with `numpy` and
 `scipy`. The time of each run is printed in `log.reducido.<job>.out`. The results are written to
 `exe/demo_eta/reducido/`, 8 kB per particle and run (1.5 GB for the series `Lb`). On the

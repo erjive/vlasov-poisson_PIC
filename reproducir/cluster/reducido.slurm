@@ -5,7 +5,7 @@
 #SBATCH --partition=olin
 #SBATCH --time=48:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=48
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=16G
 
 # Series del modelo reducido de la nube (reproducir/scripts/reducido.py), una corrida detrás de
@@ -14,8 +14,10 @@
 #   sbatch reproducir/cluster/reducido.slurm <serie> [<serie> ...]      (Lb, control, ...)
 #
 # El costo es la suma directa sobre pares, que crece con el cuadrado del número de partículas y
-# se reparte bien entre núcleos: por eso se pide el nodo entero. En el portátil (4 núcleos) la
-# serie Lb tarda unas 4.7 h. Las corridas que ya existen en exe/demo_eta/reducido/ se saltan.
+# se reparte bien entre núcleos. Por omisión pide 16 CPUs, que en "olin" son 8 núcleos: la serie
+# Lb, 4.7 h en los 4 núcleos del portátil, debería bajar a unas 2.5 h. Con "sbatch -c 48" pide el
+# nodo entero, que es más rápido pero solo arranca cuando el nodo está vacío, y la cola no
+# adelanta trabajos (README, Notes). Las corridas que ya existen en exe/demo_eta/reducido/ se saltan.
 # Necesita gcc (compila reducido.c y reducidof.c la primera vez) y Python 3 con numpy y scipy.
 # Fuera de Slurm corre igual, con los hilos de OMP_NUM_THREADS (4 por omisión).
 
