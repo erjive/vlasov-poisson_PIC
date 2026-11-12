@@ -56,6 +56,7 @@ docs/**/*.pdf
 !docs/demo_eta/figuras/*.pdf
 !docs/hadzic/figuras/*.pdf
 !docs/articulo/figuras/*.pdf
+!docs/modelo_reducido/figuras/*.pdf
 docs/**/*.aux
 docs/**/*.log
 docs/**/*.out
