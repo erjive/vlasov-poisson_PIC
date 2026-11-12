@@ -24,6 +24,7 @@ DEST=xook.lamod.unam.mx:/storage/cactusolin/erik/newVlasov/vlasov-poisson_PIC
 | `serie.slurm` | computes `serie.npz` and `orbitas.npz` of finished runs, so that only those files are copied back |
 | `traer.sh` | on the laptop: fetches the small files of finished runs |
 | `comparar.py` | on the laptop: a run made on the cluster against the same run made on the laptop |
+| `reducido.slurm` | the series of the reduced model of the cloud (`reproducir/scripts/reducido.py`), on a whole node |
 
 All commands are given from the root of the repository.
 
@@ -130,6 +131,31 @@ python3 reproducir/cluster/comparar.py --eps 0.03 DP_k1.25_a1 ZP_k1.25_a1
 `comparar.py` gives the difference between the two machines for the series written by the
 code and for `h_1`, the time at which it exceeds 10⁻¹², 10⁻⁹, 10⁻⁶ and 10⁻³, and the same for
 the response `(D - Z)/eps`.
+
+## 4. The reduced model of the cloud
+
+The cost of the reduced model (`reproducir/scripts/reducido.py`) is a direct sum over all pairs
+of particles. It grows with the square of their number and it is shared well among cores, so
+the series with distributed angular momenta (up to 63 000 particles), which take 4.7 hours on
+the four cores of the laptop, belong on the cluster:
+
+```bash
+sbatch reproducir/cluster/reducido.slurm Lb control
+```
+
+The job asks for the whole node, runs the missing runs of each series one after the other with
+one thread per core, and then computes their measures (`<name>_diag.npz`). It compiles
+`reducido.c` and `reducidof.c` with gcc the first time and needs Python 3 with `numpy` and
+`scipy`. The time of each run is printed in `log.reducido.<job>.out`. The results are written to
+`exe/demo_eta/reducido/`, 8 kB per particle and run (1.5 GB for the series `Lb`). On the
+laptop:
+
+```bash
+rsync -av --include='rL*b_*' --include='rL020[fk]_*' --exclude='*' $DEST/exe/demo_eta/reducido/ exe/demo_eta/reducido/
+```
+
+The PIC runs of the same clouds are made with the other code, `VlasovPoisson_PIC_sp`, which has
+its own scripts in `reproducir/cluster/` and uses `entorno.sh` of this folder.
 
 ## Notes
 
