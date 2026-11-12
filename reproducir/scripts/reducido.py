@@ -13,7 +13,7 @@ con G = sqrt(|z|^2 - d^2) + d asin(d/|z|) si |d| < |z| y (pi/2)|d| si no, y P = 
 El dato inicial es el del PIC: la retícula de puntos medios en (Q, J) recortada, con el peso
 exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L está distribuido.
 
-    python3 reducido.py serie referencia|familias|largas|L      corre lo que falte de una serie
+    python3 reducido.py serie referencia|familias|largas|L|Lb|control   corre lo que falte de una serie
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
     python3 reducido.py tablas | figuras                        tablas y figuras de las notas
@@ -116,15 +116,22 @@ class Modelo:
     """Integra el modelo reducido. esquema = 'strang': rotación exacta con Omega(J) - kappa durante
     medio paso, flujo de la interacción con el punto medio, y otro medio paso de rotación (segundo
     orden, dos evaluaciones de la suma por paso). esquema = 'rk4': Runge-Kutta 4 sobre todo el campo
-    (referencia). simple = True usa la suma sobre pares en precisión simple (error ~1e-6)."""
+    (referencia). simple = True usa la suma sobre pares en precisión simple (error ~1e-6).
+    Con L distribuido, efectos elige qué entra: 'ambos' (el modelo), 'frecuencia' (Omega(J, L_i) con el
+    núcleo de interacción de L igual) o 'nucleo' (el núcleo con d_ij y Omega(J, L_0)). Los dos últimos
+    son controles para ver cuál de los dos efectos de la dispersión de L deshace el núcleo de la nube."""
 
-    def __init__(self, Q, J, w, masa, g=None, esquema='strang', simple=True, pot='isocrono', L=None, l0=LFIX):
+    def __init__(self, Q, J, w, masa, g=None, esquema='strang', simple=True, pot='isocrono', L=None, l0=LFIX,
+                 efectos='ambos'):
+        assert efectos in ('ambos', 'frecuencia', 'nucleo')
         self.lib, self.libf = biblioteca()
         F = fondo(pot, l0); self.c, self.kappa = F['c'], F['kappa']
         g = F['g'] if g is None else g
         self.L = L
-        if L is not None:                       # momento angular distribuido: c(L_i) y u_i = sqrt(kappa_0) R(L_i)
+        self.con_d = L is not None and efectos != 'frecuencia'      # ¿el núcleo de interacción lleva d_ij?
+        if L is not None and efectos != 'nucleo':                   # frecuencia con la L de cada partícula
             self.c = c_de_L(np.asarray(L, float), pot)
+        if L is not None:                       # u_i = sqrt(kappa_0) R(L_i)
             self.u = np.ascontiguousarray(np.sqrt(self.kappa)*R_de_L(np.asarray(L, float), pot))
             self.uf = self.u.astype(np.float32)
         self.n = len(Q)
@@ -144,12 +151,12 @@ class Modelo:
         if self.simple:
             xf, yf = x.astype(np.float32), y.astype(np.float32)
             f = lambda a: a.ctypes.data_as(_fp)
-            if self.L is None:
+            if not self.con_d:
                 self.libf.campof(self.n, f(xf), f(yf), f(self.mf), f(self.sxf), f(self.syf))
             else:
                 self.libf.campofl(self.n, f(xf), f(yf), f(self.uf), f(self.mf), f(self.sxf), f(self.syf))
             return self.sxf.astype(float), self.syf.astype(float)
-        assert self.L is None, 'con L distribuido solo está la suma en precisión simple'
+        assert not self.con_d, 'con L distribuido solo está la suma en precisión simple'
         x, y = np.ascontiguousarray(x), np.ascontiguousarray(y)
         self.lib.campo(self.n, self._p(x), self._p(y), self._p(self.m), self._p(self.sx), self._p(self.sy))
         return self.sx.copy(), self.sy.copy()
@@ -184,7 +191,7 @@ class Modelo:
     def invariantes(self):
         u = np.empty(self.n)
         x, y = np.ascontiguousarray(self.x), np.ascontiguousarray(self.y)
-        if self.L is None:
+        if not self.con_d:
             self.lib.energia(self.n, self._p(x), self._p(y), self._p(self.m), self._p(u))
         else:
             self.lib.energial(self.n, self._p(x), self._p(y), self._p(self.u), self._p(self.m), self._p(u))
@@ -194,10 +201,10 @@ class Modelo:
 
 
 def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g=None, guardar=True, verboso=True,
-           esquema='strang', simple=True, pot='isocrono', nl=1, sl=0.0, l0=LFIX, ancho=2.0):
+           esquema='strang', simple=True, pot='isocrono', nl=1, sl=0.0, l0=LFIX, ancho=2.0, efectos='ambos'):
     if nl > 1:
         Q, J, L, w = reticula_L(nj, nq, nl, sl, l0, ancho, sj=sj, sq=sq)
-        M = Modelo(Q, J, w, masa, g, esquema, simple, pot, L, l0)
+        M = Modelo(Q, J, w, masa, g, esquema, simple, pot, L, l0, efectos)
     else:
         Q, J, w = reticula(nj, nq, sj=sj, sq=sq)
         M = Modelo(Q, J, w, masa, g, esquema, simple, pot, None, l0)
@@ -220,7 +227,8 @@ def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g
     if guardar:
         os.makedirs(DATOS, exist_ok=True)
         np.savez(os.path.join(DATOS, f'{nombre}.npz'), t=t, X=X, Y=Y, m=M.m, inv=inv,
-                 par=np.array([masa, nj, nq, dt, tfin, sj, sq, M.g, fondo(pot, l0)['c'], M.kappa, nl, sl, l0]),
+                 par=np.array([masa, nj, nq, dt, tfin, sj, sq, M.g, fondo(pot, l0)['c'], M.kappa, nl, sl, l0, ancho,
+                               ('ambos', 'frecuencia', 'nucleo').index(efectos)]),
                  L=(M.L if M.L is not None else np.array([l0])))
     return t, X, Y, M.m, inv
 
@@ -347,6 +355,18 @@ SERIES = {
           + [('rL020_0.01', 0.01, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=10, sl=0.02), None),
              ('rL0_0.01', 0.01, 200, 50, 5.0, 1e4, dict(esquema='strang'), None),
              ('rL040_0.03', 0.03, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=20, sl=0.04), None)]),
+    # La serie 'L' usa N_L puntos en |L - L_0| <= 2 s_L con paso 0.005 a 0.008, y sus capas vuelven a estar en
+    # fase en t_rec = 2 pi/(|dOmega/dL| dL) = 10417 a 16667. La recurrencia se nota desde t_rec - 70/s_L: los
+    # valores tardíos (t >= 20 tau_1) de esa serie no son fiables con s_L >= 0.01 (2026-11-12; el paso
+    # `reticulas` de VlasovPoisson_PIC_sp/reproducir/scripts/nube_L.py lo calcula). 'Lb' es la misma serie con
+    # |L - L_0| <= 2.5 s_L y N_L = 8, 12, 20 y 30, sin recurrencia dentro de la corrida. Costo estimado de la
+    # suma directa: 10 min, 21 min, 1 h y 2.2 h. No se ha corrido.
+    'Lb': [(f'rL{int(round(s*1000)):03d}b_{m:g}', m, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=n, sl=s, ancho=2.5), None)
+           for m, s, n in ((0.03, 0.02, 20), (0.03, 0.01, 12), (0.03, 0.005, 8), (0.01, 0.02, 20), (0.03, 0.04, 30))],
+    # Controles con la retícula de 'L' (basta para t <= 20 tau_1): solo el efecto de L en la frecuencia (f) y
+    # solo el del núcleo de interacción (k). 15 min cada uno. No se han corrido.
+    'control': [(f'rL020{x}_0.03', 0.03, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=10, sl=0.02, efectos=e), None)
+                for x, e in (('f', 'frecuencia'), ('k', 'nucleo'))],
 }
 
 
