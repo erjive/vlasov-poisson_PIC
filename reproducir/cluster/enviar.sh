@@ -12,7 +12,7 @@
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RAIZ="$(cd "$AQUI/../.." && pwd)"
-hilos=16; tiempo=180:00:00; part=olin; seco=0
+hilos=16; tiempo=180:00:00; part="${VP_PARTICION:-olin}"; seco=0
 while getopts "c:t:p:n" o; do
   case $o in
     c) hilos=$OPTARG ;; t) tiempo=$OPTARG ;; p) part=$OPTARG ;; n) seco=1 ;;

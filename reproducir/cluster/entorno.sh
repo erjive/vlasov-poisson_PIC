@@ -1,6 +1,9 @@
 # Entorno del cluster: módulos, compilador y rutas. Lo cargan compilar.sh y los trabajos de
 # Slurm. Es el único archivo que hay que editar al cambiar de máquina o de compilador.
 #
+# En noviembre de 2026 el cluster pasó de CentOS 7 a AlmaLinux 9, con otro nodo de entrada: los
+# valores de abajo son los de octubre y hay que confirmarlos con diagnostico.sh.
+#
 # Valores para xook.lamod.unam.mx y la partición "olin" (diagnóstico del 2026-10-05):
 # gfortran 12.2 con el HDF5 1.10 de los módulos, que trae h5fc y es con lo que el Makefile
 # compila sin más. El módulo de Intel (lamod/intel/oneAPI: ifort 2021.7 e ifx 2022.2) no
@@ -16,6 +19,10 @@ fi
 
 # Compilador para "make FC=...". El Makefile conoce gfortran e ifort.
 export VP_FC="${VP_FC:-gfortran}"
+
+# Partición de Slurm en la que enviar.sh y todo.sh ponen los trabajos (las líneas #SBATCH de los
+# guiones dicen "olin"; la opción -p de sbatch manda sobre ellas).
+export VP_PARTICION="${VP_PARTICION:-olin}"
 
 # Solo si no hay h5fc para ese compilador: las rutas de HDF5 a mano, lo que imprime
 # "h5fc -show" de la instalación que se quiera usar.

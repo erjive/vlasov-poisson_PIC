@@ -1,5 +1,10 @@
 # Running on the cluster
 
+> In November 2026 the cluster moved from CentOS 7 to AlmaLinux 9, with a new login node. What
+> this file says about modules, partitions, the queue and paths is from October 2026 and has to
+> be checked again with `diagnostico.sh`. `entorno.sh` holds the modules and, in `VP_PARTICION`,
+> the partition used by `enviar.sh`.
+
 Scripts to build VP_PIC on a Slurm cluster and to run and analyze there the runs that are
 too large for the laptop (10⁵ to 10⁶ particles). The defaults are those of
 `xook.lamod.unam.mx` and its partition `olin`: one node, `tochtli-24`, with 48 CPUs and

@@ -4,11 +4,13 @@
 #
 #   bash reproducir/cluster/diagnostico.sh [partición] > diagnostico.txt 2>&1
 #
-# Se corre en el nodo de entrada. La partición por omisión es "olin". Los módulos que se
-# cargan para la prueba son los de entorno.sh.
+# Se corre en el nodo de entrada. La partición por omisión es la de entorno.sh (VP_PARTICION,
+# "olin" en octubre de 2026). Los módulos que se cargan para la prueba son los de entorno.sh.
+# Sirve también para revisar el cluster después de un cambio de sistema: en noviembre de 2026
+# pasó de CentOS 7 a AlmaLinux 9, con otro nodo de entrada.
 
 export LC_ALL=C
-PART="${1:-olin}"
+PART="${1:-${VP_PARTICION:-olin}}"
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sec () { echo; echo "=== $* ==="; }
 ver () { for x in "$@"; do if command -v "$x" > /dev/null 2>&1; then echo "$x: $(command -v "$x")"; else echo "$x: no está"; fi; done; }
@@ -23,24 +25,28 @@ free -g 2>/dev/null | head -2
 sec "módulos disponibles (compiladores, hdf5, python)"
 if type module > /dev/null 2>&1; then
   module --version 2>&1 | head -2
-  module avail 2>&1 | grep -i -E "intel|oneapi|gcc|gnu|hdf5|python|conda|lamod" | head -60
+  module avail 2>&1 | grep -i -E "intel|oneapi|gcc|gnu|hdf5|python|conda|lamod|anaconda|miniforge|mamba|spack|openmpi|fortran" | head -80
 else
   echo "no hay comando module"
 fi
 
 sec "antes de cargar módulos"
-ver gfortran ifort ifx h5fc python3 git make
+ver gfortran gcc ifort ifx h5fc python3 git make rsync curl
 gfortran --version 2>/dev/null | head -1
+gcc --version 2>/dev/null | head -1
 git --version
+python3 --version 2>&1
+ls /usr/bin/python3* 2>/dev/null | tr '\n' ' '; echo
 
 sec "con los módulos de entorno.sh"
 source "$AQUI/entorno.sh"
 type module > /dev/null 2>&1 && module list 2>&1 | head -30
-ver gfortran ifort ifx h5fc h5pfc python3
+ver gfortran gcc ifort ifx h5fc h5pfc python3
 ifort --version 2>/dev/null | head -1
 ifx --version 2>/dev/null | head -1
 gfortran --version 2>/dev/null | head -1
-echo "VP_FC=$VP_FC"
+gcc --version 2>/dev/null | head -1
+echo "VP_FC=$VP_FC   VP_PARTICION=${VP_PARTICION:-sin fijar}"
 
 sec "HDF5"
 if command -v h5fc > /dev/null 2>&1; then echo "h5fc -show:"; h5fc -show; else echo "no hay h5fc"; fi
@@ -59,6 +65,14 @@ if command -v python3 > /dev/null 2>&1; then
   done
 fi
 ver conda mamba
+
+sec "Slurm: versión, planificador y todas las particiones"
+if command -v sinfo > /dev/null 2>&1; then
+  id
+  scontrol show config 2>/dev/null | grep -E "^(SLURM_VERSION|SchedulerType|SchedulerParameters|SelectType|SelectTypeParameters|PriorityType|DefMemPer|MaxMemPer|TaskPlugin|ProctrackType) "
+  sinfo -o "%.14P %.6a %.11l %.6D %.18C %.8m %N" 2>&1
+  scontrol show partition 2>/dev/null | grep -E "PartitionName|AllowGroups|Default=|MaxTime|Nodes=|TotalCPUs|DefMemPer|OverSubscribe" | sed 's/^ */  /'
+fi
 
 sec "Slurm, partición $PART"
 if command -v sinfo > /dev/null 2>&1; then
@@ -83,6 +97,8 @@ g () { (cd "$RAIZ" && git "$@"); }          # el git 1.8 de CentOS 7 no tiene -C
 sec "almacenamiento"
 df -h "$HOME" 2>/dev/null | tail -1
 df -h "$RAIZ" 2>/dev/null | tail -1
+for d in /storage /scratch /home /data; do [ -d "$d" ] && df -h "$d" 2>/dev/null | tail -1; done
+echo "carpeta de octubre: $(ls -d /storage/cactusolin/erik/newVlasov 2>&1)"
 quota -s 2>/dev/null | tail -3
 ulimit -s | sed 's/^/pila (ulimit -s): /'
 
