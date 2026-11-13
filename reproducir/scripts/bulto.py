@@ -371,7 +371,7 @@ def transicion(solo=None):
 # resolución por omisión y corridas de convergencia (N_Q = 100 o N_J = 800).
 FAMILIAS = [
     (r'$\sigma_Q=\sigma_J=0.1$', ['B0', 'B1', 'B2', 'B015', 'B02', 'B025', 'B3', 'B04', 'B05', 'B07', 'B4', 'B5'],
-     ['B2q', 'B2j', 'B02q', 'B4q']),
+     ['B2q', 'B2j', 'B02q', 'B021', 'B022', 'B023', 'B024', 'B025h', 'B4q']),
     (r'$\sigma_J=0.05$', ['J05_0.005', 'J05_0.01', 'J05_0.02'], []),
     (r'$\sigma_J=0.2$', ['J20_0.02', 'J20_0.04', 'J20_0.08'], []),
     (r'$\sigma_Q=0.2$', ['Q2_0.01', 'Q2_0.02', 'Q2_0.04', 'Q2_0.08'], []),
@@ -628,15 +628,18 @@ def articulo():
     ax[0].set_xlim(5e-4, 0.3); ax[0].set_ylim(1e-3, 40)
     ax[0].set_xlabel('$J$'); ax[0].set_ylabel('angle-averaged DF$/\\hat{F}_{max}$')
     ax[0].legend(fontsize=6.5, frameon=False, loc='lower right')
-    for n, ls in (('B02', '-'), ('B02q', ':'), ('B025', '-'), ('B3', '-'), ('B07', '-'), ('B4q', ':')):
+    # La serie de masas intermedias de la quinta tanda (N_Q = 100; 0.025 con la retícula fina), con un tono de azul
+    # por mu del más claro al más oscuro, y dos corridas de mu mayor en gris.
+    cruce = ('B02q', 'B021', 'B022', 'B023', 'B024', 'B025h')
+    azules = plt.get_cmap('Blues')(np.linspace(0.45, 1.0, len(cruce)))
+    for n, col, ls in [(n, c, '-') for n, c in zip(cruce, azules)] + [('B3', '0.55', '--'), ('B4q', '0.3', '--')]:
         d = nucleo(n); t = d['t']; mu = escalas(n)[2]
         k = int(round(45/(t[1] - t[0])))
         media = np.array([d['rc'][max(0, i - k):i + k + 1].mean() for i in range(len(t))])
-        ax[1].semilogy(t/TAU1, envolvente(np.abs(d['rc'] - media), t), color=cmap(0.85*mu/1.16), ls=ls, lw=1.0,
-                       label=f'$\\mu={mu:.2f}$' + (', $N_Q=100$' if ls == ':' else ''))
+        ax[1].semilogy(t/TAU1, envolvente(np.abs(d['rc'] - media), t), color=col, ls=ls, lw=1.0, label=f'$\\mu={mu:.2f}$')
     ax[1].set_xlim(0, TFIN/TAU1); ax[1].set_ylim(1.5e-3, 2)
     ax[1].set_xlabel('$t/\\tau_1$'); ax[1].set_ylabel('amplitude $a_c$ of the oscillation of the core')
-    ax[1].legend(fontsize=6, frameon=False, loc='lower left', ncol=1)
+    ax[1].legend(fontsize=6, frameon=False, loc='lower left', ncol=2)
     for a, l in zip(ax, 'ab'):
         a.grid(alpha=0.3); a.set_title(f'({l})', loc='left', fontsize=9)
     fig.savefig(os.path.join(destino, 'bulto_estado.pdf')); plt.close(fig)
@@ -651,13 +654,12 @@ def articulo():
             a.semilogy(x, [fun(n) for n in base], mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
             if conv:
                 a.semilogy(xc, [fun(n) for n in conv], mk, color=col, mfc='none', ms=6.5, ls='none',
-                           label='$N_Q=100$ or $N_J=800$')
+                           label='finer lattices')
         filas += [(n, m, h1_ventana(n)) for n, m in zip(base + conv, x + xc)]
     ax[0].set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$'); ax[0].set_ylim(3e-5, 2)
     ax[1].set_ylabel('$m_c/m_{mix}$ for $t\\geq 20\\tau_1$'); ax[1].set_ylim(0.5, 30)
     ax[1].axhline(1, color='k', lw=0.6, ls=':')
     for a, l in zip(ax, 'ab'):
-        a.axvspan(0.43, 0.48, color='0.85', lw=0)
         a.set_xlabel('$\\mu$'); a.set_xlim(-0.03, 1.2); a.grid(alpha=0.3)
         a.set_title(f'({l})', loc='left', fontsize=9)
     ax[0].legend(fontsize=6.5, loc='lower right', frameon=False)
@@ -677,6 +679,105 @@ def articulo():
             mu = escalas(n)[2] if info[n]['sg'] else 0.0
             fo.write(f'{n:6} mu = {mu:4.2f}  ' + ' '.join(cruces) + f'   D en 10-20 tau_1: {Dc[v].mean():.2e}\n')
     print('figuras en', destino)
+
+
+def medidas_articulo(n):
+    """Las medidas de la corrida n que usan el texto y las tablas de la Sección 6 del artículo: mu, |h_1| en
+    10-20 tau_1, masa con J < 0.2 s_J y m_c (t >= 20 tau_1), m_c/m_mix, semiamplitud del radio del núcleo en
+    [1, 2] y desde 20 tau_1 (amplitudes), D en 10-20 tau_1, y de la envolvente a_c de la oscilación del núcleo
+    su primer mínimo local en 2-30 tau_1 (el menor valor en +-2 tau_1; y cuándo) y su rango en t >= 25 tau_1. Con
+    mu >= 0.47 la envolvente tiene un segundo mínimo de valor parecido, así que el mínimo global salta de uno a
+    otro entre retículas; el primero no."""
+    d = nucleo(n); t = d['t']; tau = banda(n)[3]
+    k = int(round(45/(t[1] - t[0])))
+    media = np.array([d['rc'][max(0, i - k):i + k + 1].mean() for i in range(len(t))])
+    env = envolvente(np.abs(d['rc'] - media), t)
+    i = None
+    for a in np.arange(2, 30, 0.5):                 # primer mínimo local: el menor valor en +-2 tau_1
+        z = (t >= a*tau) & (t < (a + 2)*tau)
+        k = int(np.argmin(np.where(z, env, np.inf)))
+        if env[k] <= env[(t >= t[k] - 2*tau) & (t <= t[k] + 2*tau)].min():
+            i = k
+            break
+    if i is None:                                   # sin mínimo local: decae hasta el final; el menor valor
+        i = int(np.argmin(np.where((t >= 2*tau) & (t <= 30*tau), env, np.inf)))
+    tc, Dc = campo_particulas(n)
+    amp = amplitudes(n)
+    return dict(mu=escalas(n)[2] if info[n]['sg'] else 0.0, h1=h1_ventana(n), m02=d['m02'][t >= 20*tau].mean(),
+                mc=float(d['mnuc']), rho_p=float(d['rho_p']), a12=amp[0], a20=amp[-1],
+                D=Dc[(tc >= 10*tau) & (tc <= 20*tau)].mean(), acmin=env[i], tmin=t[i]/tau,
+                ac_lo=env[t >= 25*tau].min(), ac_hi=env[t >= 25*tau].max(), t=t/tau, env=env, rc=d['rc'] - media)
+
+
+def _sci(x):
+    if x >= 0.0995:
+        return f'${x:.2f}$'
+    e = int(np.floor(np.log10(x))); a = x/10.0**e
+    if round(a, 1) >= 10:
+        a, e = a/10, e + 1
+    return rf'${a:.1f}\times 10^{{{e}}}$'
+
+
+def _macro(nombre, archivo, filas):
+    """Las filas de una tabla como la macro \\<nombre> en docs/articulo/<archivo>: main.tex la carga en el
+    preámbulo (un \\input dentro de tabular deja una fila vacía)."""
+    cuerpo = '%\n'.join(filas)
+    open(os.path.join(RAIZ, 'docs', 'articulo', archivo), 'w').write(
+        '% Escrito por reproducir/scripts/bulto.py tablas; no editar a mano.\n\\newcommand{\\' + nombre + '}{%\n' + cuerpo + '%\n}\n')
+
+
+# Filas de las tablas de la Sección 6: estado tardío de la familia de referencia (la mejor retícula de cada
+# masa), la serie fina entre mu = 0.43 y 0.48, y la ubicación del cambio en cada familia.
+ESTADO = [('B0', 0), ('B1', 0.001), ('B2q', 0.01), ('B015', 0.015), ('B02q', 0.02), ('B025h', 0.025), ('B3', 0.03),
+          ('B04', 0.04), ('B05', 0.05), ('B07', 0.07), ('B4q', 0.1), ('B5', 0.3)]
+CRUCE = [('B02q', 0.02), ('B021', 0.021), ('B022', 0.022), ('B023', 0.023), ('B024', 0.024), ('B025h', 0.025)]
+CRUCE_FAMILIAS = [('isochrone', r'$\sigma_Q = \sigma_J = 0.1$', 'B02q', 'B025h'),
+                  ('', r'$\sigma_J = 0.05$', 'J05_0.005', 'J05_0.01'), ('', r'$\sigma_J = 0.2$', 'J20_0.04', 'J20_0.08'),
+                  ('', r'$\sigma_Q = 0.2$', 'Q2_0.02', 'Q2_0.04'), ('', r'$\sigma_Q = 0.4$', 'Q4_0.04', 'Q4_0.08'),
+                  ('Kepler', r'$\sigma_Q = \sigma_J = 0.1$', 'K_0.02', 'K_0.04')]
+
+
+def tablas():
+    """Escribe las tablas de la Sección 6 del artículo (docs/articulo/tab_estado.tex, tab_cruce.tex y
+    tab_familias.tex) e imprime las cifras del texto que no están en ellas: las pruebas de resolución de la
+    cuarta tanda a mu = 0.43 y 0.48 y el salto de fase de la oscilación del núcleo en su mínimo."""
+    from scipy.signal import hilbert
+    f2 = lambda x: f'{x:.2f}'
+    filas = []
+    for n, m in ESTADO:
+        M = medidas_articulo(n)
+        nuc = M['rho_p'] >= 1.5                    # hay un núcleo: m_c por encima de la cota de la mezcla
+        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ & ${M["rho_p"]:.1f}$ & '
+                     + (f'${f2(M["a12"])}$ & ${f2(M["a20"])}$' if nuc else '-- & --') + ' \\\\')
+    _macro('TabEstado', 'tab_estado.tex', filas)
+    filas = []
+    for n, m in CRUCE:
+        M = medidas_articulo(n)
+        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & {_sci(M["D"])} & ${M["mc"]:.3f}$ & '
+                     f'${M["acmin"]:.3f}$ & ${M["tmin"]:.0f}$ & ${M["ac_lo"]:.2f}$--${M["ac_hi"]:.2f}$ \\\\')
+    _macro('TabCruce', 'tab_cruce.tex', filas)
+    filas = []
+    for pot, anchos, a, b in CRUCE_FAMILIAS:
+        A, B_ = medidas_articulo(a), medidas_articulo(b)
+        filas.append(f'{pot} & {anchos} & ${A["mu"]:.2f}$ & {_sci(A["h1"])} & ${A["rho_p"]:.1f}$ & '
+                     f'${B_["mu"]:.2f}$ & {_sci(B_["h1"])} & ${B_["rho_p"]:.1f}$ \\\\')
+    _macro('TabFamilias', 'tab_familias.tex', filas)
+    print('tablas escritas en docs/articulo/tab_*.tex')
+    print('\nPruebas de resolución (cuarta tanda). a_c: mínimo de la envolvente en 2-30 tau_1 (cuándo) y rango en t >= 25 tau_1.')
+    for n in ('B02', 'B02q', 'B02j', 'B02t', 'B02r', 'B02h', 'B025', 'B025j', 'B025t', 'B025r', 'B025h'):
+        if os.path.exists(ruta(n, 'nucleo.npz')) or os.path.exists(ruta(n, 'bulto.npz')):
+            M = medidas_articulo(n)
+            print(f'  {n:6} mu {M["mu"]:.3f}  |h1| {M["h1"]:.3e}  m_c {M["mc"]:.3f}  D {M["D"]:.2e}  a_c mín {M["acmin"]:.4f} '
+                  f'({M["tmin"]:.1f})  tarde {M["ac_lo"]:.3f}-{M["ac_hi"]:.3f}')
+    print('\nFase de la oscilación del núcleo antes y después del mínimo (señal analítica de r_c - media).')
+    for n in ('B02q', 'B02h', 'B02j'):
+        M = medidas_articulo(n); t, x = M['t'], M['rc']
+        fase = np.unwrap(np.angle(hilbert(x)))
+        antes = (t >= M['tmin'] - 8) & (t <= M['tmin'] - 2); despues = (t >= M['tmin'] + 2) & (t <= M['tmin'] + 8)
+        p1, p2 = np.polyfit(t[antes], fase[antes], 1), np.polyfit(t[despues], fase[despues], 1)
+        salto = np.angle(np.exp(1j*(np.polyval(p2, M['tmin']) - np.polyval(p1, M['tmin']))))
+        print(f'  {n:5} mínimo en {M["tmin"]:.1f} tau_1; frecuencia antes {p1[0]/TAU1:.5f} y después {p2[0]/TAU1:.5f};'
+              f' salto de fase {salto/np.pi:+.2f} pi')
 
 
 def colores(w):
@@ -793,7 +894,8 @@ def videos(solo=None, procesos=4):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion', 'estado', 'articulo'])
+    ap.add_argument('paso', choices=['preparar', 'correr', 'analizar', 'figuras', 'videos', 'transicion', 'estado', 'articulo',
+                                     'tablas'])
     ap.add_argument('--solo', nargs='*')
     a = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
