@@ -1,20 +1,19 @@
 # Entorno del cluster: módulos, compilador y rutas. Lo cargan compilar.sh y los trabajos de
 # Slurm. Es el único archivo que hay que editar al cambiar de máquina o de compilador.
 #
-# En noviembre de 2026 el cluster pasó de CentOS 7 a AlmaLinux 9, con otro nodo de entrada: los
-# valores de abajo son los de octubre y hay que confirmarlos con diagnostico.sh.
+# Valores para el cluster de LAMOD con AlmaLinux 9 (diagnóstico del 2026-11-12). Se usan el
+# gfortran 11.5 y el HDF5 1.12 del sistema (h5fc en /usr/bin), con los que el código compila y la
+# prueba del ejecutable difiere del portátil en 1.4e-16, y el Python 3.9 del sistema, que trae
+# numpy 1.26. scipy no viene: se instala una vez con "python3 -m pip install --user scipy".
+# No se cargan módulos: no se ha comprobado que el hdf5/2.2 de los módulos tenga la interfaz de
+# Fortran para su gcc/12.2, y los python/3.11 y python/3.14 no se han revisado. "module purge"
+# solo quita los que el usuario tenga cargados (Slurm no es un módulo).
 #
-# Valores para xook.lamod.unam.mx y la partición "olin" (diagnóstico del 2026-10-05):
-# gfortran 12.2 con el HDF5 1.10 de los módulos, que trae h5fc y es con lo que el Makefile
-# compila sin más. El módulo de Intel (lamod/intel/oneAPI: ifort 2021.7 e ifx 2022.2) no
-# tiene un HDF5 con interfaz de Fortran para ese compilador; para usarlo habría que
-# compilar HDF5 con ifort y dar aquí VP_HDF5_INC y VP_HDF5_LIBS.
+# Hasta octubre de 2026, con CentOS 7, se cargaban lamod/gcc/12.2, lamod/hdf5/1.10 (estático) y
+# lamod/python3/3.12; el módulo de Intel no tenía HDF5 para Fortran.
 
 if type module > /dev/null 2>&1; then
   module purge
-  module load lamod/gcc/12.2 lamod/hdf5/1.10
-  # Python 3 con numpy y h5py, solo para el análisis en el cluster (serie.slurm).
-  module load lamod/python3/3.12
 fi
 
 # Compilador para "make FC=...". El Makefile conoce gfortran e ifort.

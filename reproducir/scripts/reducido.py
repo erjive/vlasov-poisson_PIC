@@ -76,16 +76,19 @@ _fp = ctypes.POINTER(ctypes.c_float)
 
 
 def biblioteca():
+    """Compila (si hace falta) y carga las sumas en C. -march=x86-64-v3 (AVX2) en vez de native: la
+    biblioteca se compila en la primera máquina que la usa y debe correr en todos los nodos del
+    cluster; en el portátil da las mismas sumas, bit a bit, que la compilada con native."""
     so, src = os.path.join(AQUI, 'libreducido.so'), os.path.join(AQUI, 'reducido.c')
     if not os.path.exists(so) or os.path.getmtime(so) < os.path.getmtime(src):
-        subprocess.check_call(['gcc', '-O3', '-march=native', '-fopenmp', '-shared', '-fPIC', '-o', so, src, '-lm'])
+        subprocess.check_call(['gcc', '-O3', '-march=x86-64-v3', '-fopenmp', '-shared', '-fPIC', '-o', so, src, '-lm'])
     lib = ctypes.CDLL(so)
     lib.campo.argtypes = [ctypes.c_int] + [_dp]*5
     lib.energia.argtypes = [ctypes.c_int] + [_dp]*4
     lib.energial.argtypes = [ctypes.c_int] + [_dp]*5
     so, src = os.path.join(AQUI, 'libreducidof.so'), os.path.join(AQUI, 'reducidof.c')
     if not os.path.exists(so) or os.path.getmtime(so) < os.path.getmtime(src):
-        subprocess.check_call(['gcc', '-Ofast', '-march=native', '-fopenmp', '-shared', '-fPIC', '-o', so, src, '-lm'])
+        subprocess.check_call(['gcc', '-Ofast', '-march=x86-64-v3', '-fopenmp', '-shared', '-fPIC', '-o', so, src, '-lm'])
     libf = ctypes.CDLL(so)
     libf.campof.argtypes = [ctypes.c_int] + [_fp]*5
     libf.campofl.argtypes = [ctypes.c_int] + [_fp]*6
