@@ -24,8 +24,8 @@ número de pruebas que fallan.
 """
 import sys, ctypes
 import numpy as np
-from scipy.integrate import quad, solve_ivp
 import reducido as R
+# scipy.integrate se importa dentro de P1 y P7: si falta o falla, las demás pruebas corren igual.
 
 _dp, _fp = R._dp, R._fp
 FALLOS = []
@@ -60,6 +60,7 @@ def nube(n, semilla=1, ancho_u=0.05):
 
 
 def p1():
+    from scipy.integrate import quad
     g = np.random.default_rng(0); peor = 0.0
     for _ in range(200):
         rho, d = g.uniform(0.01, 2.0), g.uniform(-2.5, 2.5)
@@ -172,6 +173,7 @@ def exacto(J, Q, L, m, tfin, dts):
     dentro. La fuerza salta en el cruce, así que cada tramo entre cruces se integra por separado
     (DOP853) y el cruce r_1 = r_2 se localiza como evento. Devuelve t, r, p (2 x nt) y el error
     relativo de la energía."""
+    from scipy.integrate import solve_ivp
     y = np.array([*isocrono_rp(Q[0], J[0], L[0]), *isocrono_rp(Q[1], J[1], L[1])])   # r1, p1, r2, p2
 
     def energia(y):
@@ -206,6 +208,7 @@ def reducido_par(J, Q, L, m, tfin, dts, corr=0.0):
     """El modelo reducido para los mismos dos cascarones (RK de orden 8, sin partículas vecinas).
     corr > 0 añade a la frecuencia de cada cascarón el corrimiento por la masa que encierra en
     promedio, corr m_otro [1/2 + asin(d/rho)/pi] (el término que el modelo no contiene)."""
+    from scipy.integrate import solve_ivp
     F = R.fondo(); kap, g = F['kappa'], F['g']
     c = R.c_de_L(np.asarray(L)); u = np.sqrt(kap)*R_de_L(np.asarray(L)); d = u[0] - u[1]
 
@@ -278,6 +281,9 @@ def p7():
 if __name__ == '__main__':
     pruebas = dict(P1=p1, P2=p2, P3=p3, P4=p4, P5=p5, P6=p6, P7=p7)
     for k in (sys.argv[1:] or pruebas):
-        pruebas[k]()
+        try:
+            pruebas[k]()
+        except Exception as e:              # una prueba que no puede correr cuenta como falla, y se sigue
+            anota(k, False, f'no pudo correr: {type(e).__name__}: {e}')
     print(f'\n{len(FALLOS)} pruebas fallan' + (': ' + ', '.join(FALLOS) if FALLOS else ''))
     sys.exit(len(FALLOS))
