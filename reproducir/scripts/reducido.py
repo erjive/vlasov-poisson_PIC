@@ -13,7 +13,7 @@ con G = sqrt(|z|^2 - d^2) + d asin(d/|z|) si |d| < |z| y (pi/2)|d| si no, y P = 
 El dato inicial es el del PIC: la retícula de puntos medios en (Q, J) recortada, con el peso
 exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L está distribuido.
 
-    python3 reducido.py serie referencia|familias|largas|L|Lb|control   corre lo que falte de una serie
+    python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g   corre lo que falte de una serie
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
     python3 reducido.py tablas | figuras                        tablas y figuras de las notas
@@ -400,6 +400,17 @@ SERIES = {
     # solo el del núcleo de interacción (k). 15 min cada uno. No se han corrido.
     'control': [(f'rL020{x}_0.03', 0.03, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=10, sl=0.02, efectos=e), None)
                 for x, e in (('f', 'frecuencia'), ('k', 'nucleo'))],
+    # Frontera en el plano de mu y sigma_L (2026-11-13): las retículas de la tanda 'frontera' del PIC
+    # (VlasovPoisson_PIC_sp/reproducir/scripts/nube_L.py) a M_gas/M = 0.02 y 0.05. Lf5g es una sola corrida de
+    # 147 000 partículas (unas 12 h en el portátil); la de s_L = 0.12 (252 000) no se hace.
+    'Lf2': ([('rL0_0.02', 0.02, 200, 50, 5.0, 1e4, dict(esquema='strang'), None)]
+            + [(n, 0.02, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=nl, sl=s, ancho=2.5), None)
+               for n, s, nl in (('rL0025b_0.02', 0.0025, 6), ('rL005b_0.02', 0.005, 8), ('rL010b_0.02', 0.01, 12),
+                                ('rL020b_0.02', 0.02, 20))]),
+    'Lf5': ([('rL0_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang'), None)]
+            + [(n, 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=nl, sl=s, ancho=2.5), None)
+               for n, s, nl in (('rL020b_0.05', 0.02, 20), ('rL040b_0.05', 0.04, 30))]),
+    'Lf5g': [('rL080b_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=70, sl=0.08, ancho=2.5), None)],
 }
 
 
