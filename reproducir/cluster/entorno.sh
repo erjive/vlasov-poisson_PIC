@@ -5,6 +5,11 @@
 # gfortran 11.5 y el HDF5 1.12 del sistema (h5fc en /usr/bin), con los que el código compila y la
 # prueba del ejecutable difiere del portátil en 1.4e-16, y el Python 3.9 del sistema, que trae
 # numpy 1.26. scipy no viene: se instala una vez con "python3 -m pip install --user scipy".
+# Ojo: en los nodos de cálculo el numpy del sistema es otro, 1.23.5, y le falta numpy._typing, así
+# que scipy.integrate no carga allí (prueba del 2026-11-13). Las corridas y su análisis no lo usan;
+# solo las pruebas P1 y P7 del modelo. Para tener el mismo numpy en todos los nodos:
+#   python3 -m pip install --user --ignore-installed numpy==1.26.4
+# (no mientras haya trabajos en marcha: cambiaría el numpy de los que empiecen después).
 # No se cargan módulos: no se ha comprobado que el hdf5/2.2 de los módulos tenga la interfaz de
 # Fortran para su gcc/12.2, y los python/3.11 y python/3.14 no se han revisado. "module purge"
 # solo quita los que el usuario tenga cargados (Slurm no es un módulo).
