@@ -18,7 +18,8 @@
 # Lb, 4.7 h en los 4 núcleos del portátil, debería bajar a unas 2.5 h. Con "sbatch -c 48" pide el
 # nodo entero, que es más rápido pero solo arranca cuando el nodo está vacío, y la cola no
 # adelanta trabajos (README, Notes). Las corridas que ya existen en exe/demo_eta/reducido/ se saltan.
-# Necesita gcc (compila reducido.c y reducidof.c la primera vez) y Python 3 con numpy y scipy.
+# Necesita Python 3 con numpy y scipy, y la biblioteca en C del modelo: la compila todo.sh de
+# VlasovPoisson_PIC_sp en el nodo de entrada; si falta, se compila aquí, y entonces hace falta gcc.
 # Fuera de Slurm corre igual, con los hilos de OMP_NUM_THREADS (4 por omisión).
 
 RAIZ="${VP_RAIZ:-${SLURM_SUBMIT_DIR:-$PWD}}"
