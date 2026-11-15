@@ -17,6 +17,7 @@ exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L e
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
     python3 reducido.py tablas | figuras                        tablas y figuras de las notas
+    python3 reducido.py articulo                                tablas y figuras de la Sección 7 del artículo
     python3 reducido.py largas                                  corridas hasta 100 tau_1, por ventanas
 
 Las salidas quedan en exe/demo_eta/reducido/ (o en la carpeta de la variable REDUCIDO_DATOS). Todo
@@ -34,6 +35,7 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 from demo_eta import envolvente, RAIZ, EXE
 DATOS = os.environ.get('REDUCIDO_DATOS', os.path.join(EXE, 'demo_eta', 'reducido'))
 DOC = os.path.join(RAIZ, 'docs', 'modelo_reducido')
+DOC_ART = os.path.join(RAIZ, 'docs', 'articulo')          # Sección 7 del artículo, donde se llama "epicyclic model"
 C_L = 0.5*(2.0 + np.sqrt(8.0)); KAPPA = C_L**-3; LFIX = 2.0
 _dphi = lambda r: r/(np.sqrt(1 + r*r)*(1 + np.sqrt(1 + r*r))**2)
 RC = brentq(lambda r: r**3*_dphi(r) - LFIX**2, 1.0, 20.0)
@@ -527,23 +529,24 @@ def _sci(x):
     return rf'${a:.1f}\times 10^{{{e}}}$'
 
 
-def _macro(nombre, archivo, filas):
+def _macro(nombre, archivo, filas, destino=DOC):
     """Escribe las filas de una tabla como la macro \\<nombre> (un \\input dentro de tabular deja una fila vacía)."""
-    os.makedirs(DOC, exist_ok=True)
+    os.makedirs(destino, exist_ok=True)
     cuerpo = '%\n'.join(filas).replace('$--$', '--')
-    open(os.path.join(DOC, archivo), 'w').write('\\newcommand{\\' + nombre + '}{%\n' + cuerpo + '%\n\\hline}\n')
+    open(os.path.join(destino, archivo), 'w').write('\\newcommand{\\' + nombre + '}{%\n' + cuerpo + '%\n\\hline}\n')
 
 
-def tablas():
-    """Filas de las tablas de las notas (docs/modelo_reducido/tab_*.tex): PIC y modelo reducido."""
-    os.makedirs(DOC, exist_ok=True)
+def tablas(destino=DOC, nombres=('TabReferencia', 'TabFamilias'), archivos=('tab_referencia.tex', 'tab_familias.tex')):
+    """Filas de las tablas de las notas (docs/modelo_reducido/tab_*.tex), o de otro documento: PIC y modelo reducido."""
+    os.makedirs(destino, exist_ok=True)
     f = lambda x: f'{x:.3f}'
     filas = []
-    for r, m, *_, p in SERIES['referencia']:
+    for r, m, *_, p in SERIES['referencia'] if nombres[0] else []:   # sin nombre no se escribe esta tabla
         P, Q = medidas_pic(p), medidas(r)
         nuc = (f(P['mc']), f(Q['mc'])) if m >= 0.02 else ('--', '--')
         filas.append(f'${m:g}$ & ${P["mu"]:.2f}$ & {_sci(P["h1"])} & {_sci(Q["h1"])} & ${f(P["m02"])}$ & ${f(Q["m02"])}$ & ${nuc[0]}$ & ${nuc[1]}$ \\\\')
-    _macro('TabReferencia', 'tab_referencia.tex', filas)
+    if nombres[0]:
+        _macro(nombres[0], archivos[0], filas, destino)
     filas = []; grupos = {'rK': 'Kepler', 'rJ05': r'$\sigma_J = 0.05$', 'rJ20': r'$\sigma_J = 0.2$', 'rQ2': r'$\sigma_Q = 0.2$',
                           'rQ4': r'$\sigma_Q = 0.4$'}
     orden = ['rK', 'rJ05', 'rJ20', 'rQ2', 'rQ4']
@@ -559,12 +562,13 @@ def tablas():
             primero = False
         if g != orden[-1]:
             filas.append('\\hline')
-    _macro('TabFamilias', 'tab_familias.tex', filas)
-    print('tablas escritas en', DOC)
+    _macro(nombres[1], archivos[1], filas, destino)
+    print('tablas escritas en', destino)
 
 
-def figuras():
-    """Figuras de las notas: oscilación del núcleo en el cruce y estado tardío de la familia de referencia.
+def figuras(destino=DOC, etiqueta='reduced model', prefijo='reducido'):
+    """Figuras de las notas (o de otro documento, con otro nombre para el modelo): oscilación del núcleo en el
+    cruce y estado tardío de la familia de referencia.
     Dos series con los dos primeros colores de la paleta de referencia (validados con validate_palette.js
     sobre el fondo claro) y marcadores distintos."""
     import matplotlib; matplotlib.use('Agg')
@@ -573,7 +577,7 @@ def figuras():
     plt.rcParams.update({'font.size': 9, 'axes.edgecolor': tinta2, 'axes.labelcolor': tinta2, 'xtick.color': tinta2,
                          'ytick.color': tinta2, 'text.color': tinta, 'axes.linewidth': 0.6, 'figure.facecolor': sup,
                          'axes.facecolor': sup, 'savefig.facecolor': sup})
-    os.makedirs(os.path.join(DOC, 'figuras'), exist_ok=True)
+    os.makedirs(os.path.join(destino, 'figuras'), exist_ok=True)
 
     def ejes(ax):
         ax.grid(True, axis='y', color=reja, lw=0.6); ax.set_axisbelow(True)
@@ -586,7 +590,7 @@ def figuras():
     for a, (r, m, *_, p) in zip(ax.ravel(), ref[3:9]):
         P, Q = medidas_pic(p), medidas(r)
         a.plot(P['t'], P['ac'], color=c_pic, lw=1.6, solid_capstyle='round', label='PIC')
-        a.plot(Q['t'], Q['ac'], color=c_red, lw=1.6, solid_capstyle='round', label='reduced model')
+        a.plot(Q['t'], Q['ac'], color=c_red, lw=1.6, solid_capstyle='round', label=etiqueta)
         a.set_yscale('log'); a.set_ylim(3e-3, 1.0); a.set_xlim(0, 30.6)
         a.set_xticks([0, 10, 20, 30]); a.set_yticks([0.01, 0.1, 1.0]); a.set_yticklabels(['0.01', '0.1', '1'])
         ejes(a)
@@ -598,7 +602,7 @@ def figuras():
     h, l = ax[0, 0].get_legend_handles_labels()
     fig.tight_layout(rect=(0, 0, 1, 0.95), w_pad=1.6, h_pad=1.4)
     fig.legend(h, l, loc='upper right', ncol=2, frameon=False, fontsize=9.5, bbox_to_anchor=(0.99, 1.0), handlelength=2.2)
-    fig.savefig(os.path.join(DOC, 'figuras', 'reducido_series.pdf')); plt.close(fig)
+    fig.savefig(os.path.join(destino, 'figuras', f'{prefijo}_series.pdf')); plt.close(fig)
 
     P = [medidas_pic(p) for *_, p in ref]; Q = [medidas(r) for r, *_ in ref]
     mu = np.array([p['mu'] for p in P])
@@ -607,7 +611,7 @@ def figuras():
                                         ('mc', 'mass fraction of the core', False),
                                         ('h1', r'$|h_1|/h_0$, mean over $10\leq t/\tau_1\leq 20$', True))):
         a.plot(mu, [p[k] for p in P], color=c_pic, lw=1.2, marker='o', ms=5.5, mec=sup, mew=0.8, label='PIC')
-        a.plot(mu, [q[k] for q in Q], color=c_red, lw=1.2, marker='D', ms=4.8, mec=sup, mew=0.8, label='reduced model')
+        a.plot(mu, [q[k] for q in Q], color=c_red, lw=1.2, marker='D', ms=4.8, mec=sup, mew=0.8, label=etiqueta)
         if log:
             a.set_yscale('log')
         else:
@@ -617,8 +621,8 @@ def figuras():
     h, l = ax[0].get_legend_handles_labels()
     fig.tight_layout(rect=(0, 0, 1, 0.92), w_pad=1.8)
     fig.legend(h, l, loc='upper right', ncol=2, frameon=False, fontsize=9.5, bbox_to_anchor=(0.99, 1.0))
-    fig.savefig(os.path.join(DOC, 'figuras', 'reducido_estado.pdf')); plt.close(fig)
-    print('figuras escritas en', os.path.join(DOC, 'figuras'))
+    fig.savefig(os.path.join(destino, 'figuras', f'{prefijo}_estado.pdf')); plt.close(fig)
+    print('figuras escritas en', os.path.join(destino, 'figuras'))
 
 
 if __name__ == '__main__':
@@ -649,5 +653,8 @@ if __name__ == '__main__':
         largas()
     elif len(sys.argv) > 1 and sys.argv[1] == 'figuras':
         figuras()
+    elif len(sys.argv) > 1 and sys.argv[1] == 'articulo':
+        tablas(DOC_ART, (None, 'TabModeloFamilias'), (None, 'tab_modelo_familias.tex'))   # la familia de referencia va en una figura
+        figuras(DOC_ART, 'epicyclic model', 'modelo')
     else:
         print(__doc__)

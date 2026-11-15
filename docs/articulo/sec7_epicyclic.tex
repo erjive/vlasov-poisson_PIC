@@ -3,4 +3,198 @@
 \label{Sec:Epicyclic}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\EJ{To be written from the notes in docs/modelo\_reducido (sections II, III, V and VI, condensed to five or six pages). There the model is called ``the reduced model''; since these notes use that name for the model with fixed angular momentum (section~\ref{Sec:VPSphSym}), we propose to call it ``the epicyclic model''. To be decided by the authors. Section~\ref{SubSec:FarRuns} refers to this section for three statements: the self-gravity makes the cloud rotate about its own center, the single parameter of the model compares this rotation with the differential rotation and is proportional to $\mu^2$, and $A$ is approximately proportional to $M_{gas}\sigma_J^{1/2}$.}
+In this section we derive a model for the gas cloud of section~\ref{Sec:FarFromEq} which explains the results found there. It rests on two observations. First, the orbits of the cloud have a small eccentricity, such that all the gas shells stay close to the radius of the circular orbit, and two such shells attract each other like two parallel sheets. Second, the self-gravity of the cloud and the differences between the orbital frequencies change the radial oscillations of the shells slowly compared with their period, such that the interaction can be averaged over this oscillation. We refer to the resulting model as the epicyclic model.\EJ{In the notes in docs/modelo\_reducido this model is called ``the reduced model''; since these notes use that name for the model with fixed angular momentum (section~\ref{Sec:VPSphSym}), we propose ``the epicyclic model''. To be decided by the authors.} We derive it in section~\ref{SubSec:EpiDerivation}. For a cloud of a given shape it contains a single parameter, which is proportional to $\mu^2$ (section~\ref{SubSec:EpiParameter}), and it gives the frequencies of the mixed states and of the oscillation of the core in closed form (section~\ref{SubSec:EpiFrequencies}). Without adjusting any parameter, its solutions reproduce the PIC simulations of section~\ref{Sec:FarFromEq} (section~\ref{SubSec:EpiComparison}). In this section all the gas particles have the same angular momentum $L_0$; the extension to distributed angular momenta is the subject of section~\ref{Sec:DistributedL}.
+
+
+\subsection{Derivation}
+\label{SubSec:EpiDerivation}
+
+The computational particles of the PIC method are spherical shells, and their equations of motion~(\ref{Eq:EOM}) also describe a gas of $N$ shells with radii $r_j$, radial momenta $p_j$, angular momenta $L_j$ and masses $m_j$. Since $\partial\Phi_{gas}/\partial r(t,r_j) = G m(t,r_j)/r_j^2$, with $m(t,r)$ the mass of the gas inside the radius $r$, Eqs.~(\ref{Eq:EOM}) are Hamilton's equations for the function
+\begin{equation}
+H = \sum\limits_{j=1}^N m_j\left[ \frac{p_j^2}{2} + \frac{L_j^2}{2r_j^2} + \Phi_{ext}(r_j) \right]
+ - G\sum\limits_{i<j} \frac{m_i m_j}{\max\{ r_i,r_j \}}
+\label{Eq:ShellH}
+\end{equation}
+with respect to the canonical pairs $(r_j,m_j p_j)$: the derivative of the last term with respect to $r_i$ yields the mass of the shells which lie inside the shell $i$, divided by $r_i^2$.
+
+Let $R_0$ be the radius of the circular orbit with angular momentum $L_0$ in the external potential, let $\kappa_0 := \Omega(0,L_0)$ be the frequency of the small radial oscillations about it, and write $E(J)$ and $\Omega(J)$ for $E(J,L_0)$ and $\Omega(J,L_0)$. For nearly circular orbits
+\begin{equation}
+r = R_0 - \left( \frac{2J}{\kappa_0} \right)^{1/2}\cos Q + \mathcal{O}(J),\qquad
+p_r = \left( 2\kappa_0 J \right)^{1/2}\sin Q + \mathcal{O}(J),
+\label{Eq:Epicycle}
+\end{equation}
+with $Q = 0$ at the pericenter. For the isochrone potential with $L_0 = 2$ one has $R_0 = 5.742$ and $\kappa_0 = 0.07107$, and for the Kepler potential $R_0 = L_0^2 = 4$ and $\kappa_0 = L_0^{-3} = 1/8$, see Eq.~(\ref{Eq:OmegaIsochrone}).
+
+Suppose that all the shells stay close to $R_0$, that is, $r_j = R_0 + \xi_j$ with $|\xi_j|\ll R_0$. Using $\max\{ a,b \} = (a + b + |a - b|)/2$, the interaction energy of two shells is
+\begin{equation}
+-\frac{G m_i m_j}{\max\{ r_i,r_j \}} = -\frac{G m_i m_j}{R_0}
+ + \frac{G m_i m_j}{2R_0^2}\left( \xi_i + \xi_j \right)
+ + \frac{G m_i m_j}{2R_0^2}\left| \xi_i - \xi_j \right|
+ + \mathcal{O}\left( \frac{\xi^2}{R_0^3} \right).
+\label{Eq:PairExpansion}
+\end{equation}
+The first term on the right-hand side is a constant. The second one exerts the same force on all the shells, as if half of the mass of the remaining gas was located at the center. It displaces the circular orbits inwards and shifts all the frequencies by the same amount (section~\ref{SubSec:EpiFrequencies}), such that it does not affect the motion of the shells relative to each other. The third term is the interaction energy of two parallel sheets: it gives rise to a force between two shells which does not depend on their distance and which changes its sign when they cross. This term contains the collective dynamics of the cloud.
+
+We describe the radial oscillation of the shell $j$ by its complex amplitude in a frame which rotates with the frequency $\kappa_0$,
+\begin{equation}
+\zeta_j := \sqrt{2J_j}\, e^{i(Q_j - \kappa_0 t)},
+\label{Eq:zetaDef}
+\end{equation}
+where $(Q_j,J_j)$ are the action-angle variables of the external potential. According to Eq.~(\ref{Eq:Epicycle}), $\zeta_j e^{i\kappa_0 t} = -\sqrt{\kappa_0}\,(r_j - R_0) + i p_j/\sqrt{\kappa_0} + \mathcal{O}(J)$, such that $\zeta_j$ describes the position of the shell in the $(r,p_r)$-plane relative to the circular orbit, after a rescaling of the axes. In the absence of self-gravity $J_j$ is constant and $\dot{\zeta}_j = i[\Omega(J_j) - \kappa_0]\zeta_j$: the shells turn about the circular orbit $\zeta = 0$ with an angular velocity which depends on their distance from it. This differential rotation is responsible for the mixing. Since $\xi_i - \xi_j = -\kappa_0^{-1/2}\re[(\zeta_i - \zeta_j)e^{i\kappa_0 t}] + \mathcal{O}(J)$, if the amplitudes change little during one period $2\pi/\kappa_0$, the interaction can be replaced with its average over one period at fixed amplitudes. The average of $|\cos\theta|$ over $\theta$ is $2/\pi$, and thus
+\begin{equation}
+\left\langle \left| \xi_i - \xi_j \right| \right\rangle = \frac{2}{\pi\sqrt{\kappa_0}}\left| \zeta_i - \zeta_j \right|.
+\label{Eq:AverageFixedL}
+\end{equation}
+Omitting the first two terms of Eq.~(\ref{Eq:PairExpansion}), the Hamiltonian~(\ref{Eq:ShellH}) is replaced with
+\begin{equation}
+\overline{H} = \sum\limits_{j=1}^N m_j\left[ E(J_j) - \kappa_0 J_j \right] + g\sum\limits_{i<j} m_i m_j\left| \zeta_i - \zeta_j \right|,\qquad
+g := \frac{G}{\pi R_0^2\sqrt{\kappa_0}},
+\label{Eq:Hepi}
+\end{equation}
+where $J_j = |\zeta_j|^2/2$ and the term $-\kappa_0 J_j$ is due to the rotating frame. The canonical pairs are $(\vartheta_j,m_j J_j)$, with $\vartheta_j := Q_j - \kappa_0 t$ the argument of $\zeta_j$, and the equations of motion are
+\begin{equation}
+\frac{d\zeta_i}{dt} = i\left[ \Omega(J_i) - \kappa_0 \right]\zeta_i
+ + i g\sum\limits_{j\neq i} m_j\frac{\zeta_i - \zeta_j}{|\zeta_i - \zeta_j|},\qquad i = 1,2,\ldots,N.
+\label{Eq:Epicyclic}
+\end{equation}
+These are the equations of the epicyclic model. Besides $\overline{H}$ they conserve $P := \sum_j m_j J_j$, since $\overline{H}$ is invariant with respect to a common rotation of all the amplitudes. For the isochrone potential with $L_0 = 2$ one has $g = 0.03621$.
+
+The two terms on the right-hand side of Eq.~(\ref{Eq:Epicyclic}) have a simple meaning. The first one is the differential rotation due to the external potential: since $\Omega$ decreases with $J$, the angular velocity $\Omega(J) - \kappa_0$ vanishes at the circular orbit and is negative elsewhere. The second one is a rotation which each shell induces on the other shells, about itself and in the positive sense, with the speed $g m_j$, which does not depend on the distance. In the limit $N\to\infty$ the gas is described by its mass density $n(t,\zeta)$ in the $\zeta$-plane, which is transported by the area-preserving flow with the stream function
+\begin{equation}
+\mathcal{H}(t,\zeta) = E(J) - \kappa_0 J + g\int \left| \zeta - \zeta' \right| n(t,\zeta')\, d^2\zeta'.
+\label{Eq:StreamFunction}
+\end{equation}
+This is the structure of the equation for the vorticity of a two-dimensional incompressible fluid, with the kernel $|\zeta - \zeta'|$ in place of the logarithmic one. Two consequences follow directly. First, a concentration of gas at $\zeta = 0$, that is, at the circular orbit, is not sheared by the differential rotation, which explains why the core of section~\ref{SubSec:FarLate} is located there. Second, a compact cloud at a distance from the origin rotates about its own center, and this rotation transports the part of the cloud which leads in the angle variable towards the origin.
+
+The interaction in Eq.~(\ref{Eq:Hepi}) is the one of the self-gravitating sheet model, which leads to quasi-stationary states with a dense core and a dilute halo in one-dimensional systems~\cite{mJtW11,yLrPfRtTfB14}, and which also describes the motion of the stars perpendicular to the plane of a galactic disk; in that context the self-gravity of the disk has been found to delay the phase mixing of a perturbation~\cite{kDlW19,lW23,tAtA26}. For two-dimensional fluids, the damping of an asymmetry of a vortex through its resonance with the co-rotating fluid and the motion of a vortex in a background flow have been analyzed in Refs.~\cite{dSdDaCcDiLtO00,dSdD01}.
+
+The derivation assumes that (i) the eccentricity of the orbits is small, the relevant parameter being the ratio between the amplitude of the radial oscillation and $R_0$, (ii) $|\Omega(J) - \kappa_0|\ll\kappa_0$ over the support of the cloud, and (iii) the rotation which is induced by the gas, of the order of $g M_{gas}/|\zeta|$, is slow compared with $\kappa_0$. For the reference cloud of section~\ref{Sec:FarFromEq} the ratio in (i) is $(2\sigma_J/\kappa_0)^{1/2}/R_0 = 0.29$, the one in (ii) is $0.12$ at $J = \sigma_J$ and $0.28$ at the lower end of the frequency band, and the one in (iii) is $0.02$ for $M_{gas}/M = 0.02$. Hence, the first assumption is the most restrictive one. In Eq.~(\ref{Eq:Epicyclic}) we keep the exact frequency $\Omega(J)$ of the external potential, such that the model reproduces the mixing in the absence of self-gravity exactly.
+
+
+\subsection{The parameter of the model and $\mu$}
+\label{SubSec:EpiParameter}
+
+For a cloud of a given shape the epicyclic model contains a single parameter, which compares the rotation due to the self-gravity with the differential rotation and which is proportional to $\mu^2$. Let $\sigma_J$ be the scale of the action variables of the cloud. To leading order in $\sigma_J$, $\Omega(J) - \kappa_0 = \Omega_0' J$ with $\Omega_0' := \partial\Omega/\partial J(0,L_0) < 0$. In terms of $\tilde{\zeta}_j := \zeta_j/\sqrt{\sigma_J}$, $\tilde{J}_j := J_j/\sigma_J$, $\tilde{t} := |\Omega_0'|\sigma_J t$ and $\tilde{m}_j := m_j/M_{gas}$, Eq.~(\ref{Eq:Epicyclic}) assumes the form
+\begin{equation}
+\frac{d\tilde{\zeta}_i}{d\tilde{t}} = -i\tilde{J}_i\tilde{\zeta}_i
+ + i\,\Gamma\sum\limits_{j\neq i} \tilde{m}_j\frac{\tilde{\zeta}_i - \tilde{\zeta}_j}{|\tilde{\zeta}_i - \tilde{\zeta}_j|},\qquad
+\Gamma := \frac{g M_{gas}}{|\Omega_0'|\,\sigma_J^{3/2}}.
+\label{Eq:Gamma}
+\end{equation}
+The parameter $\Gamma$ is the ratio between the angular velocity $g M_{gas}/\sqrt{\sigma_J}$ of the rotation which the gas induces at the distance $\sqrt{\sigma_J}$, which is the size of the cloud in the $\zeta$-plane, and the difference $|\Omega_0'|\sigma_J$ of the angular velocities of the differential rotation across the cloud. In the rescaled variables the initial datum~(\ref{Eq:Pulse}) only depends on $\sigma_Q$. Therefore, to leading order the evolution of the cloud is determined by $\Gamma$ and $\sigma_Q$: the mass of the gas, its width in the action variable and the external potential only enter through $\Gamma$ and through the unit $1/(|\Omega_0'|\sigma_J)$ of time, which is proportional to $\tau_1$.
+
+The relation with $\mu$ follows from the amplitude $A$ of the potential of the cloud. A compact cloud with action variable $J$ oscillates between the radii $R_0\mp a$, with $a = (2J/\kappa_0)^{1/2}$. At a fixed radius $r$ in this range the potential which it generates varies between $-GM_{gas}/r$ and $-GM_{gas}/(R_0 + a)$, and half of the largest variation is $A = GM_{gas}a/R_0^2$ to leading order. With $J = \sigma_J$ this gives
+\begin{equation}
+A = \frac{GM_{gas}}{R_0^2}\left( \frac{2\sigma_J}{\kappa_0} \right)^{1/2} = \pi g M_{gas}\sqrt{2\sigma_J},
+\label{Eq:AEpi}
+\end{equation}
+which is $0.0509\, M_{gas}/M$ for the reference cloud, compared with the value $0.0496\, M_{gas}/M$ measured in the PIC simulations (section~\ref{SubSec:FarRuns}). In particular, $A$ is proportional to $M_{gas}\sigma_J^{1/2}$. Since $\mu^2 = A/(\Delta\Omega\,\Delta J)$ with $\Delta J = 2.70\,\sigma_J$, and $\Delta\Omega = |\Omega_0'|\Delta J$ to leading order, Eqs.~(\ref{Eq:Gamma},\ref{Eq:AEpi}) yield
+\begin{equation}
+\mu^2 = \frac{\sqrt{2}\,\pi}{2.70^2}\,\Gamma = 0.61\,\Gamma.
+\label{Eq:muGamma}
+\end{equation}
+Hence, $\mu$ is, up to a numerical factor, the square root of the only parameter of the model, and clouds which differ in their mass, in their width in the action variable or in the external potential, but not in their width in angle, behave in the same way as functions of $\mu$. This is what we found in section~\ref{SubSec:FarTransition}. For the reference cloud in the isochrone potential $\Omega_0' = -0.08831$ and $\Gamma = 12.97\, M_{gas}/M$, and in the Kepler potential with $L_0 = 2$ one has $\Omega_0' = -3/16$, $g = 0.05627$ and $\Gamma = 9.49\, M_{gas}/M$. The values of $\mu$ which follow from Eq.~(\ref{Eq:muGamma}) are about $8$ percent smaller than those of section~\ref{Sec:FarFromEq}, where the mean slope $\Delta\Omega/\Delta J$ of the frequency over the band is used instead of its value $|\Omega_0'|$ at the circular orbit.
+
+
+\subsection{Frequencies of the mixed states and of the core}
+\label{SubSec:EpiFrequencies}
+
+The model gives the frequencies of the gas particles in closed form in two situations: when the gas is mixed, and when it consists of a compact core at the circular orbit and of mixed gas around it. In the second case the core oscillates like a rigid body, and the gas particles which are in resonance with this oscillation lie at a definite distance from the core.
+
+Any density $n = \hat{n}(J)$ which only depends on the action variable is a stationary solution of the epicyclic model, since in this case $\mathcal{H}$ does not depend on $\vartheta$. These are its mixed states. The average of $|\zeta - \zeta'|$ over the argument of $\zeta'$ at fixed moduli $\rho := |\zeta|$ and $\rho' := |\zeta'|$ is $(2/\pi)(\rho + \rho')\mathbf{E}(k)$ with $k^2 := 4\rho\rho'/(\rho + \rho')^2$, where $\mathbf{E}$ denotes the complete elliptic integral of the second kind. Hence, the frequency of the gas particles with action variable $J = \rho^2/2$ is
+\begin{equation}
+\Omega_{tot}(J) = \Omega(J) + \frac{g}{\rho}\frac{d\psi}{d\rho}(\rho),\qquad
+\psi(\rho) := \frac{2}{\pi}\int\limits_0^\infty (\rho + \rho')\,\mathbf{E}\left( \frac{2\sqrt{\rho\rho'}}{\rho + \rho'} \right) \hat{n}(\rho')\, 2\pi\rho'\, d\rho'.
+\label{Eq:OmegaTot}
+\end{equation}
+The second term is positive: the gas raises the frequencies. A ring of mass $m'$ and radius $\rho'$ contributes $g m'/(2\rho')$ to the frequency of the orbits inside it ($\rho\ll\rho'$) and $g m'/\rho$ to the one of the orbits far outside it ($\rho\gg\rho'$). Equation~(\ref{Eq:OmegaTot}) only contains the contribution of the last term in Eq.~(\ref{Eq:PairExpansion}). The uniform force and the terms of the next order in $\xi/R_0$ shift all the frequencies by the same amount. This shift follows from the frequency of the small oscillations about the minimum of the time-averaged effective potential, and to first order in the mass of the gas it is
+\begin{equation}
+\delta\Omega_u = -\frac{G\,\overline{m}(R_0)}{2\kappa_0}\left[ \frac{V_{ext}'''(R_0)}{R_0^2\kappa_0^2} + \frac{2}{R_0^3} \right],\qquad
+V_{ext}(r) := \Phi_{ext}(r) + \frac{L_0^2}{2r^2},
+\label{Eq:UniformShift}
+\end{equation}
+where $\overline{m}(R_0)$ is the time average of the mass of the gas inside the radius $R_0$. For the isochrone potential with $L_0 = 2$ one finds $\delta\Omega_u = 0.1454\,\overline{m}(R_0)$, and for the Kepler potential $\delta\Omega_u = 2\overline{m}(R_0)/L_0^3$. A uniform shift of the frequencies amounts to a change of $\kappa_0$ in Eq.~(\ref{Eq:zetaDef}) and does not affect the dynamics of the model.
+
+Suppose now that the gas consists of a compact core of mass $m_c$ close to $\zeta = 0$ and of a mixed halo, and let $\zeta_c := \sum_j m_j\zeta_j/m_c$ be the center of the core, where the sum extends over its particles. Since the interaction term in Eq.~(\ref{Eq:Epicyclic}) is antisymmetric in the two particles, the forces between the particles of the core cancel in the motion of its center. If the extension of the core and its displacement are small compared with the scale on which the field of the halo varies, Eq.~(\ref{Eq:Epicyclic}) yields $\dot{\zeta}_c = i[\Omega_h(0) - \kappa_0]\zeta_c$, where $\Omega_h$ is given by Eq.~(\ref{Eq:OmegaTot}) with the density of the halo alone. Therefore, the core oscillates like a rigid body about the circular orbit with the frequency
+\begin{equation}
+\omega_c = \Omega_h(0) + \delta\Omega_u,
+\label{Eq:omegac}
+\end{equation}
+which is the frequency of the nearly circular orbits in the field of the halo alone. It depends neither on the mass of the core nor on its internal structure, as for the center of mass of a system of interacting particles in a harmonic trap.
+
+The frequencies of the individual gas particles differ from $\omega_c$. A particle inside the core is also subject to the field of the core, which raises its frequency above $\omega_c$. A particle of the halo at the distance $\rho = \sqrt{2J}$ from the core, with $\rho$ large compared with the extension of the core, has the frequency $\Omega_h(J) + g m_c/\rho$, which exceeds $\omega_c$ close to the core and falls below it further out, since $\Omega_h$ decreases with $J$. With $\Omega_h(J) - \Omega_h(0) = \Omega_0' J$, both frequencies coincide at
+\begin{equation}
+J_{res} = \left( \frac{g m_c}{\sqrt{2}\,|\Omega_0'|} \right)^{2/3}.
+\label{Eq:Jres}
+\end{equation}
+The gas particles with $J\approx J_{res}$ co-rotate with the displacement of the core and can exchange energy with its oscillation. For $|\zeta|\gg|\zeta_c|$ the displacement of the core changes the stream function of a particle of the halo by $-g m_c|\zeta_c|\cos(\vartheta - \vartheta_c)$, with $\vartheta_c$ the argument of $\zeta_c$. In the frame which rotates with the core this is the Hamiltonian of a pendulum near $J_{res}$, as in the theory of the damping of a plasma wave by the particles which are in resonance with it~\cite{tO65}. Since $d(\Omega_h + g m_c/\rho)/dJ = 3\Omega_0'/2$ at $J = J_{res}$, the frequency of the small oscillations of the trapped particles is
+\begin{equation}
+\omega_b = \left( \frac{3}{2}\, g m_c |\zeta_c|\, |\Omega_0'| \right)^{1/2}.
+\label{Eq:omegab}
+\end{equation}
+According to this picture, the oscillation of the core can only be damped by the gas particles close to $J_{res}$, at a rate which depends on the slope of their distribution, and the damping is modified after a time of the order of $2\pi/\omega_b$, when these particles have been trapped. We have not derived the damping rate.
+
+
+\subsection{Comparison with the PIC simulations}
+\label{SubSec:EpiComparison}
+
+Without adjusting any parameter, the solutions of the epicyclic model reproduce the PIC simulations of section~\ref{Sec:FarFromEq}: within a few percent when the gas mixes, with a shift of $4$ to $8$ percent in the mass in the range of $\mu$ in which the core forms, and with differences of up to $35$ percent in the mass of the core for the largest masses and for the cloud which is widest in the action variable. In both computations the change between the mixed state and the persistent oscillation of the core is continuous in $\mu$.
+
+We solve Eq.~(\ref{Eq:Epicyclic}) with the computational particles of the corresponding PIC simulation as particles of the model: they are placed on the same lattice in the action-angle variables of the external potential, they carry the same masses, and $\zeta_j(0) = \sqrt{2J_j}\, e^{iQ_j}$. For $N_J\times N_Q = 400\times 100$ and $\sigma_Q = \sigma_J = 0.1$ the lattice points whose weight exceeds $10^{-7}$ of the largest one yield $7774$ particles. The sums in Eq.~(\ref{Eq:Epicyclic}) are evaluated directly over all the pairs, and the equations are integrated with the classical fourth-order Runge-Kutta scheme with the time step $\Delta t = 2.5$ ($\Delta t = 1.25$ for the Kepler potential and for $\sigma_J = 0.2$). Over the $10^4$ time units of a simulation the Hamiltonian~(\ref{Eq:Hepi}) is conserved to within $4\times 10^{-6}$ of the interaction energy and $P$ to within $10^{-7}$ in relative terms. A solution takes about five minutes on four processor cores; no radial grid is involved, and the time step is set by the differential rotation and not by the orbital period. The observables are those of section~\ref{Sec:FarFromEq}, with the core defined by the disk of radius $(2J_*)^{1/2}$ about the maximum of the density in the $\zeta$-plane, which is the ellipse~(\ref{Eq:CoreEllipse}) in the harmonic approximation. In the model they are computed with the action-angle variables of the external potential after the average over the radial oscillation, whereas in the PIC simulations they refer to the instantaneous potential; both differ by terms of first order in $M_{gas}/M$.
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{l|c|c}
+\hline\hline
+quantity & model & PIC \\
+\hline
+amplitude of the potential per unit mass, $A/M_{gas}$, Eq.~(\ref{Eq:AEpi}) & $0.0509$ & $0.0496$ \\
+frequency of the nearly circular orbits, $M_{gas}/M = 0.01$ & $0.07193$ & $0.07194$ \\
+uniform shift $\delta\Omega_u$, $M_{gas}/M = 0.01$, Eq.~(\ref{Eq:UniformShift}) & $4.8\times 10^{-4}$ & $(4.5$--$4.9)\times 10^{-4}$ \\
+uniform shift $\delta\Omega_u$, $M_{gas}/M = 0.02$ & $1.00\times 10^{-3}$ & $(0.91$--$1.00)\times 10^{-3}$ \\
+frequency $\omega_c$ of the oscillation of the core, $M_{gas}/M = 0.02$, Eq.~(\ref{Eq:omegac}) & $0.07278$ & $0.07275$--$0.07284$ \\
+frequency of the gas particles inside the core, $M_{gas}/M = 0.02$ & $0.07368$ & $0.0735$--$0.0736$ \\
+action variable $J_{res}$ of the resonance, $M_{gas}/M = 0.02$, Eq.~(\ref{Eq:Jres}) & $0.072\,\sigma_J$ & $(0.07$--$0.08)\,\sigma_J$ \\
+\hline\hline
+\end{tabular}
+\end{center}
+\caption{Predictions of section~\ref{SubSec:EpiFrequencies} for the reference cloud compared with the PIC simulations. The frequency of the circular orbit of the external potential is $\kappa_0 = 0.07107$. The predictions in the second, fifth and sixth rows are the frequencies of the small oscillations in the time-averaged potential, computed from the mass profile of the computational particles over $20\leq t/\tau_1\leq 30$, with all the gas (second and sixth rows) or with the gas outside the core (fifth row).}
+\label{Tab:ModelFrequencies}
+\end{table}
+
+Table~\ref{Tab:ModelFrequencies} compares the frequencies of section~\ref{SubSec:EpiFrequencies} with those of the computational particles of the PIC simulations, which we obtain from the slope of their angle variable, computed with the instantaneous potential, over $20\leq t/\tau_1\leq 30$. For the mixed state with $M_{gas}/M = 0.01$ ($\mu = 0.31$), the measured frequencies exceed $\Omega(J) + (g/\rho)\, d\psi/d\rho$ by $(4.5$--$4.9)\times 10^{-4}$ for all the particles with $J < 3\sigma_J$, and the uniform shift~(\ref{Eq:UniformShift}) is $4.8\times 10^{-4}$. For $M_{gas}/M = 0.02$ ($\mu = 0.43$) the core oscillates with the frequency $0.07284$ for $2\leq t/\tau_1\leq 14$ and $0.07275$ for $22\leq t/\tau_1\leq 30$, whereas Eq.~(\ref{Eq:omegac}) gives $\omega_c = 0.07278$. Hence, the core oscillates like a rigid body in the field of the halo, at a frequency which lies above the frequencies of the halo in its own field and below those of the particles of the core. The gas particles whose frequency coincides with $\omega_c$ have action variables between $0.07\sigma_J$ and $0.08\sigma_J$, in agreement with Eq.~(\ref{Eq:Jres}), which gives $0.072\sigma_J$ for $m_c = 0.105\, M_{gas}$. At this place the distribution of the action variables has a gap: in the PIC simulation with $N_Q = 100$ the mass per unit action between $0.07\sigma_J$ and $0.14\sigma_J$ is between $4$ and $35$ percent of the one of the halo next to it, whereas no gap is present for $M_{gas}/M\leq 0.015$. The gap is also present in the solution of the model, although it is less deep. Hence, few gas particles are in resonance with the oscillation of the core. For the amplitudes of this oscillation found in section~\ref{SubSec:FarCore}, between $0.6$ and $0.06$, Eq.~(\ref{Eq:omegab}) gives $2\pi/\omega_b$ between $15\tau_1$ and $48\tau_1$, which is of the order of the time $15\tau_1$ to $18\tau_1$ at which the amplitude passes through its minimum. This is consistent with a damping of the oscillation by the resonant particles which is interrupted when these particles have been trapped, as for a plasma wave~\cite{tO65}.
+
+\begin{figure}[htp]
+\centerline{\includegraphics[width=\textwidth]{figuras/modelo_estado.pdf}}
+\caption{State of the gas at late times for the reference family as a function of $\mu$: PIC simulations and epicyclic model. Fraction of the mass with $J < 0.2\sigma_J$ and mass fraction $m_c$ of the core, both averaged over $t\geq 20\tau_1$, and mean value of $|h_1|/h_0$ over $10\leq t/\tau_1\leq 20$. The model uses the lattice $N_J\times N_Q = 400\times 100$; the PIC simulations use $400\times 100$ for $M_{gas}/M = 0.01$, $0.02$ to $0.024$ and $0.1$, the lattice with $3200\times 100$ points for $0.025$, and $400\times 25$ otherwise.}
+\label{Fig:ModelState}
+\end{figure}
+
+\begin{figure}[htp]
+\centerline{\includegraphics[width=\textwidth]{figuras/modelo_series.pdf}}
+\caption{Amplitude of the radial oscillation of the core for the six masses of the reference family between $\mu = 0.43$ and $\mu = 0.48$: PIC simulations ($a_c$, as in Fig.~\ref{Fig:CloudState}(b)) and epicyclic model ($|\zeta_c|/\sqrt{\kappa_0}$, with $\zeta_c$ the center of the particles which lie in the core at the end of the solution).}
+\label{Fig:ModelSeries}
+\end{figure}
+
+Figures~\ref{Fig:ModelState} and~\ref{Fig:ModelSeries} compare the solutions of the model with the PIC simulations of the reference family. For $\mu\leq 0.37$, where the gas mixes, the model reproduces $|h_1|$ and the mass with $J < 0.2\sigma_J$ within $5$ percent; for $M_{gas}/M = 10^{-3}$ the value of $|h_1|$ is at the level of the numerical noise of both computations. In particular, the model reproduces the fact that the mixed state differs from the average of the initial DF over the angle variable: for $M_{gas}/M = 0.01$ the fraction of the mass with $J < 0.2\sigma_J$ is $0.060$ in the model, compared with $0.061$ in the PIC simulation and with $0.005$ in the absence of self-gravity. For $0.43\leq\mu\leq 0.48$ the model reproduces the formation of the core and the evolution of its oscillation, that is, the first decay of the amplitude, its minimum and its subsequent growth, see Fig.~\ref{Fig:ModelSeries}. In this range the model gives $|h_1|$ between $0.57$ and $0.67$ times and $m_c$ between $0.84$ and $0.88$ times the value of the PIC simulation with the same mass, which are the values of the PIC simulations with a mass which is smaller by $4$ to $8$ percent. For $\mu\geq 0.52$ the mass of the core is smaller in the model than in the PIC simulations by $5$ to $24$ percent.
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{l|cc|cc|cc|cc}
+\hline\hline
+ & & & \multicolumn{2}{c|}{$|h_1|/h_0$} & \multicolumn{2}{c|}{mass with $J < 0.2\sigma_J$} & \multicolumn{2}{c}{$m_c$} \\
+family & $M_{gas}/M$ & $\mu$ & PIC & model & PIC & model & PIC & model \\
+\hline
+\TabModeloFamilias
+\hline
+\end{tabular}
+\end{center}
+\caption{PIC simulations and epicyclic model for the cloud in the Kepler potential and for the clouds with other widths in the isochrone potential; the parameters which are not indicated are those of the reference family. Mean value of $|h_1|/h_0$ over $10\leq t/\tau_1\leq 20$, fraction of the mass with $J < 0.2\sigma_J$ and mass fraction $m_c$ of the core, both averaged over $t\geq 20\tau_1$; $m_c$ is given when both computations yield a compact core. In each case the model uses the lattice of the PIC simulation.}
+\label{Tab:ModelFamilies}
+\end{table}
+
+Table~\ref{Tab:ModelFamilies} shows the same comparison for the other families of section~\ref{Sec:FarFromEq}. In the regime in which the gas mixes ($\mu\leq 0.42$) the model reproduces $|h_1|$ within $16$ percent, except for the two smallest values, and the mass with $J < 0.2\sigma_J$ within $12$ percent. The effect of the width in angle is reproduced: for $\mu = 0.52$ the cloud with $\sigma_Q = 0.4$ leaves a core with $m_c = 0.082$, compared with $0.071$ in the model, whereas in the reference family $m_c = 0.232$, compared with $0.184$. In the Kepler potential the agreement is the same as in the isochrone potential. The dependence on $\sigma_J$ shows the limit of the model: for the clouds with a core, $m_c$ is smaller in the model than in the PIC simulations by $4$ to $5$ percent for $\sigma_J = 0.05$, by $5$ to $24$ percent for $\sigma_J = 0.1$ and by $35$ percent for $\sigma_J = 0.2$. The ratio in the assumption~(i) of section~\ref{SubSec:EpiDerivation} is $0.21$, $0.29$ and $0.41$ in these three cases, such that the error grows with the eccentricity of the orbits, as expected from an expansion to leading order in this ratio.
+
+Since the model is cheaper than the PIC simulations, we have solved it up to $t = 100\tau_1$ for $M_{gas}/M = 0.02$, $0.022$, $0.025$ and $0.03$, and for $M_{gas}/M = 0.02$ and $0.025$ also on two coarser lattices. In none of the cases does the oscillation of the core disappear. For $\mu = 0.43$ the mean value of $|h_1|/h_0$ grows after the minimum of the amplitude, from $0.007$ over $10\leq t/\tau_1\leq 20$ to $0.036$ over $40\leq t/\tau_1\leq 60$, where the two finer lattices still agree. At later times the results depend on the lattice, and for all the masses they approach values between $0.045$ and $0.07$, which are $1.4$ to $2.1$ times the value $N_{eff}^{-1/2} = 0.033$ for particles with random angles. Hence, beyond $60\tau_1$ the solutions are affected by the finite number of particles, and the model does not decide either whether the oscillation of the core persists indefinitely.
+
+In summary, the epicyclic model describes the transport of the gas in the plane of the complex amplitudes of the radial oscillations by a flow which consists of the differential rotation due to the external potential and of the rotation which is induced by the gas itself. It explains why the core forms at the circular orbit, where the differential rotation vanishes, it gives the frequencies of the mixed states and of the oscillation of the core, and it locates the resonance between this oscillation and the gas particles of the halo. It is of leading order in the eccentricity of the orbits, and it does not give the mass of the core or the damping rate of its oscillation in closed form; these are obtained from its numerical solution.
