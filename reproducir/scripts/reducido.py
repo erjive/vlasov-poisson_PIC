@@ -413,6 +413,7 @@ SERIES = {
             + [(n, 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=nl, sl=s, ancho=2.5), None)
                for n, s, nl in (('rL020b_0.05', 0.02, 20), ('rL040b_0.05', 0.04, 30))]),
     'Lf5g': [('rL080b_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=70, sl=0.08, ancho=2.5), None)],
+    'Lf5b': [('rL060b_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=50, sl=0.06, ancho=2.5), None)],
 }
 
 
