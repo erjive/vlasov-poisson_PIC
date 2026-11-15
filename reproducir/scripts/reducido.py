@@ -13,7 +13,8 @@ con G = sqrt(|z|^2 - d^2) + d asin(d/|z|) si |d| < |z| y (pi/2)|d| si no, y P = 
 El dato inicial es el del PIC: la retícula de puntos medios en (Q, J) recortada, con el peso
 exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L está distribuido.
 
-    python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g   corre lo que falte de una serie
+    python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g|formas_p0|formas_p4|formas_h05
+                                                                corre lo que falte de una serie
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
     python3 reducido.py tablas | figuras                        tablas y figuras de las notas
@@ -72,6 +73,33 @@ def tau1(sj=0.1, nombre='isocrono'):
     return 2*np.pi/((jlo + c)**-3 - (jhi + c)**-3)
 
 
+# Formas del factor en J del dato (2026-11-15; reproducir/scripts/formas.py): None es la nube del artículo,
+# J^2 exp(-J^2/s_J^2); ('p', p) es J^p exp(-J^2/s_J^2); ('hueco', a) es (J - a)_+^2 exp(-J^2/s_J^2), cuyo soporte no
+# llega a la órbita circular, como los datos de Chaturvedi y Luk. Con a = 0 o p = 2 es la nube del artículo.
+def perfil_J(J, sj=0.1, perfil=None):
+    J = np.asarray(J, float)
+    if perfil is None:
+        return J**2*np.exp(-J**2/sj**2)
+    tipo, x = perfil
+    if tipo == 'p':
+        return J**x*np.exp(-J**2/sj**2)
+    if tipo == 'hueco':
+        return np.clip(J - x, 0.0, None)**2*np.exp(-J**2/sj**2)
+    raise ValueError(f'perfil desconocido: {perfil}')
+
+
+def banda_perfil(perfil=None, sj=0.1, nombre='isocrono', l0=LFIX):
+    """(Omega_min, Omega_max, Delta J, tau_1) del potencial externo en el intervalo de J en el que el factor en J
+    del dato pasa del 1 % de su máximo, como bulto.banda() para la nube del artículo (sección 6A)."""
+    J = np.linspace(0.0, 8*sj, 400001)[1:]
+    f = perfil_J(J, sj, perfil)
+    dentro = J[f >= 0.01*f.max()]
+    jlo, jhi = dentro[0], dentro[-1]
+    c = c_de_L(l0, nombre)
+    omin, omax = (jhi + c)**-3, (jlo + c)**-3
+    return omin, omax, jhi - jlo, 2*np.pi/(omax - omin)
+
+
 SALIDA = 10.0                                   # como el PIC: una instantánea cada 10 unidades de tiempo
 _dp = ctypes.POINTER(ctypes.c_double)
 _fp = ctypes.POINTER(ctypes.c_float)
@@ -97,12 +125,22 @@ def biblioteca():
     return lib, libf
 
 
-def reticula(nj, nq, umbral=1e-7, sj=0.1, sq=0.1):
-    """Partículas (Q, J, peso) de la retícula recortada, en el orden del PIC (J fuera, Q dentro)."""
+def reticula(nj, nq, umbral=1e-7, sj=0.1, sq=0.1, perfil=None):
+    """Partículas (Q, J, peso) de la retícula recortada, en el orden del PIC (J fuera, Q dentro). Con perfil
+    (perfil_J) cambia el factor en J; las filas se recortan con ese factor relativo a su máximo en la retícula."""
     import bulto as B
-    J, Q = B.recorte_reticula(nj, nq, umbral, sj, sq)
+    if perfil is None:
+        J, Q = B.recorte_reticula(nj, nq, umbral, sj, sq)
+        JJ, QQ = np.meshgrid(J, Q, indexing='ij')
+        F = np.exp(-np.sin(0.5*QQ)**2/sq**2)*np.exp(-JJ**2/sj**2)*JJ**2
+        return QQ.ravel(), JJ.ravel(), F.ravel()
+    J = (np.arange(nj) + 0.5)*6*sj/nj
+    Q = (np.arange(nq) + 0.5)*2*np.pi/nq
+    fj = perfil_J(J, sj, perfil)
+    fq = np.exp(-np.sin(0.5*Q)**2/sq**2)
+    J, Q = J[fj >= umbral*fj.max()], Q[fq >= umbral]
     JJ, QQ = np.meshgrid(J, Q, indexing='ij')
-    F = np.exp(-np.sin(0.5*QQ)**2/sq**2)*np.exp(-JJ**2/sj**2)*JJ**2
+    F = np.exp(-np.sin(0.5*QQ)**2/sq**2)*perfil_J(JJ, sj, perfil)
     return QQ.ravel(), JJ.ravel(), F.ravel()
 
 
@@ -206,12 +244,14 @@ class Modelo:
 
 
 def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g=None, guardar=True, verboso=True,
-           esquema='strang', simple=True, pot='isocrono', nl=1, sl=0.0, l0=LFIX, ancho=2.0, efectos='ambos'):
+           esquema='strang', simple=True, pot='isocrono', nl=1, sl=0.0, l0=LFIX, ancho=2.0, efectos='ambos', perfil=None):
+    if perfil is not None and nl > 1:
+        raise ValueError('las formas del dato en J solo están con L fija')
     if nl > 1:
         Q, J, L, w = reticula_L(nj, nq, nl, sl, l0, ancho, sj=sj, sq=sq)
         M = Modelo(Q, J, w, masa, g, esquema, simple, pot, L, l0, efectos)
     else:
-        Q, J, w = reticula(nj, nq, sj=sj, sq=sq)
+        Q, J, w = reticula(nj, nq, sj=sj, sq=sq, perfil=perfil)
         M = Modelo(Q, J, w, masa, g, esquema, simple, pot, None, l0)
     npas = int(round(SALIDA/dt)); nsal = int(round(tfin/SALIDA))
     X = np.empty((nsal + 1, M.n), np.float32); Y = np.empty((nsal + 1, M.n), np.float32)
@@ -234,7 +274,9 @@ def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g
         np.savez(os.path.join(DATOS, f'{nombre}.npz'), t=t, X=X, Y=Y, m=M.m, inv=inv,
                  par=np.array([masa, nj, nq, dt, tfin, sj, sq, M.g, fondo(pot, l0)['c'], M.kappa, nl, sl, l0, ancho,
                                ('ambos', 'frecuencia', 'nucleo').index(efectos)]),
-                 L=(M.L if M.L is not None else np.array([l0])))
+                 L=(M.L if M.L is not None else np.array([l0])),
+                 perfil_tipo=np.array('' if perfil is None else perfil[0]),
+                 perfil_x=np.array(0.0 if perfil is None else float(perfil[1])))
     return t, X, Y, M.m, inv
 
 
@@ -298,6 +340,8 @@ def diagnosticos(nombre, rehacer=False):
     c, kappa = (float(par[8]), float(par[9])) if len(par) > 8 else (C_L, KAPPA)
     l0 = float(par[12]) if len(par) > 12 else LFIX
     tau = tau1(sj, 'kepler' if abs(c - l0) < 1e-12 else 'isocrono')
+    if 'perfil_tipo' in d.files and str(d['perfil_tipo']):
+        tau = banda_perfil((str(d['perfil_tipo']), float(d['perfil_x'])), sj)[3]
     np.savez(sal, **medidas_plano(d['t'], d['X'], d['Y'], d['m'], sj, tau, kappa))
     return np.load(sal)
 
@@ -415,6 +459,23 @@ SERIES = {
     'Lf5g': [('rL080b_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=70, sl=0.08, ancho=2.5), None)],
     'Lf5b': [('rL060b_0.05', 0.05, 200, 50, 5.0, 1e4, dict(esquema='strang', nl=50, sl=0.06, ancho=2.5), None)],
 }
+# Formas del dato en J a igual mu (reproducir/scripts/formas.py, 2026-11-15). La corrida rF_<forma>_<1000 M_ref> tiene
+# la masa con la que su mu es el de la nube del artículo de masa M_ref (formas.py masas lo comprueba). Retícula de
+# 400 x 100 y paso de la serie 'referencia', cuyas corridas R### son la forma p2; t_fin = 30 tau_1 si pasa de 10^4.
+FORMAS_PERFIL = {'p0': ('p', 0.0), 'p4': ('p', 4.0), 'h05': ('hueco', 0.05)}
+FORMAS_TFIN = {'p0': 11800.0, 'p4': 10000.0, 'h05': 11800.0}
+FORMAS_MASAS = {
+    'p0': {0.01: 0.00975, 0.015: 0.01463, 0.02: 0.0195, 0.025: 0.02438, 0.03: 0.02925, 0.04: 0.039, 0.05: 0.04875,
+           0.07: 0.06826, 0.1: 0.09751, 0.15: 0.14626},
+    'p4': {0.01: 0.00925, 0.015: 0.01387, 0.02: 0.01849, 0.025: 0.02312, 0.03: 0.02774, 0.04: 0.03699, 0.05: 0.04623,
+           0.07: 0.06473, 0.1: 0.09247, 0.15: 0.1387},
+    'h05': {0.01: 0.00651, 0.015: 0.00976, 0.02: 0.01301, 0.025: 0.01626, 0.03: 0.01952, 0.04: 0.02602, 0.05: 0.03253,
+            0.07: 0.04554, 0.1: 0.06505, 0.15: 0.09758},
+}
+SERIES['formas_p2'] = [('R150', 0.15, 400, 100, 2.5, 1e4, {}, None)]   # la nube del artículo con el mu más alto del barrido
+for _n in FORMAS_PERFIL:
+    SERIES[f'formas_{_n}'] = [(f'rF_{_n}_{int(round(mr*1000)):03d}', m, 400, 100, 2.5, FORMAS_TFIN[_n],
+                               dict(perfil=FORMAS_PERFIL[_n]), None) for mr, m in FORMAS_MASAS[_n].items()]
 
 
 def serie(nombre):
