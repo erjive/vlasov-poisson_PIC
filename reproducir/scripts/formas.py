@@ -16,6 +16,7 @@ cada forma con el mu de la nube del artículo de masa M_ref es M = M_ref (c_p2/c
 
     python3 formas.py masas     coeficientes y masas (las que llevan reducido.SERIES y nube_L.CORRIDAS)
     python3 formas.py tabla     resultados del modelo (y del PIC de VlasovPoisson_PIC_sp, si están)
+    python3 formas.py colapso   cruces de m_c y |h_1| como función de mu y de Gamma (con la mediana de J)
 """
 import os, sys
 import numpy as np
@@ -158,11 +159,67 @@ def tabla():
         print(f'      m_mix = {co[n]["mmix"]:.4f}, tau_1 = {co[n]["tau"]:.0f}')
 
 
+OMEGA_P = -3.0*R.c_de_L(L0)**-4                 # dOmega/dJ en la órbita circular del isócrono con L_0 = 2 (-0.08831)
+
+
+def J_mediana(perfil):
+    """Mediana de la acción del dato (pesada con la masa) en la retícula de 400 x 100: la distancia típica de la nube
+    a la órbita circular en el plano de zeta es (2 J_med)^(1/2)."""
+    Q, J, w = R.reticula(400, 100, sj=SJ, sq=SQ, perfil=perfil)
+    o = np.argsort(J); c = np.cumsum(w[o])/w.sum()
+    return J[o][np.searchsorted(c, 0.5)]
+
+
+def gamma(n, M):
+    """Gamma = g M_gas/(|Omega_0'| J_med^(3/2)): el parámetro del modelo epicíclico (Eq. Gamma del artículo) con la
+    mediana de la acción de la nube en lugar de s_J."""
+    return R.G*M/(abs(OMEGA_P)*J_mediana(PERFILES[n])**1.5)
+
+
+def _cruce(x, y, nivel):
+    o = np.argsort(x); x, y = x[o], np.maximum.accumulate(y[o])
+    for i in range(1, len(x)):
+        if y[i - 1] < nivel <= y[i]:
+            return np.exp(np.log(x[i - 1]) + (nivel - y[i - 1])/(y[i] - y[i - 1])*(np.log(x[i]) - np.log(x[i - 1])))
+    return np.nan
+
+
+def colapso():
+    """Dónde cruzan m_c y |h_1|/h_0 ciertos niveles en las series del modelo, como función de mu y de Gamma."""
+    co = coeficientes()
+    datos = {}
+    for n in PERFILES:
+        fil = []
+        for mref in MASAS_REF:
+            nm = R._ref(mref) if n == 'p2' else nombre_modelo(n, mref)
+            if os.path.exists(os.path.join(R.DATOS, nm + '_diag.npz')) or os.path.exists(os.path.join(R.DATOS, nm + '.npz')):
+                h1, mc, _ = _numeros(R.diagnosticos(nm))
+                M = masa(n, mref, co)
+                fil.append((co[n]['c']*np.sqrt(M), gamma(n, M), mc, h1))
+        datos[n] = np.array(fil)
+    print('J_med: ' + ', '.join(f'{n} {J_mediana(pf):.4f}' for n, pf in PERFILES.items()))
+    print('cruces (p0 ya está por encima en todo el barrido); cociente entre el mayor y el menor de p2, p4 y h05:')
+    for col, nivel, txt in ((2, 0.1, 'm_c = 0.1'), (2, 0.2, 'm_c = 0.2'), (2, 0.3, 'm_c = 0.3'), (3, 0.1, '|h1| = 0.1')):
+        for k, nom in ((0, 'mu'), (1, 'Gamma')):
+            v = {n: _cruce(d[:, k], d[:, col], nivel) for n, d in datos.items()}
+            r = np.array([v['p2'], v['p4'], v['h05']])
+            print(f'  {txt:10} {nom:5}: ' + '  '.join(f'{n} {x:6.3f}' for n, x in v.items()) + f'   {r.max()/r.min():.2f}')
+    print('corridas del PIC: Gamma, m_c, |h1|/h0')
+    for n in ('p2', 'p4', 'h05'):
+        for mref in MASAS_PIC:
+            p = _pic(nombre_pic(n, mref))
+            if p is not None:
+                h1, mc, _ = _numeros(p[0])
+                print(f'  {nombre_pic(n, mref):10} Gamma = {gamma(n, masa(n, mref, co)):.3f}  m_c = {mc:.3f}  |h1| = {h1:.2e}')
+
+
 if __name__ == '__main__':
     paso = sys.argv[1] if len(sys.argv) > 1 else 'masas'
     if paso == 'masas':
         masas()
     elif paso == 'tabla':
         tabla()
+    elif paso == 'colapso':
+        colapso()
     else:
         sys.exit(__doc__)
