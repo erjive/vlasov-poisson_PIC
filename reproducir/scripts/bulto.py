@@ -778,6 +778,25 @@ def tablas():
         salto = np.angle(np.exp(1j*(np.polyval(p2, M['tmin']) - np.polyval(p1, M['tmin']))))
         print(f'  {n:5} mínimo en {M["tmin"]:.1f} tau_1; frecuencia antes {p1[0]/TAU1:.5f} y después {p2[0]/TAU1:.5f};'
               f' salto de fase {salto/np.pi:+.2f} pi')
+    print('\nm_c de las otras familias con mu >= 0.48 frente a la familia de referencia al mismo mu (interpolación lineal),'
+          '\ny mu al que la referencia alcanza ese m_c (Sección 6E).')
+    from scipy.special import i0e
+    ref = [n for n, m in ESTADO if n != 'B0'] + [n for n, m in CRUCE if n not in dict(ESTADO)]
+    mu_r, mc_r = np.array(sorted((escalas(n)[2], float(nucleo(n)['mnuc'])) for n in ref)).T
+    k = (mu_r >= 0.42) & (mu_r <= 0.9)                       # tramo en que m_c crece con mu
+    for nombre, base, conv in FAMILIAS:
+        if 'B0' in base:
+            continue
+        for n in base:
+            mu = escalas(n)[2]
+            if mu >= 0.475:
+                mc = float(nucleo(n)['mnuc']); mr = np.interp(mu, mu_r, mc_r)
+                print(f'  {nombre:28} {n:10} mu {mu:.3f}  m_c {mc:.3f}  referencia {mr:.3f}  cociente {mc/mr:.2f}'
+                      f'  mu equivalente {np.interp(mc, mc_r[k], mu_r[k]):.3f}')
+    m_mix = 0.2/(np.e*np.sqrt(np.pi))
+    print(f'  m_c de la referencia en mu = 0.69: {np.interp(0.69, mu_r, mc_r):.3f}')
+    for sq in (0.1, 0.2, 0.4):
+        print(f'  cota de Liouville para s_Q = {sq}: m_c <= m_mix F_max/Fhat_max = {m_mix/i0e(1/(2*sq*sq)):.3f}')
 
 
 def colores(w):
