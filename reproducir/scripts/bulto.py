@@ -643,22 +643,25 @@ def articulo():
     for a, l in zip(ax, 'ab'):
         a.grid(alpha=0.3); a.set_title(f'({l})', loc='left', fontsize=9)
     fig.savefig(os.path.join(destino, 'bulto_estado.pdf')); plt.close(fig)
-    # 4. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 y densidad en torno al máximo, frente a mu.
+    # 4. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 y masa m_c en la elipse del máximo, frente a mu; la línea
+    # punteada es la cota m_mix = 0.05*4/(e sqrt(pi)) de un gas mezclado a acción fija.
     estilos = [('o', 'k'), ('v', '#0072B2'), ('^', '#009E73'), ('s', '#E69F00'), ('D', '#CC79A7'), ('*', '#D55E00')]
     fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.2), layout='constrained')
     filas = []
     for (nombre, base, conv), (mk, col) in zip(FAMILIAS, estilos):
         x = [escalas(n)[2] if info[n]['sg'] else 0.0 for n in base]
         xc = [escalas(n)[2] for n in conv]
-        for a, fun in zip(ax, (h1_ventana, lambda n: float(nucleo(n)['rho_p']))):
+        for a, fun in zip(ax, (h1_ventana, lambda n: float(nucleo(n)['mnuc']))):
             a.semilogy(x, [fun(n) for n in base], mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
             if conv:
                 a.semilogy(xc, [fun(n) for n in conv], mk, color=col, mfc='none', ms=6.5, ls='none',
                            label='finer lattices')
         filas += [(n, m, h1_ventana(n)) for n, m in zip(base + conv, x + xc)]
     ax[0].set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$'); ax[0].set_ylim(3e-5, 2)
-    ax[1].set_ylabel('$m_c/m_{mix}$ for $t\\geq 20\\tau_1$'); ax[1].set_ylim(0.5, 30)
-    ax[1].axhline(1, color='k', lw=0.6, ls=':')
+    m_mix = 0.2/(np.e*np.sqrt(np.pi))
+    ax[1].set_ylabel('$m_c$ for $t\\geq 20\\tau_1$'); ax[1].set_ylim(0.02, 1.0)
+    ax[1].axhline(m_mix, color='k', lw=0.6, ls=':')
+    ax[1].text(1.17, 1.08*m_mix, '$m_{mix}$', ha='right', va='bottom', fontsize=7)
     for a, l in zip(ax, 'ab'):
         a.set_xlabel('$\\mu$'); a.set_xlim(-0.03, 1.2); a.grid(alpha=0.3)
         a.set_title(f'({l})', loc='left', fontsize=9)
@@ -745,7 +748,7 @@ def tablas():
     filas = []
     for n, m in ESTADO:
         M = medidas_articulo(n)
-        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ & ${M["rho_p"]:.1f}$ \\\\')
+        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ \\\\')
     _macro('TabEstado', 'tab_estado.tex', filas)
     filas = []
     for n, m in CRUCE:
@@ -756,8 +759,8 @@ def tablas():
     filas = []
     for pot, anchos, a, b in CRUCE_FAMILIAS:
         A, B_ = medidas_articulo(a), medidas_articulo(b)
-        filas.append(f'{pot} & {anchos} & ${A["mu"]:.2f}$ & {_sci(A["h1"])} & ${A["rho_p"]:.1f}$ & '
-                     f'${B_["mu"]:.2f}$ & {_sci(B_["h1"])} & ${B_["rho_p"]:.1f}$ \\\\')
+        filas.append(f'{pot} & {anchos} & ${A["mu"]:.2f}$ & {_sci(A["h1"])} & ${A["mc"]:.3f}$ & '
+                     f'${B_["mu"]:.2f}$ & {_sci(B_["h1"])} & ${B_["mc"]:.3f}$ \\\\')
     _macro('TabFamilias', 'tab_familias.tex', filas)
     print('tablas escritas en docs/articulo/tab_*.tex')
     print('\nPruebas de resolución (cuarta tanda). a_c: mínimo de la envolvente en 2-30 tau_1 (cuándo) y rango en t >= 25 tau_1.')
