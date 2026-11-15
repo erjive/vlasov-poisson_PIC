@@ -13,7 +13,7 @@ con G = sqrt(|z|^2 - d^2) + d asin(d/|z|) si |d| < |z| y (pi/2)|d| si no, y P = 
 El dato inicial es el del PIC: la retícula de puntos medios en (Q, J) recortada, con el peso
 exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L está distribuido.
 
-    python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g|formas_p0|formas_p4|formas_h05
+    python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g|formas_p0|formas_p4|formas_h05|formas2_p0|formas2_anillo|formas2_meseta|formas2_h05K
                                                                 corre lo que falte de una serie
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
@@ -75,7 +75,8 @@ def tau1(sj=0.1, nombre='isocrono'):
 
 # Formas del factor en J del dato (2026-11-15; reproducir/scripts/formas.py): None es la nube del artículo,
 # J^2 exp(-J^2/s_J^2); ('p', p) es J^p exp(-J^2/s_J^2); ('hueco', a) es (J - a)_+^2 exp(-J^2/s_J^2), cuyo soporte no
-# llega a la órbita circular, como los datos de Chaturvedi y Luk. Con a = 0 o p = 2 es la nube del artículo.
+# llega a la órbita circular, como los datos de Chaturvedi y Luk. Con a = 0 o p = 2 es la nube del artículo. Segunda
+# tanda: ('anillo', (J_0, w)), exp(-(J - J_0)^2/w^2), y ('meseta', (J_a, J_b)), constante en [J_a, J_b].
 def perfil_J(J, sj=0.1, perfil=None):
     J = np.asarray(J, float)
     if perfil is None:
@@ -85,6 +86,10 @@ def perfil_J(J, sj=0.1, perfil=None):
         return J**x*np.exp(-J**2/sj**2)
     if tipo == 'hueco':
         return np.clip(J - x, 0.0, None)**2*np.exp(-J**2/sj**2)
+    if tipo == 'anillo':                       # x = (J_0, w): exp(-(J - J_0)^2/w^2), estrecho y lejos de la órbita circular
+        return np.exp(-(J - x[0])**2/x[1]**2)
+    if tipo == 'meseta':                       # x = (J_a, J_b): constante en J_a <= J <= J_b (bolsa de agua en J)
+        return ((J >= x[0]) & (J <= x[1])).astype(float)
     raise ValueError(f'perfil desconocido: {perfil}')
 
 
@@ -276,7 +281,7 @@ def correr(nombre, masa, nj=400, nq=100, dt=5.0, tfin=10000.0, sj=0.1, sq=0.1, g
                                ('ambos', 'frecuencia', 'nucleo').index(efectos)]),
                  L=(M.L if M.L is not None else np.array([l0])),
                  perfil_tipo=np.array('' if perfil is None else perfil[0]),
-                 perfil_x=np.array(0.0 if perfil is None else float(perfil[1])))
+                 perfil_x=np.array(0.0 if perfil is None else perfil[1], dtype=float))
     return t, X, Y, M.m, inv
 
 
@@ -341,7 +346,8 @@ def diagnosticos(nombre, rehacer=False):
     l0 = float(par[12]) if len(par) > 12 else LFIX
     tau = tau1(sj, 'kepler' if abs(c - l0) < 1e-12 else 'isocrono')
     if 'perfil_tipo' in d.files and str(d['perfil_tipo']):
-        tau = banda_perfil((str(d['perfil_tipo']), float(d['perfil_x'])), sj)[3]
+        x = d['perfil_x']; x = float(x) if np.ndim(x) == 0 else tuple(float(v) for v in x)
+        tau = banda_perfil((str(d['perfil_tipo']), x), sj, 'kepler' if abs(c - l0) < 1e-12 else 'isocrono', l0)[3]
     np.savez(sal, **medidas_plano(d['t'], d['X'], d['Y'], d['m'], sj, tau, kappa))
     return np.load(sal)
 
@@ -473,6 +479,23 @@ FORMAS_MASAS = {
             0.07: 0.04554, 0.1: 0.06505, 0.15: 0.09758},
 }
 SERIES['formas_p2'] = [('R150', 0.15, 400, 100, 2.5, 1e4, {}, None)]   # la nube del artículo con el mu más alto del barrido
+# Segunda tanda de formas (2026-11-15; formas.py): rG_<forma>_<1000 Gamma> tiene la masa con la que
+# Gamma = g M/(|Omega_0'| J_med^(3/2)) vale lo que dice el nombre (J_med, mediana de la acción de la nube). El anillo,
+# estrecho y lejos de la órbita circular, separa las predicciones de mu y de Gamma; la meseta es una bolsa de agua en J;
+# h05K es h05 en el potencial de Kepler; p0 se repite a masas menores. (forma: perfil, potencial, N_J, dt, t_fin = 30 tau_1)
+FORMAS2 = {'p0': (('p', 0.0), 'isocrono', 400, 2.5, 11800.0),
+           'anillo': (('anillo', (0.15, 0.03)), 'isocrono', 800, 2.5, 21200.0),
+           'meseta': (('meseta', (0.05, 0.25)), 'isocrono', 400, 2.5, 13600.0),
+           'h05K': (('hueco', 0.05), 'kepler', 400, 1.25, 10000.0)}
+FORMAS2_MASAS = {
+    'p0': {0.05: 0.00125, 0.1: 0.0025, 0.15: 0.00376, 0.2: 0.00501, 0.25: 0.00626, 0.3: 0.00751, 0.35: 0.00877},
+    'anillo': {0.05: 0.00706, 0.1: 0.01411, 0.15: 0.02117, 0.2: 0.02823, 0.25: 0.03528, 0.3: 0.04234, 0.35: 0.0494, 0.45: 0.06351, 0.6: 0.08468, 0.8: 0.11291, 1.0: 0.14114},
+    'meseta': {0.05: 0.00703, 0.1: 0.01406, 0.15: 0.02109, 0.2: 0.02812, 0.25: 0.03515, 0.3: 0.04218, 0.35: 0.04921, 0.45: 0.06327, 0.6: 0.08436, 0.8: 0.11248, 1.0: 0.14061},
+    'h05K': {0.05: 0.00861, 0.1: 0.01722, 0.15: 0.02583, 0.2: 0.03444, 0.25: 0.04305, 0.3: 0.05167, 0.35: 0.06028, 0.45: 0.0775, 0.6: 0.10333, 0.8: 0.13777, 1.0: 0.17222}
+}
+for _n, (_pf, _pot, _nj, _dt, _tf) in FORMAS2.items():
+    SERIES[f'formas2_{_n}'] = [(f'rG_{_n}_{int(round(gm*1000)):03d}', m, _nj, 100, _dt, _tf, dict(perfil=_pf, pot=_pot), None)
+                               for gm, m in FORMAS2_MASAS[_n].items()]
 for _n in FORMAS_PERFIL:
     SERIES[f'formas_{_n}'] = [(f'rF_{_n}_{int(round(mr*1000)):03d}', m, 400, 100, 2.5, FORMAS_TFIN[_n],
                                dict(perfil=FORMAS_PERFIL[_n]), None) for mr, m in FORMAS_MASAS[_n].items()]
