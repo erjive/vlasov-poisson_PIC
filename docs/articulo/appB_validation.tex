@@ -3,7 +3,7 @@
 \label{Sec:Validation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this section we validate the numerical methods described in the previous section. We start with the mixing of the gas cloud~(\ref{Eq:Pulse}) in the absence of self-gravity, for which the exact solution is known. Next, we include the self-gravity of the cloud and show that the functions $h_n(t)$ need to be computed with the action-angle variables which belong to the total potential. Finally, we test the computation of the gravitational field in the collapse of a cold homogeneous sphere, and we report the conservation of the total energy in the simulations of section~\ref{Sec:FarFromEq}.
+In this appendix we validate the numerical methods described in section~\ref{Sec:Numerics}. We start with the mixing of the gas cloud~(\ref{Eq:Pulse}) in the absence of self-gravity, for which the exact solution is known. Next, we include the self-gravity of the cloud and show that the functions $h_n(t)$ need to be computed with the action-angle variables which belong to the total potential. Finally, we test the computation of the gravitational field in the collapse of a cold homogeneous sphere, and we report the conservation of the total energy in the simulations of section~\ref{Sec:FarFromEq}.
 
 
 \subsection{Mixing in the absence of self-gravity}
@@ -25,11 +25,7 @@ where $I_n$ denotes the modified Bessel function of the first kind of order $n$,
 \end{equation}
 For $\sigma_Q = 0.1$ one has $z = 50$, and in this case $I_n(z)/I_0(z)$ differs from $e^{-n^2/(2z)}$ by less than one percent for $|n|\leq 16$. Hence, the narrower the pulse is in the angle variable, the more harmonics it contains: here the amplitudes of those with $|n|\leq 2\sqrt{z}\approx 14$ are larger than $e^{-2}\approx 0.14$ times the one of the harmonic $n = 0$. It follows from Eqs.~(\ref{Eq:hnFree},\ref{Eq:PulseFourier}) that $|h_n(0)|/h_0 = I_n(z)/I_0(z)$, which is equal to $0.990$, $0.960$, $0.913$ and $0.851$ for $n = 1,2,3,4$, and that $h_n(t)$ is given by an integral over $J$, which we compute with the trapezoidal rule on $2\times 10^5$ subintervals of $0\leq J\leq 6\sigma_J$.
 
-\begin{figure}[htp]
-\centerline{\includegraphics[width=0.85\textwidth]{figuras/validacion_pulso.pdf}}
-\caption{Mixing of the initial datum~(\ref{Eq:Pulse}) in the isochrone potential when self-gravity is neglected. Shown are the computational particles in the $(r,p_r)$-plane (upper panels) and in the plane of the action-angle variables (lower panels) at four different times, for a lattice with $N_J\times N_Q = 800\times 64$ points. The color indicates the mass of each particle relative to the largest one, and only particles whose mass exceeds $10^{-3}$ of the latter are shown.}
-\label{Fig:Pulse}
-\end{figure}
+
 
 \begin{table}[htp]
 \begin{center}
