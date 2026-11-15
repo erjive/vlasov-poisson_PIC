@@ -742,13 +742,10 @@ def tablas():
     tab_familias.tex) e imprime las cifras del texto que no están en ellas: las pruebas de resolución de la
     cuarta tanda a mu = 0.43 y 0.48 y el salto de fase de la oscilación del núcleo en su mínimo."""
     from scipy.signal import hilbert
-    f2 = lambda x: f'{x:.2f}'
     filas = []
     for n, m in ESTADO:
         M = medidas_articulo(n)
-        nuc = M['rho_p'] >= 1.5                    # hay un núcleo: m_c por encima de la cota de la mezcla
-        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ & ${M["rho_p"]:.1f}$ & '
-                     + (f'${f2(M["a12"])}$ & ${f2(M["a20"])}$' if nuc else '-- & --') + ' \\\\')
+        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ & ${M["rho_p"]:.1f}$ \\\\')
     _macro('TabEstado', 'tab_estado.tex', filas)
     filas = []
     for n, m in CRUCE:
