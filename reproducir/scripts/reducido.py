@@ -14,6 +14,7 @@ El dato inicial es el del PIC: la retícula de puntos medios en (Q, J) recortada
 exp(-sin^2(Q/2)/s_Q^2) J^2 exp(-J^2/s_J^2), por exp(-(L - L_0)^2/s_L^2) L si L está distribuido.
 
     python3 reducido.py serie referencia|familias|largas|L|Lb|control|Lf2|Lf5|Lf5g|formas_p0|formas_p4|formas_h05|formas2_p0|formas2_anillo|formas2_meseta|formas2_h05K
+                              |ley_M070|ley_M100|ley_J05M010|ley_J20M080|ley_KM040
                                                                 corre lo que falte de una serie
     python3 reducido.py correr <nombre> <M_gas> [nj nq dt tfin esquema s_J s_Q isocrono|kepler N_L s_L]
     python3 reducido.py comparar [<reducido>:<corrida del PIC> ...]   tablas frente al PIC (bulto.py)
@@ -499,6 +500,41 @@ for _n, (_pf, _pot, _nj, _dt, _tf) in FORMAS2.items():
 for _n in FORMAS_PERFIL:
     SERIES[f'formas_{_n}'] = [(f'rF_{_n}_{int(round(mr*1000)):03d}', m, 400, 100, 2.5, FORMAS_TFIN[_n],
                                dict(perfil=FORMAS_PERFIL[_n]), None) for mr, m in FORMAS_MASAS[_n].items()]
+
+
+# La ley con dos parámetros, Gamma y chi (2026-11-16; predicción registrada antes de correr en
+# docs/articulo/prediction_L_scaling.md). chi = |dOmega/dL| sigma_L sqrt(J_med)/(g M_gas) compara la dispersión de las
+# frecuencias de las capas de L con la rotación que la nube induce a su distancia de la órbita circular
+# (VlasovPoisson_PIC_sp/reproducir/scripts/nube_L.py, chi_de). Cada familia lleva L igual y cuatro anchuras s_L con
+# chi = 0.15, 0.25, 0.35 y 0.5, con el menor N_L que cumple la cota de 7e-4 de `nube_L.py reticulas`, en la retícula de
+# 200 x 50 de las series L anteriores y hasta 30 tau_1. Las mismas partículas van al PIC (tanda 'ley' de nube_L.py, que
+# toma de aquí la tabla y los nombres). El paso del esquema de segundo orden es 5 como en las series L, y 2.5 donde la
+# serie con L fija ya usaba la mitad del paso (s_J = 0.2, Kepler) y con las dos masas mayores. Comprobado con L igual
+# (2100 partículas) frente a la mitad del paso: m_c cambia 0.0 % (J05M010), 1.4 % (J20M080), 0.4 % (KM040) y 3.4 %
+# (M100); con M070 cambiaba 1.6 % entre 5 y 2.5, y por eso lleva 2.5.
+LEY = {  # familia: (M_gas, s_J, potencial, dt del modelo, t_fin, ((s_L, N_L), ...))
+    'M070':    (0.07, 0.1,  'isocrono', 2.5, 10000.0, ((0.022, 20), (0.036, 28), (0.050, 40), (0.072, 60))),
+    'M100':    (0.10, 0.1,  'isocrono', 2.5, 10000.0, ((0.031, 24), (0.052, 40), (0.072, 60), (0.103, 90))),
+    'J05M010': (0.01, 0.05, 'isocrono', 5.0, 17700.0, ((0.0044, 10), (0.0073, 14), (0.0102, 16), (0.0146, 20))),
+    'J20M080': (0.08, 0.2,  'isocrono', 2.5, 6000.0,  ((0.0175, 12), (0.029, 16), (0.041, 20), (0.058, 28))),
+    'KM040':   (0.04, 0.1,  'kepler',   2.5, 5000.0,  ((0.0077, 12), (0.0129, 14), (0.018, 18), (0.0257, 26))),
+}
+
+
+def nombre_ley(fam, sl):
+    """Nombres de la corrida del PIC y de la del modelo de la familia fam de LEY con anchura s_L (0: L igual)."""
+    k = int(round(sl*1e4)); m = LEY[fam][0]
+    if fam.startswith('M'):                     # como las series anteriores: M030_s020 y rL020b_0.03
+        return f'{fam}_s{k//10:03d}', ('rL0' if k == 0 else f'rL{k//10:03d}b') + f'_{m:g}'
+    return f'{fam}_s{k:04d}', f'r{fam}_L{k:04d}'
+
+
+for _f, (_m, _sj, _pot, _dt, _tf, _S) in LEY.items():
+    _op = dict(esquema='strang', sj=_sj, pot=_pot)
+    # las más grandes primero: si el trabajo se corta, falta lo barato
+    SERIES[f'ley_{_f}'] = ([(nombre_ley(_f, s)[1], _m, 200, 50, _dt, _tf, dict(_op, nl=nl, sl=s, ancho=2.5), None)
+                            for s, nl in _S[::-1]]
+                           + [(nombre_ley(_f, 0.0)[1], _m, 200, 50, _dt, _tf, _op, None)])
 
 
 def serie(nombre):
