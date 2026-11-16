@@ -82,8 +82,8 @@ Stage 2, half of the core for M_gas/M = 0.15:
 | B | 0.33 - 0.36 (0.66 m_c, m_c = 0.50 - 0.54) | 3.6 - 3.9 % |
 | C | the value of the corrected model; rough estimate 0.45 - 0.55 | 4.9 - 6.0 % |
 
-The rough estimate for C uses the difference between PIC and model at the half, which grows
-like 3.9 M_gas/M in the three largest masses, extrapolated to 0.58 at M_gas/M = 0.15:
+The rough estimate for C uses the difference between PIC and model at the half, which is
+3.9 M_gas/M for the two largest masses (0.27 and 0.39), extrapolated to 0.58 at M_gas/M = 0.15:
 0.22/(1 - 0.58) = 0.52. It is an extrapolation and not a result of the model.
 
 ## What each outcome means for the article
