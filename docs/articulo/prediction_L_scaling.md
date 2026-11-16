@@ -117,3 +117,38 @@ the half 10 to 20 percent below the one of the PIC.
 - The model is of leading order in the eccentricity of the orbits, and for sigma_J = 0.2 the ratio
   between the amplitude of the radial oscillation and R_0 is 0.41.
 - The coherence between the layers depends on N_L and is not part of the prediction.
+
+## Outcome
+
+Added on 2026-11-16, after the runs (PIC: jobs 228533 to 228557; model: 228558 to 228562; all
+finished, largest relative change of the energy 3.7e-5). Numbers from `nube_L.py frontera` and
+`figura_chi`. The text above this section was not changed.
+
+| family | Gamma | sigma_L/L_0 at one half | chi (PIC) | chi (model) | primary prediction (0.22 - 0.32) |
+|---|---|---|---|---|---|
+| M070 | 0.800 | 1.48 % | 0.291 | 0.211 | inside |
+| M100 | 1.143 | 2.60 % | 0.357 | 0.217 | outside |
+| J05M010 | 0.323 | 0.22 % | 0.218 | 0.211 | 0.002 below the lower end |
+| J20M080 | 0.323 | 1.25 % | 0.303 | 0.239 | inside |
+| KM040 | 0.335 | 0.49 % | 0.270 | 0.216 | inside |
+
+- Primary: three of five inside, one at the lower end, one outside.
+- Secondary (relative excess at chi = 0.15, 0.25, 0.35, 0.5; predicted 0.76, 0.55, 0.35, 0.17, each
+  +- 0.15): M070 0.79, 0.57, 0.40, 0.20 (all inside); M100 0.86, 0.68, 0.51, 0.23 (one outside);
+  J05M010 0.70, 0.40, 0.19, 0.01 (two outside); J20M080 0.84, 0.62, 0.39, 0.19 (all inside); KM040
+  0.82, 0.54, 0.33, 0.10 (all inside).
+- (S), the scaling with J_med and with the potential, holds against the alternative stated above:
+  the families with sigma_J = 0.05 and 0.2 give chi = 0.218 and 0.303, not 0.56 and 0.14. It is not
+  exact: at Gamma of about 0.33 the half lies at chi = 0.218, 0.268 and 0.303 for sigma_J = 0.05, 0.1
+  and 0.2, and at 0.270 in the Kepler potential.
+- (L), the linear growth with the mass up to Gamma = 1.1, is refuted by M100. The estimate of the
+  article with its ratio fixed at 0.21, which was given above as the alternative (chi = 0.33 and
+  0.36), is the one which holds for the largest mass (0.291 and 0.357 measured): the ratio with
+  the rotation of the core at the half is 0.21, 0.18 and 0.20 for M_gas/M = 0.05, 0.07 and 0.10.
+- Model: its halves lie at chi = 0.21 to 0.24 in all the families, 3, 21, 20, 27 and 39 percent
+  below those of the PIC (J05M010, J20M080, KM040, M070, M100); the expectation was 10 to 20 percent.
+- The mass of the core of each layer differs from m_c by -2 to +6 percent for chi <= 0.25, by -1 to
+  +23 percent for chi = 0.35 and by +20 to +51 percent for chi = 0.5.
+- With equal angular momenta, on the lattice of 200 x 50 points, m_c = 0.180, 0.274, 0.215, 0.501
+  and 0.541 for J05M010, J20M080, KM040, M070 and M100 (0.186, 0.309, 0.234, 0.479 and 0.516 in the
+  runs of Section 6 on their lattices).
