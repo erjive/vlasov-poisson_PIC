@@ -18,6 +18,7 @@ Pasos:
     python3 respuesta_mezcla.py lineal <extraido.npz> <salida.npz> [--nj 2400] [--nq 64] [--dt 0.5] [--t1 30]
         evoluciones lineal y libre desde t0 (unos minutos cada una).
     python3 respuesta_mezcla.py comparar <salida.npz> ...   tabla de la corrida frente a lineal y libre.
+    python3 respuesta_mezcla.py resumen <salida.npz> ...    una línea por corrida, y figura (exe/demo_eta/respuesta/)
 
 La discretización es la de lineal.py: rejilla fija de NJ x NQ nodos en (Q, J), transporte exacto en Q por FFT,
 golpe del campo con separación de Strang y Poisson de capas esféricas, exacto en los nodos. dF(t0) se arma con los
@@ -108,7 +109,7 @@ def tabla_E_J(m, jmax, n=4000):
     return E, J
 
 
-def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=True):
+def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=True, mascara=None):
     """Evoluciones lineal y libre desde t0 del estado extraído e. Devuelve un diccionario con t, h_1 y h_2 (pesos
     de la masa) y D de cada una, y los controles: autoconsistencia de Phi_0 y h_1(t0) de las partículas y de la
     rejilla."""
@@ -125,6 +126,8 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
     c = 8*np.pi**2*L*2*np.pi*dJ                    # F_n(J_b) = sum_{i en b} m_i e^{-i n Q_i}/c
     F0 = np.bincount(b, weights=mi, minlength=nj)/c
     dF0 = savgol_filter(F0, nsg, 3, deriv=1, delta=dJ)
+    if mascara is not None:                     # el campo actúa solo sobre el gas con jlo <= J < jhi
+        dF0 = dF0*((Jn >= mascara[0]) & (Jn < mascara[1]))
     N = nq//2 - 1
     dF = np.zeros((nj, nq))
     for n in range(1, N + 1):
@@ -224,7 +227,8 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
     return dict(t=tl, h1_lin=h1l, h2_lin=h2l, D_lin=Dl, h1_lib=h1f, h2_lib=h2f, D_lib=Df, autoc=autoc,
                 h1_libx=h1x, h2_libx=h2x, h1_cor=h1x + h1l - h1f, h2_cor=h2x + h2l - h2f, D_libx=Dx, D_cor=Dc, err_r=err_r,
                 **({} if Dq is None else {'D_runq': Dq}),
-                h1_part=h1_part, h1_rej=h1_rej, Jn=Jn, F0=F0, dF0=dF0, om=om, nj=nj, nq=nq, dt=dt)
+                h1_part=h1_part, h1_rej=h1_rej, Jn=Jn, F0=F0, dF0=dF0, om=om, nj=nj, nq=nq, dt=dt,
+                mascara=np.array(mascara if mascara is not None else (0.0, np.inf)))
 
 
 def lineal(ext, sal, **kw):
@@ -268,18 +272,91 @@ def comparar(archivos, xs=(6, 8, 12, 16, 20, 25)):
                 print(f'    corrida/{q:7}' + ' '.join(f'{e["corrida"][np.argmin(abs(xr - v))]/e[q][np.argmin(abs(tl - v))]:8.2f}' for v in xs))
 
 
+def cocientes(d, xs=(8, 12, 16, 20, 25)):
+    """Cocientes de las envolventes de |h_1| (corrida/lineal y corrida/libre) en t/tau_1 = xs, y de D hasta 12 tau_1."""
+    tau = float(d['tau']); tl = d['t']/tau; tq = d['tq']/tau
+    er = envolvente(np.abs(d['hq'][:, 0]), d['tq'])
+    el, ef = envolvente(np.abs(d['h1_cor']), d['t']), envolvente(np.abs(d['h1_libx']), d['t'])
+    v = lambda e, x, s: e[np.argmin(np.abs(x - s))]
+    cl = [v(er, tq, s)/v(el, tl, s) for s in xs]; cf = [v(er, tq, s)/v(ef, tl, s) for s in xs]
+    Dl = Df = None
+    if 'D_runq' in d.files:
+        eD = envolvente(d['D_runq'], d['tq']); eDl, eDf = envolvente(d['D_cor'], d['t']), envolvente(d['D_libx'], d['t'])
+        Dl = [v(eD, tq, s)/v(eDl, tl, s) for s in (8, 12)]; Df = [v(eD, tq, s)/v(eDf, tl, s) for s in (8, 12)]
+    return cl, cf, Dl, Df
+
+
+def nombre_caso(a):
+    b = os.path.basename(a)
+    return os.path.basename(os.path.dirname(a)) if b.startswith('respuesta_') else b.split('_t5')[0]
+
+
+def resumen(archivos, xs=(8, 12, 16, 20, 25)):
+    print('Cocientes de las envolventes de |h_1| en t/tau_1 = ' + ', '.join(str(s) for s in xs) + ': corrida/lineal y corrida/libre;')
+    print('de D en 8 y 12 tau_1 (después, piso de la reconstrucción). 1: la curva sigue a la corrida.')
+    for a in archivos:
+        d = np.load(a); cl, cf, Dl, Df = cocientes(d, xs)
+        txt = f'{nombre_caso(a):13} lineal ' + ' '.join(f'{x:5.2f}' for x in cl) + '   libre ' + ' '.join(f'{x:5.2f}' for x in cf)
+        if Dl is not None:
+            txt += '   | D: lineal ' + ' '.join(f'{x:5.2f}' for x in Dl) + '  libre ' + ' '.join(f'{x:5.2f}' for x in Df)
+        print(txt)
+    figura(archivos)
+
+
+def figura(archivos, sal=None):
+    """|h_1| de cada corrida desde t0, frente a la evolución lineal corregida y la mezcla libre exacta."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    sup, tinta, tinta2, reja = '#ffffff', '#0b0b0b', '#52514e', '#e4e3df'
+    plt.rcParams.update({'font.size': 9, 'axes.edgecolor': tinta2, 'axes.labelcolor': tinta2, 'xtick.color': tinta2,
+                         'ytick.color': tinta2, 'text.color': tinta, 'axes.linewidth': 0.6, 'figure.facecolor': sup,
+                         'axes.facecolor': sup, 'savefig.facecolor': sup})
+    n = len(archivos); nc = 3; nf = (n + nc - 1)//nc
+    fig, ax = plt.subplots(nf, nc, figsize=(11.5, 3.0*nf), squeeze=False)
+    for i, a in enumerate(archivos):
+        d = np.load(a); tau = float(d['tau']); c = ax[i//nc, i % nc]
+        c.plot(d['tq']/tau, envolvente(np.abs(d['hq'][:, 0]), d['tq']), color=tinta, lw=1.6)
+        c.plot(d['t']/tau, envolvente(np.abs(d['h1_cor']), d['t']), color='#2a78d6', lw=1.3, ls=(0, (4, 2)))
+        c.plot(d['t']/tau, envolvente(np.abs(d['h1_libx']), d['t']), color='#eb6834', lw=1.3, ls=(0, (1, 1.2)))
+        c.set_xscale('log'); c.set_yscale('log'); c.set_xlim(float(d['T0']), 30)
+        c.set_title(nombre_caso(a), loc='left', fontsize=9.5, pad=4)
+        c.grid(True, color=reja, lw=0.5); c.set_axisbelow(True)
+        for lado in ('top', 'right'):
+            c.spines[lado].set_visible(False)
+        if i % nc == 0:
+            c.set_ylabel(r'$|h_1|/h_0$')
+        if i//nc == nf - 1:
+            c.set_xlabel(r'$t/\tau_1$')
+    for j in range(n, nf*nc):
+        ax[j//nc, j % nc].axis('off')
+    fig.legend(handles=[Line2D([], [], color=tinta, lw=1.6, label='run'),
+                        Line2D([], [], color='#2a78d6', lw=1.3, ls=(0, (4, 2)), label='linear response about the mixed state'),
+                        Line2D([], [], color='#eb6834', lw=1.3, ls=(0, (1, 1.2)), label='phase mixing alone')],
+               loc='upper center', ncol=3, frameon=False, fontsize=8.5)
+    fig.tight_layout(rect=(0, 0, 1, 0.97 if nf > 1 else 0.92))
+    sal = sal or os.path.join(os.path.dirname(AQUI), '..', 'exe', 'demo_eta', 'respuesta', 'respuesta.png')
+    sal = os.path.abspath(sal)
+    fig.savefig(sal, dpi=120); plt.close(fig)
+    print('escrita', sal)
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['extraer', 'lineal', 'comparar'])
+    ap.add_argument('paso', choices=['extraer', 'lineal', 'comparar', 'resumen'])
     ap.add_argument('archivos', nargs='+')
     ap.add_argument('--mgas', type=float); ap.add_argument('--t0', type=float, default=5.0)
     ap.add_argument('--tau', type=float, default=327.15); ap.add_argument('--procesos', type=int, default=4)
     ap.add_argument('--nj', type=int, default=2400); ap.add_argument('--nq', type=int, default=64)
     ap.add_argument('--dt', type=float, default=0.5); ap.add_argument('--t1', type=float, default=30.0)
+    ap.add_argument('--mascara', type=float, nargs=2, help='el campo actúa solo sobre el gas con J en [jlo, jhi)')
     a = ap.parse_args()
     if a.paso == 'extraer':
         extraer(a.archivos[0], a.archivos[1], a.mgas, a.t0, a.tau, procesos=a.procesos)
     elif a.paso == 'lineal':
-        lineal(a.archivos[0], a.archivos[1], nj=a.nj, nq=a.nq, dt=a.dt, T1=a.t1)
+        lineal(a.archivos[0], a.archivos[1], nj=a.nj, nq=a.nq, dt=a.dt, T1=a.t1, mascara=a.mascara)
+    elif a.paso == 'resumen':
+        resumen(a.archivos)
     else:
         comparar(a.archivos)
