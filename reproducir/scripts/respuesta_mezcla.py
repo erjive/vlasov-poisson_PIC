@@ -15,8 +15,13 @@ Pasos:
     python3 respuesta_mezcla.py extraer <bulto.npz> <salida.npz> --mgas M [--t0 5] [--tau T] [--procesos 4]
         Phi_0: media del potencial del gas en |t - t0| <= 0.5 tau_1. Variables de Phi_0 de las partículas en t0, y
         h_1..h_3 y D de la corrida en las instantáneas t >= t0 (una de cada dos). Corre donde esté el bulto.npz.
+    python3 respuesta_mezcla.py perfiles <bulto.npz> <extraido.npz> <salida.npz> [--procesos 4]
+        F_0(J, t) de la corrida con las variables de Phi_0, en las franjas de J de la rejilla, armónicos por franjas
+        y potencial medio en ventanas de tau_1 (para la prueba con F_0 lento). Corre donde esté el bulto.npz.
     python3 respuesta_mezcla.py lineal <extraido.npz> <salida.npz> [--nj 2400] [--nq 64] [--dt 0.5] [--t1 30]
-        evoluciones lineal y libre desde t0 (unos minutos cada una).
+            [--perfiles <perfiles.npz> [--suave 8]]
+        evoluciones lineal y libre desde t0 (unos minutos cada una); con --perfiles, además la lineal con la parte
+        lenta del F_0 de la corrida, F_0(J, t) promediado en +-tau_1/2, en el término F_0'(J) d(dPhi)/dQ.
     python3 respuesta_mezcla.py comparar <salida.npz> ...   tabla de la corrida frente a lineal y libre.
     python3 respuesta_mezcla.py resumen <salida.npz> ...    una línea por corrida, y figura (exe/demo_eta/respuesta/)
 
@@ -97,6 +102,73 @@ def extraer(npz, sal, mgas, T0=5.0, tau=327.15, ventana=0.5, cada=2, procesos=4,
           f'{len(ks)} instantáneas mapeadas en {time.time() - t1:.0f} s con {procesos} procesos', flush=True)
 
 
+def _perfil(tarea):
+    """Masa en las franjas de J de la rejilla lineal (variables de Phi_0) y, en las instantáneas marcadas, los armónicos
+    n = 1, 2 por franjas cuatro veces más anchas, en un grupo de instantáneas."""
+    rg, phi0, L, ks, Rs, Ps, mi, dJ, nj, marcas = tarea
+    m = MapaAA(rg, phi0, L=L)
+    sal = []
+    for k, R, P, marca in zip(ks, Rs, Ps, marcas):
+        Q, J, _ = m(np.asarray(R, float), np.asarray(P, float))
+        ok = np.isfinite(Q) & np.isfinite(J)
+        q, w = Q[ok], mi[ok]
+        b = np.clip((J[ok]/dJ).astype(int), 0, nj - 1)          # como en evolucion: lo que pasa de jmax cae en la última
+        F = np.bincount(b, weights=w, minlength=nj)
+        H = None
+        if marca:
+            z = b//4
+            H = np.array([np.bincount(z, weights=w*np.cos(n*q), minlength=nj//4)
+                          - 1j*np.bincount(z, weights=w*np.sin(n*q), minlength=nj//4) for n in (1, 2)])
+        sal.append((k, F, H, int((~ok).sum()), float(w[J[ok] >= nj*dJ].sum())))
+    return sal
+
+
+def perfiles(npz, ext, sal, procesos=4, nj=2400, cada=2, cada_arm=4, ventanas=np.arange(5.0, 30.01, 0.5)):
+    """F_0(J, t) de la corrida con las variables de Phi_0: la masa en las NJ franjas de J de la rejilla lineal en las
+    instantáneas desde t0 - tau_1/2 (una de cada `cada`, las mismas de extraer desde t0), los armónicos n = 1, 2 por
+    franjas cuatro veces más anchas en una de cada `cada_arm` de ellas, y el potencial medio del gas en ventanas de
+    +-tau_1/2 centradas en t/tau_1 = ventanas (la primera es Phi_0). Corre donde esté el bulto.npz."""
+    from multiprocessing import Pool
+    e = np.load(ext)
+    d = np.load(npz)                            # un .npz no se mapea en memoria: cada d[...] lee el arreglo entero
+    t, rg = np.asarray(d['t']), np.asarray(d['r'])
+    tau, t0, L = float(e['tau']), float(e['t0']), float(e['L'])
+    ok0 = np.isfinite(e['Q0']) & np.isfinite(e['J0'])
+    jmax = 1.02*e['J0'][ok0].max(); dJ = jmax/nj
+    mi = np.asarray(e['m'], float)
+    k0 = int(np.argmin(np.abs(t - t0)))
+    kini = int(np.argmin(np.abs(t - (t0 - 0.5*tau))))
+    ks = sorted(set(range(k0, kini - 1, -cada)) | set(range(k0, len(t), cada)))
+    marcas = [k >= k0 and (k - k0) % (cada*cada_arm) == 0 for k in ks]
+    Rall, Pall = d['R'], d['P']
+    grupos = [(rg, e['phi0'], L, ks[i:i + 10], Rall[ks[i:i + 10]], Pall[ks[i:i + 10]], mi, dJ, nj, marcas[i:i + 10])
+              for i in range(0, len(ks), 10)]
+    t1 = time.time()
+    with Pool(procesos) as pool:
+        res = [x for g in pool.imap(_perfil, grupos) for x in g]
+    res.sort(key=lambda x: x[0])
+    kk = np.array([x[0] for x in res])
+    ps = np.asarray(d['phi_self'], float)
+    tw = np.array([t[int(np.argmin(np.abs(t - T*tau)))] for T in ventanas])
+    phiw = np.array([ps[np.abs(t - s) <= 0.5*tau].mean(0) for s in tw])
+    nw = np.array([int((np.abs(t - s) <= 0.5*tau).sum()) for s in tw])
+    np.savez(sal, t=t[kk], k=kk, k0=k0, F=np.array([x[1] for x in res]), nj=nj, dJ=dJ, jmax=jmax,
+             t_arm=t[[x[0] for x in res if x[2] is not None]], H=np.array([x[2] for x in res if x[2] is not None]),
+             malos=np.array([x[3] for x in res]), fuera=np.array([x[4] for x in res]),
+             ventanas=ventanas, tw=tw, phiw=phiw, nw=nw, rg=rg, tau=tau, t0=t0, L=L)
+    print(f'escrito {sal}: {len(kk)} instantáneas desde {t[kk[0]]/tau:.2f} tau_1 mapeadas en {time.time() - t1:.0f} s '
+          f'con {procesos} procesos; Phi_0 frente a la primera ventana: {np.abs(phiw[0] - e["phi0"]).max():.1e}', flush=True)
+
+
+def F0_lento(p, tau, t0, c):
+    """Parte lenta del cambio de F_0 en la corrida: media de la masa por franja de J en +-tau_1/2 alrededor de cada
+    instantánea mapeada desde t0, menos la de t0, en unidades de la FD (dividida por c). Devuelve tiempos y cambios."""
+    tk, F = p['t'], p['F']/c
+    sel = np.nonzero(tk >= t0 - 1e-9)[0]
+    Fm = np.array([F[np.abs(tk - tk[i]) <= 0.5*tau + 1e-9].mean(0) for i in sel])
+    return tk[sel], Fm - Fm[0]
+
+
 def tabla_E_J(m, jmax, n=4000):
     """E(J) en el potencial del mapa m, sobre órbitas que pasan por la órbita circular, hasta J >= jmax."""
     rc = float(m.rc); Ec = float(m.phi_ef(np.array([rc]))[0])
@@ -109,10 +181,20 @@ def tabla_E_J(m, jmax, n=4000):
     return E, J
 
 
-def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=True, mascara=None):
+def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=True, mascara=None, perfil=None,
+              suave=8.0, cuasilineal=False, solo_cl=False):
     """Evoluciones lineal y libre desde t0 del estado extraído e. Devuelve un diccionario con t, h_1 y h_2 (pesos
     de la masa) y D de cada una, y los controles: autoconsistencia de Phi_0 y h_1(t0) de las partículas y de la
-    rejilla."""
+    rejilla. Con perfil (lo que escribe `perfiles`) hace además una tercera evolución, lineal con F_0' cambiando en
+    el tiempo como la parte lenta de F_0 en la corrida (F0_lento), y guarda los armónicos n = 1, 2 por franjas de J
+    de las tres en los tiempos de los de la corrida. El histograma de J de la corrida tiene la granularidad de las
+    filas de la retícula (en B2q, una fila cada 4-5 franjas), así que el cambio se deriva con un núcleo gaussiano de
+    `suave` franjas: F_0' es el de t0 (el de la evolución lineal) más la derivada suavizada del cambio.
+    Con cuasilineal, otra evolución en que F_0 cambia por el flujo en J de la propia solución lineal,
+        dF_0/dt = d/dJ <dF dPhi/dQ>_Q,
+    el término de segundo orden del promedio en el ángulo de la ecuación de Vlasov: Delta F_0 = dG/dJ, con G el flujo
+    integrado en el tiempo, y F_0' es el de t0 más d^2G/dJ^2 con el mismo núcleo gaussiano. Sin cambiar Phi_0. Con
+    solo_cl se omite la lineal con F_0 fijo (sus resultados quedan como los de la libre: no usarlos)."""
     from scipy.signal import savgol_filter
     L, mg, tau, t0 = float(e['L']), float(e['mgas']), float(e['tau']), float(e['t0'])
     m = MapaAA(e['rg'], e['phi0'], L=L)
@@ -128,6 +210,29 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
     dF0 = savgol_filter(F0, nsg, 3, deriv=1, delta=dJ)
     if mascara is not None:                     # el campo actúa solo sobre el gas con jlo <= J < jhi
         dF0 = dF0*((Jn >= mascara[0]) & (Jn < mascara[1]))
+    var = {}
+    if perfil is not None:
+        p = perfil
+        if int(p['nj']) != nj or float(p['dJ']) != dJ:
+            raise SystemExit('las franjas de J de los perfiles no son las de la rejilla')
+        i0 = int(np.nonzero(p['k'] == int(p['k0']))[0][0])
+        var['err_F0'] = float(np.abs(p['F'][i0]/c - F0).max())       # 0: mismas partículas, mismas franjas
+        tF, dlt = F0_lento(p, tau, t0, c)
+        from scipy.ndimage import gaussian_filter1d
+        dD = gaussian_filter1d(dlt, suave, axis=1, order=1, mode='nearest')/dJ
+        if mascara is not None:
+            dD = dD*((Jn >= mascara[0]) & (Jn < mascara[1]))[None, :]
+        var.update(tF=tF, dF0_ini=dF0.copy(), dD=dD[::max(1, len(tF)//60)], tD=tF[::max(1, len(tF)//60)],
+                   suave=suave)
+
+        def dF0_de(s):
+            i = int(np.clip(np.searchsorted(tF, s) - 1, 0, len(tF) - 2))
+            a = min(max((s - tF[i])/(tF[i + 1] - tF[i]), 0.0), 1.0)
+            return dF0 + ((1 - a)*dD[i] + a*dD[i + 1])
+        ta = p['t_arm']; ta = ta[(ta >= t0) & (ta <= T1*tau)]
+        s_arm = set(int(round((x - t0)/dt)) for x in ta)
+    else:
+        s_arm = set()
     N = nq//2 - 1
     dF = np.zeros((nj, nq))
     for n in range(1, N + 1):
@@ -167,17 +272,23 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
     h1_part = np.sum(mi*np.exp(-1j*Q0))/mg
     h1_rej = np.sum(dF*eQ[None, :])*peso/mg
 
-    def correr(libre):
+    def correr(libre, variable=False, cl=False):
         f = dF.copy()
+        G = np.zeros(nj)                        # cuasilineal: flujo en J integrado en el tiempo
+        tG, GG = [], []
 
-        def golpe(f, h):
+        def golpe(f, h, s):
             if libre:
                 return f
             P = dPhi(f).reshape(nj, nq)
             dP = np.real(np.fft.ifft(1j*k[None, :]*np.fft.fft(P, axis=1), axis=1))
-            return f + h*dF0[:, None]*dP
+            if cl:
+                G[:] += h*np.mean(f*dP, axis=1)
+                from scipy.ndimage import gaussian_filter1d
+                return f + h*(dF0 + gaussian_filter1d(G, suave, order=2, mode='constant')/dJ**2)[:, None]*dP
+            return f + h*(dF0_de(s) if variable else dF0)[:, None]*dP
         pasos = int(round((T1*tau - t0)/dt)); nsal = int(round(cada/dt))
-        ts, h1, h2, D, PP = [], [], [], [], []
+        ts, h1, h2, D, PP, tH, H = [], [], [], [], [], [], []
         t2 = time.time()
         for s in range(pasos + 1):
             if s % nsal == 0:
@@ -185,16 +296,32 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
                 h1.append(np.sum(f*eQ[None, :])*peso/mg); h2.append(np.sum(f*(eQ**2)[None, :])*peso/mg)
                 P = dPhi_rmed(f)
                 D.append(np.sqrt(np.mean(P**2))/esc); PP.append(P)
+            if cl and s % (4*nsal) == 0:
+                tG.append(t0 + s*dt); GG.append(G.copy())
+            if s in s_arm:                      # armónicos por franjas de 4 filas, en masa, como H de perfiles
+                tH.append(t0 + s*dt)
+                H.append([(f @ eQ**n).reshape(nj//4, 4).sum(1)*peso for n in (1, 2)])
             if s == pasos:
                 break
-            f = golpe(f, 0.5*dt)
+            f = golpe(f, 0.5*dt, t0 + s*dt)
             f = np.real(np.fft.ifft(np.fft.fft(f, axis=1)*fase, axis=1))
-            f = golpe(f, 0.5*dt)
+            f = golpe(f, 0.5*dt, t0 + (s + 1)*dt)
         if verboso:
-            print(f'  {"libre" if libre else "lineal"}: {pasos} pasos en {time.time() - t2:.0f} s', flush=True)
+            nombre = 'libre' if libre else ('lineal con F_0 de la corrida' if variable else
+                                            ('cuasilineal' if cl else 'lineal'))
+            print(f'  {nombre}: {pasos} pasos en {time.time() - t2:.0f} s', flush=True)
+        if s_arm:
+            var[('Hg_lib' if libre else ('Hg_linv' if variable else ('Hg_linc' if cl else 'Hg_lin')))] = np.array(H)
+            var['tHg'] = np.array(tH)
+        if cl:
+            var.update(tG=np.array(tG), G=np.array(GG))
         return np.array(ts), np.array(h1), np.array(h2), np.array(D), np.array(PP)
-    tl, h1l, h2l, Dl, Pl = correr(False)
+    tl, h1l, h2l, Dl, Pl = correr(True) if solo_cl else correr(False)
     tf, h1f, h2f, Df, Pf = correr(True)
+    if cuasilineal:
+        _, h1c, h2c, Dc_, Pc = correr(False, cl=True)
+    if perfil is not None:
+        _, h1v, h2v, Dv, Pv = correr(False, variable=True)
     # Mezcla libre exacta de las partículas en Phi_0: cada una con su ángulo, su acción y su frecuencia.
     Om = omega_de_J(E_t, J_t)(J0)
     h1x = np.array([np.sum(mi*np.exp(-1j*(Q0 + Om*(s - t0))))/mg for s in tl])
@@ -230,21 +357,28 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
     Dc = np.sqrt(np.mean((Px + Pl - Pf)**2, axis=1))/esc
     # La corrida con el mismo estimador: capas exactas de sus partículas, respecto del potencial de F_0.
     Dq = np.sqrt(np.mean((e['Pq'] - PF0)**2, axis=1))/esc if 'Pq' in e.files else None
-    return dict(t=tl, h1_lin=h1l, h2_lin=h2l, D_lin=Dl, h1_lib=h1f, h2_lib=h2f, D_lib=Df, autoc=autoc,
+    if perfil is not None:
+        var.update(h1_linv=h1v, h2_linv=h2v, D_linv=Dv, h1_corv=h1x + h1v - h1f, h2_corv=h2x + h2v - h2f,
+                   D_corv=np.sqrt(np.mean((Px + Pv - Pf)**2, axis=1))/esc)
+    if cuasilineal:
+        var.update(h1_linc=h1c, h2_linc=h2c, D_linc=Dc_, h1_corc=h1x + h1c - h1f, h2_corc=h2x + h2c - h2f,
+                   D_corc=np.sqrt(np.mean((Px + Pc - Pf)**2, axis=1))/esc, suave=suave, solo_cl=solo_cl)
+    return dict(**var, t=tl, h1_lin=h1l, h2_lin=h2l, D_lin=Dl, h1_lib=h1f, h2_lib=h2f, D_lib=Df, autoc=autoc,
                 h1_libx=h1x, h2_libx=h2x, h1_cor=h1x + h1l - h1f, h2_cor=h2x + h2l - h2f, D_libx=Dx, D_cor=Dc, err_r=err_r,
                 **({} if Dq is None else {'D_runq': Dq}),
                 h1_part=h1_part, h1_rej=h1_rej, Jn=Jn, F0=F0, dF0=dF0, om=om, nj=nj, nq=nq, dt=dt,
                 mascara=np.array(mascara if mascara is not None else (0.0, np.inf)))
 
 
-def lineal(ext, sal, **kw):
+def lineal(ext, sal, perfiles=None, **kw):
     e = np.load(ext)
-    R = evolucion(e, **kw)
+    R = evolucion(e, perfil=None if perfiles is None else np.load(perfiles), **kw)
     np.savez(sal, **R, T0=e['T0'], tau=e['tau'], t0=e['t0'], tq=e['tq'], hq=e['hq'], t_run=e['t'], D_run=e['D'],
              mgas=e['mgas'], malos=e['malos'])
     print(f'escrito {sal}: autoconsistencia de Phi_0 {R["autoc"]:.1e} (D en t0: {e["D"][np.argmin(abs(e["t"] - e["t0"]))]:.1e}); '
           f'h_1(t0) partículas {abs(R["h1_part"]):.4e}, rejilla {abs(R["h1_rej"]):.4e}; error de los radios interpolados '
-          f'{float(R["err_r"]):.1e}', flush=True)
+          f'{float(R["err_r"]):.1e}' + (f'; F_0 de los perfiles en t0 frente al de la extracción {R["err_F0"]:.1e}'
+                                        if 'err_F0' in R else ''), flush=True)
 
 
 def envolvente(x, t, ancho=50.0):
@@ -278,13 +412,19 @@ def comparar(archivos, xs=(6, 8, 12, 16, 20, 25)):
                 print(f'    corrida/{q:7}' + ' '.join(f'{e["corrida"][np.argmin(abs(xr - v))]/e[q][np.argmin(abs(tl - v))]:8.2f}' for v in xs))
 
 
+VARIANTES = (('h1_cor', 'lineal'), ('h1_corv', 'F_0 lento'), ('h1_corc', 'cuasilineal'))
+
+
 def cocientes(d, xs=(8, 12, 16, 20, 25)):
-    """Cocientes de las envolventes de |h_1| (corrida/lineal y corrida/libre) en t/tau_1 = xs, y de D hasta 12 tau_1."""
+    """Cocientes de las envolventes de |h_1| en t/tau_1 = xs: corrida/lineal de cada variante de la evolución lineal que
+    tenga el archivo (VARIANTES) y corrida/libre; y de D hasta 12 tau_1."""
     tau = float(d['tau']); tl = d['t']/tau; tq = d['tq']/tau
     er = envolvente(np.abs(d['hq'][:, 0]), d['tq'])
-    el, ef = envolvente(np.abs(d['h1_cor']), d['t']), envolvente(np.abs(d['h1_libx']), d['t'])
+    ef = envolvente(np.abs(d['h1_libx']), d['t'])
     v = lambda e, x, s: e[np.argmin(np.abs(x - s))]
-    cl = [v(er, tq, s)/v(el, tl, s) for s in xs]; cf = [v(er, tq, s)/v(ef, tl, s) for s in xs]
+    cl = {nombre: [v(er, tq, s)/v(envolvente(np.abs(d[clave]), d['t']), tl, s) for s in xs]
+          for clave, nombre in VARIANTES if clave in d.files and not (clave == 'h1_cor' and bool(d.get('solo_cl', False)))}
+    cf = [v(er, tq, s)/v(ef, tl, s) for s in xs]
     Dl = Df = None
     if 'D_runq' in d.files:
         eD = envolvente(d['D_runq'], d['tq']); eDl, eDf = envolvente(d['D_cor'], d['t']), envolvente(d['D_libx'], d['t'])
@@ -297,16 +437,17 @@ def nombre_caso(a):
     return os.path.basename(os.path.dirname(a)) if b.startswith('respuesta_') else b.split('_t5')[0]
 
 
-def resumen(archivos, xs=(8, 12, 16, 20, 25)):
-    print('Cocientes de las envolventes de |h_1| en t/tau_1 = ' + ', '.join(str(s) for s in xs) + ': corrida/lineal y corrida/libre;')
-    print('de D en 8 y 12 tau_1 (después, piso de la reconstrucción). 1: la curva sigue a la corrida.')
+def resumen(archivos, xs=(8, 12, 16, 20, 25), sal=None):
+    print('Cocientes de las envolventes de |h_1| en t/tau_1 = ' + ', '.join(str(s) for s in xs) + ': corrida/lineal de cada')
+    print('variante y corrida/libre; de D en 8 y 12 tau_1 (después, piso de la reconstrucción). 1: la curva sigue a la corrida.')
     for a in archivos:
         d = np.load(a); cl, cf, Dl, Df = cocientes(d, xs)
-        txt = f'{nombre_caso(a):13} lineal ' + ' '.join(f'{x:5.2f}' for x in cl) + '   libre ' + ' '.join(f'{x:5.2f}' for x in cf)
-        if Dl is not None:
+        txt = f'{nombre_caso(a):13} ' + '   '.join(f'{n} ' + ' '.join(f'{x:5.2f}' for x in c) for n, c in cl.items())
+        txt += '   libre ' + ' '.join(f'{x:5.2f}' for x in cf)
+        if Dl is not None and not bool(d.get('solo_cl', False)):
             txt += '   | D: lineal ' + ' '.join(f'{x:5.2f}' for x in Dl) + '  libre ' + ' '.join(f'{x:5.2f}' for x in Df)
         print(txt)
-    figura(archivos)
+    figura(archivos, sal)
 
 
 def figura(archivos, sal=None):
@@ -325,8 +466,13 @@ def figura(archivos, sal=None):
     for i, a in enumerate(archivos):
         d = np.load(a); tau = float(d['tau']); c = ax[i//nc, i % nc]
         c.plot(d['tq']/tau, envolvente(np.abs(d['hq'][:, 0]), d['tq']), color=tinta, lw=1.6)
-        c.plot(d['t']/tau, envolvente(np.abs(d['h1_cor']), d['t']), color='#2a78d6', lw=1.3, ls=(0, (4, 2)))
+        if not bool(d.get('solo_cl', False)):
+            c.plot(d['t']/tau, envolvente(np.abs(d['h1_cor']), d['t']), color='#2a78d6', lw=1.3, ls=(0, (4, 2)))
         c.plot(d['t']/tau, envolvente(np.abs(d['h1_libx']), d['t']), color='#eb6834', lw=1.3, ls=(0, (1, 1.2)))
+        if 'h1_corv' in d.files:
+            c.plot(d['t']/tau, envolvente(np.abs(d['h1_corv']), d['t']), color='#1baf7a', lw=1.3, ls=(0, (6, 1.5, 1, 1.5)))
+        if 'h1_corc' in d.files:
+            c.plot(d['t']/tau, envolvente(np.abs(d['h1_corc']), d['t']), color='#eda100', lw=1.3, ls=(0, (3, 1, 1, 1, 1, 1)))
         c.set_xscale('log'); c.set_yscale('log'); c.set_xlim(float(d['T0']), 30)
         c.set_xticks([5, 8, 10, 15, 20, 30]); c.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         c.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
@@ -342,8 +488,12 @@ def figura(archivos, sal=None):
         ax[j//nc, j % nc].axis('off')
     fig.legend(handles=[Line2D([], [], color=tinta, lw=1.6, label='run'),
                         Line2D([], [], color='#2a78d6', lw=1.3, ls=(0, (4, 2)), label='linear response about the mixed state'),
-                        Line2D([], [], color='#eb6834', lw=1.3, ls=(0, (1, 1.2)), label='phase mixing alone')],
-               loc='upper center', ncol=3, frameon=False, fontsize=8.5)
+                        Line2D([], [], color='#eb6834', lw=1.3, ls=(0, (1, 1.2)), label='phase mixing alone')]
+               + ([Line2D([], [], color='#1baf7a', lw=1.3, ls=(0, (6, 1.5, 1, 1.5)), label='linear, with the slow part of the run\'s $F_0$')]
+                  if any('h1_corv' in np.load(a).files for a in archivos) else [])
+               + ([Line2D([], [], color='#eda100', lw=1.3, ls=(0, (3, 1, 1, 1, 1, 1)), label='quasilinear $F_0$')]
+                  if any('h1_corc' in np.load(a).files for a in archivos) else []),
+               loc='upper center', ncol=4, frameon=False, fontsize=8.5)
     fig.tight_layout(rect=(0, 0, 1, 0.97 if nf > 1 else 0.92))
     sal = sal or os.path.join(os.path.dirname(AQUI), '..', 'exe', 'demo_eta', 'respuesta', 'respuesta.png')
     sal = os.path.abspath(sal)
@@ -353,19 +503,27 @@ def figura(archivos, sal=None):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('paso', choices=['extraer', 'lineal', 'comparar', 'resumen'])
+    ap.add_argument('paso', choices=['extraer', 'perfiles', 'lineal', 'comparar', 'resumen'])
     ap.add_argument('archivos', nargs='+')
     ap.add_argument('--mgas', type=float); ap.add_argument('--t0', type=float, default=5.0)
     ap.add_argument('--tau', type=float, default=327.15); ap.add_argument('--procesos', type=int, default=4)
     ap.add_argument('--nj', type=int, default=2400); ap.add_argument('--nq', type=int, default=64)
     ap.add_argument('--dt', type=float, default=0.5); ap.add_argument('--t1', type=float, default=30.0)
     ap.add_argument('--mascara', type=float, nargs=2, help='el campo actúa solo sobre el gas con J en [jlo, jhi)')
+    ap.add_argument('--perfiles', help='lineal: archivo de `perfiles`; añade la evolución con el F_0 de la corrida')
+    ap.add_argument('--suave', type=float, default=8.0, help='ancho en franjas del núcleo con que se deriva el cambio de F_0')
+    ap.add_argument('--figura', help='resumen: dónde escribir la figura (por omisión exe/demo_eta/respuesta/respuesta.png)')
+    ap.add_argument('--cuasilineal', action='store_true', help='lineal: añade la evolución con F_0 cuasilineal')
+    ap.add_argument('--solo-cl', action='store_true', help='con --cuasilineal, omite la lineal con F_0 fijo')
     a = ap.parse_args()
     if a.paso == 'extraer':
         extraer(a.archivos[0], a.archivos[1], a.mgas, a.t0, a.tau, procesos=a.procesos)
+    elif a.paso == 'perfiles':
+        perfiles(a.archivos[0], a.archivos[1], a.archivos[2], procesos=a.procesos, nj=a.nj)
     elif a.paso == 'lineal':
-        lineal(a.archivos[0], a.archivos[1], nj=a.nj, nq=a.nq, dt=a.dt, T1=a.t1, mascara=a.mascara)
+        lineal(a.archivos[0], a.archivos[1], nj=a.nj, nq=a.nq, dt=a.dt, T1=a.t1, mascara=a.mascara,
+               perfiles=a.perfiles, suave=a.suave, cuasilineal=a.cuasilineal, solo_cl=a.solo_cl)
     elif a.paso == 'resumen':
-        resumen(a.archivos)
+        resumen(a.archivos, sal=a.figura)
     else:
         comparar(a.archivos)
