@@ -152,10 +152,16 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
         phi[orden] = -(np.cumsum(mS) - 0.5*mS)/rs - (np.cumsum((mS/rs)[::-1])[::-1] - 0.5*mS/rs)
         return phi
 
+    def dPhi_rmed(f):
+        """Potencial exacto de las capas de los nodos en los radios rmed. (Interpolar el de los nodos no sirve: más allá
+        del nodo más externo, 12.6 en las corridas de alta resolución, la interpolación lo deja constante.)"""
+        mS = (f.ravel()*peso)[orden]
+        Mc = np.concatenate([[0.0], np.cumsum(mS)]); Pc = np.concatenate([np.cumsum((mS/rs)[::-1])[::-1], [0.0]])
+        j = np.searchsorted(rs, rmed)
+        return -Mc[j]/rmed - Pc[j]
+
     # Autoconsistencia: el potencial de F_0 (repartido igual en Q) frente a Phi_0, en la ventana radial.
-    p0 = dPhi(np.repeat(F0[:, None], nq, axis=1))
-    o = np.argsort(r)
-    phiF0 = np.interp(rmed, r[o], p0[o]); phi0m = np.interp(rmed, e['rg'], e['phi0'])
+    phiF0 = dPhi_rmed(np.repeat(F0[:, None], nq, axis=1)); phi0m = np.interp(rmed, e['rg'], e['phi0'])
     autoc = np.sqrt(np.mean((phiF0 - phi0m)**2))/esc
     eQ = np.exp(-1j*Qn)
     h1_part = np.sum(mi*np.exp(-1j*Q0))/mg
@@ -177,7 +183,7 @@ def evolucion(e, nj=2400, nq=64, dt=0.5, T1=30.0, cada=20.0, nsg=11, verboso=Tru
             if s % nsal == 0:
                 ts.append(t0 + s*dt)
                 h1.append(np.sum(f*eQ[None, :])*peso/mg); h2.append(np.sum(f*(eQ**2)[None, :])*peso/mg)
-                P = np.interp(rmed, rs, dPhi(f)[orden])
+                P = dPhi_rmed(f)
                 D.append(np.sqrt(np.mean(P**2))/esc); PP.append(P)
             if s == pasos:
                 break
@@ -307,6 +313,7 @@ def figura(archivos, sal=None):
     """|h_1| de cada corrida desde t0, frente a la evolución lineal corregida y la mezcla libre exacta."""
     import matplotlib
     matplotlib.use('Agg')
+    import matplotlib.ticker
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     sup, tinta, tinta2, reja = '#ffffff', '#0b0b0b', '#52514e', '#e4e3df'
@@ -321,6 +328,8 @@ def figura(archivos, sal=None):
         c.plot(d['t']/tau, envolvente(np.abs(d['h1_cor']), d['t']), color='#2a78d6', lw=1.3, ls=(0, (4, 2)))
         c.plot(d['t']/tau, envolvente(np.abs(d['h1_libx']), d['t']), color='#eb6834', lw=1.3, ls=(0, (1, 1.2)))
         c.set_xscale('log'); c.set_yscale('log'); c.set_xlim(float(d['T0']), 30)
+        c.set_xticks([5, 8, 10, 15, 20, 30]); c.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        c.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
         c.set_title(nombre_caso(a), loc='left', fontsize=9.5, pad=4)
         c.grid(True, color=reja, lw=0.5); c.set_axisbelow(True)
         for lado in ('top', 'right'):
