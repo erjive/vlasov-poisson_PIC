@@ -162,8 +162,12 @@ def perfiles(npz, ext, sal, procesos=4, nj=2400, cada=2, cada_arm=4, ventanas=np
 
 def F0_lento(p, tau, t0, c):
     """Parte lenta del cambio de F_0 en la corrida: media de la masa por franja de J en +-tau_1/2 alrededor de cada
-    instantánea mapeada desde t0, menos la de t0, en unidades de la FD (dividida por c). Devuelve tiempos y cambios."""
-    tk, F = p['t'], p['F']/c
+    instantánea mapeada desde t0, menos la de t0, en unidades de la FD (dividida por c). Devuelve tiempos y cambios.
+    La masa que pasa de jmax (`fuera`) cae en la última franja en `perfiles`; se quita de ella, porque amontonada ahí
+    daría a F_0' un pico falso en el borde de la rejilla (en la meseta, 0.15 % de la masa desde 15 tau_1)."""
+    F = np.array(p['F'], float)
+    F[:, -1] -= p['fuera']
+    tk, F = p['t'], F/c
     sel = np.nonzero(tk >= t0 - 1e-9)[0]
     Fm = np.array([F[np.abs(tk - tk[i]) <= 0.5*tau + 1e-9].mean(0) for i in sel])
     return tk[sel], Fm - Fm[0]
