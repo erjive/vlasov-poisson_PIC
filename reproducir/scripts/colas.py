@@ -16,6 +16,9 @@ autogravedad daría t^-3.5 para el potencial.
     python3 colas.py libre      colas exactas sin autogravedad de las seis formas
     python3 colas.py tabla      pendientes y niveles de las corridas en las que el gas se mezcla
     python3 colas.py figura     figura de trabajo (exe/demo_eta/colas/colas.png)
+    python3 colas.py alta       las corridas de alta resolución (tanda `colas` de VlasovPoisson_PIC_sp): pendientes,
+                                perfiles junto a la órbita circular, borde interior y mezcla sola frente a la corrida
+    python3 colas.py figura_alta   figura de trabajo de esas corridas (exe/demo_eta/colas/colas_alta.png)
 
 No corre simulaciones: lee exe/demo_eta/bulto (este repositorio) y exe/rep/12_nube de VlasovPoisson_PIC_sp.
 """
@@ -192,8 +195,161 @@ def figura():
     print('escrita', os.path.join(SAL, 'colas.png'))
 
 
+# Corridas de alta resolución (3200 x 100; nube_L.py, tanda `colas`): forma -> [(Gamma, corrida), ...].
+ALTA = {'p2': [(0.025, 'H_p2_025'), (0.05, 'H_p2_050'), (0.10, 'H_p2_100'), (0.15, 'H_p2_150')],
+        'p4': [(0.05, 'H_p4_050'), (0.10, 'H_p4_100')], 'h05': [(0.05, 'H_h05_050'), (0.10, 'H_h05_100')],
+        'anillo': [(0.05, 'H_anillo_050'), (0.10, 'H_anillo_100')], 'meseta': [(0.05, 'H_meseta_050'), (0.10, 'H_meseta_100')]}
+
+
+def carga_alta(n):
+    """t/tau_1, envolventes de |h_k| (k = 1, 2, 3) y de D de una corrida de alta resolución."""
+    A = np.load(os.path.join(SP, n, 'armonicos.npz')); tau = float(np.load(os.path.join(SP, n, 'medidas.npz'))['tau'])
+    t = A['t']; hk = np.abs(A['hk'])
+    c = np.load(os.path.join(SP, n, 'campo.npz'))
+    return t/tau, [envolvente(hk[:, k], t) for k in (1, 2, 3)], c['t']/tau, envolvente(c['D'], c['t']), tau
+
+
+def exponente_perfil(n, k=1, i=2, a=0.01, b=0.10):
+    """Exponente q de a_k(J) ~ J^q junto a la órbita circular (perfiles.npz, tiempo de índice i: 2 es 10 tau_1), por
+    ajuste en a <= J/s_J <= b; nan si no hay gas ahí."""
+    P = np.load(os.path.join(SP, n, 'perfiles.npz')); x = 0.5*(P['x'][1:] + P['x'][:-1])
+    y = P['f0'][i] if k == 0 else P['a'][i, k - 1]
+    z = (x >= a) & (x <= b) & (y > 0)
+    return np.polyfit(np.log(x[z]), np.log(y[z]), 1)[0] if z.sum() > 3 else np.nan
+
+
+def borde_interior(n, i=2, nivel=0.01):
+    """J/s_J de la primera franja en que la masa por unidad de J pasa de `nivel` de su máximo (perfiles_ancho.npz)."""
+    P = np.load(os.path.join(SP, n, 'perfiles_ancho.npz')); x = 0.5*(P['x'][1:] + P['x'][:-1]); f = P['f0'][i]
+    return x[np.nonzero(f >= nivel*f.max())[0][0]]
+
+
+def cociente_cinematico(n, i0=1, k=0, ventana=(15.0, 25.0)):
+    """Media geométrica, en la ventana de t/tau_1, del cociente entre la envolvente de |h_{k+1}| de la corrida y la de
+    su continuación cinemática desde t0 (índice i0: 0, 1, 2 son 3, 5 y 10 tau_1). 1: después de t0 solo hay mezcla."""
+    c = np.load(os.path.join(SP, n, 'cinematica.npz')); t = c['t']; x = t/float(c['tau'])
+    real = envolvente(np.abs(c['hk'][:, k]), t)
+    cin = np.abs(c['hk_cin'][i0, k]); cin = envolvente(np.where(np.isfinite(cin), cin, 0.0), t)
+    z = (x >= ventana[0]) & (x <= ventana[1])
+    return np.exp(np.mean(np.log(real[z]/cin[z])))
+
+
+def alta():
+    print('Corridas de alta resolución (3200 x 100, L igual). Pendientes de las envolventes en ventanas de t/tau_1;')
+    print('q_1: exponente de a_1(J) en 0.01-0.10 s_J en t = 10 tau_1 (la cola cinemática sería t^-(q_1+1)); borde: J/s_J donde la FD')
+    print('pasa del 1 % de su máximo en t = 10 tau_1; real/cin: |h_1| de la corrida entre el de la mezcla sola desde 5 y 10 tau_1 (15-25 tau_1).')
+    print(f'{"forma":7} {"Gamma":>5} | {"|h_1| 3-10":>10} {"10-20":>6} {"20-30":>6} | {"|h_2| 10-20":>11} {"|h_3|":>6} | {"D 3-10":>7} {"10-20":>6} | '
+          f'{"q_1":>5} {"-(q_1+1)":>8} | {"borde":>5} | {"real/cin 5":>10} {"10":>5} | {"|h_1|(20)":>9}')
+    for forma, L in ALTA.items():
+        tau = R.banda_perfil(F.TODAS[forma][0], SJ)[3]
+        ts = np.arange(0.0, 31*tau, 10.0); e = envolvente(h_libre(forma, 1, ts), ts); xl = ts/tau
+        k = K_LIBRE[forma]
+        print(f'{forma:7} {"libre":>5} | {pendiente(xl, e, 3, 10):10.2f} {pendiente(xl, e, 10, 20):6.2f} {pendiente(xl, e, 20, 30):6.2f} | '
+              f'{"":11} {"":6} | {"":7} {"":6} | {"-" if k is None else k:>5} {"-" if k is None else -(k + 1):>8} | {"":5} | {"":10} {"":5} | '
+              f'{e[np.argmin(abs(xl - 20))]:9.1e}')
+        for gam, n in L:
+            x, h, xD, D, _ = carga_alta(n)
+            q = exponente_perfil(n)
+            print(f'{"":7} {gam:5.3f} | {pendiente(x, h[0], 3, 10):10.2f} {pendiente(x, h[0], 10, 20):6.2f} {pendiente(x, h[0], 20, 30):6.2f} | '
+                  f'{pendiente(x, h[1], 10, 20):11.2f} {pendiente(x, h[2], 10, 20):6.2f} | {pendiente(xD, D, 3, 10):7.2f} {pendiente(xD, D, 10, 20):6.2f} | '
+                  f'{q:5.2f} {-(q + 1):8.2f} | {borde_interior(n):5.2f} | {cociente_cinematico(n, 1):10.2f} {cociente_cinematico(n, 2):5.2f} | '
+                  f'{h[0][np.argmin(abs(x - 20))]:9.1e}')
+    x, h, xD, D, _ = carga_alta('H_p2_100'); x2, h2, xD2, D2, _ = carga_alta('H2_p2_100')
+    z = (x >= 3) & (x <= 30)
+    print('convergencia (3200 x 100 frente a 6400 x 200, Gamma = 0.10): mayor diferencia relativa de las envolventes en 3-30 tau_1: '
+          + ', '.join(f'|h_{k+1}| {np.abs(h[k][z]/h2[k][z] - 1).max():.2f}' for k in range(3)) + f', D {np.abs(D[(xD >= 3) & (xD <= 30)]/D2[(xD2 >= 3) & (xD2 <= 30)] - 1).max():.2f}'
+          + '; hasta 20 tau_1: ' + ', '.join(f'{np.abs(h[k][(x >= 3) & (x <= 20)]/h2[k][(x >= 3) & (x <= 20)] - 1).max():.2f}' for k in range(3)))
+
+
+def figura_alta():
+    """Figura de trabajo de las corridas de alta resolución, seis paneles: (a) |h_1| de la nube del artículo al
+    crecer Gamma; (b) su potencial; (c) su FD junto a la órbita circular en 10 tau_1; (d) |h_1| de las otras formas
+    con Gamma = 0.05 y sin autogravedad; (e) borde interior de la FD de dos formas huecas; (f) la corrida frente a la
+    mezcla sola desde 5 tau_1."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    sup, tinta, tinta2, reja = '#ffffff', '#0b0b0b', '#52514e', '#e4e3df'
+    plt.rcParams.update({'font.size': 9, 'axes.edgecolor': tinta2, 'axes.labelcolor': tinta2, 'xtick.color': tinta2,
+                         'ytick.color': tinta2, 'text.color': tinta, 'axes.linewidth': 0.6, 'figure.facecolor': sup,
+                         'axes.facecolor': sup, 'savefig.facecolor': sup})
+    fig, ax = plt.subplots(2, 3, figsize=(12.5, 7.6))
+    azules = plt.cm.Blues(np.linspace(0.4, 0.95, 4))
+    tau = B.TAU1; ts = np.arange(0.0, 30.6*tau, 10.0)
+    # (a) y (b): la nube del artículo
+    a = ax[0, 0]
+    a.plot(ts[1:]/tau, envolvente(h_libre('p2', 1, ts), ts)[1:], color=tinta2, lw=1.0, ls=(0, (4, 2.5)), label=r'$\Gamma=0$ (exact)')
+    for (gam, n), col in zip(ALTA['p2'], azules):
+        x, h, xD, D, _ = carga_alta(n)
+        a.plot(x[1:], h[0][1:], color=col, lw=1.5, label=rf'$\Gamma={gam:g}$')
+        ax[0, 1].plot(xD[1:], D[1:], color=col, lw=1.5)
+    xx = np.array([6.0, 28.0])
+    a.plot(xx, 3.0*xx**-3.0, color=tinta2, lw=0.8, ls=':'); a.text(20, 3.0*20**-3.0*0.35, r'$t^{-3}$', fontsize=8, color=tinta2)
+    a.plot(xx, 0.25*xx**-1.2, color=tinta2, lw=0.8, ls=':'); a.text(20, 0.25*20**-1.2*1.5, r'$t^{-1.2}$', fontsize=8, color=tinta2)
+    a.set_title(r'(a) $|h_1|/h_0$, cloud of the article', loc='left', fontsize=9.5, pad=6); a.legend(frameon=False, fontsize=7.5, loc='lower left')
+    a.set_ylim(5e-6, 1.5)
+    xB, hB, xDB, DB, _ = curvas('B0', 'fijo')
+    a = ax[0, 1]
+    a.plot(xx, 0.6*xx**-3.5, color=tinta2, lw=0.8, ls=':'); a.text(7, 0.6*7**-3.5*0.3, r'$t^{-3.5}$', fontsize=8, color=tinta2)
+    a.plot(xx, 0.02*xx**-1.7, color=tinta2, lw=0.8, ls=':'); a.text(20, 0.02*20**-1.7*1.6, r'$t^{-1.7}$', fontsize=8, color=tinta2)
+    a.set_title(r'(b) deviation $D$ of the potential of the gas', loc='left', fontsize=9.5, pad=6); a.set_ylim(1e-6, 0.2)
+    # (c) perfiles junto a la órbita circular
+    a = ax[0, 2]
+    xp = np.linspace(0.005, 0.395, 40)
+    a.plot(xp, xp**2*np.exp(-xp**2)/(SJ*np.sqrt(np.pi)/4), color=tinta2, lw=1.0, ls=(0, (4, 2.5)), label='initial datum')
+    for (gam, n), col in zip(ALTA['p2'], azules):
+        P = np.load(os.path.join(SP, n, 'perfiles.npz')); x = 0.5*(P['x'][1:] + P['x'][:-1])
+        a.plot(x, P['f0'][2], color=col, lw=1.5, label=rf'$\Gamma={gam:g}$: $q_1={exponente_perfil(n):.2f}$')
+    a.set_xscale('log'); a.set_yscale('log'); a.set_xlabel(r'$J/\sigma_J$')
+    a.set_title(r'(c) mass per unit $J$ at the circular orbit, $t=10\tau_1$', loc='left', fontsize=9.5, pad=6); a.legend(frameon=False, fontsize=7.5, loc='lower right')
+    # (d) otras formas
+    a = ax[1, 0]
+    for forma in ('p4', 'h05', 'anillo', 'meseta'):
+        pf, pot, nj, col, mk, rot = F.TODAS[forma]
+        tauf = R.banda_perfil(pf, SJ)[3]; tsf = np.arange(0.0, 30.6*tauf, 10.0)
+        a.plot(tsf[1:]/tauf, envolvente(h_libre(forma, 1, tsf), tsf)[1:], color=col, lw=0.9, ls=(0, (4, 2.5)))
+        x, h, xD, D, _ = carga_alta(ALTA[forma][0][1])
+        a.plot(x[1:], h[0][1:], color=col, lw=1.5, label=rot)
+    a.set_ylim(5e-7, 1.5)
+    a.set_title(r'(d) $|h_1|/h_0$, other shapes: free (dashed) and $\Gamma=0.05$', loc='left', fontsize=9.5, pad=6); a.legend(frameon=False, fontsize=7.5, loc='lower left')
+    # (e) borde interior
+    a = ax[1, 1]
+    for forma, ls in (('h05', '-'), ('meseta', (0, (1, 1)))):
+        pf, pot, nj, col, mk, rot = F.TODAS[forma]
+        Jg = np.linspace(0.0, 3*SJ, 3001); f = R.perfil_J(Jg, SJ, pf); f = f/(f.sum()*(Jg[1] - Jg[0]))
+        a.plot(Jg/SJ, f, color=tinta2, lw=0.9, ls=ls)
+        for (gam, n), al in zip(ALTA[forma], (0.55, 1.0)):
+            P = np.load(os.path.join(SP, n, 'perfiles_ancho.npz')); x = 0.5*(P['x'][1:] + P['x'][:-1])
+            a.plot(x, P['f0'][2], color=col, lw=1.4, ls=ls, alpha=al)
+    a.set_xlim(0, 1.2); a.set_xlabel(r'$J/\sigma_J$')
+    a.set_title(r'(e) inner edge at $t=10\tau_1$: initial (gray), $\Gamma=0.05$, $0.10$', loc='left', fontsize=9.5, pad=6)
+    a.legend(handles=[Line2D([], [], color=F.TODAS['h05'][3], lw=1.4, label=F.TODAS['h05'][5]),
+                      Line2D([], [], color=F.TODAS['meseta'][3], lw=1.4, ls=(0, (1, 1)), label=F.TODAS['meseta'][5])], frameon=False, fontsize=7.5, loc='lower right')
+    # (f) corrida frente a mezcla sola
+    a = ax[1, 2]
+    for n, col, rot in (('H_p2_050', azules[1], r'article, $\Gamma=0.05$'), ('H_p2_150', azules[3], r'article, $\Gamma=0.15$'),
+                        ('H_h05_050', F.TODAS['h05'][3], r'hollow, $\Gamma=0.05$')):
+        c = np.load(os.path.join(SP, n, 'cinematica.npz')); t = c['t']; x = t/float(c['tau'])
+        a.plot(x[1:], envolvente(np.abs(c['hk'][:, 0]), t)[1:], color=col, lw=1.5, label=rot)
+        cin = np.abs(c['hk_cin'][1, 0]); z = np.isfinite(cin)
+        a.plot(x[z], envolvente(cin[z], t[z]), color=col, lw=1.0, ls=(0, (1, 1)))
+    a.set_ylim(1e-5, 0.3)
+    a.set_title(r'(f) run (solid) and phase mixing alone from $5\tau_1$ (dotted)', loc='left', fontsize=9.5, pad=6); a.legend(frameon=False, fontsize=7.5, loc='lower left')
+    for a in (ax[0, 0], ax[0, 1], ax[1, 0], ax[1, 2]):
+        a.set_xscale('log'); a.set_yscale('log'); a.set_xlim(1, 31); a.set_xlabel(r'$t/\tau_1$')
+    for a in ax.ravel():
+        a.grid(True, color=reja, lw=0.5); a.set_axisbelow(True)
+        for lado in ('top', 'right'):
+            a.spines[lado].set_visible(False)
+    fig.tight_layout(w_pad=1.5, h_pad=1.5)
+    os.makedirs(SAL, exist_ok=True)
+    fig.savefig(os.path.join(SAL, 'colas_alta.png'), dpi=120); plt.close(fig)
+    print('escrita', os.path.join(SAL, 'colas_alta.png'))
+
+
 if __name__ == '__main__':
-    pasos = dict(libre=libre, tabla=tabla, figura=figura)
+    pasos = dict(libre=libre, tabla=tabla, figura=figura, alta=alta, figura_alta=figura_alta)
     if len(sys.argv) < 2 or sys.argv[1] not in pasos:
         print(__doc__)
     else:
