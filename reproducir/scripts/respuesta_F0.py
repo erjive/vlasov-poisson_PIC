@@ -3,6 +3,9 @@
 Pasos:
     python3 respuesta_F0.py tabla <nombre> <perf.npz> <ext.npz> <lin.npz> [<lin2.npz>]
     python3 respuesta_F0.py figura <salida.png> <nombre> <perf.npz> <lin.npz> [<lin2.npz>] [-- <nombre> <perf> <lin> ...]
+    python3 respuesta_F0.py juntar <salida.npz> <lin_cluster.npz> <lin_corregido.npz>
+    python3 respuesta_F0.py articulo      tabla (docs/articulo/tab_respuesta.tex), figuras respuesta_lineal.pdf y
+                                          cambio_F0.pdf, y cifras de la sección del artículo (Sec:Rates)
 
 tabla, por corrida:
 1. Cambio de F_0: el medido (F0_lento, suavizado con el núcleo de la evolución) frente al cuasilineal, dG/dJ con G
@@ -207,7 +210,195 @@ def figura(sal, *args):
     print('escrita', sal)
 
 
+def juntar(sal, cluster, corregido):
+    """Junta la variante con F_0 medido de `corregido` (rehecha con F0_lento corregido) con la cuasilineal de
+    `cluster`, que no usa F0_lento. Antes comprueba que la lineal con F_0 fijo y la libre coinciden en los dos."""
+    a = np.load(cluster); b = np.load(corregido)
+    for k in ('h1_lin', 'h1_lib', 'h1_libx', 'h1_cor', 'D_cor', 'F0'):
+        print(f'{k:8} máx|diferencia|/máx|valor| = {np.abs(a[k] - b[k]).max()/np.abs(a[k]).max():.1e}')
+    claves_v = ('h1_linv', 'h2_linv', 'D_linv', 'h1_corv', 'h2_corv', 'D_corv', 'tF', 'dD', 'tD', 'dF0_ini', 'Hg_linv',
+                'err_F0')
+    d = {k: a[k] for k in a.files}
+    d.update({k: b[k] for k in claves_v if k in b.files})
+    np.savez(sal, **d)
+    print('escrito', sal)
+
+
+# Corridas de la prueba (vlasov-poisson_PIC: respuesta_mezcla.py; VlasovPoisson_PIC_sp: respuesta*.slurm): nombre,
+# forma y Gamma. Los archivos están en exe/rep/12_nube/<nombre>/ de VlasovPoisson_PIC_sp.
+CASOS = [('H_p2_050', 'p2', 0.05), ('H_p2_100', 'p2', 0.10), ('H_p2_150', 'p2', 0.15), ('H_p4_100', 'p4', 0.10),
+         ('H_h05_050', 'h05', 0.05), ('H_h05_100', 'h05', 0.10), ('H_anillo_050', 'anillo', 0.05),
+         ('H_meseta_100', 'meseta', 0.10)]
+FORMA = {'p2': 'reference', 'p4': r'$J^4e^{-J^2/\sigma_J^2}$', 'h05': r'$(J-0.05)_+^2e^{-J^2/\sigma_J^2}$',
+         'anillo': 'ring', 'meseta': 'water bag'}
+SP = os.path.join(os.environ.get('VP_PIC_SP', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(AQUI))),
+                                                           'VlasovPoisson_PIC_sp')), 'exe', 'rep', '12_nube')
+EXE = os.path.join(os.path.dirname(os.path.dirname(AQUI)), 'exe')
+# La meseta: el F_0 medido del cluster tenía la masa de más allá de jmax amontonada en la última franja; la variante
+# con F_0 medido se rehízo en el portátil con F0_lento corregido (commit 7e88913) y se juntó con la cuasilineal del
+# cluster (paso juntar).
+CORREGIDAS = {'H_meseta_100': os.path.join(EXE, 'demo_eta', 'respuesta', 'H_meseta_100_t5_lin_F0t_junta.npz')}
+
+
+def archivos(n):
+    """perfiles, extraído y lineal (con las variantes F_0 medido y cuasilineal) de la corrida n."""
+    r = os.path.join(SP, n)
+    return (os.path.join(r, 'respuesta_t5_perf.npz'), os.path.join(r, 'respuesta_t5_ext.npz'),
+            CORREGIDAS.get(n, os.path.join(r, 'respuesta_t5_lin_F0t.npz')))
+
+
+def articulo():
+    """Tabla tab_respuesta.tex y figuras figuras/respuesta_lineal.pdf (|h_1| de las ocho corridas frente a las
+    cuatro predicciones) y figuras/cambio_F0.pdf (cambio de F_0 medido y cuasilineal), y las cifras del texto."""
+    from respuesta_mezcla import cocientes, envolvente
+    art = os.path.join(os.path.dirname(os.path.dirname(AQUI)), 'docs', 'articulo')
+    xs = (8, 12, 16, 20, 25)
+    filas = []
+    print('Cocientes corrida/curva de las envolventes de |h_1| en t/tau_1 = ' + ', '.join(map(str, xs)))
+    for n, forma, gam in CASOS:
+        perf, ext, lin = archivos(n)
+        d = np.load(lin); cl, cf, Dl, Df = cocientes(d, xs)
+        tau = float(d['tau']); er = envolvente(np.abs(d['hq'][:, 0]), d['tq'])
+        nivel = [er[cerca(d['tq']/tau, x)] for x in xs]
+        print(f'{n:13} libre ' + ' '.join(f'{v:5.2f}' for v in cf) + ' | ' +
+              ' | '.join(f'{k} ' + ' '.join(f'{v:5.2f}' for v in c) for k, c in cl.items()))
+        print(f'{"":13} |h_1|/h_0 de la corrida ' + ' '.join(f'{v:.1e}' for v in nivel) + f'; D 8 y 12 tau_1: lineal '
+              + ' '.join(f'{v:.2f}' for v in Dl) + ', libre ' + ' '.join(f'{v:.2f}' for v in Df)
+              + f'; autoconsistencia de Phi_0 {float(d["autoc"]):.1e}')
+        i20, i25 = xs.index(20), xs.index(25)
+        celdas = [FORMA[forma] if n in ('H_p2_050', 'H_p4_100', 'H_h05_050', 'H_anillo_050', 'H_meseta_100') else '',
+                  f'${gam:g}$']
+        for i in (i20, i25):
+            celdas += [f'${cf[i]:.2f}$'] + [f'${cl[k][i]:.2f}$' for k in ('lineal', 'F_0 lento', 'cuasilineal')]
+        filas.append(' & '.join(celdas) + r' \\%')
+        if n in ('H_p2_150', 'H_p4_100', 'H_h05_100', 'H_anillo_050'):
+            filas.append(r'\hline%')
+    with open(os.path.join(art, 'tab_respuesta.tex'), 'w') as fh:
+        fh.write('% Escrito por reproducir/scripts/respuesta_F0.py articulo; no editar a mano.\n\\newcommand{\\TabRespuesta}{%\n'
+                 + '\n'.join(filas) + '\n}\n')
+    print('escrita', os.path.join(art, 'tab_respuesta.tex'))
+    # Cambio de F_0, medido y cuasilineal: amplitud (en unidades del máximo de F_0 suavizado), dónde está y correlación.
+    print('Cambio de F_0: máx|dF_0|/máx F_0 medido y cuasilineal, J del máximo medido/J_med, correlación, en ' + ', '.join(map(str, xs)) + ' tau_1')
+    for n, forma, gam in CASOS:
+        perf, ext, lin = archivos(n)
+        p = np.load(perf); d = cargar([lin])
+        tau, t0, L = float(p['tau']), float(p['t0']), float(p['L']); dJ = float(p['dJ'])
+        c = 8*np.pi**2*L*2*np.pi*dJ; s = float(d.get('suave', 8.0))
+        F0, Jn = d['F0'], d['Jn']; Fmax = gaussian_filter1d(F0, s, mode='nearest').max()
+        Jmed = Jn[np.searchsorted(np.cumsum(F0)/F0.sum(), 0.5)]
+        tF, dlt = F0_lento(p, tau, t0, c); dm = gaussian_filter1d(dlt, s, axis=1, order=0, mode='nearest')
+        tG, dq = cambio_cuasilineal(d, s, dJ, tau)
+        fila = []
+        for T in xs:
+            a = dm[cerca(tF, T*tau)]; b = dq[cerca(tG, T*tau)]
+            fila.append(f'{np.abs(a).max()/Fmax:.2f}/{np.abs(b).max()/Fmax:.2f} J {Jn[np.argmax(np.abs(a))]/Jmed:.2f} '
+                        f'r {np.dot(a, b)/np.sqrt(np.dot(a, a)*np.dot(b, b)):.2f}')
+        print(f'{n:13} ' + ' | '.join(fila))
+    figura_respuesta(os.path.join(art, 'figuras', 'respuesta_lineal.pdf'))
+    figura_F0(os.path.join(art, 'figuras', 'cambio_F0.pdf'))
+
+
+def _estilo():
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    sup, tinta, tinta2, reja = '#ffffff', '#0b0b0b', '#52514e', '#e4e3df'
+    plt.rcParams.update({'font.size': 9, 'axes.edgecolor': tinta2, 'axes.labelcolor': tinta2, 'xtick.color': tinta2,
+                         'ytick.color': tinta2, 'text.color': tinta, 'axes.linewidth': 0.6, 'figure.facecolor': sup,
+                         'axes.facecolor': sup, 'savefig.facecolor': sup})
+    return plt, sup, tinta, tinta2, reja
+
+
+def figura_respuesta(sal):
+    """|h_1|/h_0 de cada corrida desde t0 = 5 tau_1 frente a la mezcla sola y a la evolución lineal con F_0 fijo, con
+    el F_0 medido en la corrida y con el F_0 cuasilineal."""
+    from respuesta_mezcla import envolvente
+    import matplotlib.ticker as mt
+    from matplotlib.lines import Line2D
+    plt, sup, tinta, tinta2, reja = _estilo()
+    est = [('PIC', tinta, 1.5, '-'), ('phase mixing alone', '#eb6834', 1.2, (0, (1, 1.2))),
+           (r'linear, $\bar{F}$ fixed', '#2a78d6', 1.2, (0, (4, 2))),
+           (r'linear, $\bar{F}$ from PIC', '#1baf7a', 1.2, (0, (6, 1.5, 1, 1.5))),
+           (r'linear, quasilinear $\bar{F}$', '#eda100', 1.2, (0, (3, 1, 1, 1, 1, 1)))]
+    fig, ax = plt.subplots(2, 4, figsize=(10, 5.0), squeeze=False)
+    for i, (n, forma, gam) in enumerate(CASOS):
+        d = np.load(archivos(n)[2]); tau = float(d['tau']); a = ax[i//4, i % 4]
+        curvas = [(d['tq'], np.abs(d['hq'][:, 0])), (d['t'], np.abs(d['h1_libx'])), (d['t'], np.abs(d['h1_cor'])),
+                  (d['t'], np.abs(d['h1_corv'])), (d['t'], np.abs(d['h1_corc']))]
+        for (t, y), (_, col, lw, ls) in zip(curvas, est):
+            a.plot(t/tau, envolvente(y, t), color=col, lw=lw, ls=ls)
+        a.set_xscale('log'); a.set_yscale('log'); a.set_xlim(5, 30)
+        a.xaxis.set_major_locator(mt.FixedLocator((5, 10, 20, 30))); a.xaxis.set_minor_formatter(mt.NullFormatter())
+        a.xaxis.set_major_formatter(mt.FuncFormatter(lambda v, _: f'{v:g}'))
+        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:g}$', loc='left', fontsize=9, pad=4)
+        a.grid(True, which='major', color=reja, lw=0.6); a.set_axisbelow(True)
+        a.tick_params(length=3, width=0.6); a.tick_params(which='minor', length=2, width=0.4)
+        for lado in ('top', 'right'):
+            a.spines[lado].set_visible(False)
+        if i % 4 == 0:
+            a.set_ylabel(r'$|h_1|/h_0$')
+        if i >= 4:
+            a.set_xlabel(r'$t/\tau_1$')
+    fig.tight_layout(rect=(0, 0, 1, 0.92), w_pad=1.0, h_pad=1.2)
+    fig.legend(handles=[Line2D([], [], color=c, lw=lw, ls=ls, label=r) for r, c, lw, ls in est], loc='upper center',
+               ncol=5, frameon=False, fontsize=8, handlelength=2.6, columnspacing=1.2)
+    fig.savefig(sal); fig.savefig(os.path.join(EXE, 'demo_eta', 'respuesta', os.path.basename(sal).replace('.pdf', '.png')), dpi=110)
+    plt.close(fig)
+    print('escrita', sal)
+
+
+def figura_F0(sal, casos=('H_p2_150', 'H_h05_100', 'H_anillo_050', 'H_meseta_100'), TT=(10, 20)):
+    """Fila 1: F_0(J) en t0 (suavizado); filas siguientes: cambio de F_0 medido (parte lenta) y cuasilineal en los
+    tiempos TT, en unidades del máximo de F_0, frente a J/J_med."""
+    from matplotlib.lines import Line2D
+    plt, sup, tinta, tinta2, reja = _estilo()
+    MED, CL = '#1baf7a', '#eda100'
+    fig, ax = plt.subplots(1 + len(TT), len(casos), figsize=(10, 5.6), squeeze=False, sharex='col')
+    rot = {n: (forma, gam) for n, forma, gam in CASOS}
+    for j, n in enumerate(casos):
+        perf, ext, lin = archivos(n)
+        p = np.load(perf); d = cargar([lin])
+        tau, t0, L = float(p['tau']), float(p['t0']), float(p['L'])
+        dJ = float(p['dJ']); c = 8*np.pi**2*L*2*np.pi*dJ; s = float(d.get('suave', 8.0))
+        F0, Jn = d['F0'], d['Jn']
+        Fs = gaussian_filter1d(F0, s, mode='nearest'); Fmax = Fs.max()
+        cm = np.cumsum(F0)/F0.sum(); Jmed = Jn[np.searchsorted(cm, 0.5)]; x = Jn/Jmed
+        Jhi = Jn[np.searchsorted(cm, 0.995)]/Jmed
+        tF, dlt = F0_lento(p, tau, t0, c)
+        dm = gaussian_filter1d(dlt, s, axis=1, order=0, mode='nearest')/Fmax
+        tG, dq = cambio_cuasilineal(d, s, dJ, tau); dq = dq/Fmax
+        a = ax[0, j]
+        a.plot(x, Fs/Fmax, color=tinta, lw=1.2)
+        forma, gam = rot[n]
+        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:g}$', loc='left', fontsize=9, pad=4)
+        a.set_ylim(0, 1.1)
+        if j == 0:
+            a.set_ylabel(r'$\bar{F}/\max\bar{F}$ at $t_0$')
+        for i, T in enumerate(TT):
+            a = ax[1 + i, j]
+            a.axhline(0, color=tinta2, lw=0.6)
+            a.plot(x, dm[cerca(tF, T*tau)], color=MED, lw=1.4)
+            a.plot(x, dq[cerca(tG, T*tau)], color=CL, lw=1.4, ls=(0, (4, 2)))
+            a.text(0.97, 0.93, f'$t={T}\\tau_1$', transform=a.transAxes, ha='right', va='top', color=tinta2, fontsize=8.5)
+            if j == 0:
+                a.set_ylabel(r'$\Delta\bar{F}/\max\bar{F}$')
+        for a in ax[:, j]:
+            a.set_xlim(0, Jhi); a.grid(True, color=reja, lw=0.6); a.set_axisbelow(True)
+            a.tick_params(length=3, width=0.6)
+            for lado in ('top', 'right'):
+                a.spines[lado].set_visible(False)
+        ax[-1, j].set_xlabel(r'$J/J_{med}$')
+    fig.tight_layout(rect=(0, 0, 1, 0.94), w_pad=1.0, h_pad=1.0)
+    fig.legend(handles=[Line2D([], [], color=MED, lw=1.4, label=r'PIC, slow part of the change of $\bar{F}$'),
+                        Line2D([], [], color=CL, lw=1.4, ls=(0, (4, 2)), label='quasilinear prediction')],
+               loc='upper center', ncol=2, frameon=False, fontsize=8.5)
+    fig.savefig(sal); fig.savefig(os.path.join(EXE, 'demo_eta', 'respuesta', os.path.basename(sal).replace('.pdf', '.png')), dpi=110)
+    plt.close(fig)
+    print('escrita', sal)
+
+
 if __name__ == '__main__':
-    if len(sys.argv) < 3 or sys.argv[1] not in ('tabla', 'figura'):
+    pasos = {'tabla': tabla, 'figura': figura, 'juntar': juntar, 'articulo': articulo}
+    if len(sys.argv) < 2 or sys.argv[1] not in pasos:
         sys.exit(__doc__)
-    (tabla if sys.argv[1] == 'tabla' else figura)(*sys.argv[2:])
+    pasos[sys.argv[1]](*sys.argv[2:])
