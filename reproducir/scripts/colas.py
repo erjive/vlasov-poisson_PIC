@@ -85,7 +85,7 @@ def gamma_fijo(n):
     """Gamma de una corrida de L fija de bulto.py (factor J^2 exp(-J^2/s_J^2))."""
     sj = B.parametro(n, 'sr', 0.1); pot = 'isocrono' if B.FONDO.get(n, 'isocrono') == 'isocrono' else 'kepler'
     Fo = R.fondo(pot, L0)
-    return Fo['g']*B.info[n]['a0']/(3.0*Fo['c']**-4*(F.J_mediana(None)*sj/SJ)**1.5)
+    return Fo['g']*B.info[n]['a0']/(3.0*Fo['c']**-4*R.J_promedio(sj)**1.5)
 
 
 def libre():
@@ -121,7 +121,7 @@ def tabla():
         r = np.load(os.path.join(SP, n, 'resumen.npz'))
         forma = n.split('_')[1]
         m = float(open(os.path.join(SP, n, 'params_usados.par')).read().split('a0')[1].split('=')[1].split()[0]) if os.path.exists(os.path.join(SP, n, 'params_usados.par')) else np.nan
-        gam = R.G*m/(abs(F.OMEGA_P)*F.J_mediana(F.TODAS[forma][0])**1.5)
+        gam = R.G*m/(abs(F.OMEGA_P)*R.J_promedio(SJ, F.TODAS[forma][0])**1.5)
         print(f'{forma:14} {n:13} {m:7g} {gam:6.3f} {float(r["mu"]):5.2f} | {pendiente(x, h[0], 3, 10):6.2f} {"-":>6} {"-":>6} {pendiente(xD, D, 3, 10):6.2f} | '
               f'{pendiente(x, h[0], 10, 20):9.2f} | {h[0][np.argmin(abs(x - 10))]:9.1e} {h[0][np.argmin(abs(x - 20))]:9.1e} {D[np.argmin(abs(xD - 10))]:8.1e}')
 
@@ -201,6 +201,8 @@ def figura():
 ALTA = {'p2': [(0.025, 'H_p2_025'), (0.05, 'H_p2_050'), (0.10, 'H_p2_100'), (0.15, 'H_p2_150')],
         'p4': [(0.05, 'H_p4_050'), (0.10, 'H_p4_100')], 'h05': [(0.05, 'H_h05_050'), (0.10, 'H_h05_100')],
         'anillo': [(0.05, 'H_anillo_050'), (0.10, 'H_anillo_100')], 'meseta': [(0.05, 'H_meseta_050'), (0.10, 'H_meseta_100')]}
+# El número del nombre es 1000 Gamma con la mediana de J, con la que se fijaron las masas. El artículo usa el promedio <J>.
+ALTA = {f: [(g*(F.J_mediana(F.TODAS[f][0])/R.J_promedio(SJ, F.TODAS[f][0]))**1.5, n) for g, n in L] for f, L in ALTA.items()}
 
 
 def carga_alta(n):
@@ -284,7 +286,7 @@ def figura_alta():
     a.plot(ts[1:]/tau, envolvente(h_libre('p2', 1, ts), ts)[1:], color=tinta2, lw=1.0, ls=(0, (4, 2.5)), label=r'$\Gamma=0$ (exact)')
     for (gam, n), col in zip(ALTA['p2'], azules):
         x, h, xD, D, _ = carga_alta(n)
-        a.plot(x[1:], h[0][1:], color=col, lw=1.5, label=rf'$\Gamma={gam:g}$')
+        a.plot(x[1:], h[0][1:], color=col, lw=1.5, label=rf'$\Gamma={gam:.3f}$')
         ax[0, 1].plot(xD[1:], D[1:], color=col, lw=1.5)
     xx = np.array([6.0, 28.0])
     a.plot(xx, 3.0*xx**-3.0, color=tinta2, lw=0.8, ls=':'); a.text(20, 3.0*20**-3.0*0.35, r'$t^{-3}$', fontsize=8, color=tinta2)
@@ -302,7 +304,7 @@ def figura_alta():
     a.plot(xp, xp**2*np.exp(-xp**2)/(SJ*np.sqrt(np.pi)/4), color=tinta2, lw=1.0, ls=(0, (4, 2.5)), label='initial datum')
     for (gam, n), col in zip(ALTA['p2'], azules):
         P = np.load(os.path.join(SP, n, 'perfiles.npz')); x = 0.5*(P['x'][1:] + P['x'][:-1])
-        a.plot(x, P['f0'][2], color=col, lw=1.5, label=rf'$\Gamma={gam:g}$: $q_1={exponente_perfil(n):.2f}$')
+        a.plot(x, P['f0'][2], color=col, lw=1.5, label=rf'$\Gamma={gam:.3f}$: $q_1={exponente_perfil(n):.2f}$')
     a.set_xscale('log'); a.set_yscale('log'); a.set_xlabel(r'$J/\sigma_J$')
     a.set_title(r'(c) mass per unit $J$ at the circular orbit, $t=10\tau_1$', loc='left', fontsize=9.5, pad=6); a.legend(frameon=False, fontsize=7.5, loc='lower right')
     # (d) otras formas
@@ -412,7 +414,7 @@ def articulo():
             m = masa_alta(n)
             pend[forma].append((gam, s[1]))
             print(f'{"":7} {gam:5.3f}  {m:7.5f} | {s[0]:10.2f} {s[1]:5.2f} {s[2]:5.2f} | {sD[0]:7.2f} {sD[1]:5.2f} | {h20:9.1e} | {q1:4.2f} {q0:5.2f} | {jin:.2f}')
-            celdas = ['', f'${gam:g}$', f'${m:g}$', num(s[0]), num(s[1]),
+            celdas = ['', f'${gam:.3f}$', f'${m:g}$', num(s[0]), num(s[1]),
                       num(sD[0]), num(sD[1]), num(h20), num(q1), num(jin)]
             filas.append(' & '.join(celdas) + r' \\%')
         filas.append(r'\hline%')
@@ -451,7 +453,7 @@ def articulo():
     a.plot(ts[1:]/tau, envolvente(h_libre('p2', 1, ts), ts)[1:], color=tinta2, lw=1.0, ls=(0, (4, 2.5)), label=r'$\Gamma=0$')
     for (gam, n), col in zip(ALTA['p2'], azules):
         x, h, xD, D, _ = carga_alta(n)
-        a.plot(x[1:], h[0][1:], color=col, lw=1.4, label=rf'$\Gamma={gam:g}$')
+        a.plot(x[1:], h[0][1:], color=col, lw=1.4, label=rf'$\Gamma={gam:.3f}$')
         ax[0, 1].plot(xD[1:], D[1:], color=col, lw=1.4)
     a.set_ylim(5e-6, 1.5); a.legend(frameon=False, fontsize=7.5, loc='lower left')
     a.set_title(r'(a) $|h_1|/h_0$, reference shape', loc='left', fontsize=9.5, pad=6)
@@ -463,7 +465,7 @@ def articulo():
            ls=(0, (4, 2.5)), label=r'initial datum: $q_1=2$')
     for (gam, n), col in zip(ALTA['p2'], azules):
         P = np.load(os.path.join(SP, n, 'perfiles.npz')); xm = 0.5*(P['x'][1:] + P['x'][:-1])
-        a.plot(xm, P['a'][2, 0], color=col, lw=1.4, label=rf'$\Gamma={gam:g}$: $q_1={exponente_perfil(n):.2f}$')
+        a.plot(xm, P['a'][2, 0], color=col, lw=1.4, label=rf'$\Gamma={gam:.3f}$: $q_1={exponente_perfil(n):.2f}$')
     a.set_xscale('log'); a.set_yscale('log'); a.set_xlabel(r'$J/\sigma_J$'); a.set_xlim(0.005, 0.4)
     a.xaxis.set_major_locator(FixedLocator((0.01, 0.03, 0.1, 0.3))); a.xaxis.set_minor_formatter(NullFormatter())
     a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{v:g}'))
@@ -481,7 +483,7 @@ def articulo():
     a.set_title(r'(d) $|h_1|/h_0$, other shapes', loc='left', fontsize=9.5, pad=6)
     a.legend(handles=[Line2D([], [], color=F.TODAS[f][3], lw=1.5, label=ROTULO[f]) for f in ('p4', 'h05', 'anillo', 'meseta')]
              + [Line2D([], [], color=tinta2, lw=0.9, ls=(0, (4, 2.5)), label=r'$\Gamma=0$'),
-                Line2D([], [], color=tinta2, lw=0.8, label=r'$\Gamma=0.05$'), Line2D([], [], color=tinta2, lw=1.5, label=r'$\Gamma=0.1$')],
+                Line2D([], [], color=tinta2, lw=0.8, label=r'$\Gamma\approx 0.05$'), Line2D([], [], color=tinta2, lw=1.5, label=r'$\Gamma\approx 0.1$')],
              frameon=False, fontsize=7, loc='lower left', ncol=2, handlelength=2.0, columnspacing=1.0)
     a = ax[1, 1]
     for forma, ls in (('h05', '-'), ('meseta', (0, (1, 1)))):
@@ -496,8 +498,8 @@ def articulo():
     a.legend(handles=[Line2D([], [], color=F.TODAS['h05'][3], lw=1.4, label=ROTULO['h05']),
                       Line2D([], [], color=F.TODAS['meseta'][3], lw=1.4, ls=(0, (1, 1)), label=ROTULO['meseta']),
                       Line2D([], [], color=tinta2, lw=0.9, label=r'$t=0$'),
-                      Line2D([], [], color=tinta2, lw=1.4, alpha=0.5, label=r'$\Gamma=0.05$'),
-                      Line2D([], [], color=tinta2, lw=1.4, label=r'$\Gamma=0.1$')], frameon=False, fontsize=7, loc='upper left', ncol=2,
+                      Line2D([], [], color=tinta2, lw=1.4, alpha=0.5, label=r'$\Gamma\approx 0.05$'),
+                      Line2D([], [], color=tinta2, lw=1.4, label=r'$\Gamma\approx 0.1$')], frameon=False, fontsize=7, loc='upper left', ncol=2,
              handlelength=2.0, columnspacing=1.0)
     a = ax[1, 2]
     for forma in ALTA:

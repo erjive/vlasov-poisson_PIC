@@ -120,6 +120,22 @@ for m in (0.021, 0.022, 0.023, 0.024):
     filas, columnas = recorte_reticula(*RETICULA[n])
     CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, lattice $400\times 100$, truncated'))
     CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
+# Sexta tanda (2026-11-22): el inicio del núcleo entre a0 = 0.015 y 0.02, donde no había corridas, con la misma
+# retícula recortada de la quinta tanda. B015 ya existe con 400 x 25, así que la de 0.015 se llama B015q.
+for m in (0.015, 0.016, 0.017, 0.018, 0.019):
+    n = 'B015q' if m == 0.015 else f'B{int(round(m*1000)):03d}'
+    RETICULA[n] = (400, 100, 1e-7)
+    filas, columnas = recorte_reticula(*RETICULA[n])
+    CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, lattice $400\times 100$, truncated'))
+    CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
+# Séptima tanda (2026-11-22): la sexta mostró un grupo persistente desde a0 = 0.015 y ninguno en 0.01. Estas corridas
+# ubican su aparición, con la misma retícula recortada.
+for m in (0.011, 0.012, 0.013, 0.014):
+    n = f'B{int(round(m*1000)):03d}'
+    RETICULA[n] = (400, 100, 1e-7)
+    filas, columnas = recorte_reticula(*RETICULA[n])
+    CORRIDAS.append((n, m, len(columnas), True, rf'$a_0={m:g}$, lattice $400\times 100$, truncated'))
+    CAMBIOS[n] = {'Nrc': str(len(filas)), 'state': 'checkpoint', 'checkpointfile': f'demo_eta/bulto/ic/{n}.dat'}
 info = {c[0]: dict(a0=c[1], npc=c[2], sg=c[3], desc=c[4]) for c in CORRIDAS}
 
 
@@ -322,6 +338,30 @@ def escalas(n):
     return A, wb, wb/(omax - omin)
 
 
+def _forma(n):
+    return parametro(n, 'sr', 0.1), parametro(n, 'sp', 0.1), 'kepler' if FONDO.get(n) == 'puntual' else 'isocrono'
+
+
+def mu_pasiva(n):
+    """mu = (A/(Delta Omega Delta J))^(1/2) con la A de la nube que se mueve sola en el potencial externo
+    (mu_convenciones.coef_pasivo). Lo fija el dato inicial: mu = c (M_gas/M)^(1/2), con c dado por la forma de la nube.
+    Es la convención del artículo desde el 2026-11-22; escalas() sigue dando la A medida en la corrida."""
+    if not info[n]['sg']:
+        return 0.0
+    import mu_convenciones as C
+    sj, sq, pot = _forma(n)
+    return C.coef_pasivo(None, sj, sq, pot)[1]*np.sqrt(info[n]['a0'])
+
+
+def gamma(n):
+    """Gamma = g M_gas/(|Omega_0'| <J>^(3/2)) de la nube n, con <J> el promedio de la acción sobre la masa."""
+    if not info[n]['sg']:
+        return 0.0
+    import mu_convenciones as C
+    sj, _, pot = _forma(n)
+    return C.gamma_media(info[n]['a0'], None, sj, pot)
+
+
 def resumen():
     with open(ruta('resumen.txt'), 'w') as fo:
         fo.write(f'tau_1 = {TAU1:.0f} (banda del isócrono desnudo [{OM_MIN}, {OM_MAX}])\n')
@@ -355,7 +395,7 @@ def transicion(solo=None):
         w = np.asarray(d['w']); Jf = np.asarray(d['J'][-1]); ok = np.isfinite(Jf)
         tau = banda(n)[3]
         v = (t >= 10*tau) & (t <= 20*tau); u = t >= 20*tau
-        mu = escalas(n)[2] if info[n]['sg'] else 0.0
+        mu = mu_pasiva(n)
         nucleo = w[ok & (Jf < 0.06)].sum()/w.sum()
         filas.append((info[n]['a0'] if info[n]['sg'] else 0.0, n, mu, np.abs(hk[v, 1]).mean(), np.abs(hk[u, 1]).mean(),
                       np.abs(hkd[v, 1]).mean(), nucleo, info[n]['npc']))
@@ -371,7 +411,8 @@ def transicion(solo=None):
 # resolución por omisión y corridas de convergencia (N_Q = 100 o N_J = 800).
 FAMILIAS = [
     (r'$\sigma_Q=\sigma_J=0.1$', ['B0', 'B1', 'B2', 'B015', 'B02', 'B025', 'B3', 'B04', 'B05', 'B07', 'B4', 'B5'],
-     ['B2q', 'B2j', 'B02q', 'B021', 'B022', 'B023', 'B024', 'B025h', 'B4q']),
+     ['B2q', 'B2j', 'B011', 'B012', 'B013', 'B014', 'B015q', 'B016', 'B017', 'B018', 'B019', 'B02q', 'B021', 'B022', 'B023',
+      'B024', 'B025h', 'B4q']),
     (r'$\sigma_J=0.05$', ['J05_0.005', 'J05_0.01', 'J05_0.02'], []),
     (r'$\sigma_J=0.2$', ['J20_0.02', 'J20_0.04', 'J20_0.08'], []),
     (r'$\sigma_Q=0.2$', ['Q2_0.01', 'Q2_0.02', 'Q2_0.04', 'Q2_0.08'], []),
@@ -504,7 +545,7 @@ def estado(solo=None):
             continue
         d = nucleo(n); t = d['t']; tau = banda(n)[3]
         u = t >= 20*tau
-        mu = escalas(n)[2] if info[n]['sg'] else 0.0
+        mu = mu_pasiva(n)
         filas.append((FONDO.get(n, 'isocrono'), parametro(n, 'sp', 0.1), parametro(n, 'sr', 0.1), mu, n, info[n]['npc'],
                       h1_ventana(n), d['rho_c'][u].mean(), d['m02'][u].mean(), float(d['mnuc']), float(d['rho_p']), amplitudes(n),
                       d['dr'][u].mean(), 1/ive(0, 0.5/parametro(n, 'sp', 0.1)**2)))
@@ -524,7 +565,7 @@ def estado(solo=None):
         for n in ('B02', 'B02q', 'Q2_0.02', 'J20_0.04', 'B025', 'B3', 'B04'):
             if os.path.exists(ruta(n, 'bulto.npz')) and (not solo or n in solo):
                 te, q = amortiguamiento(n)
-                fo.write(f'{n:10} mu = {escalas(n)[2]:4.2f}   tiempo = {te:6.2f} tau_1   cociente = {q:.3f}\n')
+                fo.write(f'{n:10} mu = {mu_pasiva(n):4.2f}   tiempo = {te:6.2f} tau_1   cociente = {q:.3f}\n')
     print(open(ruta('estado.txt')).read())
 
 
@@ -540,12 +581,14 @@ def articulo():
     # 1. Espacio de fases (r, p_r) de tres nubes con N_Q = 100: se mezcla (B2q), deja un núcleo en
     #    reposo (B02q) y deja un núcleo que oscila (B4q). La última columna amplía el entorno del
     #    máximo de densidad en la última instantánea.
+    from matplotlib.patches import Ellipse
+    R0, kap = 5.742, (0.5*(2.0 + np.sqrt(8.0)))**-3        # órbita circular y su frecuencia (L = 2)
     fig = plt.figure(figsize=(7.2, 4.9), layout='constrained')
     gs = fig.add_gridspec(3, 5)
     for i, n in enumerate(('B2q', 'B02q', 'B4q')):
         d = np.load(ruta(n, 'bulto.npz')); t = d['t']; c = colores(d['w']); orden = np.argsort(c)
         R, P = d['R'], d['P']
-        mu = escalas(n)[2]
+        gam = gamma(n)
         for k, x in enumerate((0, 0.5*TAU1, 3*TAU1, t[-1])):
             a = fig.add_subplot(gs[i, k])
             m = int(np.argmin(np.abs(t - x)))
@@ -562,7 +605,8 @@ def articulo():
                 a.set_yticklabels([])
             else:
                 a.set_ylabel('$p_r$')
-                a.text(0.97, 0.95, f'$\\mu={mu:.2f}$', transform=a.transAxes, fontsize=7, va='top', ha='right')
+                a.text(0.97, 0.95, f'$\\Gamma={gam:.2f}$', transform=a.transAxes, fontsize=7, va='top', ha='right')
+            a.plot(R0, 0, '+', color='#0072B2', ms=5, mew=0.8)     # la órbita circular
         nu = nucleo(n)
         if nu['rho_p'] > 1.5:                              # hay núcleo: se amplía su entorno
             r0, p0 = nu['centro']
@@ -570,6 +614,8 @@ def articulo():
             r0, p0 = float(R[-1][np.argmin(d['J'][-1])]), 0.0
         a = fig.add_subplot(gs[i, 4])
         a.scatter(R[-1][orden], P[-1][orden], c=c[orden], s=1.5, cmap='magma_r', vmin=-4, vmax=0, lw=0, rasterized=True)
+        a.add_patch(Ellipse((r0, p0), 2*np.sqrt(0.01/kap), 2*np.sqrt(0.01*kap), fill=False, ec='#0072B2', lw=0.8))   # J_* = 0.05 s_J
+        a.plot(R0, 0, '+', color='#0072B2', ms=6, mew=0.9)
         a.set_xlim(r0 - 1.2, r0 + 1.2); a.set_ylim(p0 - 0.08, p0 + 0.08)
         a.tick_params(labelsize=6); a.yaxis.tick_right()
         if i == 0:
@@ -578,97 +624,87 @@ def articulo():
             a.set_xlabel('$r$')
     fig.colorbar(sc, ax=fig.axes, label='$\\log_{10}$ of the relative mass', shrink=0.7, pad=0.06)
     fig.savefig(os.path.join(destino, 'bulto_fase.pdf'), dpi=220); plt.close(fig)
-    # 2. |h_1| y fluctuación del potencial propio, familia de referencia.
-    sel = ['B1', 'B2', 'B02', 'B025', 'B3', 'B4', 'B5']
-    mus = {n: escalas(n)[2] for n in sel}
+    # 2. |h_1| y fluctuación del potencial propio, cinco masas de la familia de referencia (la mejor retícula de cada una).
+    sel = ['B1', 'B2q', 'B02q', 'B025h', 'B4q']
+    gams = {n: gamma(n) for n in sel}
     cmap = plt.get_cmap('viridis')
     fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.4), layout='constrained')
     d = cargar('B0'); t = d['t']
     ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), 'k--', lw=1.0, label='no self-gravity')
     tc, Dc = campo_particulas('B0')
     ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), 'k--', lw=1.0)
+    tonos = dict(zip(sel, cmap(np.linspace(0.08, 0.86, len(sel)))))
     for n in sel:
-        col = cmap(0.85*mus[n]/1.16)
+        col = tonos[n]
         d = cargar(n); t = d['t']
         ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0,
-                       label=f'$\\mu={mus[n]:.2f}$')
+                       label=f'$\\Gamma={gams[n]:.2f}$')
         tc, Dc = campo_particulas(n)
         ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), color=col, lw=1.0)
-        q = {'B2': 'B2q', 'B02': 'B02q', 'B4': 'B4q'}.get(n)
-        if q:
-            d = cargar(q); t = d['t']
-            ax[0].semilogy(t/TAU1, envolvente(np.abs(np.asarray(d['hk'])[:, 1]), t), color=col, lw=1.0, ls=':')
-            tc, Dc = campo_particulas(q)
-            ax[1].semilogy(tc/TAU1, envolvente(Dc, tc), color=col, lw=1.0, ls=':')
     ax[0].set_ylabel('$|h_1|/h_0$'); ax[0].set_ylim(1e-5, 2)
     ax[1].set_ylabel('$\\|\\Phi_{gas}-\\langle\\Phi_{gas}\\rangle\\|/\\max|\\langle\\Phi_{gas}\\rangle|$')
     ax[1].set_ylim(1e-5, 0.3)
     for a in ax:
         a.set_xlabel('$t/\\tau_1$'); a.set_xlim(0, TFIN/TAU1); a.grid(alpha=0.3)
-    ley = fig.legend(*ax[0].get_legend_handles_labels(), loc='outside upper center', ncol=8, fontsize=7, frameon=False,
+    ley = fig.legend(*ax[0].get_legend_handles_labels(), loc='outside upper center', ncol=6, fontsize=7, frameon=False,
                      handlelength=1.6, columnspacing=1.0)
     for l in ley.get_lines():
         l.set_linewidth(2.0)
     for a, l in zip(ax, 'ab'):
         a.text(0.97, 0.95, f'({l})', transform=a.transAxes, ha='right', va='top')
     fig.savefig(os.path.join(destino, 'bulto_series.pdf')); plt.close(fig)
-    # 3. Estado tardío: perfil de densidad promediada en ángulo junto a la órbita circular, y
-    #    oscilación radial del núcleo.
+    # 3. Estado tardío: perfil de densidad promediada en ángulo junto a la órbita circular, con J_* y 0.2 sigma_J.
     from scipy.special import ive
-    fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.2), layout='constrained')
+    fig, a = plt.subplots(figsize=(4.8, 3.3), layout='constrained')
     xs = np.geomspace(1e-2, 3, 200)
-    ax[0].loglog(xs*0.1, xs**2*np.exp(1 - xs**2), color='0.6', lw=2.5, label='initial')
-    for n in ('B0', 'B2q', 'B015', 'B02q', 'B3', 'B05'):
-        d = nucleo(n); mu = escalas(n)[2] if info[n]['sg'] else 0.0
-        xc = 0.5*(d['x'][1:] + d['x'][:-1])*parametro(n, 'sr', 0.1)
-        ax[0].loglog(xc, d['perfil'], marker='o', ms=2.5, lw=1.0, color='k' if n == 'B0' else cmap(0.85*mu/1.16),
-                     ls='--' if n == 'B0' else '-', label='no self-gravity' if n == 'B0' else f'$\\mu={mu:.2f}$')
-    ax[0].axhline(1, color='k', lw=0.6, ls=':'); ax[0].axhline(1/ive(0, 50.0), color='k', lw=0.6, ls=':')
-    ax[0].text(0.28, 1.15, '$\\hat{F}_{max}$', fontsize=7, ha='right'); ax[0].text(0.28, 20.5, '$F_{max}$', fontsize=7, ha='right')
-    ax[0].set_xlim(5e-4, 0.3); ax[0].set_ylim(1e-3, 40)
-    ax[0].set_xlabel('$J$'); ax[0].set_ylabel('angle-averaged DF$/\\hat{F}_{max}$')
-    ax[0].legend(fontsize=6.5, frameon=False, loc='lower right')
-    # La serie de masas intermedias de la quinta tanda (N_Q = 100; 0.025 con la retícula fina), con un tono de azul
-    # por mu del más claro al más oscuro, y dos corridas de mu mayor en gris.
-    cruce = ('B02q', 'B021', 'B022', 'B023', 'B024', 'B025h')
-    azules = plt.get_cmap('Blues')(np.linspace(0.45, 1.0, len(cruce)))
-    for n, col, ls in [(n, c, '-') for n, c in zip(cruce, azules)] + [('B3', '0.55', '--'), ('B4q', '0.3', '--')]:
-        d = nucleo(n); t = d['t']; mu = escalas(n)[2]
-        k = int(round(45/(t[1] - t[0])))
-        media = np.array([d['rc'][max(0, i - k):i + k + 1].mean() for i in range(len(t))])
-        ax[1].semilogy(t/TAU1, envolvente(np.abs(d['rc'] - media), t), color=col, ls=ls, lw=1.0, label=f'$\\mu={mu:.2f}$')
-    ax[1].set_xlim(0, TFIN/TAU1); ax[1].set_ylim(1.5e-3, 2)
-    ax[1].set_xlabel('$t/\\tau_1$'); ax[1].set_ylabel('amplitude $a_c$ of the oscillation of the core')
-    ax[1].legend(fontsize=6, frameon=False, loc='lower left', ncol=2)
-    for a, l in zip(ax, 'ab'):
-        a.grid(alpha=0.3); a.set_title(f'({l})', loc='left', fontsize=9)
+    a.loglog(xs, xs**2*np.exp(1 - xs**2), color='0.6', lw=2.5, label='initial')
+    perfiles = ('B2q', 'B015q', 'B02q', 'B3', 'B05')
+    tonos = dict(zip(perfiles, cmap(np.linspace(0.08, 0.86, len(perfiles)))))
+    for n in ('B0',) + perfiles:
+        d = nucleo(n); gam = gamma(n)
+        xc = 0.5*(d['x'][1:] + d['x'][:-1])
+        a.loglog(xc, d['perfil'], marker='o', ms=2.5, lw=1.0, color='k' if n == 'B0' else tonos[n],
+                 ls='--' if n == 'B0' else '-', label='no self-gravity' if n == 'B0' else f'$\\Gamma={gam:.2f}$')
+    a.axhline(1, color='k', lw=0.6, ls=':'); a.axhline(1/ive(0, 50.0), color='k', lw=0.6, ls=':')
+    a.text(2.8, 1.15, '$\\hat{F}_{max}$', fontsize=7, ha='right'); a.text(2.8, 20.5, '$F_{max}$', fontsize=7, ha='right')
+    for x, et in ((0.05, '$J_*$'), (0.2, '$0.2\\,\\sigma_J$')):
+        a.axvline(x, color='0.45', lw=0.6, ls='--'); a.text(x*1.06, 22, et, fontsize=7, color='0.3', va='top')
+    a.set_xlim(5e-3, 3); a.set_ylim(1e-3, 40); a.grid(alpha=0.3)
+    a.set_xlabel('$J/\\sigma_J$'); a.set_ylabel('angle-averaged DF$/\\hat{F}_{max}$')
+    a.legend(fontsize=6.5, frameon=False, loc='lower right')
     fig.savefig(os.path.join(destino, 'bulto_estado.pdf')); plt.close(fig)
-    # 4. Transición: |h_1| medio en 10 <= t/tau_1 <= 20 y masa m_c en la elipse del máximo, frente a mu; la línea
-    # punteada es la cota m_mix = 0.05*4/(e sqrt(pi)) de un gas mezclado a acción fija.
+    # 4. Cambio con la masa, todas las familias: |h_1| medio en 10 <= t/tau_1 <= 20, densidad central y m_c, frente a Gamma en
+    # escala logarítmica. Los segmentos de (a) son los intervalos de la tabla de familias. La corrida sin autogravedad (Gamma = 0)
+    # no cabe en el eje.
     estilos = [('o', 'k'), ('v', '#0072B2'), ('^', '#009E73'), ('s', '#E69F00'), ('D', '#CC79A7'), ('*', '#D55E00')]
-    fig, ax = plt.subplots(1, 2, figsize=(7.2, 3.2), layout='constrained')
+    fig, ax = plt.subplots(1, 3, figsize=(7.4, 3.0), layout='constrained')
     filas = []
     for (nombre, base, conv), (mk, col) in zip(FAMILIAS, estilos):
-        x = [escalas(n)[2] if info[n]['sg'] else 0.0 for n in base]
-        xc = [escalas(n)[2] for n in conv]
-        for a, fun in zip(ax, (h1_ventana, lambda n: float(nucleo(n)['mnuc']))):
-            a.semilogy(x, [fun(n) for n in base], mk, color=col, ms=6 if mk == '*' else 4.5, label=nombre, ls='-', lw=0.6)
+        bs = [n for n in base if info[n]['sg']]
+        x = [gamma(n) for n in bs]
+        xc = [gamma(n) for n in conv]
+        for a, fun in zip(ax, (h1_ventana, densidad_central, lambda n: float(nucleo(n)['mnuc']))):
+            a.loglog(x, [fun(n) for n in bs], mk, color=col, ms=5 if mk == '*' else 3.5, label=nombre, ls='-', lw=0.5)
             if conv:
-                a.semilogy(xc, [fun(n) for n in conv], mk, color=col, mfc='none', ms=6.5, ls='none',
-                           label='finer lattices')
-        filas += [(n, m, h1_ventana(n)) for n, m in zip(base + conv, x + xc)]
+                a.loglog(xc, [fun(n) for n in conv], mk, color=col, mfc='none', ms=4.5, mew=0.6, ls='none',
+                         label='finer lattices')
+        filas += [(n, m, h1_ventana(n)) for n, m in zip(base + conv, [gamma(n) for n in base] + xc)]
+    for i, ((_, _, p, q), (_, col)) in enumerate(zip(CRUCE_FAMILIAS, estilos)):
+        y = 5e-5*1.7**i
+        ax[0].plot([gamma(p), gamma(q)], [y, y], color=col, lw=2.2, solid_capstyle='butt')
     ax[0].set_ylabel('$|h_1|/h_0$ for $10\\leq t/\\tau_1\\leq 20$'); ax[0].set_ylim(3e-5, 2)
-    m_mix = 0.2/(np.e*np.sqrt(np.pi))
-    ax[1].set_ylabel('$m_c$ for $t\\geq 20\\tau_1$'); ax[1].set_ylim(0.02, 1.0)
-    ax[1].axhline(m_mix, color='k', lw=0.6, ls=':')
-    ax[1].text(1.17, 1.08*m_mix, '$m_{mix}$', ha='right', va='bottom', fontsize=7)
-    for a, l in zip(ax, 'ab'):
-        a.set_xlabel('$\\mu$'); a.set_xlim(-0.03, 1.2); a.grid(alpha=0.3)
+    ax[1].set_ylabel('central density$/\\hat{F}_{max}$'); ax[1].set_ylim(5e-4, 40)
+    ax[1].axhline(1, color='k', lw=0.6, ls=':')
+    ax[2].set_ylabel('$m_c$ for $t\\geq 20\\tau_1$'); ax[2].set_ylim(0.02, 1.0)
+    ax[2].axhspan(0.039, 0.060, color='0.86', lw=0, zorder=0)
+    ax[2].text(4.3, 0.064, 'free mixing', ha='right', va='bottom', fontsize=6.5, color='0.3')
+    for a, l in zip(ax, 'abc'):
+        a.set_xlabel('$\\Gamma$'); a.set_xlim(0.008, 5); a.grid(alpha=0.3); a.tick_params(labelsize=7)
         a.set_title(f'({l})', loc='left', fontsize=9)
-    ax[0].legend(fontsize=6.5, loc='lower right', frameon=False)
+    ax[0].legend(fontsize=5.6, loc='upper left', frameon=False)
     fig.savefig(os.path.join(destino, 'bulto_transicion.pdf')); plt.close(fig)
     with open(ruta('articulo.txt'), 'w') as fo:
-        fo.write('corrida      mu     |h1| en 10-20 tau_1\n')
+        fo.write('corrida      Gamma  |h1| en 10-20 tau_1\n')
         for n, x, y in sorted(filas, key=lambda r: (r[1], r[0])):
             fo.write(f'{n:10} {x:5.2f}  {y:.3e}\n')
         fo.write('\nRelajación del potencial que genera el gas (campo_particulas): primera vez que la envolvente\n'
@@ -679,9 +715,15 @@ def articulo():
             env = np.array([Dc[max(0, i - k):i + k + 1].max() for i in range(len(Dc))])
             cruces = [f'{tc[np.argmax(env < x)]/TAU1:6.2f}' if (env < x).any() else f'{"--":>6}' for x in (1e-2, 1e-3, 3e-4)]
             v = (tc >= 10*TAU1) & (tc <= 20*TAU1)
-            mu = escalas(n)[2] if info[n]['sg'] else 0.0
-            fo.write(f'{n:6} mu = {mu:4.2f}  ' + ' '.join(cruces) + f'   D en 10-20 tau_1: {Dc[v].mean():.2e}\n')
+            fo.write(f'{n:6} Gamma = {gamma(n):4.2f}  ' + ' '.join(cruces) + f'   D en 10-20 tau_1: {Dc[v].mean():.2e}\n')
     print('figuras en', destino)
+
+
+def densidad_central(n):
+    """Densidad promediada en ángulo en J < 0.025 sigma_J, en unidades de Fhat_max, media en t >= 20 tau_1 con una
+    instantánea de cada cinco (las mismas que m_c)."""
+    d = nucleo(n)
+    return d['rho_c'][np.where(d['t'] >= 20*banda(n)[3])[0][::5]].mean()
 
 
 def medidas_articulo(n):
@@ -706,8 +748,8 @@ def medidas_articulo(n):
         i = int(np.argmin(np.where((t >= 2*tau) & (t <= 30*tau), env, np.inf)))
     tc, Dc = campo_particulas(n)
     amp = amplitudes(n)
-    return dict(mu=escalas(n)[2] if info[n]['sg'] else 0.0, h1=h1_ventana(n), m02=d['m02'][t >= 20*tau].mean(),
-                mc=float(d['mnuc']), rho_p=float(d['rho_p']), a12=amp[0], a20=amp[-1],
+    return dict(mu=mu_pasiva(n), gamma=gamma(n), h1=h1_ventana(n), m02=d['m02'][t >= 20*tau].mean(),
+                rho_c=densidad_central(n), mc=float(d['mnuc']), rho_p=float(d['rho_p']), a12=amp[0], a20=amp[-1],
                 D=Dc[(tc >= 10*tau) & (tc <= 20*tau)].mean(), acmin=env[i], tmin=t[i]/tau,
                 ac_lo=env[t >= 25*tau].min(), ac_hi=env[t >= 25*tau].max(), t=t/tau, env=env, rc=d['rc'] - media)
 
@@ -734,6 +776,12 @@ def _macro(nombre, archivo, filas):
 ESTADO = [('B0', 0), ('B1', 0.001), ('B2q', 0.01), ('B015', 0.015), ('B02q', 0.02), ('B025h', 0.025), ('B3', 0.03),
           ('B04', 0.04), ('B05', 0.05), ('B07', 0.07), ('B4q', 0.1), ('B5', 0.3)]
 CRUCE = [('B02q', 0.02), ('B021', 0.021), ('B022', 0.022), ('B023', 0.023), ('B024', 0.024), ('B025h', 0.025)]
+# Filas que se publican. Para M_gas/M < 0.015 la elipse de m_c no está sobre el pico central (nucleo_criterio.py), así que
+# ni m_c ni a_c describen un núcleo y la tabla deja el guion.
+FILAS_ESTADO = [('B0', 0), ('B1', 0.001), ('B2q', 0.01), ('B015q', 0.015), ('B02q', 0.02), ('B025h', 0.025), ('B3', 0.03),
+                ('B05', 0.05), ('B4q', 0.1), ('B5', 0.3)]
+FILAS_CRUCE = [('B2q', 0.01), ('B012', 0.012), ('B014', 0.014), ('B015q', 0.015), ('B016', 0.016), ('B018', 0.018),
+               ('B02q', 0.02), ('B022', 0.022), ('B024', 0.024), ('B025h', 0.025)]
 CRUCE_FAMILIAS = [('isochrone', r'$\sigma_Q = \sigma_J = 0.1$', 'B02q', 'B025h'),
                   ('', r'$\sigma_J = 0.05$', 'J05_0.005', 'J05_0.01'), ('', r'$\sigma_J = 0.2$', 'J20_0.04', 'J20_0.08'),
                   ('', r'$\sigma_Q = 0.2$', 'Q2_0.02', 'Q2_0.04'), ('', r'$\sigma_Q = 0.4$', 'Q4_0.04', 'Q4_0.08'),
@@ -746,23 +794,33 @@ def tablas():
     cuarta tanda a mu = 0.43 y 0.48 y el salto de fase de la oscilación del núcleo en su mínimo."""
     from scipy.signal import hilbert
     filas = []
-    for n, m in ESTADO:
+    for n, m in FILAS_ESTADO:
         M = medidas_articulo(n)
-        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & ${M["mc"]:.3f}$ \\\\')
+        mc = f'${M["mc"]:.3f}$' if m >= 0.015 else '--'
+        filas.append(f'${m:g}$ & ${M["gamma"]:.2f}$ & {_sci(M["h1"])} & ${M["m02"]:.3f}$ & {_sci(M["rho_c"])} & {mc} \\\\')
     _macro('TabEstado', 'tab_estado.tex', filas)
     filas = []
-    for n, m in CRUCE:
+    for n, m in FILAS_CRUCE:
         M = medidas_articulo(n)
-        filas.append(f'${m:g}$ & ${M["mu"]:.2f}$ & {_sci(M["h1"])} & {_sci(M["D"])} & ${M["mc"]:.3f}$ & '
-                     f'${M["acmin"]:.3f}$ & ${M["tmin"]:.0f}$ & ${M["ac_lo"]:.2f}$--${M["ac_hi"]:.2f}$ \\\\')
+        if m >= 0.015:
+            tm = '$>30$' if M['tmin'] >= 29.9 else f'${M["tmin"]:.0f}$'
+            nuc = f'${M["mc"]:.3f}$ & {tm} & ${M["ac_lo"]:.2g}$--${M["ac_hi"]:.2g}$'
+        else:
+            nuc = '-- & -- & --'
+        filas.append(f'${m:g}$ & ${M["gamma"]:.2f}$ & {_sci(M["h1"])} & {_sci(M["D"])} & {_sci(M["rho_c"])} & {nuc} \\\\')
     _macro('TabCruce', 'tab_cruce.tex', filas)
     filas = []
     for pot, anchos, a, b in CRUCE_FAMILIAS:
         A, B_ = medidas_articulo(a), medidas_articulo(b)
-        filas.append(f'{pot} & {anchos} & ${A["mu"]:.2f}$ & {_sci(A["h1"])} & ${A["mc"]:.3f}$ & '
-                     f'${B_["mu"]:.2f}$ & {_sci(B_["h1"])} & ${B_["mc"]:.3f}$ \\\\')
+        filas.append(f'{pot} & {anchos} & ${A["gamma"]:.2f}$ & {_sci(A["h1"])} & {_sci(A["rho_c"])} & '
+                     f'${B_["gamma"]:.2f}$ & {_sci(B_["h1"])} & {_sci(B_["rho_c"])} \\\\')
     _macro('TabFamilias', 'tab_familias.tex', filas)
     print('tablas escritas en docs/articulo/tab_*.tex')
+    print('\nDensidad central frente a Fhat_max por familia: última corrida por debajo y primera por encima, en Gamma.')
+    for nombre, base, conv in FAMILIAS:
+        v = sorted((gamma(n), densidad_central(n), n) for n in base + conv if info[n]['sg'] and info[n]['a0'] < 0.09)
+        ab = [x for x in v if x[1] <= 1]; ar = [x for x in v if x[1] > 1]
+        print(f'  {nombre:28} debajo {ab[-1][2]} Gamma {ab[-1][0]:.3f} ({ab[-1][1]:.2f}); encima {ar[0][2]} Gamma {ar[0][0]:.3f} ({ar[0][1]:.2f})')
     print('\nPruebas de resolución (cuarta tanda). a_c: mínimo de la envolvente en 2-30 tau_1 (cuándo) y rango en t >= 25 tau_1.')
     for n in ('B02', 'B02q', 'B02j', 'B02t', 'B02r', 'B02h', 'B025', 'B025j', 'B025t', 'B025r', 'B025h'):
         if os.path.exists(ruta(n, 'nucleo.npz')) or os.path.exists(ruta(n, 'bulto.npz')):
@@ -778,23 +836,22 @@ def tablas():
         salto = np.angle(np.exp(1j*(np.polyval(p2, M['tmin']) - np.polyval(p1, M['tmin']))))
         print(f'  {n:5} mínimo en {M["tmin"]:.1f} tau_1; frecuencia antes {p1[0]/TAU1:.5f} y después {p2[0]/TAU1:.5f};'
               f' salto de fase {salto/np.pi:+.2f} pi')
-    print('\nm_c de las otras familias con mu >= 0.48 frente a la familia de referencia al mismo mu (interpolación lineal),'
-          '\ny mu al que la referencia alcanza ese m_c (Sección 6E).')
+    print('\nm_c de las otras familias con Gamma >= 0.27 frente a la familia de referencia al mismo Gamma (interpolación'
+          '\nlineal), y Gamma al que la referencia alcanza ese m_c (Sección 5E).')
     from scipy.special import i0e
     ref = [n for n, m in ESTADO if n != 'B0'] + [n for n, m in CRUCE if n not in dict(ESTADO)]
-    mu_r, mc_r = np.array(sorted((escalas(n)[2], float(nucleo(n)['mnuc'])) for n in ref)).T
-    k = (mu_r >= 0.42) & (mu_r <= 0.9)                       # tramo en que m_c crece con mu
+    g_r, mc_r = np.array(sorted((gamma(n), float(nucleo(n)['mnuc'])) for n in ref)).T
+    k = (g_r >= 0.2) & (g_r <= 1.2)                          # tramo en que m_c crece con Gamma
     for nombre, base, conv in FAMILIAS:
         if 'B0' in base:
             continue
         for n in base:
-            mu = escalas(n)[2]
-            if mu >= 0.475:
-                mc = float(nucleo(n)['mnuc']); mr = np.interp(mu, mu_r, mc_r)
-                print(f'  {nombre:28} {n:10} mu {mu:.3f}  m_c {mc:.3f}  referencia {mr:.3f}  cociente {mc/mr:.2f}'
-                      f'  mu equivalente {np.interp(mc, mc_r[k], mu_r[k]):.3f}')
+            g = gamma(n)
+            if g >= 0.27:
+                mc = float(nucleo(n)['mnuc']); mr = np.interp(g, g_r, mc_r)
+                print(f'  {nombre:28} {n:10} Gamma {g:.3f}  m_c {mc:.3f}  referencia {mr:.3f}  cociente {mc/mr:.2f}'
+                      f'  Gamma equivalente {np.interp(mc, mc_r[k], g_r[k]):.3f}')
     m_mix = 0.2/(np.e*np.sqrt(np.pi))
-    print(f'  m_c de la referencia en mu = 0.69: {np.interp(0.69, mu_r, mc_r):.3f}')
     for sq in (0.1, 0.2, 0.4):
         print(f'  cota de Liouville para s_Q = {sq}: m_c <= m_mix F_max/Fhat_max = {m_mix/i0e(1/(2*sq*sq)):.3f}')
 

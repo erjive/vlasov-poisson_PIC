@@ -176,8 +176,9 @@ def figura(sal, *args):
         dJ = float(p['dJ']); c = 8*np.pi**2*L*2*np.pi*dJ; s = float(d.get('suave', 8.0))
         F0, Jn = d['F0'], d['Jn']
         Fmax = gaussian_filter1d(F0, s, mode='nearest').max()
-        cm = np.cumsum(F0)/F0.sum(); Jmed = Jn[np.searchsorted(cm, 0.5)]; x = Jn/Jmed
-        Jhi = Jn[np.searchsorted(cm, 0.995)]/Jmed
+        cm = np.cumsum(F0)/F0.sum(); Jm = np.sum(Jn*F0)/F0.sum(); x = Jn/Jm
+        print(f'  {n}: suavizado de {s*dJ/Jm:.4f} <J>')
+        Jhi = Jn[np.searchsorted(cm, 0.995)]/Jm
         tF, dlt = F0_lento(p, tau, t0, c)
         dm = gaussian_filter1d(dlt, s, axis=1, order=0, mode='nearest')/Fmax
         tiene = 'G' in d
@@ -229,6 +230,9 @@ def juntar(sal, cluster, corregido):
 CASOS = [('H_p2_050', 'p2', 0.05), ('H_p2_100', 'p2', 0.10), ('H_p2_150', 'p2', 0.15), ('H_p4_100', 'p4', 0.10),
          ('H_h05_050', 'h05', 0.05), ('H_h05_100', 'h05', 0.10), ('H_anillo_050', 'anillo', 0.05),
          ('H_meseta_100', 'meseta', 0.10)]
+# Los valores de arriba son 1000 Gamma con la mediana de J, con la que se fijaron las masas; el artículo usa el promedio <J>.
+import formas as _FO, reducido as _R
+CASOS = [(n, f, g*(_FO.J_mediana(_FO.TODAS[f][0])/_R.J_promedio(0.1, _FO.TODAS[f][0]))**1.5) for n, f, g in CASOS]
 FORMA = {'p2': 'reference', 'p4': r'$J^4e^{-J^2/\sigma_J^2}$', 'h05': r'$(J-0.05)_+^2e^{-J^2/\sigma_J^2}$',
          'anillo': 'ring', 'meseta': 'water bag'}
 SP = os.path.join(os.environ.get('VP_PIC_SP', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(AQUI))),
@@ -267,7 +271,7 @@ def articulo():
               + f'; autoconsistencia de Phi_0 {float(d["autoc"]):.1e}')
         i20, i25 = xs.index(20), xs.index(25)
         celdas = [FORMA[forma] if n in ('H_p2_050', 'H_p4_100', 'H_h05_050', 'H_anillo_050', 'H_meseta_100') else '',
-                  f'${gam:g}$']
+                  f'${gam:.3f}$']
         for i in (i20, i25):
             celdas += [f'${cf[i]:.2f}$'] + [f'${cl[k][i]:.2f}$' for k in ('lineal', 'F_0 lento', 'cuasilineal')]
         filas.append(' & '.join(celdas) + r' \\%')
@@ -330,7 +334,7 @@ def figura_respuesta(sal):
         a.set_xscale('log'); a.set_yscale('log'); a.set_xlim(5, 30)
         a.xaxis.set_major_locator(mt.FixedLocator((5, 10, 20, 30))); a.xaxis.set_minor_formatter(mt.NullFormatter())
         a.xaxis.set_major_formatter(mt.FuncFormatter(lambda v, _: f'{v:g}'))
-        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:g}$', loc='left', fontsize=9, pad=4)
+        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:.3f}$', loc='left', fontsize=9, pad=4)
         a.grid(True, which='major', color=reja, lw=0.6); a.set_axisbelow(True)
         a.tick_params(length=3, width=0.6); a.tick_params(which='minor', length=2, width=0.4)
         for lado in ('top', 'right'):
@@ -349,7 +353,7 @@ def figura_respuesta(sal):
 
 def figura_F0(sal, casos=('H_p2_150', 'H_h05_100', 'H_anillo_050', 'H_meseta_100'), TT=(10, 20)):
     """Fila 1: F_0(J) en t0 (suavizado); filas siguientes: cambio de F_0 medido (parte lenta) y cuasilineal en los
-    tiempos TT, en unidades del máximo de F_0, frente a J/J_med."""
+    tiempos TT, en unidades del máximo de F_0, frente a J/<J>."""
     from matplotlib.lines import Line2D
     plt, sup, tinta, tinta2, reja = _estilo()
     MED, CL = '#1baf7a', '#eda100'
@@ -362,15 +366,16 @@ def figura_F0(sal, casos=('H_p2_150', 'H_h05_100', 'H_anillo_050', 'H_meseta_100
         dJ = float(p['dJ']); c = 8*np.pi**2*L*2*np.pi*dJ; s = float(d.get('suave', 8.0))
         F0, Jn = d['F0'], d['Jn']
         Fs = gaussian_filter1d(F0, s, mode='nearest'); Fmax = Fs.max()
-        cm = np.cumsum(F0)/F0.sum(); Jmed = Jn[np.searchsorted(cm, 0.5)]; x = Jn/Jmed
-        Jhi = Jn[np.searchsorted(cm, 0.995)]/Jmed
+        cm = np.cumsum(F0)/F0.sum(); Jm = np.sum(Jn*F0)/F0.sum(); x = Jn/Jm
+        print(f'  {n}: suavizado de {s*dJ/Jm:.4f} <J>')
+        Jhi = Jn[np.searchsorted(cm, 0.995)]/Jm
         tF, dlt = F0_lento(p, tau, t0, c)
         dm = gaussian_filter1d(dlt, s, axis=1, order=0, mode='nearest')/Fmax
         tG, dq = cambio_cuasilineal(d, s, dJ, tau); dq = dq/Fmax
         a = ax[0, j]
         a.plot(x, Fs/Fmax, color=tinta, lw=1.2)
         forma, gam = rot[n]
-        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:g}$', loc='left', fontsize=9, pad=4)
+        a.set_title(f'{FORMA[forma]}, $\\Gamma={gam:.3f}$', loc='left', fontsize=9, pad=4)
         a.set_ylim(0, 1.1)
         if j == 0:
             a.set_ylabel(r'$\bar{F}/\max\bar{F}$ at $t_0$')
@@ -387,7 +392,7 @@ def figura_F0(sal, casos=('H_p2_150', 'H_h05_100', 'H_anillo_050', 'H_meseta_100
             a.tick_params(length=3, width=0.6)
             for lado in ('top', 'right'):
                 a.spines[lado].set_visible(False)
-        ax[-1, j].set_xlabel(r'$J/J_{med}$')
+        ax[-1, j].set_xlabel(r'$J/\langle J\rangle$')
     fig.tight_layout(rect=(0, 0, 1, 0.94), w_pad=1.0, h_pad=1.0)
     fig.legend(handles=[Line2D([], [], color=MED, lw=1.4, label=r'PIC, slow part of the change of $\bar{F}$'),
                         Line2D([], [], color=CL, lw=1.4, ls=(0, (4, 2)), label='quasilinear prediction')],

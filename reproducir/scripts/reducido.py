@@ -546,6 +546,27 @@ def serie(nombre):
         print(f'OK {n} ({time.time()-t0:.0f} s)', flush=True)
 
 
+_JPROM = {}
+
+
+def J_promedio(sj=0.1, perfil=None):
+    """<J>, promedio de la acción sobre la masa de la nube; 2 s_J/sqrt(pi) para J^2 exp(-J^2/s_J^2). Es la acción que usa
+    Gamma en el artículo desde el 2026-11-23. Las masas de las corridas ya hechas se fijaron con la mediana (formas.J_mediana)
+    y no cambian."""
+    clave = (sj, str(perfil))
+    if clave not in _JPROM:
+        J = np.linspace(0.0, 8*sj, 800001)
+        f = perfil_J(J, sj, perfil)
+        _JPROM[clave] = np.sum(0.5*((J*f)[1:] + (J*f)[:-1])*np.diff(J))/np.sum(0.5*(f[1:] + f[:-1])*np.diff(J))
+    return _JPROM[clave]
+
+
+def gamma_prom(m, perfil=None, sj=0.1, pot='isocrono', L=2.0):
+    """Gamma = g M_gas/(|Omega_0'| <J>^(3/2)) de una nube de masa m."""
+    fo = fondo(pot, L)
+    return fo['g']*m/(3*fo['c']**-4*J_promedio(sj, perfil)**1.5)
+
+
 def medidas_pic(n):
     """Las medidas de la corrida n del PIC con las que se compara el modelo (bulto.nucleo)."""
     import bulto as B
@@ -555,14 +576,14 @@ def medidas_pic(n):
     env = envolvente(np.abs(nu['rc'] - media), t)
     hk = np.load(B.ruta(n, 'bulto.npz'))['hk']
     u = t >= 20*tau; v = (t >= 10*tau) & (t <= 20*tau)
-    return dict(t=t/tau, ac=env, mu=B.escalas(n)[2], mc=float(nu['mnuc']), h1=np.abs(hk[v, 1]).mean(), m02=nu['m02'][u].mean(),
+    return dict(t=t/tau, ac=env, gamma=B.gamma(n), rho_c=B.densidad_central(n), mc=float(nu['mnuc']), h1=np.abs(hk[v, 1]).mean(), m02=nu['m02'][u].mean(),
                 dr=nu['dr'][u].mean())
 
 
 def medidas(r):
     D = diagnosticos(r); t, tau = D['t'], float(D['tau'])
     u = t >= 20*tau; v = (t >= 10*tau) & (t <= 20*tau)
-    return dict(t=t/tau, ac=envolvente(D['ac'], t), mc=float(D['mnuc']), h1=np.abs(D['h1'][v]).mean(), m02=D['m02'][u].mean(),
+    return dict(t=t/tau, ac=envolvente(D['ac'], t), rho_c=D['rho_c'][np.where(u)[0][::5]].mean(), mc=float(D['mnuc']), h1=np.abs(D['h1'][v]).mean(), m02=D['m02'][u].mean(),
                 dr=D['dr'][u].mean())
 
 
@@ -657,7 +678,7 @@ def _macro(nombre, archivo, filas, destino=DOC):
     open(os.path.join(destino, archivo), 'w').write('\\newcommand{\\' + nombre + '}{%\n' + cuerpo + '%\n\\hline}\n')
 
 
-def tablas(destino=DOC, nombres=('TabReferencia', 'TabFamilias'), archivos=('tab_referencia.tex', 'tab_familias.tex')):
+def tablas(destino=DOC, nombres=('TabReferencia', 'TabFamilias'), archivos=('tab_referencia.tex', 'tab_familias.tex'), centro=False):
     """Filas de las tablas de las notas (docs/modelo_reducido/tab_*.tex), o de otro documento: PIC y modelo reducido."""
     os.makedirs(destino, exist_ok=True)
     f = lambda x: f'{x:.3f}'
@@ -665,7 +686,7 @@ def tablas(destino=DOC, nombres=('TabReferencia', 'TabFamilias'), archivos=('tab
     for r, m, *_, p in SERIES['referencia'] if nombres[0] else []:   # sin nombre no se escribe esta tabla
         P, Q = medidas_pic(p), medidas(r)
         nuc = (f(P['mc']), f(Q['mc'])) if m >= 0.02 else ('--', '--')
-        filas.append(f'${m:g}$ & ${P["mu"]:.2f}$ & {_sci(P["h1"])} & {_sci(Q["h1"])} & ${f(P["m02"])}$ & ${f(Q["m02"])}$ & ${nuc[0]}$ & ${nuc[1]}$ \\\\')
+        filas.append(f'${m:g}$ & ${P["gamma"]:.2f}$ & {_sci(P["h1"])} & {_sci(Q["h1"])} & ${f(P["m02"])}$ & ${f(Q["m02"])}$ & ${nuc[0]}$ & ${nuc[1]}$ \\\\')
     if nombres[0]:
         _macro(nombres[0], archivos[0], filas, destino)
     filas = []; grupos = {'rK': 'Kepler', 'rJ05': r'$\sigma_J = 0.05$', 'rJ20': r'$\sigma_J = 0.2$', 'rQ2': r'$\sigma_Q = 0.2$',
@@ -679,7 +700,8 @@ def tablas(destino=DOC, nombres=('TabReferencia', 'TabFamilias'), archivos=('tab
             P, Q = medidas_pic(p), medidas(r)
             hay = P['dr'] < 0.3 and Q['dr'] < 0.3                # hay un núcleo compacto en los dos
             nuc = (f(P['mc']), f(Q['mc'])) if hay else ('--', '--')
-            filas.append(f'{grupos[g] if primero else ""} & ${m:g}$ & ${P["mu"]:.2f}$ & {_sci(P["h1"])} & {_sci(Q["h1"])} & ${f(P["m02"])}$ & ${f(Q["m02"])}$ & ${nuc[0]}$ & ${nuc[1]}$ \\\\')
+            filas.append(f'{grupos[g] if primero else ""} & ${m:g}$ & ${P["gamma"]:.2f}$ & {_sci(P["h1"])} & {_sci(Q["h1"])} & ${f(P["m02"])}$ & ${f(Q["m02"])}$ & '
+                         + (f'${P["rho_c"]:.2f}$ & ${Q["rho_c"]:.2f}$ & ' if centro else '') + f'${nuc[0]}$ & ${nuc[1]}$ \\\\')
             primero = False
         if g != orden[-1]:
             filas.append('\\hline')
@@ -715,7 +737,7 @@ def figuras(destino=DOC, etiqueta='reduced model', prefijo='reducido'):
         a.set_yscale('log'); a.set_ylim(3e-3, 1.0); a.set_xlim(0, 30.6)
         a.set_xticks([0, 10, 20, 30]); a.set_yticks([0.01, 0.1, 1.0]); a.set_yticklabels(['0.01', '0.1', '1'])
         ejes(a)
-        a.set_title(rf'$M_{{gas}}/M = {m:g}$   ($\mu = {P["mu"]:.2f}$)', loc='left', fontsize=9.5, color=tinta, pad=6)
+        a.set_title(rf'$M_{{gas}}/M = {m:g}$   ($\Gamma = {P["gamma"]:.2f}$)', loc='left', fontsize=9.5, color=tinta, pad=6)
     for a in ax[-1]:
         a.set_xlabel(r'$t/\tau_1$')
     for a in ax[:, 0]:
@@ -726,19 +748,25 @@ def figuras(destino=DOC, etiqueta='reduced model', prefijo='reducido'):
     fig.savefig(os.path.join(destino, 'figuras', f'{prefijo}_series.pdf')); plt.close(fig)
 
     P = [medidas_pic(p) for *_, p in ref]; Q = [medidas(r) for r, *_ in ref]
-    mu = np.array([p['mu'] for p in P])
-    fig, ax = plt.subplots(1, 3, figsize=(10, 3.3))
+    gam = np.array([p['gamma'] for p in P])
+    fig, ax = plt.subplots(1, 4, figsize=(12, 3.3))
+    # m_c solo donde el disco está sobre el pico central (ancho radial menor que 0.3), como en la Sección V.
+    val = lambda x, k: x[k] if k != 'mc' or x['dr'] < 0.3 else np.nan
     for a, (k, titulo, log) in zip(ax, (('m02', r'mass fraction with $J < 0.2\,\sigma_J$', False),
-                                        ('mc', 'mass fraction of the core', False),
+                                        ('rho_c', r'central value $\hat{F}_c/\hat{F}_{max}$', True),
+                                        ('mc', 'mass fraction $m_c$ of the core', False),
                                         ('h1', r'$|h_1|/h_0$, mean over $10\leq t/\tau_1\leq 20$', True))):
-        a.plot(mu, [p[k] for p in P], color=c_pic, lw=1.2, marker='o', ms=5.5, mec=sup, mew=0.8, label='PIC')
-        a.plot(mu, [q[k] for q in Q], color=c_red, lw=1.2, marker='D', ms=4.8, mec=sup, mew=0.8, label=etiqueta)
+        a.plot(gam, [val(p, k) for p in P], color=c_pic, lw=1.2, marker='o', ms=5.5, mec=sup, mew=0.8, label='PIC')
+        a.plot(gam, [val(q, k) for q in Q], color=c_red, lw=1.2, marker='D', ms=4.8, mec=sup, mew=0.8, label=etiqueta)
+        if k == 'rho_c':
+            a.axhline(1, color=tinta2, lw=0.7, ls=':')
         if log:
             a.set_yscale('log')
         else:
             a.set_ylim(0, None)
-        a.set_xlim(0, 0.95); a.set_xticks([0, 0.2, 0.4, 0.6, 0.8]); ejes(a)
-        a.set_title(titulo, loc='left', fontsize=9.5, color=tinta, pad=6); a.set_xlabel(r'$\mu$')
+        a.set_xscale('log'); a.set_xlim(0.008, 1.5); a.set_xticks([0.01, 0.03, 0.1, 0.3, 1]); a.set_xticklabels(['0.01', '0.03', '0.1', '0.3', '1'])
+        a.minorticks_off(); ejes(a)
+        a.set_title(titulo, loc='left', fontsize=9.5, color=tinta, pad=6); a.set_xlabel(r'$\Gamma$')
     h, l = ax[0].get_legend_handles_labels()
     fig.tight_layout(rect=(0, 0, 1, 0.92), w_pad=1.8)
     fig.legend(h, l, loc='upper right', ncol=2, frameon=False, fontsize=9.5, bbox_to_anchor=(0.99, 1.0))
@@ -775,7 +803,7 @@ if __name__ == '__main__':
     elif len(sys.argv) > 1 and sys.argv[1] == 'figuras':
         figuras()
     elif len(sys.argv) > 1 and sys.argv[1] == 'articulo':
-        tablas(DOC_ART, (None, 'TabModeloFamilias'), (None, 'tab_modelo_familias.tex'))   # la familia de referencia va en una figura
+        tablas(DOC_ART, (None, 'TabModeloFamilias'), (None, 'tab_modelo_familias.tex'), centro=True)   # la familia de referencia va en una figura
         figuras(DOC_ART, 'epicyclic model', 'modelo')
     else:
         print(__doc__)

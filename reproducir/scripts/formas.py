@@ -180,9 +180,8 @@ def J_mediana(perfil):
 
 
 def gamma(n, M):
-    """Gamma = g M_gas/(|Omega_0'| J_med^(3/2)): el parámetro del modelo epicíclico (Eq. Gamma del artículo) con la
-    mediana de la acción de la nube en lugar de s_J."""
-    return R.G*M/(abs(OMEGA_P)*J_mediana(PERFILES[n])**1.5)
+    """Gamma = g M_gas/(|Omega_0'| <J>^(3/2)): el parámetro del modelo epicíclico con el promedio de la acción."""
+    return R.G*M/(abs(OMEGA_P)*R.J_promedio(SJ, PERFILES[n])**1.5)
 
 
 def _cruce(x, y, nivel):
@@ -237,17 +236,15 @@ _CACHE = {}
 
 
 def escalas(n):
-    """J_med, k (M = k Gamma) y c (mu = c sqrt(M), solo en el isócrono) de la forma n."""
+    """<J>, k (M = k Gamma) y kb (M = kb Gamma_b) de la forma n. Gamma_b = g M <J>^(1/2)/(|Omega_0'| Delta J^2) es Gamma con
+    el ancho de la banda en lugar de la distancia <J> en el denominador."""
     if n not in _CACHE:
         pf, pot, nj = TODAS[n][:3]
         Q, J, w = R.reticula(nj, 100, sj=SJ, sq=SQ, perfil=pf)
-        o = np.argsort(J); jm = J[o][np.searchsorted(np.cumsum(w[o])/w.sum(), 0.5)]
+        jm = R.J_promedio(SJ, pf)
         fo = R.fondo(pot); k = 3*fo['c']**-4*jm**1.5/fo['g']
-        c = np.nan
-        if pot == 'isocrono':
-            om, oM, dj, _ = R.banda_perfil(pf, SJ)
-            c = np.sqrt(amplitud_libre(pf, nj=nj)/((oM - om)*dj))
-        _CACHE[n] = (jm, k, c)
+        kb = 3*fo['c']**-4*R.banda_perfil(pf, SJ, pot)[2]**2/(fo['g']*jm**0.5)
+        _CACHE[n] = (jm, k, kb)
     return _CACHE[n]
 
 
@@ -273,8 +270,8 @@ def corridas_pic(n):
 
 
 def datos(n):
-    """Arreglos (Gamma, mu, m_c, |h1|/h0) del modelo y del PIC de la forma n, ordenados en Gamma."""
-    jm, k, c = escalas(n)
+    """Arreglos (Gamma, Gamma_b, m_c, |h1|/h0) del modelo y del PIC de la forma n, ordenados en Gamma."""
+    jm, k, kb = escalas(n)
     res = []
     for fuente in ('modelo', 'pic'):
         fil = []
@@ -288,14 +285,14 @@ def datos(n):
                 if p is None:
                     continue
                 h1, mc, _ = _numeros(p[0])
-            fil.append((M/k, c*np.sqrt(M), mc, h1))
+            fil.append((M/k, M/kb, mc, h1))
         a = np.array(fil).reshape(-1, 4)
         res.append(a[np.argsort(a[:, 0])])
     return res
 
 
 def figura():
-    """docs/articulo/figuras/formas_gamma.pdf: m_c frente a mu y frente a Gamma, y |h_1|/h_0 frente a Gamma, para todas
+    """docs/articulo/figuras/formas_gamma.pdf: m_c frente a Gamma_b y frente a Gamma, y |h_1|/h_0 frente a Gamma, para todas
     las formas; modelo en líneas, PIC en marcadores."""
     import matplotlib
     matplotlib.use('Agg')
@@ -307,20 +304,18 @@ def figura():
                          'ytick.color': tinta2, 'text.color': tinta, 'axes.linewidth': 0.6, 'figure.facecolor': sup,
                          'axes.facecolor': sup, 'savefig.facecolor': sup})
     fig, ax = plt.subplots(1, 3, figsize=(10, 3.6))
-    paneles = ((1, 2, r'core mass $m_c$ against $\mu$', r'$\mu$', False),
+    paneles = ((1, 2, r'core mass $m_c$ against $\Gamma_b$', r'$\Gamma_b$', False),
                (0, 2, r'core mass $m_c$ against $\Gamma$', r'$\Gamma$', False),
                (0, 3, r'$|h_1|/h_0$, mean over $10\leq t/\tau_1\leq 20$', r'$\Gamma$', True))
     for a, (ix, iy, titulo, xl, log) in zip(ax, paneles):
         for n, (pf, pot, nj, col, mk, rot) in TODAS.items():
             mod, pic = datos(n)
-            if ix == 1 and pot != 'isocrono':
-                continue
             if len(mod):
                 a.plot(mod[:, ix], mod[:, iy], color=col, lw=1.3, marker=mk, ms=3.2, mec=sup, mew=0.4, zorder=2)
             if len(pic):
                 a.plot(pic[:, ix], pic[:, iy], ls='none', color=col, marker=mk, ms=7, mec=sup, mew=0.9, zorder=3)
         a.set_xscale('log')
-        marcas = (0.2, 0.3, 0.5, 1, 2, 3) if ix == 1 else (0.05, 0.1, 0.2, 0.5, 1, 2)
+        marcas = (0.02, 0.05, 0.1, 0.2, 0.5, 1) if ix == 1 else (0.05, 0.1, 0.2, 0.5, 1, 2)
         a.xaxis.set_major_locator(FixedLocator(marcas)); a.xaxis.set_minor_formatter(NullFormatter())
         a.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{v:g}'))
         if log:
@@ -333,7 +328,7 @@ def figura():
         a.tick_params(length=3, width=0.6); a.tick_params(which='minor', length=2, width=0.4)
         a.set_title(titulo, loc='left', fontsize=9.5, color=tinta, pad=6)
         a.set_xlabel(xl)
-    ax[0].set_xlim(0.15, 3.0); ax[1].set_xlim(0.04, 2.0); ax[2].set_xlim(0.04, 2.0)
+    ax[0].set_xlim(0.008, 2.0); ax[1].set_xlim(0.04, 2.0); ax[2].set_xlim(0.04, 2.0)
     h = [Line2D([], [], color=c, lw=1.3, marker=mk, ms=5, mec=sup, mew=0.6, label=r) for (pf, pot, nj, c, mk, r) in TODAS.values()]
     h += [Line2D([], [], color=tinta2, lw=1.3, label='epicyclic model'),
           Line2D([], [], color=tinta2, ls='none', marker='o', ms=7, mec=sup, label='PIC')]
@@ -348,7 +343,7 @@ def figura():
 def cruces():
     """Cruces de m_c = 0.1 y 0.3 y de |h1|/h0 = 0.1 en mu y en Gamma, por forma (modelo)."""
     for col, nivel, txt in ((2, 0.1, 'm_c = 0.1'), (2, 0.3, 'm_c = 0.3'), (3, 0.1, '|h1| = 0.1')):
-        for k, nom in ((1, 'mu'), (0, 'Gamma')):
+        for k, nom in ((1, 'Gamma_b'), (0, 'Gamma')):
             v = {}
             for n in TODAS:
                 mod = datos(n)[0]
@@ -360,7 +355,7 @@ def cruces():
     print(f'  m_c = 0.1 con las seis formas que se anulan en la órbita circular: Gamma = {min(v):.3f}-{max(v):.3f}, media {gc:.3f}')
     for pot in ('isocrono', 'kepler'):
         fo = R.fondo(pot)
-        print(f'  masa umbral M_gas/M = Gamma_c |Omega_0\'|/g J_med^(3/2) = {gc*3*fo["c"]**-4/fo["g"]:.3f} J_med^(3/2) ({pot})')
+        print(f'  masa umbral M_gas/M = Gamma_c |Omega_0\'|/g <J>^(3/2) = {gc*3*fo["c"]**-4/fo["g"]:.3f} <J>^(3/2) ({pot})')
 
 
 def familias():
@@ -379,12 +374,19 @@ ROTULO_TABLA = {'p2': r'$J^2e^{-J^2/\sigma_J^2}$', 'p4': r'$J^4e^{-J^2/\sigma_J^
                 'anillo': 'ring', 'meseta': 'water bag', 'p0': r'$e^{-J^2/\sigma_J^2}$'}
 
 
+def _central(M, n):
+    """F_c/Fhat_max de la forma n: densidad en J < 0.025 s_J (t >= 20 tau_1, una instantánea de cada cinco) en unidades del
+    máximo de la masa por unidad de J de esa forma. rho_c viene en unidades del de J^2 exp(-J^2/s_J^2), cuyo m_mix es 0.2/(e sqrt(pi))."""
+    t, tau = M['t'], float(M['tau'])
+    return M['rho_c'][np.where(t >= 20*tau)[0][::5]].mean()*(0.2/(np.e*np.sqrt(np.pi)))/(JSTAR*_mmix(n))
+
+
 def tabla_articulo():
     """docs/articulo/tab_formas.tex (macro TabFormas): las corridas del PIC de las dos tandas, con el modelo en la misma
-    masa. Columnas: forma, M_gas/M, mu (amplitud de la nube libre), Gamma, m_mix, m_c (PIC, modelo), |h1|/h0 (PIC, modelo)."""
+    masa. Columnas: forma, M_gas/M, Gamma_b, Gamma, m_mix, F_c/Fhat_max (PIC, modelo), m_c (PIC, modelo), |h1|/h0 (PIC, modelo)."""
     filas = []
     for n in ('p2', 'p4', 'h05', 'anillo', 'meseta', 'p0'):
-        jm, k, c = escalas(n)
+        jm, k, kb = escalas(n)
         mmix = JSTAR*_mmix(n)
         pic = corridas_pic(n)
         for i, (nom, M) in enumerate(pic):
@@ -398,9 +400,10 @@ def tabla_articulo():
             else:
                 nm = 'r' + nom
             h1m, mcm, _ = _numeros(R.diagnosticos(nm))
-            filas.append(f'{ROTULO_TABLA[n] if i == 0 else ""} & ${M:.3g}$ & ${c*np.sqrt(M):.2f}$ & ${M/k:.2f}$ & '
+            Fp, Fm = _central(p[0], n), _central(R.diagnosticos(nm), n)
+            filas.append(f'{ROTULO_TABLA[n] if i == 0 else ""} & ${M:.3g}$ & ${M/kb:.3f}$ & ${M/k:.2f}$ & '
                          + (f'${mmix:.3f}$' if i == 0 else '') +
-                         f' & ${mcp:.3f}$ & ${mcm:.3f}$ & {R._sci(h1p)} & {R._sci(h1m)} \\\\')
+                         f' & ${Fp:.2f}$ & ${Fm:.2f}$ & ${mcp:.3f}$ & ${mcm:.3f}$ & {R._sci(h1p)} & {R._sci(h1m)} \\\\')
         filas.append(r'\hline')
     filas = filas[:-1]
     R._macro('TabFormas', 'tab_formas.tex', filas, destino=os.path.join(R.RAIZ, 'docs', 'articulo'))
